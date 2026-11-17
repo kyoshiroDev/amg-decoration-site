@@ -1,0 +1,11 @@
+dist/
+.astro/
+.vercel/
+node_modules/
+package-lock.json
+playwright-report/
+test-results/
+coverage/
+.lighthouseci/
+.claude/state/
+.claude/reports/
