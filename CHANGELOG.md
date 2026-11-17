@@ -4,6 +4,16 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ## [Non publié]
 
+### Phase 2 — Squelette et navigation
+
+- Source de vérité `src/config/site.ts` (NAP, horaires, zone, réseaux, navigation), microcopie d'interface (`config/microcopy.ts`) et textes provisoires des pages (`config/pages.ts`, à migrer en Phase 3).
+- SEO au build : `lib/seo.ts` (titre ≤ 60, description 140–160, canonical), `SEO.astro` (Open Graph, Twitter, image OG 1200 × 630 générée), JSON-LD unique par page (`lib/jsonld.ts`, types `schema-dts`) : `WebSite`, `ProfessionalService`, `Person` reliés par `@id`, `BreadcrumbList` ; squelettes `Service`, `CreativeWork`, `BlogPosting`.
+- `BaseLayout` et `PageLayout` ; lien d'évitement, header collant qui se compacte sans décalage de mise en page, menu mobile en Popover API (fonctionne sans JS), footer complet, fil d'Ariane.
+- View Transitions natives en CSS, sans `ClientRouter` (ADR-0006).
+- Page 404 (noindex) ; accueil provisoire et styleguide migrés sur `BaseLayout`.
+- Reports de la Phase 1 : convention typographique française (espaces insécables), contrastes comparés sans arrondi, token manquant = build en échec, `--z-grain`, `Button` icône seule avec nom accessible obligatoire, zone de clic de 44 px sur la navigation, icône « externe », liseré du bouton ghost à ≥ 3:1, listes sans puces qui gardent leur sémantique (`list-style-type: ''`), composants découpés sous 150 lignes.
+- Lighthouse CI : 404 et styleguide exclus des assertions SEO (noindex).
+
 ### Phase 1 — Design system
 
 - Tokens « Atelier lumineux » (`src/styles/tokens.css`) : palette pastel et terracotta avec rôles sémantiques, échelle typographique fluide, espacements Utopia, rayons dont l'arche, ombres chaudes, motion, anneau de focus.
