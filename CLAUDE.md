@@ -10,6 +10,7 @@
 Refondre totalement le site **amgdecorationdinterieur.com** d'Amandine Gaury, décoratrice / designer d'intérieur spécialisée dans la **visualisation 3D** (Paris + accompagnement à distance partout en France).
 
 Objectifs, par ordre de priorité :
+
 1. **Donner envie** : site éditorial, chaleureux, raffiné, qui met ses réalisations et ses rendus 3D en valeur (palette **pastel + terracotta**).
 2. **Être trouvé** : SEO irréprochable (technique, local, sémantique), migration sans perte de référencement.
 3. **Convertir** : chaque page mène vers une prise de contact (formulaire, téléphone, WhatsApp).
@@ -21,21 +22,21 @@ Le brief complet est dans `docs/BRIEF.md` et l'inventaire du contenu existant da
 
 ## 2. Stack (non négociable sans ADR)
 
-| Sujet | Choix |
-|---|---|
-| Framework | **Astro, dernière version stable** (v7.x au moment du cadrage). Vérifier la version réelle avec `npm view astro version` et la doc via le MCP Context7. |
-| Langage | TypeScript `strict` (preset `astro/tsconfigs/strictest`) |
-| Rendu | **100 % statique** (`output: 'static'`), aucun SSR pour l'instant |
-| Hébergement | **Vercel** (statique ; adaptateur `@astrojs/vercel` seulement si un besoin réel apparaît) |
-| Styles | **CSS natif moderne** : tokens en custom properties, `@layer`, nesting, container queries, styles scopés Astro. Pas de Tailwind (voir ADR-0002). |
-| JS client | Vanilla TypeScript dans `src/scripts/`, chargé par des `<script>` Astro. **Aucun framework UI** (React/Vue…) sans ADR. |
-| Contenu | Content Layer API (`src/content.config.ts`, loaders `glob`/`file`, schémas Zod 4) |
-| Images | `astro:assets` (`<Image>` / `<Picture>`, AVIF + WebP) |
-| Polices | Fonts API intégrée d'Astro (auto-hébergées, `font-display: swap`, preload de la police d'affichage uniquement) |
-| SEO | `@astrojs/sitemap`, composant `SEO.astro` maison, JSON-LD typé |
-| Qualité | ESLint (flat config + `eslint-plugin-astro` + `jsx-a11y`), Prettier (+ `prettier-plugin-astro`), Stylelint, `astro check` |
-| Tests | Vitest (unitaires `src/lib`), Playwright + `@axe-core/playwright` (e2e + a11y), Lighthouse CI |
-| Gestionnaire | **npm** · Node **≥ 22** (voir `.nvmrc`) |
+| Sujet        | Choix                                                                                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework    | **Astro, dernière version stable** (v7.x au moment du cadrage). Vérifier la version réelle avec `npm view astro version` et la doc via le MCP Context7. |
+| Langage      | TypeScript `strict` (preset `astro/tsconfigs/strictest`)                                                                                                |
+| Rendu        | **100 % statique** (`output: 'static'`), aucun SSR pour l'instant                                                                                       |
+| Hébergement  | **Vercel** (statique ; adaptateur `@astrojs/vercel` seulement si un besoin réel apparaît)                                                               |
+| Styles       | **CSS natif moderne** : tokens en custom properties, `@layer`, nesting, container queries, styles scopés Astro. Pas de Tailwind (voir ADR-0002).        |
+| JS client    | Vanilla TypeScript dans `src/scripts/`, chargé par des `<script>` Astro. **Aucun framework UI** (React/Vue…) sans ADR.                                  |
+| Contenu      | Content Layer API (`src/content.config.ts`, loaders `glob`/`file`, schémas Zod 4)                                                                       |
+| Images       | `astro:assets` (`<Image>` / `<Picture>`, AVIF + WebP)                                                                                                   |
+| Polices      | Fonts API intégrée d'Astro (auto-hébergées, `font-display: swap`, preload de la police d'affichage uniquement)                                          |
+| SEO          | `@astrojs/sitemap`, composant `SEO.astro` maison, JSON-LD typé                                                                                          |
+| Qualité      | ESLint (flat config + `eslint-plugin-astro` + `jsx-a11y-x`, voir ADR-0004), Prettier (+ `prettier-plugin-astro`), Stylelint, `astro check`              |
+| Tests        | Vitest (unitaires `src/lib`), Playwright + `@axe-core/playwright` (e2e + a11y), Lighthouse CI                                                           |
+| Gestionnaire | **npm** · Node **≥ 22.23.4**, 24 en CI (voir `.nvmrc`, ADR-0004)                                                                                        |
 
 Avant d'utiliser une API Astro, **vérifie-la dans la doc à jour** (MCP `context7` ou docs.astro.build). Ne te fie jamais à ta mémoire pour une API qui a pu changer entre v5 et v7.
 
@@ -80,6 +81,7 @@ docs/                       # documentation vivante (voir §9)
 ```
 
 ### Règles d'architecture
+
 - **Une responsabilité par fichier.** Composant > ~150 lignes ⇒ le découper.
 - **Pages = assemblage.** Aucune requête, calcul ou markup complexe dans `src/pages/` : tout passe par `components/blocks` et `lib/`.
 - **Dépendances descendantes uniquement** : `pages → layouts → blocks → ui`. Un `ui/` n'importe jamais un `blocks/`.
@@ -104,6 +106,7 @@ docs/                       # documentation vivante (voir §9)
 ## 5. SEO (résumé, détail dans `docs/SEO-STRATEGIE.md`)
 
 Chaque page **doit** :
+
 - passer par `BaseLayout` avec les props SEO obligatoires (`title` ≤ 60 car., `description` 140–160 car., `canonical` auto) ;
 - avoir **un seul `<h1>`** et une hiérarchie de titres sans saut ;
 - avoir Open Graph + Twitter Card, une image OG 1200×630 ;
@@ -117,16 +120,16 @@ Chaque page **doit** :
 
 ## 6. Budgets qualité (bloquants pour la relecture)
 
-| Indicateur | Seuil |
-|---|---|
-| Lighthouse Performance (mobile) | ≥ 95 |
-| Lighthouse Accessibilité / Bonnes pratiques / SEO | 100 |
-| LCP / CLS / INP | < 2,0 s / < 0,05 / < 200 ms |
-| JS client par page (gzip) | < 30 Ko |
-| CSS total (gzip) | < 35 Ko |
-| Image héro | AVIF, < 180 Ko, `fetchpriority="high"`, dimensions explicites |
-| Violations axe-core | 0 |
-| `astro check`, ESLint, Stylelint, tests | 0 erreur, 0 warning |
+| Indicateur                                        | Seuil                                                         |
+| ------------------------------------------------- | ------------------------------------------------------------- |
+| Lighthouse Performance (mobile)                   | ≥ 95                                                          |
+| Lighthouse Accessibilité / Bonnes pratiques / SEO | 100                                                           |
+| LCP / CLS / INP                                   | < 2,0 s / < 0,05 / < 200 ms                                   |
+| JS client par page (gzip)                         | < 30 Ko                                                       |
+| CSS total (gzip)                                  | < 35 Ko                                                       |
+| Image héro                                        | AVIF, < 180 Ko, `fetchpriority="high"`, dimensions explicites |
+| Violations axe-core                               | 0                                                             |
+| `astro check`, ESLint, Stylelint, tests           | 0 erreur, 0 warning                                           |
 
 ---
 
@@ -134,17 +137,17 @@ Chaque page **doit** :
 
 Tu es le **chef de projet / lead dev**. Tu planifies, implémentes et **délègues** aux spécialistes. Tu ne te relis jamais toi-même : c'est le rôle du `reviewer`.
 
-| Agent | Quand l'appeler |
-|---|---|
-| `architecte` | Avant de créer une nouvelle structure, un composant partagé, une collection ; pour tout refactor ; arbitre la propreté du code. |
-| `designer` | Design system, tokens, mise en page, composants visuels, animations, cohérence de la DA. Vérifie le rendu réel avec le MCP Playwright (captures mobile + desktop). |
-| `redacteur` | Tous les textes : titres, accroches, pages, articles, `alt`, meta descriptions. Ton chaleureux, "je", français impeccable. |
-| `seo` | Balises, JSON-LD, sitemap, redirections, maillage, mots-clés, stratégie de contenu. |
-| `accessibilite` | Audit WCAG 2.2 AA / RGAA de toute page ou composant interactif. |
-| `performance` | Images, polices, poids JS/CSS, Core Web Vitals, Lighthouse. |
-| `qa` | Écrit et exécute les tests (unitaires, e2e, a11y, régression visuelle), vérifie liens et build. |
-| `conformite` | Mentions légales, CGS, RGPD, cookies, formulaire de contact. |
-| `reviewer` | **Gardien final.** Obligatoire avant tout `git push` et toute PR. Seul habilité à approuver. |
+| Agent           | Quand l'appeler                                                                                                                                                    |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `architecte`    | Avant de créer une nouvelle structure, un composant partagé, une collection ; pour tout refactor ; arbitre la propreté du code.                                    |
+| `designer`      | Design system, tokens, mise en page, composants visuels, animations, cohérence de la DA. Vérifie le rendu réel avec le MCP Playwright (captures mobile + desktop). |
+| `redacteur`     | Tous les textes : titres, accroches, pages, articles, `alt`, meta descriptions. Ton chaleureux, "je", français impeccable.                                         |
+| `seo`           | Balises, JSON-LD, sitemap, redirections, maillage, mots-clés, stratégie de contenu.                                                                                |
+| `accessibilite` | Audit WCAG 2.2 AA / RGAA de toute page ou composant interactif.                                                                                                    |
+| `performance`   | Images, polices, poids JS/CSS, Core Web Vitals, Lighthouse.                                                                                                        |
+| `qa`            | Écrit et exécute les tests (unitaires, e2e, a11y, régression visuelle), vérifie liens et build.                                                                    |
+| `conformite`    | Mentions légales, CGS, RGPD, cookies, formulaire de contact.                                                                                                       |
+| `reviewer`      | **Gardien final.** Obligatoire avant tout `git push` et toute PR. Seul habilité à approuver.                                                                       |
 
 Les sous-agents ne peuvent pas s'appeler entre eux : **c'est toi qui orchestres**. Lance en parallèle les audits indépendants (ex. `accessibilite` + `performance` + `seo`).
 
@@ -166,6 +169,7 @@ Pour **chaque phase** de `docs/ROADMAP.md` :
 8. **Passer à la phase suivante.** Le merge vers `main` est fait **par l'humain**.
 
 ### Garde-fous techniques (`.claude/hooks/guard-git.mjs`)
+
 - `git push` et `gh pr create` sont **bloqués** tant que le SHA de `HEAD` n'est pas celui approuvé par le `reviewer` (`.claude/state/approved-sha`).
 - **Seul l'agent `reviewer` écrit ce fichier.** L'écrire toi-même est une faute grave.
 - Interdits absolus : push sur `main`, `--force`, `gh pr merge`, commit sur `main`, réécriture d'historique déjà poussé, commit de secrets (`.env*`).
@@ -174,16 +178,16 @@ Pour **chaque phase** de `docs/ROADMAP.md` :
 
 ## 9. Documentation vivante (`docs/`)
 
-| Fichier | Contenu | Mis à jour par |
-|---|---|---|
-| `BRIEF.md` | Besoin client, cible, ton, objectifs | humain |
-| `CONTENU-EXISTANT.md` | Inventaire du site actuel à migrer | toi / `redacteur` |
-| `DESIGN-SYSTEM.md` | Palette, typo, espacements, motion, composants | `designer` |
-| `ARCHITECTURE.md` | Arborescence, flux de données, conventions | `architecte` |
-| `SEO-STRATEGIE.md` | Mots-clés, plan de site, redirections, JSON-LD | `seo` |
-| `ROADMAP.md` | Phases et cases à cocher | toi |
-| `decisions/` | ADR numérotées (`NNNN-titre.md`) | toi / `architecte` |
-| `CHANGELOG.md` (racine) | Historique lisible par phase | toi |
+| Fichier                 | Contenu                                        | Mis à jour par     |
+| ----------------------- | ---------------------------------------------- | ------------------ |
+| `BRIEF.md`              | Besoin client, cible, ton, objectifs           | humain             |
+| `CONTENU-EXISTANT.md`   | Inventaire du site actuel à migrer             | toi / `redacteur`  |
+| `DESIGN-SYSTEM.md`      | Palette, typo, espacements, motion, composants | `designer`         |
+| `ARCHITECTURE.md`       | Arborescence, flux de données, conventions     | `architecte`       |
+| `SEO-STRATEGIE.md`      | Mots-clés, plan de site, redirections, JSON-LD | `seo`              |
+| `ROADMAP.md`            | Phases et cases à cocher                       | toi                |
+| `decisions/`            | ADR numérotées (`NNNN-titre.md`)               | toi / `architecte` |
+| `CHANGELOG.md` (racine) | Historique lisible par phase                   | toi                |
 
 Une modification de code qui rend une doc fausse **doit** mettre à jour cette doc dans le même commit.
 
