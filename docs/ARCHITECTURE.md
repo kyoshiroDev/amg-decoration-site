@@ -23,13 +23,13 @@ src/content.config.ts (schémas Zod 4)
 
 ## Collections de contenu (cible)
 
-| Collection    | Loader                                 | Champs clés                                                                                                                               |
-| ------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `projets`     | `glob('src/content/projets/*.md')`     | title, slug, summary, location, roomTypes (enum), style, cover (`image()`), gallery[{image, alt, kind: 'avant'                            | '3d' | 'apres'}], beforeAfter?, featured, publishedAt, seo{title, description} |
-| `prestations` | `glob`                                 | title, formula (enum Essentiel/Confort/Signature/Studio), target, includes[], deliverables[], price? (optionnel, masqué si absent), order |
-| `articles`    | `glob('**/*.mdx')`                     | title, description, publishedAt, updatedAt?, cover, tags[], relatedService, relatedProject, draft                                         |
-| `temoignages` | `file('src/content/temoignages.yaml')` | author, text, source ('google'), projectType?, url?                                                                                       |
-| `faq`         | `file('src/content/faq.yaml')`         | question, answer, page                                                                                                                    |
+| Collection    | Loader                                 | Champs clés                                                                                                                                                                                         |
+| ------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `projets`     | `glob('src/content/projets/*.md')`     | title, slug, summary, location, roomTypes (enum), style, cover (`image()`), gallery[{image, alt, kind: `'avant' \| '3d' \| 'apres'`}], beforeAfter?, featured, publishedAt, seo{title, description} |
+| `prestations` | `glob`                                 | title, formula (enum Essentiel/Confort/Signature/Studio), target, includes[], deliverables[], price? (optionnel, masqué si absent), order                                                           |
+| `articles`    | `glob('**/*.mdx')`                     | title, description, publishedAt, updatedAt?, cover, tags[], relatedService, relatedProject, draft                                                                                                   |
+| `temoignages` | `file('src/content/temoignages.yaml')` | author, text, source ('google'), projectType?, url?                                                                                                                                                 |
+| `faq`         | `file('src/content/faq.yaml')`         | question, answer, page                                                                                                                                                                              |
 
 ## Scripts client
 
