@@ -22,7 +22,7 @@
 - [x] Composants `ui/` : Button, Link, Heading, Eyebrow, Tag, Icon, Container, Section, ArchImage, Divider
 - [x] Page `/styleguide/` (noindex) montrant tokens et composants
 - [x] Captures 375/1440 vérifiées par `designer` ; audit `accessibilite` (contrastes, focus)
-- [ ] Revue + push `dev` + PR mise à jour
+- [x] Revue + push `dev` + PR mise à jour (PR #1)
 
 ## Phase 2 — Squelette et navigation
 
@@ -32,6 +32,10 @@
 - [ ] Header (compactage au scroll), MobileNav accessible, Footer (NAP, réseaux, liens légaux), Breadcrumbs
 - [ ] Page 404
 - [ ] Tests e2e : navigation, menu mobile, axe
+- [ ] ADR-0006 : View Transitions natives (`@view-transition`), sans `<ClientRouter />` (compatibilité CSP, 0 Ko de JS)
+- [ ] Reports de la Phase 1 : convention d'espaces insécables (« : », « ; », « ? », « ! », « € »), erreur au build si un token du styleguide est manquant, contraste comparé sans arrondi, `--z-grain` dédié, assertion `warn` de perf/LCP sur `/styleguide/`, sémantique des listes sans puces (Safari/VoiceOver), découpage de `Button.astro` et `ContrastTable.astro` sous ~150 lignes
+- [ ] Reports a11y de la Phase 1 : nom accessible obligatoire pour un `Button` icône seule, zone de clic de 44 px sur les liens de navigation, icône visuelle « externe », liseré du bouton ghost
+- [ ] Revue + push `dev` + PR mise à jour
 
 ## Phase 3 — Contenu
 
