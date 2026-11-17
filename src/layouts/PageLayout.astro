@@ -1,0 +1,22 @@
+---
+/**
+ * PageLayout — page interne : BaseLayout + fil d'Ariane visible et BreadcrumbList JSON-LD.
+ * L'accueil utilise BaseLayout directement (pas de fil d'Ariane).
+ */
+import BaseLayout, { type Props as BaseProps } from './BaseLayout.astro';
+import Breadcrumbs from '@/components/layout/Breadcrumbs.astro';
+import { buildBreadcrumbList, type BreadcrumbItem } from '@/lib/jsonld';
+
+interface Props extends BaseProps {
+  /** Chemin depuis l'accueil, page courante comprise (dernier élément). */
+  breadcrumbs: readonly BreadcrumbItem[];
+}
+
+const { breadcrumbs, jsonLd = [], ...base } = Astro.props;
+const origin = Astro.site ?? Astro.url;
+---
+
+<BaseLayout {...base} jsonLd={[...jsonLd, buildBreadcrumbList(breadcrumbs, origin)]}>
+  <Breadcrumbs items={breadcrumbs} />
+  <slot />
+</BaseLayout>
