@@ -1,6 +1,6 @@
 ---
 description: Lance la construction complète du site en autonomie, phase par phase, jusqu'à la PR finale.
-argument-hint: "[numéro de phase de départ, optionnel]"
+argument-hint: '[numéro de phase de départ, optionnel]'
 ---
 
 Tu démarres (ou reprends) la construction du site AMG Décoration **en totale autonomie**.
