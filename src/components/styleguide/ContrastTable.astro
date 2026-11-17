@@ -1,26 +1,14 @@
 ---
 /**
  * ContrastTable — ratios WCAG calculés à la compilation depuis tokens.css.
+ * Paires hors tableau : ContrastPairs ; pastille « Aa » : ContrastSample.
  */
-import tokensCss from '@/styles/tokens.css?raw';
-import { contrastLevel, contrastRatio, parseColorTokens } from '@/lib/color-contrast';
+import ContrastSample from './ContrastSample.astro';
+import ContrastPairs from './ContrastPairs.astro';
+import { contrastCell, verdicts } from './contrast-data';
 
 const foregrounds = ['ink', 'ink-soft', 'terracotta-700', 'terracotta-600', 'terracotta-500'];
 const backgrounds = ['linen', 'cream', 'sand', 'blush', 'sage'];
-const onAction = [
-  ['cream', 'terracotta-600'],
-  ['cream', 'terracotta-700'],
-  ['cream', 'terracotta-500'],
-] as const;
-
-const hexByName = new Map(parseColorTokens(tokensCss).map((t) => [t.name, t.hex]));
-const hex = (name: string): string => hexByName.get(name) ?? '#000000';
-const verdicts = { AA: 'AA', 'AA-large': 'Grand texte', fail: 'Décor' } as const;
-
-function cell(fg: string, bg: string) {
-  const ratio = contrastRatio(hex(fg), hex(bg));
-  return { ratio: ratio.toFixed(2), level: contrastLevel(ratio) };
-}
 ---
 
 <div class="contrast">
@@ -30,7 +18,9 @@ function cell(fg: string, bg: string) {
   -->
   <div class="contrast__scroll">
     <table>
-      <caption id="contrast-caption">Texte (lignes) sur fond (colonnes) — seuil AA : 4.5:1</caption>
+      <caption id="contrast-caption">
+        Texte (lignes) sur fond (colonnes) — seuil AA&nbsp;: 4.5:1
+      </caption>
       <thead>
         <tr>
           <th scope="col">Texte \ Fond</th>
@@ -44,14 +34,10 @@ function cell(fg: string, bg: string) {
           <tr>
             <th scope="row">{fg}</th>
             {backgrounds.map((bg) => {
-              const { ratio, level } = cell(fg, bg);
+              const { ratio, level } = contrastCell(fg, bg);
               return (
                 <td class={`contrast__cell contrast__cell--${level.toLowerCase()}`}>
-                  <span
-                    class="contrast__sample"
-                    style={`--fg: var(--color-${fg}); --bg: var(--color-${bg})`}
-                    aria-hidden="true"
-                  />
+                  <ContrastSample fg={fg} bg={bg} hideOnMobile />
                   {ratio} <small>{verdicts[level]}</small>
                 </td>
               );
@@ -61,23 +47,7 @@ function cell(fg: string, bg: string) {
       </tbody>
     </table>
   </div>
-  <ul class="contrast__pairs">
-    {onAction.map(([fg, bg]) => {
-      const { ratio, level } = cell(fg, bg);
-      return (
-        <li class="contrast__pair">
-          <span
-            class="contrast__sample"
-            style={`--fg: var(--color-${fg}); --bg: var(--color-${bg})`}
-            aria-hidden="true"
-          />
-          <span>
-            {fg} sur {bg} : <strong>{ratio}</strong> — {verdicts[level]}
-          </span>
-        </li>
-      );
-    })}
-  </ul>
+  <ContrastPairs />
 </div>
 
 <style>
@@ -111,43 +81,14 @@ function cell(fg: string, bg: string) {
       overflow-wrap: anywhere;
     }
 
-    .contrast__sample {
-      display: inline-grid;
-      place-items: center;
-      inline-size: var(--tap-target);
-      block-size: var(--tap-target);
-      margin-inline-end: var(--space-2xs);
-      font-family: var(--font-display-stack);
-      font-size: var(--step-1);
-      color: var(--fg);
-      background-color: var(--bg);
-      border-radius: var(--radius-sm);
-      box-shadow: var(--shadow-inset-hairline);
-      vertical-align: middle;
-    }
-
-    /* Échantillon en contenu généré : décoratif, hors du calcul de contraste d'axe. */
-    .contrast__sample::before {
-      content: 'Aa';
-    }
-
     td small {
       display: block;
-    }
-
-    /* Mobile : l'échantillon « Aa » est masqué pour que le tableau tienne sans défilement. */
-    td .contrast__sample {
-      display: none;
     }
 
     @media (width >= 48rem) {
       th,
       td {
         padding-inline: var(--space-xs);
-      }
-
-      td .contrast__sample {
-        display: inline-grid;
       }
 
       td small {
@@ -158,19 +99,6 @@ function cell(fg: string, bg: string) {
     .contrast__cell--fail small,
     .contrast__cell--aa-large small {
       color: var(--color-text-soft);
-    }
-
-    .contrast__pairs {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-xs) var(--space-l);
-      margin-block-start: var(--space-m);
-    }
-
-    .contrast__pair {
-      display: flex;
-      align-items: center;
-      font-size: var(--step--1);
     }
   }
 </style>

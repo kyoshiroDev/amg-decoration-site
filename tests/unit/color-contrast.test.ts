@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   contrastLevel,
   contrastRatio,
+  formatRatio,
+  requireColorToken,
   normalizeHex,
   parseColorTokens,
   relativeLuminance,
@@ -26,13 +28,13 @@ describe('relativeLuminance', () => {
 
 describe('contrastRatio', () => {
   it('vaut 21 entre noir et blanc, quel que soit l’ordre', () => {
-    expect(contrastRatio('#000000', '#ffffff')).toBe(21);
-    expect(contrastRatio('#ffffff', '#000000')).toBe(21);
+    expect(contrastRatio('#000000', '#ffffff')).toBeCloseTo(21, 10);
+    expect(contrastRatio('#ffffff', '#000000')).toBeCloseTo(21, 10);
   });
 
   it('retrouve les valeurs documentées du design system', () => {
-    expect(contrastRatio('#9a4a30', '#f8f3ec')).toBe(5.6);
-    expect(contrastRatio('#fffcf7', '#b05a3d')).toBe(4.69);
+    expect(formatRatio(contrastRatio('#9a4a30', '#f8f3ec'))).toBe('5.60');
+    expect(formatRatio(contrastRatio('#fffcf7', '#b05a3d'))).toBe('4.68');
   });
 });
 
@@ -57,5 +59,28 @@ describe('parseColorTokens', () => {
       { name: 'linen', hex: '#f8f3ec' },
       { name: 'ink', hex: '#2f2622' },
     ]);
+  });
+});
+
+describe('seuils sans arrondi', () => {
+  it('un ratio de 4.496 échoue au niveau AA (pas d’arrondi à 4.50)', () => {
+    expect(contrastLevel(4.496)).toBe('AA-large');
+  });
+
+  it('formatRatio tronque au lieu d’arrondir', () => {
+    expect(formatRatio(4.499)).toBe('4.49');
+    expect(formatRatio(21)).toBe('21.00');
+  });
+});
+
+describe('requireColorToken', () => {
+  const tokens = [{ name: 'ink', hex: '#2f2622' }];
+
+  it('retourne la valeur d’un token présent', () => {
+    expect(requireColorToken(tokens, 'ink')).toBe('#2f2622');
+  });
+
+  it('lève une erreur si le token est absent', () => {
+    expect(() => requireColorToken(tokens, 'absent')).toThrow(/--color-absent/);
   });
 });

@@ -1,0 +1,53 @@
+---
+/**
+ * ContrastPairs — paires hors tableau : texte sur fond d'action, filet de contrôle (≥ 3:1).
+ */
+import ContrastSample from './ContrastSample.astro';
+import { contrastCell, verdicts } from './contrast-data';
+
+interface Pair {
+  readonly fg: string;
+  readonly bg: string;
+  /** Verdict propre (ex. élément graphique, seuil 3:1) ; sinon verdict texte. */
+  readonly note?: string;
+}
+
+const pairs: readonly Pair[] = [
+  { fg: 'cream', bg: 'terracotta-600' },
+  { fg: 'cream', bg: 'terracotta-700' },
+  { fg: 'cream', bg: 'terracotta-500' },
+  { fg: 'taupe', bg: 'sand', note: 'filet de contrôle ≥ 3:1' },
+  { fg: 'taupe', bg: 'blush', note: 'filet de contrôle ≥ 3:1' },
+];
+---
+
+<ul class="contrast-pairs">
+  {pairs.map(({ fg, bg, note }) => {
+    const { ratio, level } = contrastCell(fg, bg);
+    return (
+      <li class="contrast-pairs__item">
+        <ContrastSample fg={fg} bg={bg} />
+        <span>
+          {fg} sur {bg}&nbsp;: <strong>{ratio}</strong> — {note ?? verdicts[level]}
+        </span>
+      </li>
+    );
+  })}
+</ul>
+
+<style>
+  @layer components {
+    .contrast-pairs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-xs) var(--space-l);
+      margin-block-start: var(--space-m);
+    }
+
+    .contrast-pairs__item {
+      display: flex;
+      align-items: center;
+      font-size: var(--step--1);
+    }
+  }
+</style>

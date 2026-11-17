@@ -21,7 +21,7 @@ export function normalizeHex(value: string): string {
   const match = HEX_COLOR.exec(value.trim());
   const digits = match?.[1];
   if (!digits) {
-    throw new Error(`Couleur hexadécimale invalide : « ${value} »`);
+    throw new Error(`Couleur hexadécimale invalide\u00A0: «\u00A0${value}\u00A0»`);
   }
   const full =
     digits.length === 3
@@ -43,12 +43,21 @@ export function relativeLuminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-/** Ratio de contraste WCAG entre deux couleurs (1 à 21), arrondi au centième. */
+/**
+ * Ratio de contraste WCAG entre deux couleurs (1 à 21), NON arrondi :
+ * WCAG ne prévoit aucun arrondi, la comparaison aux seuils se fait sur la valeur brute.
+ * Arrondir uniquement à l'affichage (`formatRatio`).
+ */
 export function contrastRatio(foreground: string, background: string): number {
   const [light, dark] = [relativeLuminance(foreground), relativeLuminance(background)].sort(
     (a, b) => b - a,
   ) as [number, number];
-  return Math.round(((light + 0.05) / (dark + 0.05)) * 100) / 100;
+  return (light + 0.05) / (dark + 0.05);
+}
+
+/** Affichage d'un ratio, tronqué (jamais arrondi au-dessus) au centième : 4.499 → « 4.49 ». */
+export function formatRatio(ratio: number): string {
+  return (Math.floor(ratio * 100) / 100).toFixed(2);
 }
 
 /** Niveau atteint : AA texte courant (≥ 4.5), AA grand texte (≥ 3) ou échec. */
@@ -56,6 +65,15 @@ export function contrastLevel(ratio: number): ContrastLevel {
   if (ratio >= 4.5) return 'AA';
   if (ratio >= 3) return 'AA-large';
   return 'fail';
+}
+
+/** Retourne la valeur d'un token de couleur ; lève une erreur (build en échec) s'il est absent. */
+export function requireColorToken(tokens: readonly ColorToken[], name: string): string {
+  const token = tokens.find((t) => t.name === name);
+  if (!token) {
+    throw new Error(`Token de couleur introuvable dans tokens.css\u00A0: --color-${name}`);
+  }
+  return token.hex;
 }
 
 /** Extrait les tokens `--color-*` à valeur hexadécimale littérale d'une feuille CSS. */
