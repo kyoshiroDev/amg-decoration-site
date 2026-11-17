@@ -1,0 +1,40 @@
+---
+/**
+ * Eyebrow — surtitre en petites capitales espacées, au-dessus d'un titre.
+ * Rendu en <p> (jamais un titre) ; `decorated` ajoute un fin trait terracotta.
+ */
+interface Props {
+  decorated?: boolean;
+  class?: string | undefined;
+}
+
+const { decorated = true, class: className } = Astro.props;
+---
+
+<p class:list={['eyebrow', { 'eyebrow--decorated': decorated }, className]}>
+  <slot />
+</p>
+
+<style>
+  @layer components {
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      font-family: var(--font-body-stack);
+      font-size: var(--text-eyebrow);
+      font-weight: var(--weight-semibold);
+      line-height: var(--leading-ui);
+      letter-spacing: var(--tracking-eyebrow);
+      text-transform: uppercase;
+      color: var(--color-accent-text);
+    }
+
+    .eyebrow--decorated::before {
+      content: '';
+      inline-size: var(--space-l);
+      block-size: var(--border-hairline);
+      background-color: var(--color-accent);
+    }
+  }
+</style>

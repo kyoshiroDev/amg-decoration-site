@@ -1,0 +1,47 @@
+---
+/**
+ * Icon — pictogramme SVG inline (trait 1.5, hérite de currentColor).
+ * Décoratif par défaut (aria-hidden) ; passer `label` s'il porte seul une information.
+ */
+import { iconPaths, type IconName } from './icons';
+
+interface Props {
+  name: IconName;
+  /** Nom accessible ; si absent, l'icône est masquée aux technologies d'assistance. */
+  label?: string | undefined;
+  /** Taille CSS (token conseillé), par défaut 1em. */
+  size?: string;
+  class?: string | undefined;
+}
+
+const { name, label, size = '1em', class: className } = Astro.props;
+---
+
+<svg
+  class:list={['icon', className]}
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 24 24"
+  width="24"
+  height="24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  style={`--icon-size: ${size}`}
+  aria-hidden={label ? undefined : 'true'}
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  focusable="false"
+  set:html={iconPaths[name]}
+/>
+
+<style>
+  @layer components {
+    .icon {
+      inline-size: var(--icon-size);
+      block-size: var(--icon-size);
+      flex-shrink: 0;
+    }
+  }
+</style>

@@ -1,0 +1,69 @@
+---
+/**
+ * Link — lien de texte.
+ * `variant` est obligatoire pour forcer un choix conscient (WCAG 1.4.1) :
+ * - `draw` : lien AUTONOME (navigation, liste de liens), soulignement dessiné au survol.
+ *   Jamais dans un paragraphe : sans soulignement au repos, il n'y serait pas distinguable.
+ * - `inline` : lien dans un paragraphe, souligné en permanence (styles de base).
+ * Les liens externes reçoivent rel="noopener" et une mention pour lecteurs d'écran.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from './Icon.astro';
+import type { IconName } from './icons';
+
+interface Props {
+  href: string;
+  variant: 'draw' | 'inline';
+  /** Ouvre dans un nouvel onglet (signalé aux lecteurs d'écran). */
+  external?: boolean;
+  icon?: IconName | undefined;
+  /** Marque le lien de la page courante. */
+  current?: boolean;
+  class?: string | undefined;
+  attrs?: HTMLAttributes<'a'>;
+}
+
+const {
+  href,
+  variant,
+  external = false,
+  icon,
+  current = false,
+  class: className,
+  attrs = {},
+} = Astro.props;
+
+const externalAttrs = external ? { target: '_blank', rel: 'noopener noreferrer' } : {};
+---
+
+<a
+  class:list={['link', { 'link-draw': variant === 'draw' }, className]}
+  href={href}
+  aria-current={current ? 'page' : undefined}
+  {...externalAttrs}
+  {...attrs}
+>
+  <slot />
+  {external && <span class="visually-hidden"> (nouvel onglet)</span>}
+  {icon && <Icon name={icon} class="link__icon" />}
+</a>
+
+<style>
+  @layer components {
+    .link-draw {
+      color: var(--color-accent-text);
+      font-weight: var(--weight-medium);
+    }
+
+    .link :global(.link__icon) {
+      display: inline-block;
+      margin-inline-start: var(--space-3xs);
+      vertical-align: -0.125em;
+      transition: transform var(--dur-base) var(--ease-out);
+    }
+
+    .link:hover :global(.link__icon) {
+      transform: translateX(var(--space-3xs));
+    }
+  }
+</style>

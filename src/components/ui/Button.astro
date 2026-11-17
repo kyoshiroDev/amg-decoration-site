@@ -1,0 +1,163 @@
+---
+/**
+ * Button — action principale ou secondaire.
+ * Rend un <a> si `href` est fourni, sinon un <button>. Cible tactile ≥ 44 px.
+ * Un lien ne peut pas être désactivé : avec `disabled`, le composant rend toujours un
+ * <button disabled> (non focalisable, annoncé « indisponible »), même si `href` est fourni.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from './Icon.astro';
+import type { IconName } from './icons';
+
+type Variant = 'primary' | 'secondary' | 'ghost' | 'link';
+
+interface Props {
+  variant?: Variant;
+  href?: string | undefined;
+  type?: 'button' | 'submit' | 'reset';
+  /** Icône après le libellé (par défaut aucune). */
+  icon?: IconName | undefined;
+  /** Icône avant le libellé (téléphone, WhatsApp…). */
+  iconStart?: IconName | undefined;
+  disabled?: boolean;
+  class?: string | undefined;
+  /** Attributs complémentaires (aria-*, data-*, target, rel…). */
+  attrs?: HTMLAttributes<'a'> & HTMLAttributes<'button'>;
+}
+
+const {
+  variant = 'primary',
+  href,
+  type = 'button',
+  icon,
+  iconStart,
+  disabled = false,
+  class: className,
+  attrs = {},
+} = Astro.props;
+
+const isLink = href !== undefined && !disabled;
+const Tag = isLink ? 'a' : 'button';
+const tagAttrs = isLink ? { href } : { type, disabled };
+---
+
+<Tag class:list={['button', `button--${variant}`, className]} {...tagAttrs} {...attrs}>
+  {iconStart && <Icon name={iconStart} />}
+  <span class="button__label">
+    <slot />
+  </span>
+  {icon && <Icon name={icon} class="button__icon" />}
+</Tag>
+
+<style>
+  @layer components {
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2xs);
+      min-block-size: var(--tap-target);
+      padding-block: var(--space-2xs);
+      padding-inline: var(--space-m);
+      border: var(--border-thin) solid transparent;
+      border-radius: var(--radius-pill);
+      font-family: var(--font-body-stack);
+      font-size: var(--step--1);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-ui);
+      line-height: var(--leading-ui);
+      text-decoration: none;
+      transition:
+        background-color var(--dur-fast) var(--ease-out),
+        color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out);
+
+      &:focus-visible {
+        border-radius: var(--radius-pill);
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: var(--opacity-disabled);
+      }
+    }
+
+    .button :global(.button__icon) {
+      transition: transform var(--dur-base) var(--ease-out);
+    }
+
+    .button:hover :global(.button__icon) {
+      transform: translateX(var(--space-3xs));
+    }
+
+    .button--primary {
+      color: var(--color-on-action);
+      background-color: var(--color-action);
+
+      &:hover:not(:disabled) {
+        color: var(--color-on-action);
+        background-color: var(--color-action-hover);
+      }
+    }
+
+    .button--secondary {
+      color: var(--color-accent-text);
+      border-color: currentcolor;
+
+      &:hover:not(:disabled) {
+        color: var(--color-on-action);
+        background-color: var(--color-action-hover);
+        border-color: var(--color-action-hover);
+      }
+    }
+
+    .button--ghost {
+      color: var(--color-text);
+      background-color: var(--color-surface);
+      box-shadow: var(--shadow-inset-hairline);
+
+      &:hover:not(:disabled) {
+        color: var(--color-text);
+        background-color: var(--color-sand);
+      }
+    }
+
+    .button--link {
+      padding-inline: 0;
+      border-radius: 0;
+      color: var(--color-accent-text);
+
+      & .button__label {
+        position: relative;
+      }
+
+      & .button__label::after {
+        content: '';
+        position: absolute;
+        inset-inline: 0;
+        inset-block-end: -0.15em;
+        block-size: var(--border-hairline);
+        background-color: currentcolor;
+        transform-origin: left center;
+      }
+
+      &:hover .button__label::after {
+        animation: button-draw var(--dur-base) var(--ease-out);
+      }
+
+      &:focus-visible {
+        border-radius: var(--radius-sm);
+      }
+    }
+  }
+
+  @keyframes button-draw {
+    from {
+      transform: scaleX(0);
+    }
+
+    to {
+      transform: scaleX(1);
+    }
+  }
+</style>

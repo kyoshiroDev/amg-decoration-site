@@ -1,0 +1,76 @@
+---
+/**
+ * Tag — pastille d'information (type de pièce, formule, catégorie).
+ * Non interactive par défaut ; fournir `href` pour en faire un lien (filtre, catégorie).
+ */
+type Tone = 'sand' | 'blush' | 'sage' | 'outline';
+
+interface Props {
+  tone?: Tone;
+  href?: string | undefined;
+  class?: string | undefined;
+}
+
+const { tone = 'sand', href, class: className } = Astro.props;
+const Element = href ? 'a' : 'span';
+---
+
+<Element class:list={['tag', `tag--${tone}`, { 'tag--link': href }, className]} href={href}>
+  <slot />
+</Element>
+
+<style>
+  @layer components {
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-3xs);
+      padding-block: var(--space-3xs);
+      padding-inline: var(--space-xs);
+      border-radius: var(--radius-pill);
+      font-size: var(--step--1);
+      font-weight: var(--weight-medium);
+      line-height: var(--leading-ui);
+      color: var(--color-text);
+      text-decoration: none;
+    }
+
+    .tag--sand {
+      background-color: var(--color-sand);
+    }
+
+    .tag--blush {
+      background-color: var(--color-blush);
+    }
+
+    .tag--sage {
+      background-color: var(--color-sage);
+    }
+
+    .tag--outline {
+      box-shadow: inset 0 0 0 var(--border-hairline) var(--color-border-strong);
+    }
+
+    /* Une pastille-lien atteint 44 px de haut grâce à sa zone de clic étendue. */
+    .tag--link {
+      position: relative;
+      transition: box-shadow var(--dur-fast) var(--ease-out);
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset-block: calc((var(--tap-target) - 100%) / -2);
+        inset-inline: 0;
+      }
+
+      &:hover {
+        color: var(--color-text);
+        box-shadow: inset 0 0 0 var(--border-hairline) var(--color-accent-text);
+      }
+
+      &:focus-visible {
+        border-radius: var(--radius-pill);
+      }
+    }
+  }
+</style>
