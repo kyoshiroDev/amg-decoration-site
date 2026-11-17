@@ -19,6 +19,7 @@
   --color-terracotta-700: #9a4a30;
   --color-ink: #2f2622;
   --color-ink-soft: #5e514a;
+  --color-taupe: #857870; /* filets de contrôle : ≥ 3:1 sur tous les fonds clairs (WCAG 1.4.11) */
 
   /* ---------- Couleurs : rôles (à préférer dans les composants) ---------- */
   --color-bg: var(--color-linen);
@@ -32,7 +33,9 @@
   --color-on-action: var(--color-cream);
   --color-border: rgb(47 38 34 / 14%); /* encre à 14 % : bordures fines neutres */
   --color-border-strong: rgb(47 38 34 / 32%);
-  --color-scrim: rgb(248 243 236 / 82%); /* lin translucide (header compacté) */
+  --color-border-control: var(--color-taupe); /* contour des boutons ghost */
+  --color-scrim: rgb(248 243 236 / 90%); /* lin à 90 % : accent-text ≥ 4.5:1 sur tout fond */
+  --color-backdrop: rgb(47 38 34 / 28%); /* voile derrière le menu mobile */
 
   /* ---------- Typographie ---------- */
 
@@ -86,6 +89,16 @@
   --grid-columns: 12;
   --grid-gap: var(--space-m-xl);
   --tap-target: 44px;
+
+  /* En-tête : hauteur de mise en page FIXE (aucun décalage au scroll), compactage visuel en transform. */
+  --header-height: 5.5rem;
+  --header-height-compact: 4rem;
+  --header-compact-threshold: 80px; /* distance de scroll avant compactage (repère observé) */
+  --header-blur: 14px;
+  --header-logo-compact-scale: 0.92;
+  --nav-section-mark: 0.35; /* longueur relative du trait « rubrique parente » */
+  --mobile-nav-width: 30rem;
+  --footer-arch-size: clamp(7rem, 14vw, 11rem); /* arche filaire en filigrane du pied de page */
 
   /*
    * Points de rupture (documentaires : les custom properties ne sont pas utilisables
@@ -143,5 +156,13 @@
   --z-base: 0;
   --z-raised: 10;
   --z-header: 100;
+
+  /* Lien d'évitement : au-dessus du header et du grain. */
+  --z-skip: 600;
+
+  /* Grain de papier : au-dessus du contenu et du header (matière continue), sous les surcouches. */
+  --z-grain: 500;
+
+  /* Lightbox, menus : les popovers natifs passent de toute façon dans le top layer. */
   --z-overlay: 1000;
 }

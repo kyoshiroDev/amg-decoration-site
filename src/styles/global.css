@@ -16,6 +16,27 @@
     hanging-punctuation: first last;
   }
 
+  /*
+   * L'en-tête collant ne masque jamais une ancre ni un élément focalisé (WCAG 2.4.11).
+   * scroll-margin sur le contenu, et non scroll-padding sur html : avec scroll-padding, tout
+   * focus clavier DANS l'en-tête collant (Maj+Tab, bouton Menu) faisait remonter la page en haut.
+   */
+  :where(main, footer),
+  :where(main, footer) :where(*) {
+    scroll-margin-block-start: calc(var(--header-height) + var(--space-s));
+  }
+
+  /* Menu mobile ouvert : la page dessous ne défile plus (sans décalage de barre de défilement). */
+  html:has(#menu-mobile:popover-open) {
+    overflow: hidden;
+    scrollbar-gutter: stable;
+  }
+
+  /* Cible du lien d'évitement : focalisable par programme, sans anneau sur toute la page. */
+  main:focus {
+    outline: none;
+  }
+
   body {
     position: relative;
     font-family: var(--font-body-stack);
@@ -38,7 +59,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    z-index: var(--z-overlay);
+    z-index: var(--z-grain);
     pointer-events: none;
     background-image: var(--grain-image);
     background-size: 220px 220px;
@@ -175,14 +196,37 @@
     border-block-start: var(--border-hairline) solid var(--color-border);
   }
 
+  /* ::backdrop n'hérite de rien et n'est pas couvert par `*` : il faut le cibler (menu mobile). */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
-    *::after {
+    *::after,
+    ::backdrop {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+}
+
+/*
+ * View Transitions natives entre documents (ADR-0006) : fondu croisé doux, uniquement si
+ * l'utilisateur n'a pas demandé de mouvement réduit. L'en-tête reste en place (nom dédié).
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+
+  ::view-transition-group(root) {
+    animation-duration: var(--dur-base);
+    animation-timing-function: var(--ease-out);
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: var(--dur-base);
+    animation-timing-function: var(--ease-out);
   }
 }

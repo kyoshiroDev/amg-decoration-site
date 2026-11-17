@@ -1,0 +1,63 @@
+---
+/**
+ * SiteLogo — logo texte provisoire (Fraunces) : lien vers l'accueil ou simple marque.
+ * TODO(contenu): remplacer par le logo vectoriel d'Amandine (SVG) quand il sera fourni.
+ */
+import { site } from '@/config/site';
+
+interface Props {
+  /** Rendu en lien vers l'accueil (défaut) ou en texte décoratif. */
+  as?: 'a' | 'span';
+  /** Le lien pointe vers la page courante (accueil). */
+  current?: boolean;
+  size?: 'md' | 'lg';
+  class?: string | undefined;
+}
+
+const { as = 'a', current = false, size = 'md', class: className } = Astro.props;
+const label = site.shortName;
+---
+
+{as === 'a' ? (
+  <a
+    class:list={['site-logo', `site-logo--${size}`, className]}
+    href="/"
+    aria-current={current ? 'page' : undefined}
+  >
+    {label}
+  </a>
+) : (
+  <span class:list={['site-logo', `site-logo--${size}`, className]} aria-hidden="true">
+    {label}
+  </span>
+)}
+
+<style>
+  @layer components {
+    .site-logo {
+      display: inline-flex;
+      align-items: center;
+      min-block-size: var(--tap-target);
+      font-family: var(--font-display-stack);
+      font-weight: var(--weight-regular);
+      letter-spacing: var(--tracking-display);
+      line-height: var(--leading-ui);
+      color: var(--color-text);
+      text-decoration: none;
+      white-space: nowrap;
+      transition: color var(--dur-fast) var(--ease-out);
+    }
+
+    .site-logo--md {
+      font-size: var(--step-1);
+    }
+
+    .site-logo--lg {
+      font-size: var(--step-2);
+    }
+
+    a.site-logo:hover {
+      color: var(--color-accent-text);
+    }
+  }
+</style>

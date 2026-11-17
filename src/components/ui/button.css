@@ -1,0 +1,121 @@
+/*
+ * Styles du composant Button (ui/Button.astro), sortis du composant pour rester < 150 lignes.
+ * Classes BEM préfixées « button » : aucun risque de collision malgré la portée globale.
+ */
+@layer components {
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2xs);
+    min-block-size: var(--tap-target);
+    padding-block: var(--space-2xs);
+    padding-inline: var(--space-m);
+    border: var(--border-thin) solid transparent;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-body-stack);
+    font-size: var(--step--1);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-ui);
+    line-height: var(--leading-ui);
+    text-decoration: none;
+    transition:
+      background-color var(--dur-fast) var(--ease-out),
+      color var(--dur-fast) var(--ease-out),
+      border-color var(--dur-fast) var(--ease-out);
+
+    &:focus-visible {
+      border-radius: var(--radius-pill);
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: var(--opacity-disabled);
+    }
+  }
+
+  .button__icon {
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+
+  .button:hover .button__icon {
+    transform: translateX(var(--space-3xs));
+  }
+
+  .button--icon-only {
+    inline-size: var(--tap-target);
+    padding: 0;
+  }
+
+  .button--primary {
+    color: var(--color-on-action);
+    background-color: var(--color-action);
+
+    &:hover:not(:disabled) {
+      color: var(--color-on-action);
+      background-color: var(--color-action-hover);
+    }
+  }
+
+  .button--secondary {
+    color: var(--color-accent-text);
+    border-color: currentcolor;
+
+    &:hover:not(:disabled) {
+      color: var(--color-on-action);
+      background-color: var(--color-action-hover);
+      border-color: var(--color-action-hover);
+    }
+  }
+
+  /* Liseré taupe ≥ 3:1 sur tous les fonds clairs (WCAG 1.4.11), fond crème. */
+  .button--ghost {
+    color: var(--color-text);
+    background-color: var(--color-surface);
+    border-color: var(--color-border-control);
+
+    &:hover:not(:disabled) {
+      color: var(--color-text);
+      background-color: var(--color-sand);
+      border-color: var(--color-text);
+    }
+  }
+
+  .button--link {
+    padding-inline: 0;
+    border-radius: 0;
+    color: var(--color-accent-text);
+
+    & .button__label {
+      position: relative;
+    }
+
+    & .button__label::after {
+      content: '';
+      position: absolute;
+      inset-inline: 0;
+      inset-block-end: -0.15em;
+      block-size: var(--border-hairline);
+      background-color: currentcolor;
+      transform-origin: left center;
+    }
+
+    &:hover .button__label::after {
+      animation: button-draw var(--dur-base) var(--ease-out);
+    }
+
+    &:focus-visible {
+      border-radius: var(--radius-sm);
+    }
+  }
+
+  @keyframes button-draw {
+    from {
+      transform: scaleX(0);
+    }
+
+    to {
+      transform: scaleX(1);
+    }
+  }
+}

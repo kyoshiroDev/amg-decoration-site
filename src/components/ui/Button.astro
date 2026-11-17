@@ -4,26 +4,44 @@
  * Rend un <a> si `href` est fourni, sinon un <button>. Cible tactile ≥ 44 px.
  * Un lien ne peut pas être désactivé : avec `disabled`, le composant rend toujours un
  * <button disabled> (non focalisable, annoncé « indisponible »), même si `href` est fourni.
+ * Bouton icône seule : `iconOnly` impose `icon` ET `label` (nom accessible) au niveau du type,
+ * le cas « icône sans nom » est donc impossible. Styles : ./button.css (découpage < 150 lignes).
  */
 import type { HTMLAttributes } from 'astro/types';
 import Icon from './Icon.astro';
 import type { IconName } from './icons';
+import './button.css';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'link';
 
-interface Props {
+interface BaseProps {
   variant?: Variant;
   href?: string | undefined;
   type?: 'button' | 'submit' | 'reset';
-  /** Icône après le libellé (par défaut aucune). */
-  icon?: IconName | undefined;
   /** Icône avant le libellé (téléphone, WhatsApp…). */
   iconStart?: IconName | undefined;
   disabled?: boolean;
   class?: string | undefined;
-  /** Attributs complémentaires (aria-*, data-*, target, rel…). */
+  /** Attributs complémentaires (aria-*, data-*, target, rel, popovertarget…). */
   attrs?: HTMLAttributes<'a'> & HTMLAttributes<'button'>;
 }
+
+/** Libellé visible fourni par le slot. */
+interface LabelledProps extends BaseProps {
+  iconOnly?: false;
+  /** Icône après le libellé (par défaut aucune). */
+  icon?: IconName | undefined;
+  label?: never;
+}
+
+/** Icône seule : le nom accessible est obligatoire (texte masqué visuellement). */
+interface IconOnlyProps extends BaseProps {
+  iconOnly: true;
+  icon: IconName;
+  label: string;
+}
+
+type Props = LabelledProps | IconOnlyProps;
 
 const {
   variant = 'primary',
@@ -31,6 +49,8 @@ const {
   type = 'button',
   icon,
   iconStart,
+  iconOnly = false,
+  label,
   disabled = false,
   class: className,
   attrs = {},
@@ -41,123 +61,23 @@ const Tag = isLink ? 'a' : 'button';
 const tagAttrs = isLink ? { href } : { type, disabled };
 ---
 
-<Tag class:list={['button', `button--${variant}`, className]} {...tagAttrs} {...attrs}>
-  {iconStart && <Icon name={iconStart} />}
-  <span class="button__label">
-    <slot />
-  </span>
-  {icon && <Icon name={icon} class="button__icon" />}
+<Tag
+  class:list={['button', `button--${variant}`, { 'button--icon-only': iconOnly }, className]}
+  {...tagAttrs}
+  {...attrs}
+>
+  {iconOnly && icon ? (
+    <>
+      <Icon name={icon} size="1.25em" />
+      <span class="visually-hidden">{label}</span>
+    </>
+  ) : (
+    <>
+      {iconStart && <Icon name={iconStart} />}
+      <span class="button__label">
+        <slot />
+      </span>
+      {icon && <Icon name={icon} class="button__icon" />}
+    </>
+  )}
 </Tag>
-
-<style>
-  @layer components {
-    .button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: var(--space-2xs);
-      min-block-size: var(--tap-target);
-      padding-block: var(--space-2xs);
-      padding-inline: var(--space-m);
-      border: var(--border-thin) solid transparent;
-      border-radius: var(--radius-pill);
-      font-family: var(--font-body-stack);
-      font-size: var(--step--1);
-      font-weight: var(--weight-semibold);
-      letter-spacing: var(--tracking-ui);
-      line-height: var(--leading-ui);
-      text-decoration: none;
-      transition:
-        background-color var(--dur-fast) var(--ease-out),
-        color var(--dur-fast) var(--ease-out),
-        border-color var(--dur-fast) var(--ease-out);
-
-      &:focus-visible {
-        border-radius: var(--radius-pill);
-      }
-
-      &:disabled {
-        cursor: not-allowed;
-        opacity: var(--opacity-disabled);
-      }
-    }
-
-    .button :global(.button__icon) {
-      transition: transform var(--dur-base) var(--ease-out);
-    }
-
-    .button:hover :global(.button__icon) {
-      transform: translateX(var(--space-3xs));
-    }
-
-    .button--primary {
-      color: var(--color-on-action);
-      background-color: var(--color-action);
-
-      &:hover:not(:disabled) {
-        color: var(--color-on-action);
-        background-color: var(--color-action-hover);
-      }
-    }
-
-    .button--secondary {
-      color: var(--color-accent-text);
-      border-color: currentcolor;
-
-      &:hover:not(:disabled) {
-        color: var(--color-on-action);
-        background-color: var(--color-action-hover);
-        border-color: var(--color-action-hover);
-      }
-    }
-
-    .button--ghost {
-      color: var(--color-text);
-      background-color: var(--color-surface);
-      box-shadow: var(--shadow-inset-hairline);
-
-      &:hover:not(:disabled) {
-        color: var(--color-text);
-        background-color: var(--color-sand);
-      }
-    }
-
-    .button--link {
-      padding-inline: 0;
-      border-radius: 0;
-      color: var(--color-accent-text);
-
-      & .button__label {
-        position: relative;
-      }
-
-      & .button__label::after {
-        content: '';
-        position: absolute;
-        inset-inline: 0;
-        inset-block-end: -0.15em;
-        block-size: var(--border-hairline);
-        background-color: currentcolor;
-        transform-origin: left center;
-      }
-
-      &:hover .button__label::after {
-        animation: button-draw var(--dur-base) var(--ease-out);
-      }
-
-      &:focus-visible {
-        border-radius: var(--radius-sm);
-      }
-    }
-  }
-
-  @keyframes button-draw {
-    from {
-      transform: scaleX(0);
-    }
-
-    to {
-      transform: scaleX(1);
-    }
-  }
-</style>
