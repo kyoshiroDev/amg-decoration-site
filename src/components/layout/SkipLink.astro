@@ -1,0 +1,49 @@
+---
+/**
+ * SkipLink — lien d'évitement vers le contenu principal (WCAG 2.4.1).
+ * Hors écran au repos (transform), il glisse en haut à gauche dès qu'il reçoit le focus.
+ */
+import { microcopy } from '@/config/microcopy';
+
+interface Props {
+  /** Id de la cible (le <main> de BaseLayout). */
+  target?: string;
+}
+
+const { target = 'contenu' } = Astro.props;
+---
+
+<a class="skip-link" href={`#${target}`}>
+  {microcopy.skipLink}
+</a>
+
+<style>
+  @layer components {
+    .skip-link {
+      position: fixed;
+      inset-block-start: var(--space-xs);
+      inset-inline-start: var(--space-xs);
+      z-index: var(--z-skip);
+      display: inline-flex;
+      align-items: center;
+      min-block-size: var(--tap-target);
+      padding-inline: var(--space-m);
+      border-radius: var(--radius-pill);
+      font-size: var(--step--1);
+      font-weight: var(--weight-semibold);
+      color: var(--color-on-action);
+      text-decoration: none;
+      background-color: var(--color-action-hover);
+      box-shadow: var(--shadow-soft);
+      transform: translateY(calc(-100% - var(--space-l)));
+      transition: transform var(--dur-fast) var(--ease-out);
+
+      &:focus-visible,
+      &:focus {
+        color: var(--color-on-action);
+        transform: translateY(0);
+        border-radius: var(--radius-pill);
+      }
+    }
+  }
+</style>

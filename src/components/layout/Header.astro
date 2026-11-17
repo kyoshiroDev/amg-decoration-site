@@ -1,0 +1,148 @@
+---
+/**
+ * Header — en-tête collant : logo texte, navigation principale (≥ 80rem), CTA, menu mobile.
+ * Hauteur de mise en page FIXE (--header-height) : le compactage après 80 px de scroll est
+ * purement visuel (fond translaté + barre translatée, transform/opacity), donc sans CLS.
+ * États : sans JS → fond lin translucide toujours visible ; avec JS → transparent en haut de
+ * page puis `data-compact="true"` (posé par scripts/header.ts) → fond + compactage.
+ */
+import Button from '@/components/ui/Button.astro';
+import SiteLogo from '@/components/ui/SiteLogo.astro';
+import MainNav from './MainNav.astro';
+import MobileNav from './MobileNav.astro';
+import { site } from '@/config/site';
+import { isActivePath } from '@/lib/url';
+
+interface Props {
+  /** Chemin courant (par défaut celui de la requête). */
+  currentPath?: string;
+}
+
+const { currentPath = Astro.url.pathname } = Astro.props;
+---
+
+<div class="site-header__sentinel" data-header-sentinel aria-hidden="true"></div>
+<header class="site-header" data-site-header>
+  <div class="site-header__bar container">
+    <SiteLogo class="site-header__logo" current={isActivePath(currentPath, '/') === 'page'} />
+
+    <MainNav currentPath={currentPath} class="site-header__nav" />
+
+    <div class="site-header__actions">
+      <Button href={site.headerCta.href} class="site-header__cta">
+        {site.headerCta.label}
+      </Button>
+      <MobileNav currentPath={currentPath} />
+    </div>
+  </div>
+</header>
+
+<script>
+  import '@/scripts/header';
+</script>
+
+<style>
+  @layer components {
+    .site-header__sentinel {
+      position: absolute;
+      inset-block-start: var(--header-compact-threshold);
+      inline-size: 1px;
+      block-size: 1px;
+      pointer-events: none;
+    }
+
+    .site-header {
+      --shift: calc(var(--header-height-compact) - var(--header-height));
+
+      position: sticky;
+      inset-block-start: 0;
+      z-index: var(--z-header);
+      block-size: var(--header-height);
+
+      /* Centre la barre ; padding et non margin (sinon fusion avec la marge du header). */
+      padding-block-start: calc(var(--shift) / -2);
+      pointer-events: none;
+      view-transition-name: site-header;
+    }
+
+    /* Fond : visible par défaut (repli sans JS), masqué en haut de page quand JS est actif. */
+    .site-header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-color: var(--color-scrim);
+      backdrop-filter: blur(var(--header-blur));
+      border-block-end: var(--border-hairline) solid var(--color-border);
+      transition:
+        opacity var(--dur-base) var(--ease-out),
+        transform var(--dur-base) var(--ease-out);
+    }
+
+    @media (scripting: enabled) {
+      .site-header:not([data-compact='true'])::before {
+        opacity: 0;
+      }
+    }
+
+    .site-header[data-compact='true']::before {
+      transform: translateY(var(--shift));
+    }
+
+    .site-header__bar {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: var(--space-m);
+      block-size: var(--header-height-compact);
+      pointer-events: auto;
+      transition: transform var(--dur-base) var(--ease-out);
+    }
+
+    .site-header[data-compact='true'] .site-header__bar {
+      transform: translateY(calc(var(--shift) / 2));
+    }
+
+    .site-header__bar :global(.site-header__logo) {
+      transform-origin: left center;
+      transition: transform var(--dur-base) var(--ease-out);
+    }
+
+    .site-header[data-compact='true'] :global(.site-header__logo) {
+      transform: scale(var(--header-logo-compact-scale));
+    }
+
+    .site-header__bar :global(.site-header__nav) {
+      display: none;
+      margin-inline: auto;
+
+      @media (width >= 80rem) {
+        display: block;
+      }
+    }
+
+    .site-header__actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      margin-inline-start: auto;
+
+      @media (width >= 80rem) {
+        margin-inline-start: 0;
+      }
+    }
+
+    .site-header__actions :global(.site-header__cta) {
+      display: none;
+
+      @media (width >= 48rem) {
+        display: inline-flex;
+      }
+    }
+
+    .site-header__actions :global(.mobile-nav) {
+      @media (width >= 80rem) {
+        display: none;
+      }
+    }
+  }
+</style>

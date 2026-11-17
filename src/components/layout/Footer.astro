@@ -1,0 +1,150 @@
+---
+/**
+ * Footer — pied de page sur aplat sable : accroche éditoriale + CTA, coordonnées, horaires et
+ * zone (FooterContact), plan du site (#pied-navigation, repli du menu mobile sans Popover API),
+ * réseaux, puis liens légaux et copyright (FooterLegal, année du build).
+ */
+import Button from '@/components/ui/Button.astro';
+import Link from '@/components/ui/Link.astro';
+import SiteLogo from '@/components/ui/SiteLogo.astro';
+import FooterColumn from './FooterColumn.astro';
+import FooterContact from './FooterContact.astro';
+import FooterLegal from './FooterLegal.astro';
+import { site } from '@/config/site';
+import { microcopy } from '@/config/microcopy';
+
+const { footer, nav } = microcopy;
+const copyright = footer.copyright.replace('{year}', String(new Date().getFullYear()));
+---
+
+<footer class="site-footer">
+  <div class="container site-footer__inner">
+    <div class="site-footer__intro">
+      <SiteLogo size="lg" />
+      <p class="site-footer__tagline">{footer.tagline}</p>
+      <Button href={site.headerCta.href} icon="arrow-right">
+        {site.headerCta.label}
+      </Button>
+    </div>
+
+    <div class="site-footer__grid">
+      <FooterContact />
+
+      <FooterColumn title={footer.sitemapTitle}>
+        <nav id="pied-navigation" aria-label={nav.footer}>
+          <ul class="site-footer__links">
+            {site.mainNav.map((item) => (
+              <li>
+                <Link variant="draw" href={item.href} class="site-footer__link">
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </FooterColumn>
+
+      <FooterColumn title={footer.socialTitle}>
+        <ul class="site-footer__links">
+          {site.socials.map((social) => (
+            <li>
+              <Link variant="draw" href={social.url} iconStart={social.network} external>
+                {social.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </FooterColumn>
+    </div>
+
+    <FooterLegal copyright={copyright} />
+  </div>
+</footer>
+
+<style>
+  @layer components {
+    .site-footer {
+      position: relative;
+      overflow: hidden;
+      padding-block: var(--space-xl-3xl) var(--space-l);
+      background-color: var(--color-sand);
+    }
+
+    .site-footer__inner {
+      position: relative;
+      display: grid;
+      gap: var(--space-xl);
+    }
+
+    .site-footer__intro {
+      position: relative;
+      display: grid;
+      justify-items: start;
+      gap: var(--space-s);
+
+      @media (width >= 48rem) {
+        padding-inline-end: calc(var(--footer-arch-size) + var(--space-l));
+      }
+    }
+
+    /* Arche filaire posée sur le filet qui ouvre les colonnes, comme une porte (décor). */
+    .site-footer__intro::after {
+      @media (width >= 48rem) {
+        content: '';
+        position: absolute;
+        inset-block-end: calc(var(--space-xl) * -1);
+        inset-inline-end: 0;
+        inline-size: var(--footer-arch-size);
+        aspect-ratio: 3 / 4;
+        border: var(--border-hairline) solid var(--color-accent);
+        border-block-end: 0;
+        border-radius: var(--radius-arch);
+        pointer-events: none;
+      }
+    }
+
+    .site-footer__tagline {
+      font-family: var(--font-display-stack);
+      font-size: var(--step-2);
+      font-weight: var(--weight-light);
+      line-height: var(--leading-heading);
+      text-wrap: balance;
+      max-inline-size: var(--container-narrow);
+    }
+
+    .site-footer__grid {
+      display: grid;
+      gap: var(--space-l) var(--grid-gap);
+      padding-block-start: var(--space-l);
+      border-block-start: var(--border-hairline) solid var(--color-border);
+
+      @media (width >= 40rem) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      @media (width >= 64rem) {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    .site-footer__links {
+      display: grid;
+      gap: var(--space-2xs);
+    }
+
+    .site-footer :global(.site-footer__link),
+    .site-footer :global(.footer-col .link) {
+      color: var(--color-text);
+    }
+
+    .site-footer :global(.site-footer__link:hover),
+    .site-footer :global(.footer-col .link:hover) {
+      color: var(--color-accent-text);
+    }
+
+    /* Icônes de tête (réseau, téléphone) : décoratives, le libellé porte l'information. */
+    .site-footer :global(.link__icon-start) {
+      color: var(--color-accent);
+    }
+  }
+</style>

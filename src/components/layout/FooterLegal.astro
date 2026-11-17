@@ -1,0 +1,63 @@
+---
+/**
+ * FooterLegal — bas du pied de page : navigation des pages légales et copyright.
+ */
+import Link from '@/components/ui/Link.astro';
+import { site } from '@/config/site';
+import { microcopy } from '@/config/microcopy';
+
+interface Props {
+  /** Mention de copyright déjà formatée (année du build). */
+  copyright: string;
+}
+
+const { copyright } = Astro.props;
+---
+
+<div class="footer-legal">
+  <nav aria-label={microcopy.nav.legal}>
+    <ul class="footer-legal__list">
+      {site.legalNav.map((item) => (
+        <li>
+          <Link variant="draw" href={item.href} class="footer-legal__link">
+            {item.label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  </nav>
+  <p class="footer-legal__copyright">{copyright}</p>
+</div>
+
+<style>
+  @layer components {
+    .footer-legal {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-s) var(--space-l);
+      padding-block-start: var(--space-m);
+      border-block-start: var(--border-hairline) solid var(--color-border);
+      font-size: var(--step--1);
+    }
+
+    .footer-legal__list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2xs) var(--space-m);
+    }
+
+    .footer-legal :global(.footer-legal__link) {
+      color: var(--color-text);
+    }
+
+    .footer-legal :global(.footer-legal__link:hover) {
+      color: var(--color-accent-text);
+    }
+
+    .footer-legal__copyright {
+      color: var(--color-text-soft);
+    }
+  }
+</style>
