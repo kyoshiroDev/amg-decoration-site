@@ -1,0 +1,71 @@
+---
+/**
+ * ShapeSamples — rayons et ombres lus dans tokens.css.
+ */
+import tokensCss from '@/styles/tokens.css?raw';
+import { parseCustomProperties } from '@/lib/design-tokens';
+
+const radii = parseCustomProperties(tokensCss, '--radius-');
+const shadows = parseCustomProperties(tokensCss, '--shadow-');
+---
+
+<div class="shapes">
+  <ul class="shapes__list" aria-label="Rayons">
+    {radii.map(({ name, value }) => (
+      <li class="shapes__item">
+        <span class="shapes__tile" style={`--tile-radius: var(${name})`} />
+        <code>{name}</code>
+        <span class="shapes__value">{value}</span>
+      </li>
+    ))}
+  </ul>
+  <ul class="shapes__list" aria-label="Ombres">
+    {shadows.map(({ name }) => (
+      <li class="shapes__item">
+        <span class="shapes__tile shapes__tile--shadow" style={`--tile-shadow: var(${name})`} />
+        <code>{name}</code>
+      </li>
+    ))}
+  </ul>
+</div>
+
+<style>
+  @layer components {
+    .shapes {
+      display: grid;
+      gap: var(--space-xl);
+    }
+
+    .shapes__list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 8.5rem), 1fr));
+      gap: var(--space-l) var(--space-m);
+    }
+
+    .shapes__item {
+      display: grid;
+      align-content: start;
+      gap: var(--space-3xs);
+      font-size: var(--step--1);
+      line-height: var(--leading-ui);
+    }
+
+    .shapes__tile {
+      aspect-ratio: 1;
+      margin-block-end: var(--space-2xs);
+      background-color: var(--color-cream);
+      border: var(--border-hairline) solid var(--color-accent);
+      border-radius: var(--tile-radius);
+    }
+
+    .shapes__tile--shadow {
+      border-color: transparent;
+      border-radius: var(--radius-md);
+      box-shadow: var(--tile-shadow);
+    }
+
+    .shapes__value {
+      color: var(--color-text-soft);
+    }
+  }
+</style>

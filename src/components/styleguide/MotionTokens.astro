@@ -1,0 +1,89 @@
+---
+/**
+ * MotionTokens — durées et courbes lues dans tokens.css ; démonstration au survol.
+ */
+import tokensCss from '@/styles/tokens.css?raw';
+import { parseCustomProperties } from '@/lib/design-tokens';
+
+const durations = parseCustomProperties(tokensCss, '--dur-');
+const easings = parseCustomProperties(tokensCss, '--ease-');
+---
+
+<ul class="motion">
+  {durations.map(({ name, value }) => (
+    <li class="motion__item">
+      <span class="motion__track" style={`--demo-duration: var(${name})`}>
+        <span class="motion__dot" />
+      </span>
+      <code>{name}</code> <span class="motion__value">{value}</span>
+    </li>
+  ))}
+  {easings.map(({ name, value }) => (
+    <li class="motion__item">
+      <span class="motion__track" style={`--demo-easing: var(${name})`}>
+        <span class="motion__dot" />
+      </span>
+      <code>{name}</code> <span class="motion__value">{value}</span>
+    </li>
+  ))}
+</ul>
+<p class="motion__hint">
+  Survolez la liste pour voir les mouvements (désactivés si mouvement réduit).
+</p>
+
+<style>
+  @layer components {
+    .motion {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+      gap: var(--space-m);
+      font-size: var(--step--1);
+    }
+
+    .motion__item {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3xs) var(--space-2xs);
+    }
+
+    .motion__track {
+      position: relative;
+      flex-basis: 100%;
+      block-size: var(--space-s);
+      border-block-end: var(--border-hairline) solid var(--color-border-strong);
+    }
+
+    .motion__dot {
+      position: absolute;
+      inset-block-start: 0;
+      inset-inline-start: 0;
+      inline-size: var(--space-2xs);
+      block-size: var(--space-2xs);
+      background-color: var(--color-accent);
+      border-radius: var(--radius-pill);
+      transition: transform var(--demo-duration, var(--dur-slow))
+        var(--demo-easing, var(--ease-out));
+    }
+
+    .motion:hover .motion__dot {
+      transform: translateX(12rem);
+    }
+
+    /* Mouvement réduit : la démonstration est réellement désactivée (pas de saut instantané). */
+    @media (prefers-reduced-motion: reduce) {
+      .motion:hover .motion__dot {
+        transform: none;
+      }
+    }
+
+    .motion__value,
+    .motion__hint {
+      color: var(--color-text-soft);
+    }
+
+    .motion__hint {
+      margin-block-start: var(--space-s);
+      font-size: var(--step--1);
+    }
+  }
+</style>

@@ -1,0 +1,109 @@
+---
+/**
+ * ActionSamples — boutons et liens dans toutes leurs variantes, sur fonds clair et pastel.
+ */
+import Heading from '@/components/ui/Heading.astro';
+import Button from '@/components/ui/Button.astro';
+import Link from '@/components/ui/Link.astro';
+import Specimen from './Specimen.astro';
+
+const anchor = '#sg-composants';
+---
+
+<div class="sg-group">
+  <Heading level={3} size="sm">
+    Boutons
+  </Heading>
+  <div class="sg-grid">
+    <Specimen label='variant="primary" · secondary · ghost · link'>
+      <Button href="#sg-composants" icon="arrow-right">
+        Demander un devis
+      </Button>
+      <Button href="#sg-composants" variant="secondary">
+        Mes réalisations
+      </Button>
+      <Button href="#sg-composants" variant="ghost">
+        En savoir plus
+      </Button>
+      <Button href="#sg-composants" variant="link" icon="arrow-right">
+        Découvrir la méthode
+      </Button>
+    </Specimen>
+    <Specimen label="iconStart · disabled · <button>" surface="cream">
+      <Button iconStart="phone">Appeler</Button>
+      <Button iconStart="whatsapp" variant="secondary">
+        WhatsApp
+      </Button>
+      <Button iconStart="mail" variant="ghost">
+        Écrire
+      </Button>
+      <Button disabled>Indisponible</Button>
+    </Specimen>
+    <Specimen label="sur fond blush" surface="blush">
+      <Button href="#sg-composants">Primaire</Button>
+      <Button href="#sg-composants" variant="secondary">
+        Secondaire
+      </Button>
+      <Button href="#sg-composants" variant="ghost">
+        Ghost
+      </Button>
+    </Specimen>
+    <Specimen label="sur fond sage" surface="sage">
+      <Button href="#sg-composants">Primaire</Button>
+      <Button href="#sg-composants" variant="secondary">
+        Secondaire
+      </Button>
+      <Button href="#sg-composants" variant="link">
+        Lien
+      </Button>
+    </Specimen>
+  </div>
+
+  <Heading level={3} size="sm">
+    Liens
+  </Heading>
+  <div class="sg-grid">
+    <Specimen label='Link variant="draw" (défaut) · current · external · icon'>
+      <Link variant="draw" href="#sg-composants">
+        Prestations
+      </Link>
+      <Link variant="draw" href="#sg-composants" current>
+        Page courante
+      </Link>
+      <Link variant="draw" href="https://docs.astro.build/" external>
+        Lien externe
+      </Link>
+      <Link variant="draw" href="#sg-composants" icon="arrow-right">
+        Voir le projet
+      </Link>
+    </Specimen>
+    <Specimen label='Link variant="inline" (dans un paragraphe)'>
+      <p>
+        Un{' '}
+        <Link href={anchor} variant="inline">
+          lien de texte
+        </Link>
+        , souligné en permanence.
+      </p>
+    </Specimen>
+  </div>
+</div>
+
+<style>
+  @layer components {
+    .sg-group {
+      display: grid;
+      gap: var(--space-m);
+    }
+
+    .sg-grid {
+      display: grid;
+      gap: var(--space-l);
+      margin-block-end: var(--space-xl);
+
+      @media (width >= 48rem) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+  }
+</style>

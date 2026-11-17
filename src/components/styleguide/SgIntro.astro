@@ -1,0 +1,92 @@
+---
+/**
+ * SgIntro — ouverture du styleguide : composition éditoriale asymétrique (7/5) avec arche.
+ */
+import type { ImageMetadata } from 'astro';
+import Section from '@/components/ui/Section.astro';
+import Container from '@/components/ui/Container.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import Button from '@/components/ui/Button.astro';
+import ArchImage from '@/components/ui/ArchImage.astro';
+
+interface Props {
+  image: ImageMetadata;
+}
+
+const { image } = Astro.props;
+---
+
+<Section labelledby="sg-titre">
+  <Container class="sg-intro__grid">
+    <div class="sg-intro__text">
+      <Eyebrow>Design system · Phase 1</Eyebrow>
+      <Heading level={1} id="sg-titre">
+        Atelier <em>lumineux</em>
+      </Heading>
+      <p class="sg-intro__lead">
+        La référence visuelle du site : couleurs, typographie, espacements, formes, mouvements et
+        composants. Chaque valeur affichée ici est lue directement dans <code>tokens.css</code>.
+      </p>
+      <div class="sg-intro__actions">
+        <Button href="#sg-composants" icon="arrow-right">
+          Voir les composants
+        </Button>
+        <Button href="#sg-couleurs" variant="secondary">
+          La palette
+        </Button>
+      </div>
+    </div>
+    <ArchImage
+      src={image}
+      alt="Illustration abstraite : un intérieur baigné de lumière, une assise terracotta et une plante sauge."
+      sizes="(min-width: 64rem) 34vw, (min-width: 40rem) 60vw, 90vw"
+      priority
+      framed
+      class="sg-intro__image"
+    />
+  </Container>
+</Section>
+
+<style>
+  @layer components {
+    :global(.sg-intro__grid) {
+      display: grid;
+      gap: var(--space-xl);
+      align-items: center;
+
+      @media (width >= 64rem) {
+        grid-template-columns: 7fr 5fr;
+        gap: var(--space-2xl);
+      }
+    }
+
+    .sg-intro__text {
+      display: grid;
+      justify-items: start;
+      gap: var(--space-m);
+    }
+
+    .sg-intro__lead {
+      font-size: var(--step-1);
+      color: var(--color-text-soft);
+    }
+
+    .sg-intro__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-s);
+      margin-block-start: var(--space-xs);
+    }
+
+    :global(.sg-intro__image) {
+      inline-size: min(100%, 26rem);
+      justify-self: center;
+
+      @media (width >= 64rem) {
+        inline-size: auto;
+        justify-self: stretch;
+      }
+    }
+  }
+</style>

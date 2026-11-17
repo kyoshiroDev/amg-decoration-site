@@ -27,3 +27,6 @@ coverage/
 Thumbs.db
 .idea/
 *.log
+
+# Captures du MCP Playwright (vérifications visuelles locales)
+.playwright-mcp/

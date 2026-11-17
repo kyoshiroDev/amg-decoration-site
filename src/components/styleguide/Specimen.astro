@@ -1,0 +1,70 @@
+---
+/**
+ * Specimen — cartouche du styleguide : un libellé technique + l'échantillon.
+ * Outil interne (page /styleguide/), jamais utilisé sur le site public.
+ */
+interface Props {
+  label: string;
+  /** Fond de l'échantillon. */
+  surface?: 'none' | 'cream' | 'linen' | 'sand' | 'blush' | 'sage';
+  class?: string | undefined;
+}
+
+const { label, surface = 'none', class: className } = Astro.props;
+---
+
+<div class:list={['specimen', className]}>
+  <p class="specimen__label">
+    <code>{label}</code>
+  </p>
+  <div class:list={['specimen__body', `specimen__body--${surface}`]}>
+    <slot />
+  </div>
+</div>
+
+<style>
+  @layer components {
+    .specimen {
+      display: grid;
+      gap: var(--space-2xs);
+      align-content: start;
+    }
+
+    .specimen__label {
+      font-size: var(--step--1);
+      color: var(--color-text-soft);
+    }
+
+    .specimen__body {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-s);
+    }
+
+    .specimen__body:not(.specimen__body--none) {
+      padding: var(--space-m);
+      border-radius: var(--radius-md);
+    }
+
+    .specimen__body--cream {
+      background-color: var(--color-cream);
+    }
+
+    .specimen__body--linen {
+      background-color: var(--color-linen);
+    }
+
+    .specimen__body--sand {
+      background-color: var(--color-sand);
+    }
+
+    .specimen__body--blush {
+      background-color: var(--color-blush);
+    }
+
+    .specimen__body--sage {
+      background-color: var(--color-sage);
+    }
+  }
+</style>

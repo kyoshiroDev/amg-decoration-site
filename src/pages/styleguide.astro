@@ -1,0 +1,155 @@
+---
+// Styleguide interne (noindex, exclu du sitemap) — référence visuelle du design system.
+import StyleguideLayout from '@/layouts/StyleguideLayout.astro';
+import Section from '@/components/ui/Section.astro';
+import Container from '@/components/ui/Container.astro';
+import Heading from '@/components/ui/Heading.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Button from '@/components/ui/Button.astro';
+import Tag from '@/components/ui/Tag.astro';
+import Divider from '@/components/ui/Divider.astro';
+import SgIntro from '@/components/styleguide/SgIntro.astro';
+import SgHeader from '@/components/styleguide/SgHeader.astro';
+import ColorSwatches from '@/components/styleguide/ColorSwatches.astro';
+import ContrastTable from '@/components/styleguide/ContrastTable.astro';
+import TypeScale from '@/components/styleguide/TypeScale.astro';
+import SpaceScale from '@/components/styleguide/SpaceScale.astro';
+import ShapeSamples from '@/components/styleguide/ShapeSamples.astro';
+import MotionTokens from '@/components/styleguide/MotionTokens.astro';
+import ActionSamples from '@/components/styleguide/ActionSamples.astro';
+import MarkerSamples from '@/components/styleguide/MarkerSamples.astro';
+import ImageSamples from '@/components/styleguide/ImageSamples.astro';
+import SectionSamples from '@/components/styleguide/SectionSamples.astro';
+import FocusSamples from '@/components/styleguide/FocusSamples.astro';
+import placeholder from '@/assets/placeholders/interieur-lumiere.jpg';
+---
+
+<StyleguideLayout title="Styleguide — Atelier lumineux">
+  <main>
+    <SgIntro image={placeholder} />
+
+    <Section background="cream" labelledby="sg-couleurs">
+      <Container class="flow sg-stack">
+        <SgHeader id="sg-couleurs" number="01" eyebrow="Couleurs">
+          Palette <em>lin & terre cuite</em>
+        </SgHeader>
+        <ColorSwatches />
+        <Heading level={3} size="sm">
+          Contrastes WCAG 2.2
+        </Heading>
+        <ContrastTable />
+      </Container>
+    </Section>
+
+    <Section labelledby="sg-typo">
+      <Container class="flow sg-stack">
+        <SgHeader id="sg-typo" number="02" eyebrow="Typographie">
+          Fraunces & Manrope, <em>en dialogue</em>
+        </SgHeader>
+        <TypeScale />
+        <div class="sg-prose flow">
+          <Eyebrow>Surtitre · Eyebrow</Eyebrow>
+          <Heading level={3} size="lg">
+            Un titre de section <em>tout en douceur</em>
+          </Heading>
+          <p>
+            Texte courant en Manrope, interligne 1.65, longueur de ligne limitée à 66 caractères
+            pour une lecture confortable. Les liens de texte sont{' '}
+            <a href="#sg-typo">soulignés en permanence</a> et changent de couleur au survol.
+          </p>
+          <p>
+            <small>
+              Légende ou mention secondaire, en <code>--step--1</code> et <code>ink-soft</code>.
+            </small>
+          </p>
+        </div>
+      </Container>
+    </Section>
+
+    <Section background="sand" labelledby="sg-espaces">
+      <Container class="flow sg-stack">
+        <SgHeader id="sg-espaces" number="03" eyebrow="Espacements & formes">
+          Respiration, <em>arches</em> et ombres
+        </SgHeader>
+        <SpaceScale />
+        <Heading level={3} size="sm">
+          Rayons et ombres
+        </Heading>
+        <ShapeSamples />
+      </Container>
+    </Section>
+
+    <Section labelledby="sg-composants">
+      <Container class="flow sg-stack">
+        <SgHeader id="sg-composants" number="04" eyebrow="Composants">
+          Les briques <em>de l’atelier</em>
+        </SgHeader>
+        <ActionSamples />
+        <MarkerSamples />
+        <ImageSamples image={placeholder} />
+      </Container>
+    </Section>
+
+    <SectionSamples />
+
+    <Section background="blush" labelledby="sg-motion">
+      <Container class="flow sg-stack">
+        <SgHeader id="sg-motion" number="05" eyebrow="Mouvement & focus">
+          Des effets <em>qui murmurent</em>
+        </SgHeader>
+        <MotionTokens />
+        <Heading level={3} size="sm">
+          États de focus et de survol
+        </Heading>
+        <FocusSamples />
+      </Container>
+    </Section>
+
+    <Section spacing="compact">
+      <Container class="sg-end">
+        <Divider ornament width="short" />
+        <p class="sg-end__text">Fin du styleguide · Phase 1</p>
+        <div class="sg-end__actions">
+          <Button href="#sg-couleurs" variant="ghost">
+            Revenir aux couleurs
+          </Button>
+          <Tag tone="outline">noindex</Tag>
+        </div>
+      </Container>
+    </Section>
+  </main>
+</StyleguideLayout>
+
+<style>
+  @layer components {
+    :global(.sg-stack) {
+      --flow-space: var(--space-xl);
+    }
+
+    /* Un titre de niveau 3 reste proche du contenu qu'il annonce. */
+    :global(.sg-stack > h3 + *) {
+      --flow-space: var(--space-s);
+    }
+
+    .sg-prose {
+      --flow-space: var(--space-s);
+    }
+
+    :global(.sg-end) {
+      display: grid;
+      justify-items: center;
+      gap: var(--space-m);
+      text-align: center;
+    }
+
+    .sg-end__text {
+      color: var(--color-text-soft);
+    }
+
+    .sg-end__actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-s);
+    }
+  }
+</style>
