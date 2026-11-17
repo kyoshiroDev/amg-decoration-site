@@ -1,0 +1,80 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`serializeJsonLd > produit un graphe global stable 1`] = `
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@id": "https://amgdecorationdinterieur.com/#site",
+      "@type": "WebSite",
+      "alternateName": "AMG Décoration",
+      "inLanguage": "fr-FR",
+      "name": "AMG Décoration d’Intérieur",
+      "publisher": {
+        "@id": "https://amgdecorationdinterieur.com/#entreprise",
+      },
+      "url": "https://amgdecorationdinterieur.com/",
+    },
+    {
+      "@id": "https://amgdecorationdinterieur.com/#entreprise",
+      "@type": "ProfessionalService",
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "FR",
+        "addressRegion": "Île-de-France",
+      },
+      "alternateName": "AMG Décoration",
+      "areaServed": [
+        {
+          "@type": "City",
+          "name": "Paris",
+        },
+        {
+          "@type": "AdministrativeArea",
+          "name": "Île-de-France",
+        },
+        {
+          "@type": "Country",
+          "name": "France",
+        },
+      ],
+      "email": "am.gaury@gmail.com",
+      "founder": {
+        "@id": "https://amgdecorationdinterieur.com/#fondatrice",
+      },
+      "name": "AMG Décoration d’Intérieur",
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "closes": "17:00",
+          "dayOfWeek": [
+            "https://schema.org/Monday",
+            "https://schema.org/Tuesday",
+            "https://schema.org/Wednesday",
+            "https://schema.org/Thursday",
+            "https://schema.org/Friday",
+          ],
+          "opens": "09:00",
+        },
+      ],
+      "sameAs": [
+        "https://www.instagram.com/amgdecorationdinterieur/",
+        "https://www.facebook.com/amgdecoration",
+        "https://www.pinterest.fr/amgaury/",
+      ],
+      "slogan": "Visualisez votre intérieur idéal en 3D, avant même qu’il prenne vie.",
+      "telephone": "+33782358132",
+      "url": "https://amgdecorationdinterieur.com/",
+    },
+    {
+      "@id": "https://amgdecorationdinterieur.com/#fondatrice",
+      "@type": "Person",
+      "jobTitle": "Designer d’intérieur",
+      "name": "Amandine Gaury",
+      "worksFor": {
+        "@id": "https://amgdecorationdinterieur.com/#entreprise",
+      },
+    },
+  ],
+}
+`;
