@@ -13,7 +13,7 @@
 - [x] Alias `@/*`, `.nvmrc`, `.editorconfig`, `.gitignore` complétés
 - [x] `vercel.json` initial (en-têtes, cache, redirections connues)
 - [x] CI GitHub Actions verte en local (`npm run verify`)
-- [ ] Revue + push `dev` + première PR `dev → main`
+- [x] Revue + push `dev` + première PR `dev → main` (PR #1)
 
 ## Phase 1 — Design system
 
