@@ -12,15 +12,20 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     trace: 'retain-on-failure',
   },
+  // Les tests propres à une largeur portent le tag `@mobile` ou `@desktop` : chaque projet
+  // exclut les tests de l'autre (pas de test.skip conditionnel).
   projects: [
-    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    { name: 'mobile', use: { ...devices['Pixel 7'] }, grepInvert: /@desktop/ },
     {
       name: 'desktop',
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
+      grepInvert: /@mobile/,
     },
   ],
   webServer: {
-    command: `npm run build && npm run preview -- --port ${PORT}`,
+    // `--ignore-lock` garde le serveur au premier plan : sinon Astro le passe en arrière-plan
+    // quand il détecte un agent de code, et Playwright croit qu'il s'est arrêté.
+    command: `npm run build && npm run preview -- --port ${PORT} --ignore-lock`,
     url: `http://localhost:${PORT}/`,
     reuseExistingServer: !process.env['CI'],
     timeout: 180_000,
