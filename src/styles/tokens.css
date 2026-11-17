@@ -1,0 +1,147 @@
+/*
+ * Design tokens — « Atelier lumineux »
+ * SEUL fichier autorisé à contenir des valeurs de couleur littérales (CLAUDE.md §4, ADR-0002).
+ * Référence et justification de chaque valeur : docs/DESIGN-SYSTEM.md.
+ * Échelles fluides calculées entre 360 px (22.5rem) et 1440 px (90rem) de large.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* ---------- Couleurs : palette ---------- */
+  --color-linen: #f8f3ec;
+  --color-cream: #fffcf7;
+  --color-sand: #efe3d3;
+  --color-blush: #f2dcd3;
+  --color-sage: #dde3d3;
+  --color-terracotta-500: #c66b4e;
+  --color-terracotta-600: #b05a3d;
+  --color-terracotta-700: #9a4a30;
+  --color-ink: #2f2622;
+  --color-ink-soft: #5e514a;
+
+  /* ---------- Couleurs : rôles (à préférer dans les composants) ---------- */
+  --color-bg: var(--color-linen);
+  --color-surface: var(--color-cream);
+  --color-text: var(--color-ink);
+  --color-text-soft: var(--color-ink-soft);
+  --color-accent: var(--color-terracotta-500); /* décoratif uniquement : traits, icônes, formes */
+  --color-accent-text: var(--color-terracotta-700); /* texte d'accent et liens sur fonds clairs */
+  --color-action: var(--color-terracotta-600); /* fond des boutons primaires */
+  --color-action-hover: var(--color-terracotta-700);
+  --color-on-action: var(--color-cream);
+  --color-border: rgb(47 38 34 / 14%); /* encre à 14 % : bordures fines neutres */
+  --color-border-strong: rgb(47 38 34 / 32%);
+  --color-scrim: rgb(248 243 236 / 82%); /* lin translucide (header compacté) */
+
+  /* ---------- Typographie ---------- */
+
+  /* --font-display et --font-body sont injectées par la Fonts API d'Astro (astro.config.mjs). */
+  --font-display-stack: var(--font-display, georgia, serif);
+  --font-body-stack: var(--font-body, system-ui, sans-serif);
+  --step--1: clamp(0.875rem, 0.85rem + 0.1111vw, 0.95rem);
+  --step-0: clamp(1rem, 0.9583rem + 0.1852vw, 1.125rem);
+  --step-1: clamp(1.25rem, 1.1667rem + 0.3704vw, 1.5rem);
+  --step-2: clamp(1.5625rem, 1.4167rem + 0.6481vw, 2rem);
+  --step-3: clamp(1.95rem, 1.6667rem + 1.2593vw, 2.8rem);
+  --step-4: clamp(2.44rem, 1.92rem + 2.3111vw, 4rem);
+  --step-5: clamp(3rem, 2rem + 4.4444vw, 6rem);
+  --text-eyebrow: 0.8rem;
+  --leading-tight: 1.05;
+  --leading-heading: 1.15;
+  --leading-body: 1.65;
+  --tracking-eyebrow: 0.14em;
+  --tracking-display: -0.015em;
+  --tracking-ui: 0.02em;
+  --leading-ui: 1.2;
+  --weight-light: 300;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --measure: 66ch;
+
+  /* ---------- Espacements (Utopia) ---------- */
+  --space-3xs: clamp(0.25rem, 0.2292rem + 0.0926vw, 0.3125rem);
+  --space-2xs: clamp(0.5rem, 0.4792rem + 0.0926vw, 0.5625rem);
+  --space-xs: clamp(0.75rem, 0.7083rem + 0.1852vw, 0.875rem);
+  --space-s: clamp(1rem, 0.9583rem + 0.1852vw, 1.125rem);
+  --space-m: clamp(1.5rem, 1.4375rem + 0.2778vw, 1.6875rem);
+  --space-l: clamp(2rem, 1.9167rem + 0.3704vw, 2.25rem);
+  --space-xl: clamp(3rem, 2.875rem + 0.5556vw, 3.375rem);
+  --space-2xl: clamp(4rem, 3.8333rem + 0.7407vw, 4.5rem);
+  --space-3xl: clamp(6rem, 5.75rem + 1.1111vw, 6.75rem);
+
+  /* Paires fluides (sautent d'un cran à l'autre entre mobile et desktop) */
+  --space-s-l: clamp(1rem, 0.5833rem + 1.8519vw, 2.25rem);
+  --space-m-xl: clamp(1.5rem, 0.875rem + 2.7778vw, 3.375rem);
+  --space-l-2xl: clamp(2rem, 1.1667rem + 3.7037vw, 4.5rem);
+  --space-xl-3xl: clamp(3rem, 1.75rem + 5.5556vw, 6.75rem);
+  --space-section: clamp(4rem, 2.3333rem + 7.4074vw, 9rem);
+
+  /* ---------- Mise en page ---------- */
+  --container-max: 1320px;
+  --container-narrow: 760px;
+  --gutter: clamp(1.25rem, 0.6667rem + 2.5926vw, 3rem);
+  --grid-columns: 12;
+  --grid-gap: var(--space-m-xl);
+  --tap-target: 44px;
+
+  /*
+   * Points de rupture (documentaires : les custom properties ne sont pas utilisables
+   * dans @media). Utiliser ces valeurs littérales en min-width, mobile first :
+   *   --bp-sm: 40rem  (640 px)   grands mobiles, petites tablettes
+   *   --bp-md: 48rem  (768 px)   tablettes portrait
+   *   --bp-lg: 64rem  (1024 px)  tablettes paysage, petits portables
+   *   --bp-xl: 80rem  (1280 px)  bureau
+   *   --bp-2xl: 100rem (1600 px) grands écrans
+   * Préférer les container queries pour les composants.
+   */
+  --bp-sm: 40rem;
+  --bp-md: 48rem;
+  --bp-lg: 64rem;
+  --bp-xl: 80rem;
+  --bp-2xl: 100rem;
+
+  /* ---------- Formes ---------- */
+  --radius-sm: 6px;
+  --radius-md: 14px;
+  --radius-lg: 28px;
+  --radius-pill: 999px;
+  --radius-arch: 999px 999px 0 0;
+  --border-hairline: 1px;
+  --border-thin: 1.5px;
+
+  /* ---------- Ombres (chaudes, diffuses) ---------- */
+  --shadow-soft: 0 20px 50px -20px rgb(47 38 34 / 18%);
+  --shadow-lifted: 0 30px 70px -28px rgb(47 38 34 / 26%);
+  --shadow-inset-hairline: inset 0 0 0 1px rgb(47 38 34 / 8%);
+
+  /* ---------- Matière ---------- */
+  --grain-opacity: 0.035;
+  --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .18 0 0 0 0 .15 0 0 0 0 .13 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  /* ---------- Motion ---------- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 180ms;
+  --dur-base: 450ms;
+  --dur-slow: 800ms;
+  --dur-reduced: 150ms;
+  --stagger: 70ms;
+  --reveal-distance: 20px;
+  --hover-zoom: 1.04;
+  --opacity-disabled: 0.55;
+
+  /* ---------- Focus ---------- */
+  --focus-ring-color: var(--color-terracotta-700);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 3px;
+  --focus-ring: var(--focus-ring-width) solid var(--focus-ring-color);
+
+  /* ---------- Couches ---------- */
+  --z-base: 0;
+  --z-raised: 10;
+  --z-header: 100;
+  --z-overlay: 1000;
+}

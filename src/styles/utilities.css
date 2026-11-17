@@ -1,0 +1,43 @@
+/* Utilitaires — couche « utilities » (la plus forte). Peu nombreux, à usage ciblé. */
+@layer utilities {
+  .visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+  }
+
+  .container {
+    width: min(100% - 2 * var(--gutter), var(--container-max));
+    margin-inline: auto;
+  }
+
+  .container--narrow {
+    width: min(100% - 2 * var(--gutter), var(--container-narrow));
+  }
+
+  /* Rythme vertical entre enfants directs ; --flow-space surchargeable localement. */
+  .flow > * + * {
+    margin-block-start: var(--flow-space, 1em);
+  }
+
+  .measure {
+    max-width: var(--measure);
+  }
+
+  .text-center {
+    text-align: center;
+  }
+
+  .italic-accent {
+    font-family: var(--font-display-stack);
+    font-style: italic;
+    font-weight: var(--weight-light);
+    color: var(--color-accent-text);
+  }
+}
