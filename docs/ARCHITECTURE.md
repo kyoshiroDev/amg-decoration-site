@@ -9,6 +9,10 @@
 3. **Couches** : `pages` (routes) → `layouts` (squelette + SEO) → `blocks` (sections) → `ui` (atomes). `lib/` est transverse et pur.
 4. **Progressive enhancement** : le HTML/CSS fonctionne seul ; le JS (`src/scripts/`) n'ajoute que de l'agrément.
 
+## Styleguide interne
+
+`/styleguide/` (noindex, exclue du sitemap) est la référence visuelle du `designer` et du `reviewer`. Ses sections vivent dans `src/components/styleguide/` et ne sont jamais importées par une page publique. Elles lisent `src/styles/tokens.css` au build (`?raw`) via `src/lib/design-tokens.ts` et `src/lib/color-contrast.ts` : aucune valeur n'est recopiée (ADR-0005).
+
 ## Flux de données
 
 ```

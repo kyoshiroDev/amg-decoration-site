@@ -54,7 +54,8 @@ src/
 │   ├── blocks/             # sections réutilisables : Hero, ServiceCard, ProjectCard, ProjectGrid,
 │   │                       #   ProcessSteps, BeforeAfter, Testimonials, CtaBanner, FaqList, Marquee
 │   ├── layout/             # Header, Footer, MobileNav, SkipLink, Breadcrumbs
-│   └── seo/                # SEO.astro, JsonLd.astro
+│   ├── seo/                # SEO.astro, JsonLd.astro
+│   └── styleguide/         # sections internes de /styleguide/ (noindex, ADR-0005)
 ├── config/
 │   ├── site.ts             # SOURCE DE VÉRITÉ UNIQUE : nom, NAP, horaires, réseaux, navigation
 │   └── seo.ts              # valeurs SEO par défaut, image OG par défaut

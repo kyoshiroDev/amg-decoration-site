@@ -25,7 +25,24 @@ Inspirations de principe (sans jamais copier un site existant) : magazines déco
 | `--color-ink`            | `#2F2622` | Texte principal (brun encre, jamais de noir pur)                                      |
 | `--color-ink-soft`       | `#5E514A` | Texte secondaire, légendes                                                            |
 
+### Rôles sémantiques (à préférer dans les composants)
+
+| Token                                      | Pointe vers          | Usage                                            |
+| ------------------------------------------ | -------------------- | ------------------------------------------------ |
+| `--color-bg` / `--color-surface`           | linen / cream        | Fond de page / cartes                            |
+| `--color-text` / `--color-text-soft`       | ink / ink-soft       | Texte principal / secondaire                     |
+| `--color-accent`                           | terracotta-500       | **Décor uniquement** (traits, icônes, ornements) |
+| `--color-accent-text`                      | terracotta-700       | Liens, italiques d'accent, surtitres             |
+| `--color-action` / `--color-action-hover`  | terracotta-600 / 700 | Fond du bouton primaire / survol                 |
+| `--color-on-action`                        | cream                | Texte sur fond d'action                          |
+| `--color-border` / `--color-border-strong` | encre à 14 % / 32 %  | Filets neutres                                   |
+| `--color-scrim`                            | lin à 82 %           | Header compacté (Phase 2)                        |
+
+`tokens.css` est le **seul** fichier contenant des couleurs littérales (Stylelint `color-no-hex` partout ailleurs). Exception documentée : `public/favicon.svg` (fichier statique non stylé).
+
 ### Contrastes vérifiés (WCAG 2.2)
+
+> Recalculés à chaque build par `/styleguide/` (fonctions `src/lib/color-contrast.ts`, testées) à partir de `tokens.css`.
 
 | Texte \ Fond   | linen                         | cream   | sand    | blush   | sage    |
 | -------------- | ----------------------------- | ------- | ------- | ------- | ------- |
@@ -37,18 +54,23 @@ Inspirations de principe (sans jamais copier un site existant) : magazines déco
 
 - Bouton primaire : texte `cream` sur `terracotta-600` = **4.7:1 ✅** ; survol `terracotta-700` = 6.0:1.
 - Texte `cream` sur `terracotta-500` = 3.65:1 → réservé aux titres ≥ 24 px.
+- `terracotta-500` sur `sand` / `blush` / `sage` < 3:1 (2.8 à 3.0) : **purement décoratif** sur ces fonds, ni texte (même grand) ni élément graphique porteur d'information (WCAG 1.4.11). Une icône informative (seule, sans libellé) utilise `--color-accent-text` ou `currentColor`.
 - Focus : anneau `terracotta-700` 2 px + offset 3 px (≥ 3:1 sur tous les fonds clairs).
 
 Règle de composition : **1 fond pastel par section**, 2 pastels maximum visibles à l'écran, terracotta ≤ 10 % de la surface.
 
 ## 3. Typographie
 
-| Rôle                         | Police (proposition)                          | Notes                                                                                   |
-| ---------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------- |
-| Affichage (H1–H3, citations) | **Fraunces** (variable, axe `SOFT` et `opsz`) | Serif chaleureuse et expressive ; italique pour les mots émotionnels (« _chez vous_ »). |
-| Texte, interface             | **Manrope** (variable)                        | Sans-serif nette, très lisible.                                                         |
+| Rôle                         | Police                          | Fichiers chargés                                                         |
+| ---------------------------- | ------------------------------- | ------------------------------------------------------------------------ |
+| Affichage (H1–H4, citations) | **Fraunces** (`--font-display`) | Statiques **300** et **400**, normal + italique (~18 Ko / ~23 Ko chacun) |
+| Texte, interface             | **Manrope** (`--font-body`)     | Variable **400–700** (~25 Ko)                                            |
 
-Chargées via la Fonts API d'Astro (auto-hébergées, sous-ensemble latin, `woff2`). Le `designer` peut proposer une alternative (ex. Cormorant / DM Sans) par ADR.
+Chargées par la **Fonts API d'Astro** (`astro.config.mjs`, provider Fontsource), auto-hébergées dans `/_astro/fonts/`, sous-ensemble latin, `woff2`, `font-display: swap` (vérifié dans le CSS généré), polices de repli à métriques ajustées générées par Astro.
+
+- **Choix des graisses statiques pour Fraunces** : le fichier variable Fontsource embarque les axes `opsz`/`SOFT`/`WONK` et pèse ~120 Ko (normal) + ~150 Ko (italique). Les deux graisses utilisées par le DS (300 pour les grands titres et les italiques, 400 pour les titres moyens) coûtent ~59 Ko au total pour ce qu'une page télécharge réellement (300, 400, 300 italique). Pas de gras Fraunces : un titre ne dépasse jamais 400.
+- **Preload** : uniquement Fraunces 300 normal (police du H1), via `<Font cssVariable="--font-display" preload={[{ subset: 'latin', style: 'normal', weight: 300 }]} />`.
+- Dans les composants, utiliser `--font-display-stack` / `--font-body-stack` (variable Astro + repli).
 
 Échelle fluide (`clamp()`), ratio ~1.25 :
 
@@ -62,27 +84,45 @@ Chargées via la Fonts API d'Astro (auto-hébergées, sous-ensemble latin, `woff
 | `--step-4`  | 2.44 → 4 rem                |
 | `--step-5`  | 3 → 6 rem (H1 héro)         |
 
+Échelle calculée entre 360 px et 1440 px de large. Tokens annexes : `--text-eyebrow`, `--leading-tight|heading|body|ui`, `--tracking-display|eyebrow|ui`, `--weight-light…bold`, `--measure` (66ch).
+
 Interligne texte 1.65, titres 1.05–1.15 ; longueur de ligne 60–72 caractères ; `text-wrap: balance` sur les titres, `pretty` sur les paragraphes. Surtitres : Manrope 0.8 rem, capitales, `letter-spacing: .14em`, couleur `terracotta-700`.
 
 ## 4. Espacements, grille, formes
 
-- Espacements fluides : `--space-3xs` → `--space-3xl` (échelle Utopia), sections : `--space-section` = `clamp(4rem, 10vw, 9rem)`.
-- Conteneur : `--container-max: 1320px`, gouttières `clamp(1.25rem, 4vw, 3rem)` ; variante étroite 760 px pour la lecture.
+- Espacements fluides (Utopia, 360 → 1440 px) : `--space-3xs` (4–5 px), `2xs` (8–9), `xs` (12–14), `s` (16–18), `m` (24–27), `l` (32–36), `xl` (48–54), `2xl` (64–72), `3xl` (96–108). Paires « qui sautent » : `--space-s-l`, `--space-m-xl`, `--space-l-2xl`, `--space-xl-3xl`. Sections : `--space-section` = 64 → 144 px.
+- Conteneur : `--container-max: 1320px`, `--container-narrow: 760px`, gouttières `--gutter` 20 → 48 px ; `--grid-gap` = `--space-m-xl` ; `--tap-target: 44px`.
+- Points de rupture (mobile first, en `min-width` ; les custom properties ne fonctionnent pas dans `@media`, les valeurs `--bp-*` sont donc documentaires et s'écrivent littéralement, en notation de plage `(width >= 48rem)`) :
+
+  | Token      | Valeur           | Usage                                |
+  | ---------- | ---------------- | ------------------------------------ |
+  | `--bp-sm`  | 40rem (640 px)   | grands mobiles                       |
+  | `--bp-md`  | 48rem (768 px)   | tablettes portrait, grilles 2–3 col. |
+  | `--bp-lg`  | 64rem (1024 px)  | mises en page asymétriques 7/5       |
+  | `--bp-xl`  | 80rem (1280 px)  | bureau                               |
+  | `--bp-2xl` | 100rem (1600 px) | grands écrans                        |
+
+  Préférer les container queries pour les composants réutilisables.
+
 - Grille 12 colonnes desktop, mises en page volontairement asymétriques (7/5, 5/7, image qui déborde du conteneur).
-- Rayons : `--radius-sm: 6px`, `--radius-md: 14px`, `--radius-lg: 28px`, `--radius-arch: 999px 999px 0 0` (**arche**, signature visuelle).
-- Ombres chaudes et diffuses : `--shadow-soft: 0 20px 50px -20px rgb(47 38 34 / .18)`.
-- Grain : SVG `feTurbulence` en fond du `body`, opacité 0.035, `pointer-events: none`.
+- Rayons : `--radius-sm: 6px`, `--radius-md: 14px`, `--radius-lg: 28px`, `--radius-pill: 999px`, `--radius-arch: 999px 999px 0 0` (**arche**, signature visuelle). Filets : `--border-hairline` (1 px), `--border-thin` (1.5 px).
+- Ombres chaudes et diffuses : `--shadow-soft` (0 20px 50px -20px encre 18 %), `--shadow-lifted` (0 30px 70px -28px encre 26 %), `--shadow-inset-hairline` (liseré intérieur 1 px encre 8 %).
+- Grain : `--grain-image` (SVG `feTurbulence` en data-URI, tuile 220 px) posé sur un pseudo-élément `body::after` **statique** (`position: absolute; inset: 0`, jamais `fixed`, jamais animé), `opacity: var(--grain-opacity)` = 0.035, `pointer-events: none`. Peint une fois avec la page, aucun coût au scroll ; il passe au-dessus des aplats de section pour une matière continue.
 - Ornements : fins traits terracotta (1 px), petites arches/pastilles en filigrane, numéros d'étapes en Fraunces italique géante semi-transparente.
 
 ## 5. Motion
 
-| Token           | Valeur                              |
-| --------------- | ----------------------------------- |
-| `--ease-out`    | `cubic-bezier(.22, 1, .36, 1)`      |
-| `--ease-in-out` | `cubic-bezier(.65, 0, .35, 1)`      |
-| `--dur-fast`    | 180 ms (survols)                    |
-| `--dur-base`    | 450 ms (apparitions)                |
-| `--dur-slow`    | 800 ms (révélations d'images, zoom) |
+| Token               | Valeur                                    |
+| ------------------- | ----------------------------------------- |
+| `--ease-out`        | `cubic-bezier(.22, 1, .36, 1)`            |
+| `--ease-in-out`     | `cubic-bezier(.65, 0, .35, 1)`            |
+| `--dur-fast`        | 180 ms (survols)                          |
+| `--dur-base`        | 450 ms (apparitions)                      |
+| `--dur-slow`        | 800 ms (révélations d'images, zoom)       |
+| `--dur-reduced`     | 150 ms (fondu de repli, mouvement réduit) |
+| `--stagger`         | 70 ms                                     |
+| `--reveal-distance` | 20 px                                     |
+| `--hover-zoom`      | 1.04                                      |
 
 Catalogue d'effets autorisés :
 
@@ -95,12 +135,42 @@ Catalogue d'effets autorisés :
 7. **Liens** : soulignement qui se dessine de gauche à droite.
 8. **Marquee** : bandeau de mots en Fraunces italique, défilement lent, en pause au survol et désactivé si mouvement réduit.
 
-`prefers-reduced-motion: reduce` ⇒ effets 1, 2, 5, 8 remplacés par un simple fondu ≤ 150 ms ou supprimés.
+`prefers-reduced-motion: reduce` ⇒ effets 1, 2, 5, 8 remplacés par un simple fondu ≤ 150 ms ou supprimés. Un garde-fou global (`global.css`, couche `base`) ramène toutes les animations et transitions à 0.01 ms ; les composants qui veulent un fondu court le réactivent explicitement.
 
-## 6. Composants (inventaire cible)
+Liens : les liens **de texte** sont soulignés en permanence (le lien ne repose pas sur la seule couleur, WCAG 1.4.1). Les liens **autonomes** (classe `.link-draw`, composant `Link variant="draw"`) ont un trait en pseudo-élément qui se dessine de gauche à droite en `transform: scaleX()` au survol, au focus et sur `aria-current="page"`.
 
-`ui/` : Button (primary, secondary, ghost, link) · Link · Heading · Eyebrow · Tag · Icon (SVG inline) · Container · Section (variantes de fond) · ArchImage · Divider.
+Focus : `:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-ring-offset); }` — 2 px `terracotta-700`, décalage 3 px, rayon adapté au composant (pilule pour les boutons).
 
-`blocks/` : Hero (accueil, avec arche et accroche) · PageHero · ServiceCard · ServicesGrid · ProjectCard · ProjectGrid (filtres par type de pièce, sans JS lourd) · ProjectGallery + Lightbox · BeforeAfter · ProcessSteps (6 étapes) · Benefits3D (8 bénéfices) · Values · Testimonials · Quote (Charles Eames) · CtaBanner · ContactForm · FaqList · Marquee · InstagramStrip (images locales, pas d'embed tiers) · ArticleCard.
+## 6. Composants
 
-Une page `/styleguide` (`noindex`, exclue du sitemap) présente tous les tokens et composants : c'est la référence visuelle du `designer` et du `reviewer`.
+### Conventions CSS
+
+- Couches : `@layer reset, base, components, utilities;` déclaré en tête de `global.css` (seul point d'entrée, importé par les layouts). Les styles scopés de chaque composant s'écrivent **dans `@layer components { … }`** : les utilitaires gagnent toujours.
+- Mise en forme de la racine d'un composant enfant depuis un parent : Astro (stratégie `attribute`) ne transmet pas l'attribut de scope ; utiliser `:global(.bloc__element)` avec une classe BEM préfixée, jamais un sélecteur global générique.
+- Les listes qui reçoivent une classe sont des listes de composant (sans puces, sans `role="list"`) ; seules les listes de prose gardent puces et `--measure`.
+- Aucune valeur magique : couleurs, rayons, durées, easings, espacements, graisses, interlignes et opacités viennent de `tokens.css`.
+
+### `ui/` — usage
+
+| Composant   | Props principales (défaut)                                                                                                                                                                                                                          | Notes                                                                                                                                                                                                                  |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Button`    | `variant` : `primary` \| `secondary` \| `ghost` \| `link` (`primary`) ; `href?` ; `type` (`button`) ; `icon?` / `iconStart?` (nom d'`Icon`) ; `disabled` (`false`) ; `attrs?`                                                                       | `<a>` si `href`, sinon `<button>`. Hauteur min. 44 px. Flèche qui glisse au survol. `link` : soulignement qui se redessine.                                                                                            |
+| `Link`      | `href` ; `variant` **obligatoire** : `draw` (liens autonomes uniquement) \| `inline` (dans un paragraphe) ; `external` (`false`) ; `icon?` ; `current` (`false`) ; `attrs?`                                                                         | `external` ⇒ `target="_blank" rel="noopener noreferrer"` + « (nouvel onglet) » masqué. `current` ⇒ `aria-current="page"`.                                                                                              |
+| `Heading`   | `level` : 1–6 (**obligatoire**) ; `size?` : `display` \| `xl` \| `lg` \| `md` \| `sm` \| `xs` (selon le niveau) ; `id?` ; `align` (`start`)                                                                                                         | Balise et taille découplées : hiérarchie sans saut, rendu libre. `<em>` ⇒ italique Fraunces terracotta-700.                                                                                                            |
+| `Eyebrow`   | `decorated` (`true`)                                                                                                                                                                                                                                | Rendu `<p>`, jamais un titre. Trait terracotta 32 px devant.                                                                                                                                                           |
+| `Tag`       | `tone` : `sand` \| `blush` \| `sage` \| `outline` (`sand`) ; `href?`                                                                                                                                                                                | `<span>` ou `<a>` ; la version lien étend sa zone de clic à 44 px de haut.                                                                                                                                             |
+| `Icon`      | `name` (voir `ui/icons.ts`) ; `label?` ; `size` (`1em`, passer un token)                                                                                                                                                                            | `aria-hidden` sauf si `label` (`role="img"`). Set : arrow-right, phone, mail, whatsapp, instagram, facebook, pinterest, linkedin, menu, close, plus.                                                                   |
+| `Container` | `width` : `normal` \| `narrow` (`normal`) ; `as` (`div`)                                                                                                                                                                                            | 1320 px / 760 px, gouttières `--gutter`. Utilitaires `.container`, `.container--narrow`.                                                                                                                               |
+| `Section`   | `background` : `linen` \| `cream` \| `sand` \| `blush` \| `sage` (`linen`) ; `as` (`section`) ; `labelledby?` ; `spacing` : `section` \| `compact` \| `none` (`section`) ; `id?`                                                                    | Un pastel par section, deux maximum à l'écran. Donner `labelledby` (id du titre) pour une région nommée.                                                                                                               |
+| `ArchImage` | `src` (`ImageMetadata`) ; `alt` (**obligatoire**, `""` si décorative) ; `widths` (`[360…1280]`, bornées à la largeur source) ; `sizes` ; `priority` (`false`) ; `ratio` (`4 / 5`) ; `shape` : `arch` \| `rounded` ; `framed` (`false`) ; `caption?` | `<Picture>` AVIF + WebP, repli JPEG. `priority` ⇒ `loading="eager"`, `fetchpriority="high"`, `decoding="sync"` (une seule par page). Zoom lent 1.04 au survol (désactivé si mouvement réduit). `caption` ⇒ `<figure>`. |
+| `Divider`   | `ornament` (`false`) ; `width` : `full` \| `short` (`full`)                                                                                                                                                                                         | Purement décoratif (`aria-hidden`). Ornement : double arche filaire terracotta.                                                                                                                                        |
+
+### Inventaire cible `blocks/`
+
+Hero (accueil, avec arche et accroche) · PageHero · ServiceCard · ServicesGrid · ProjectCard · ProjectGrid (filtres par type de pièce, sans JS lourd) · ProjectGallery + Lightbox · BeforeAfter · ProcessSteps (6 étapes) · Benefits3D (8 bénéfices) · Values · Testimonials · Quote (Charles Eames) · CtaBanner · ContactForm · FaqList · Marquee · InstagramStrip (images locales, pas d'embed tiers) · ArticleCard.
+
+## 7. Styleguide
+
+`/styleguide/` (`src/pages/styleguide.astro`, layout temporaire `StyleguideLayout`, `noindex, nofollow`, exclu du sitemap) présente tous les tokens et composants : c'est la référence visuelle du `designer` et du `reviewer`. Les nuanciers, échelles, rayons, ombres, durées et ratios de contraste sont **lus dans `tokens.css` au build** (`src/lib/design-tokens.ts`, `src/lib/color-contrast.ts`) : la page ne peut pas diverger des tokens. Ses composants internes vivent dans `src/components/styleguide/` et ne sont jamais utilisés sur le site public. Test e2e : `tests/e2e/styleguide.spec.ts` (h1 unique, noindex, pas de débordement horizontal, 0 violation axe).
+
+Favicon provisoire : arche terracotta sur fond lin (`public/favicon.svg`), en attendant le logo vectoriel.

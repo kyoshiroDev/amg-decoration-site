@@ -17,11 +17,12 @@
 
 ## Phase 1 — Design system
 
-- [ ] `tokens.css`, `reset.css`, `global.css` (layers), grain de papier
-- [ ] Polices via la Fonts API (Fraunces + Manrope)
-- [ ] Composants `ui/` : Button, Link, Heading, Eyebrow, Tag, Icon, Container, Section, ArchImage, Divider
-- [ ] Page `/styleguide/` (noindex) montrant tokens et composants
-- [ ] Captures 375/1440 vérifiées par `designer` ; audit `accessibilite` (contrastes, focus)
+- [x] `tokens.css`, `reset.css`, `global.css` (layers), grain de papier
+- [x] Polices via la Fonts API (Fraunces 300/400 fixes + Manrope variable, ADR-0005)
+- [x] Composants `ui/` : Button, Link, Heading, Eyebrow, Tag, Icon, Container, Section, ArchImage, Divider
+- [x] Page `/styleguide/` (noindex) montrant tokens et composants
+- [x] Captures 375/1440 vérifiées par `designer` ; audit `accessibilite` (contrastes, focus)
+- [ ] Revue + push `dev` + PR mise à jour
 
 ## Phase 2 — Squelette et navigation
 
