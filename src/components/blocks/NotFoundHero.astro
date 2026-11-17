@@ -1,0 +1,111 @@
+---
+/**
+ * NotFoundHero — page 404 : texte 7/5 et « porte vers ailleurs », une arche pleine rose poudré
+ * doublée d'un liseré terracotta décalé et d'un soleil sauge (décor CSS, aria-hidden).
+ * Trois sorties : action principale, secondaire, lien.
+ */
+import Section from '@/components/ui/Section.astro';
+import Container from '@/components/ui/Container.astro';
+import Heading from '@/components/ui/Heading.astro';
+import Button from '@/components/ui/Button.astro';
+import Divider from '@/components/ui/Divider.astro';
+import type { NavItem } from '@/config/site';
+
+interface Props {
+  heading: string;
+  lead: string;
+  /** Sorties dans l'ordre : principale, secondaire, lien. */
+  links: readonly [NavItem, NavItem, NavItem];
+}
+
+const { heading, lead, links } = Astro.props;
+const [primary, secondary, tertiary] = links;
+---
+
+<Section labelledby="introuvable-titre">
+  <Container class="not-found__grid">
+    <div class="not-found__text">
+      <Divider ornament width="short" />
+      <Heading level={1} size="xl" id="introuvable-titre">
+        {heading}
+      </Heading>
+      <p class="not-found__lead">{lead}</p>
+      <div class="not-found__actions">
+        <Button href={primary.href}>{primary.label}</Button>
+        <Button href={secondary.href} variant="secondary">
+          {secondary.label}
+        </Button>
+        <Button href={tertiary.href} variant="link" icon="arrow-right">
+          {tertiary.label}
+        </Button>
+      </div>
+    </div>
+    <div class="not-found__door" aria-hidden="true">
+      <span class="not-found__sun"></span>
+    </div>
+  </Container>
+</Section>
+
+<style>
+  @layer components {
+    :global(.not-found__grid) {
+      display: grid;
+      gap: var(--space-2xl);
+      align-items: center;
+
+      @media (width >= 64rem) {
+        grid-template-columns: 7fr 5fr;
+      }
+    }
+
+    .not-found__text {
+      display: grid;
+      justify-items: start;
+      gap: var(--space-m);
+    }
+
+    .not-found__lead {
+      font-size: var(--step-1);
+      color: var(--color-text-soft);
+    }
+
+    .not-found__actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-s) var(--space-m);
+      margin-block-start: var(--space-xs);
+    }
+
+    .not-found__door {
+      position: relative;
+      inline-size: min(70%, 22rem);
+      aspect-ratio: 3 / 4;
+      justify-self: center;
+      margin-block-start: var(--space-s);
+      border-radius: var(--radius-arch);
+      background-color: var(--color-blush);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .not-found__door::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: var(--border-hairline) solid var(--color-accent);
+      border-radius: var(--radius-arch);
+      transform: translate(var(--space-s), calc(var(--space-s) * -1));
+    }
+
+    .not-found__sun {
+      position: absolute;
+      inset-block-start: 22%;
+      inset-inline-start: 50%;
+      inline-size: 28%;
+      aspect-ratio: 1;
+      border-radius: var(--radius-pill);
+      background-color: var(--color-sage);
+      transform: translateX(-50%);
+    }
+  }
+</style>

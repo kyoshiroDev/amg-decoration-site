@@ -1,0 +1,21 @@
+---
+// Page 404 (non indexée) : trois sorties vers l'accueil, les réalisations et le contact.
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import NotFoundHero from '@/components/blocks/NotFoundHero.astro';
+import { pageTexts } from '@/config/pages';
+import { site } from '@/config/site';
+
+const { notFound } = pageTexts;
+---
+
+<BaseLayout title={notFound.title} description={notFound.description} noindex>
+  <NotFoundHero
+    heading={notFound.heading}
+    lead={notFound.lead}
+    links={[
+      { label: notFound.links.home, href: '/' },
+      { label: notFound.links.projects, href: '/realisations/' },
+      { label: notFound.links.contact, href: site.headerCta.href },
+    ]}
+  />
+</BaseLayout>
