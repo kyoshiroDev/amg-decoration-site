@@ -1,0 +1,29 @@
+# build
+dist/
+.astro/
+.vercel/
+
+# dépendances
+node_modules/
+
+# tests
+playwright-report/
+test-results/
+coverage/
+.lighthouseci/
+
+# environnement
+.env
+.env.*
+!.env.example
+
+# Claude Code — état local (approbations, rapports, réglages perso)
+.claude/state/
+.claude/reports/
+.claude/settings.local.json
+
+# OS / éditeurs
+.DS_Store
+Thumbs.db
+.idea/
+*.log
