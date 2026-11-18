@@ -27,7 +27,7 @@
   }
 
   /* Menu mobile ouvert : la page dessous ne défile plus (sans décalage de barre de défilement). */
-  html:has(#menu-mobile:popover-open) {
+  html:has([data-mobile-nav]:popover-open) {
     overflow: hidden;
     scrollbar-gutter: stable;
   }

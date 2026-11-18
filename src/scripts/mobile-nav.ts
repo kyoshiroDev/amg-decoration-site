@@ -15,7 +15,7 @@ onPageReady((signal) => {
   const panel = document.querySelector<HTMLElement>('[data-mobile-nav]');
   if (!panel || typeof panel.hidePopover !== 'function') return;
 
-  const toggle = document.querySelector<HTMLElement>(`[popovertarget="${panel.id}"]`);
+  const toggle = document.querySelector<HTMLElement>('[data-mobile-nav-toggle]');
   const isOpen = (): boolean => panel.matches(':popover-open');
   const close = (): void => {
     if (isOpen()) panel.hidePopover();

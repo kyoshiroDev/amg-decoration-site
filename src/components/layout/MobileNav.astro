@@ -21,7 +21,12 @@ const { currentPath, id = 'menu-mobile' } = Astro.props;
   <Button href="#pied-navigation" variant="ghost" iconStart="menu" class="mobile-nav__fallback">
     {microcopy.mobileMenu.open}
   </Button>
-  <Button variant="ghost" iconStart="menu" class="mobile-nav__toggle" attrs={{ popovertarget: id }}>
+  <Button
+    variant="ghost"
+    iconStart="menu"
+    class="mobile-nav__toggle"
+    attrs={{ popovertarget: id, 'data-mobile-nav-toggle': '' }}
+  >
     {microcopy.mobileMenu.open}
   </Button>
   <MobileNavPanel id={id} currentPath={currentPath} />
