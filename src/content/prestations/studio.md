@@ -6,8 +6,8 @@ target: 'studio, petit appartement jusqu’à 26 m²'
 summary: 'Tout votre studio ou petit appartement, jusqu’à 26 m², pensé en 3D pour optimiser chaque mètre carré sans renoncer au confort.'
 # TODO(contenu): nombre de vues 3D et de modifications incluses (à demander à Amandine).
 includes: []
-# TODO(contenu): prix affiché sur le site actuel (18/11/2026) : Amandine doit le confirmer
-# (fixe ou « à partir de ») avant la mise en production. Aucune Offer JSON-LD (ADR-0007).
+# TODO(contenu): prix affiché sur le site actuel (18/11/2026) : Amandine doit le confirmer
+# (fixe ou « à partir de ») avant la mise en production. Aucune Offer JSON-LD (ADR-0007).
 price:
   amount: 689
   currency: EUR

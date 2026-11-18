@@ -1,5 +1,5 @@
 ---
-# TODO(contenu): conserver l'« Offre Professionnels » dans le nouveau site ?
+# TODO(contenu): conserver l'« Offre Professionnels » dans le nouveau site ?
 title: 'Offre Professionnels'
 kind: offre
 tagline: 'Investisseurs, agents immobiliers'

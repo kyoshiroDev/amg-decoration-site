@@ -1,5 +1,5 @@
 ---
-# Source : docs/contenu-source/services.md. Mots-clés : décoration d'intérieur en ligne, formules et tarifs.
+# Source : docs/contenu-source/services.md. Mots-clés : décoration d'intérieur en ligne, formules et tarifs.
 seo:
   title: 'Décoration d’intérieur en ligne : formules et tarifs'
   description: 'Décoration d’intérieur en ligne avec visuels 3D : découvrez mes formules Essentiel, Confort, Signature et Studio, pensées pour chaque pièce de la maison.'

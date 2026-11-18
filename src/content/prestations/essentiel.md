@@ -1,6 +1,6 @@
 ---
-# TODO(contenu): nom de la formule : « Essentiel » (accueil du site actuel, retenu ici) ou « Essentielle »
-# (page Prestations du site actuel) ? Le slug « essentiel » reste inchangé dans tous les cas.
+# TODO(contenu): nom de la formule : « Essentiel » (accueil du site actuel, retenu ici) ou « Essentielle »
+# (page Prestations du site actuel) ? Le slug « essentiel » reste inchangé dans tous les cas.
 title: 'Formule Essentiel'
 kind: formule
 tagline: 'pour les petits espaces'
@@ -8,8 +8,8 @@ target: 'entrée, WC, buanderie, salle de bain, dressing'
 summary: 'Une petite pièce repensée en 3D : plan d’aménagement, vues 3D et sélection de mobilier et de matériaux, pour tirer le meilleur de chaque mètre carré.'
 # TODO(contenu): nombre de vues 3D et de modifications incluses (à demander à Amandine).
 includes: []
-# TODO(contenu): prix affiché sur le site actuel (18/11/2026) : Amandine doit le confirmer
-# (fixe ou « à partir de ») avant la mise en production. Aucune Offer JSON-LD (ADR-0007).
+# TODO(contenu): prix affiché sur le site actuel (18/11/2026) : Amandine doit le confirmer
+# (fixe ou « à partir de ») avant la mise en production. Aucune Offer JSON-LD (ADR-0007).
 price:
   amount: 189
   currency: EUR

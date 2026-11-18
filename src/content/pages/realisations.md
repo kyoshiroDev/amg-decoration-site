@@ -1,6 +1,6 @@
 ---
-# Source : docs/contenu-source/about.md (page « Réalisations » du site actuel).
-# Mot-clé : réalisations décoratrice d'intérieur.
+# Source : docs/contenu-source/about.md (page « Réalisations » du site actuel).
+# Mot-clé : réalisations décoratrice d'intérieur.
 seo:
   title: 'Réalisations : décoration d’intérieur en 3D'
   description: 'Découvrez mes réalisations de décoratrice d’intérieur : chalet en Suisse, pièces de vie, suite parentale… Chaque projet est imaginé en 3D dans le détail.'

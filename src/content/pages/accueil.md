@@ -1,5 +1,5 @@
 ---
-# Textes de l'accueil (source : docs/contenu-source/accueil.md). Mot-clé : décoratrice d'intérieur Paris 3D.
+# Textes de l'accueil (source : docs/contenu-source/accueil.md). Mot-clé : décoratrice d'intérieur Paris 3D.
 seo:
   title: 'Décoratrice d’intérieur 3D à Paris'
   description: 'Décoratrice d’intérieur à Paris, je vous montre votre futur intérieur en 3D avant tout achat. Des décisions sereines, partout en France. Parlons-en.'

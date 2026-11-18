@@ -6,10 +6,10 @@ target: 'salon, salle à manger, cuisine, chambre, bureau'
 summary: 'Ma formule la plus demandée : salon, salle à manger, cuisine, chambre ou bureau imaginés en 3D, avec plan d’aménagement et sélection de mobilier.'
 # TODO(contenu): nombre de vues 3D et de modifications incluses (à demander à Amandine).
 includes: []
-# « La formule confort est la formule la plus demandée. » (site actuel)
+# « La formule confort est la formule la plus demandée. » (site actuel)
 highlight: true
-# TODO(contenu): prix affiché sur le site actuel (18/11/2026) : Amandine doit le confirmer
-# (fixe ou « à partir de ») avant la mise en production. Aucune Offer JSON-LD (ADR-0007).
+# TODO(contenu): prix affiché sur le site actuel (18/11/2026) : Amandine doit le confirmer
+# (fixe ou « à partir de ») avant la mise en production. Aucune Offer JSON-LD (ADR-0007).
 price:
   amount: 339
   currency: EUR

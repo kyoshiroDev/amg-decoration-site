@@ -1,6 +1,6 @@
 ---
-# Source : docs/contenu-source/accueil.md (déroulé, avantages) et services.md (contenu des formules).
-# Mots-clés : plan 3D décoration intérieure, visualisation 3D avant travaux.
+# Source : docs/contenu-source/accueil.md (déroulé, avantages) et services.md (contenu des formules).
+# Mots-clés : plan 3D décoration intérieure, visualisation 3D avant travaux.
 seo:
   title: 'Visualisation 3D avant travaux et plan 3D déco'
   description: 'Visualisation 3D avant travaux : je réalise le plan 3D de votre décoration intérieure pour voir, ajuster et valider chaque choix. Découvrez ma méthode.'

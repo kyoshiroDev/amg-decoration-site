@@ -1,6 +1,6 @@
 ---
-# TODO(contenu): la chambre des enfants n’est pas décrite sur le site actuel. Quelles couleurs, matières et idées clés Amandine veut-elle mettre en avant ?
-# Source : docs/contenu-source/projet-chalet.md (titre et accroche repris du site actuel).
+# TODO(contenu): la chambre des enfants n’est pas décrite sur le site actuel. Quelles couleurs, matières et idées clés Amandine veut-elle mettre en avant ?
+# Source : docs/contenu-source/projet-chalet.md (titre et accroche repris du site actuel).
 title: 'Appartement moderne et cocooning en Suisse'
 summary: 'Appartement moderne et cocooning au cœur des Alpes'
 location: 'Suisse'
@@ -9,14 +9,14 @@ roomTypes:
   - chambre-parentale
   - chambre-enfant
 style: 'Esprit chalet revisité'
-# TODO(contenu): placeholders ; remplacer par les originaux HD dans src/assets/projets/chalet-suisse/.
+# TODO(contenu): placeholders ; remplacer par les originaux HD dans src/assets/projets/chalet-suisse/.
 cover:
   image: ../../assets/placeholders/interieur-lumiere.jpg
-  alt: 'Illustration provisoire d’un intérieur lumineux : arche terracotta, plante vert sauge et sol couleur sable'
-# TODO(contenu): nature des images inconnue (rendu 3D ou photo réelle ?), « 3d » par défaut.
+  alt: 'Illustration provisoire d’un intérieur lumineux : arche terracotta, plante vert sauge et sol couleur sable'
+# TODO(contenu): nature des images inconnue (rendu 3D ou photo réelle ?), « 3d » par défaut.
 gallery:
   - image: ../../assets/placeholders/interieur-lumiere.jpg
-    alt: 'Illustration provisoire d’un intérieur lumineux : arche terracotta, plante vert sauge et sol couleur sable'
+    alt: 'Illustration provisoire d’un intérieur lumineux : arche terracotta, plante vert sauge et sol couleur sable'
     kind: 3d
 featured: true
 order: 1

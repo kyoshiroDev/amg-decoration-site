@@ -1,5 +1,5 @@
 ---
-# TODO(contenu): conserver l'offre « Meuble sur-mesure 3D » dans le nouveau site ?
+# TODO(contenu): conserver l'offre « Meuble sur-mesure 3D » dans le nouveau site ?
 title: 'Meuble sur-mesure 3D'
 kind: offre
 tagline: 'Un meuble unique pour votre intérieur'
@@ -11,8 +11,8 @@ includes:
   - 'Choix des matériaux et finitions'
   - '1 plan d’élévation détaillé avec toutes les mesures'
   - '1 visuel réaliste 4K de votre futur meuble'
-# TODO(contenu): prix affiché sur le site actuel (18/11/2026) : Amandine doit le confirmer
-# (fixe ou « à partir de ») avant la mise en production. Aucune Offer JSON-LD (ADR-0007).
+# TODO(contenu): prix affiché sur le site actuel (18/11/2026) : Amandine doit le confirmer
+# (fixe ou « à partir de ») avant la mise en production. Aucune Offer JSON-LD (ADR-0007).
 price:
   amount: 339
   currency: EUR

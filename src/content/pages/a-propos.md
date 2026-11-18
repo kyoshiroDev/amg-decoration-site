@@ -1,7 +1,7 @@
 ---
-# TODO(contenu): le site actuel affiche à la fois « certifiée par MJM Design Graphic à Paris » (accueil) et « cursus de 5 ans… certifiée décoratrice d’intérieur en 2010 » (à propos). Quel est l’intitulé exact de la certification, quel organisme l’a délivrée, et le cursus de 5 ans inclut-il MJM ? Faut-il citer MJM Design Graphic ?
-# Source : docs/contenu-source/a-propos.md (et accueil.md pour la 3D et le travail à distance).
-# Mot-clé : Amandine Gaury décoratrice.
+# TODO(contenu): le site actuel affiche à la fois « certifiée par MJM Design Graphic à Paris » (accueil) et « cursus de 5 ans… certifiée décoratrice d’intérieur en 2010 » (à propos). Quel est l’intitulé exact de la certification, quel organisme l’a délivrée, et le cursus de 5 ans inclut-il MJM ? Faut-il citer MJM Design Graphic ?
+# Source : docs/contenu-source/a-propos.md (et accueil.md pour la 3D et le travail à distance).
+# Mot-clé : Amandine Gaury décoratrice.
 seo:
   title: 'Amandine Gaury, décoratrice d’intérieur 3D'
   description: 'Amandine Gaury, décoratrice d’intérieur certifiée, formée à Paris et spécialisée en 3D : découvrez mon parcours, mes valeurs et ma façon de travailler.'
@@ -19,7 +19,7 @@ sections:
   citation:
     heading: 'Ce qui m’inspire'
     quote:
-      # Citation affichée sur le site actuel (« coeur » corrigé en « cœur », orthographe seule).
+      # Citation affichée sur le site actuel (« coeur » corrigé en « cœur », orthographe seule).
       text: 'Si le soleil entre dans la maison, il est un peu dans votre cœur.'
       author: 'Le Corbusier'
   missions:

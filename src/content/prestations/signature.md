@@ -6,8 +6,8 @@ target: 'salon + cuisine ouverte, salon + séjour, suite parentale, terrasse, ba
 summary: 'Pour les espaces ouverts : salon et cuisine, salon et séjour, suite parentale, terrasse ou balcon, imaginés en 3D comme un tout harmonieux.'
 # TODO(contenu): nombre de vues 3D et de modifications incluses (à demander à Amandine).
 includes: []
-# TODO(contenu): prix affiché sur le site actuel (18/11/2026) : Amandine doit le confirmer
-# (fixe ou « à partir de ») avant la mise en production. Aucune Offer JSON-LD (ADR-0007).
+# TODO(contenu): prix affiché sur le site actuel (18/11/2026) : Amandine doit le confirmer
+# (fixe ou « à partir de ») avant la mise en production. Aucune Offer JSON-LD (ADR-0007).
 price:
   amount: 489
   currency: EUR

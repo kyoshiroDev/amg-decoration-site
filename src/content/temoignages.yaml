@@ -1,7 +1,7 @@
-# Avis clients : textes EXACTS repris de docs/CONTENU-EXISTANT.md §3 (relevé du 18/11/2026).
+# Avis clients : textes EXACTS repris de docs/CONTENU-EXISTANT.md §3 (relevé du 18/11/2026).
 # Ne jamais reformuler, ne jamais ajouter de note ni de date.
-# La clé (ex. « patrick-v ») est l'identifiant de l'entrée.
-# TODO(contenu): confirmer avec Amandine l'attribution des avis (avis « cuisine » = Sébastien T.
+# La clé (ex. « patrick-v ») est l'identifiant de l'entrée.
+# TODO(contenu): confirmer avec Amandine l'attribution des avis (avis « cuisine » = Sébastien T.
 # d'après le HTML), la source de l'avis de Christine C et son accord de publication.
 patrick-v:
   author: 'Patrick V.'

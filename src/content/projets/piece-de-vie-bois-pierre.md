@@ -1,18 +1,18 @@
 ---
-# Source : docs/contenu-source/projet-lamyae.md (titre et accroche repris du site actuel).
+# Source : docs/contenu-source/projet-lamyae.md (titre et accroche repris du site actuel).
 title: 'Une pièce de vie élégante et intemporelle'
 summary: 'Aménagement et décoration d’une pièce de vie, projet en construction'
 # TODO(contenu): lieu (ville ou région) à demander à Amandine.
 roomTypes:
   - piece-de-vie
 style: 'Naturel et intemporel'
-# TODO(contenu): placeholders ; remplacer par les originaux HD dans src/assets/projets/piece-de-vie-bois-pierre/.
+# TODO(contenu): placeholders ; remplacer par les originaux HD dans src/assets/projets/piece-de-vie-bois-pierre/.
 cover:
   image: ../../assets/placeholders/interieur-lumiere.jpg
-  alt: 'Illustration provisoire d’un intérieur lumineux : arche terracotta, plante vert sauge et sol couleur sable'
+  alt: 'Illustration provisoire d’un intérieur lumineux : arche terracotta, plante vert sauge et sol couleur sable'
 gallery:
   - image: ../../assets/placeholders/interieur-lumiere.jpg
-    alt: 'Illustration provisoire d’un intérieur lumineux : arche terracotta, plante vert sauge et sol couleur sable'
+    alt: 'Illustration provisoire d’un intérieur lumineux : arche terracotta, plante vert sauge et sol couleur sable'
     kind: 3d
 featured: true
 order: 2
