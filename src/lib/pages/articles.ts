@@ -7,8 +7,9 @@ import { getImage } from 'astro:assets';
 import { getCollection, render } from 'astro:content';
 import { microcopy } from '@/config/microcopy';
 import { requireSection } from '../content';
+import { buildCollectionPage, webPageInputFrom } from '../jsonld';
 import { getPageData } from './page';
-import type { PageSection } from './types';
+import type { PageSection, WithJsonLd } from './types';
 import {
   buildArticlePageModel,
   buildArticlesIndexModel,
@@ -20,17 +21,23 @@ import {
 /** Largeur de l'image publiée dans le JSON-LD (Google recommande ≥ 1200 px). */
 const JSON_LD_IMAGE_WIDTH = 1200;
 
-export async function getArticlesIndexData(): Promise<ArticlesIndexModel> {
+/** Index du blog ; JSON-LD `CollectionPage` listant les articles publiés dans l'ordre affiché. */
+export async function getArticlesIndexData(origin: URL): Promise<WithJsonLd<ArticlesIndexModel>> {
   const [page, articles] = await Promise.all([
     getPageData('conseils-deco'),
     getCollection('articles'),
   ]);
-  return buildArticlesIndexModel({
+  const model = buildArticlesIndexModel({
     page,
     articles,
     readingTemplate: microcopy.articles.readingTime,
     labels: { home: microcopy.home, indexLabel: microcopy.articles.indexLabel },
   });
+  const items = model.articles.map((article) => ({ name: article.title, path: article.href }));
+  return {
+    ...model,
+    jsonLd: [buildCollectionPage({ ...webPageInputFrom(model), items }, origin)],
+  };
 }
 
 export interface ArticlePageProps {

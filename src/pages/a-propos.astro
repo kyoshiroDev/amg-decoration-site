@@ -13,7 +13,7 @@ import CtaBanner from '@/components/blocks/CtaBanner.astro';
 import { media } from '@/config/media';
 import { getAboutData } from '@/lib/pages/about';
 
-const { model, Content } = await getAboutData();
+const { model, Content, jsonLd } = await getAboutData(Astro.site ?? Astro.url);
 const { sections } = model;
 ---
 
@@ -21,6 +21,7 @@ const { sections } = model;
   title={model.seo.title}
   description={model.seo.description}
   breadcrumbs={model.breadcrumbs}
+  jsonLd={jsonLd}
 >
   <PageHero section={model.hero} id="a-propos-titre" />
   <MediaText

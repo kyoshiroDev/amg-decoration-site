@@ -11,18 +11,32 @@ Double ancrage :
 
 ## 2. Plan du site et intentions
 
-| URL (trailing slash conservé)                                       | Intention principale         | Mot-clé cible (à valider par recherche)                       |
-| ------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------- |
-| `/`                                                                 | Marque + offre               | décoratrice d'intérieur Paris 3D                              |
-| `/prestations/`                                                     | Comparer les offres          | décoration d'intérieur en ligne / tarifs formules             |
-| `/prestations/<formule>/`                                           | Détail d'une formule         | aménagement studio 3D, décoration pièce de vie, etc.          |
-| `/visualisation-3d/`                                                | Comprendre la 3D, la méthode | plan 3D décoration intérieure, visualisation 3D avant travaux |
-| `/realisations/`                                                    | Preuve, inspiration          | réalisations décoratrice d'intérieur                          |
-| `/realisations/<projet>/`                                           | Étude de cas                 | ex. décoration chalet résidence secondaire                    |
-| `/a-propos/`                                                        | Confiance (E-E-A-T)          | Amandine Gaury décoratrice                                    |
-| `/conseils-deco/` + articles                                        | Longue traîne                | voir §5                                                       |
-| `/contact/`                                                         | Conversion                   | contact décoratrice d'intérieur devis                         |
-| `/mentions-legales/`, `/confidentialite/`, `/conditions-generales/` | Légal                        | —                                                             |
+Une intention et un mot-clé principal par page (pas de cannibalisation). Titles réels relevés dans `dist/` (audit Phase 4, 18/11/2026) ; le suffixe « | AMG Décoration » n'est ajouté que si l'ensemble tient dans 60 caractères.
+
+| URL                                                                 | Intention                    | Mot-clé principal (à valider par recherche)                 | `<title>` actuel (car.)                                                   |
+| ------------------------------------------------------------------- | ---------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `/`                                                                 | Marque + offre               | décoratrice d'intérieur Paris (3D)                          | Décoratrice d’intérieur 3D à Paris \| AMG Décoration (51)                 |
+| `/prestations/`                                                     | Comparer les offres          | décoration d'intérieur en ligne, tarifs                     | Décoration d’intérieur en ligne : formules et tarifs (52)                 |
+| `/prestations/essentiel/`                                           | Formule petite pièce         | décorer un petit espace en 3D                               | Formule Essentiel : décorer un petit espace en 3D (49)                    |
+| `/prestations/confort/`                                             | Formule pièce de vie         | décoration pièce de vie 3D                                  | Formule Confort : décoration de pièce de vie en 3D (50)                   |
+| `/prestations/signature/`                                           | Formule espaces ouverts      | décoration espace ouvert / salon cuisine ouverte 3D         | Formule Signature : espaces ouverts en 3D \| AMG Décoration (58)          |
+| `/prestations/studio/`                                              | Formule studio               | aménagement studio / petit espace 3D                        | Formule Studio : aménagement de studio en 3D (44)                         |
+| `/prestations/meuble-sur-mesure/`                                   | Conception de meuble         | meuble sur mesure 3D                                        | Meuble sur mesure en 3D, conçu pour votre intérieur (51)                  |
+| `/prestations/professionnels/`                                      | Offre B2B                    | visuels 3D immobilier / home staging virtuel                | Visuels 3D pour agents immobiliers et investisseurs (51)                  |
+| `/visualisation-3d/`                                                | Comprendre la 3D, la méthode | visualisation 3D avant travaux, plan 3D déco                | Visualisation 3D avant travaux et plan 3D déco (46)                       |
+| `/realisations/`                                                    | Preuve, inspiration          | réalisations décoratrice d'intérieur                        | Réalisations : décoration d’intérieur en 3D \| AMG Décoration (60)        |
+| `/realisations/<projet>/`                                           | Étude de cas                 | voir tableau « Réalisations migrées »                       | voir ci-dessous                                                           |
+| `/a-propos/`                                                        | Confiance (E-E-A-T)          | Amandine Gaury décoratrice                                  | Amandine Gaury, décoratrice d’intérieur 3D \| AMG Décoration (59)         |
+| `/conseils-deco/`                                                   | Hub longue traîne            | conseils déco                                               | Conseils déco d’une décoratrice d’intérieur \| AMG Décoration (60)        |
+| `/conseils-deco/plan-3d-avant-renovation/`                          | Informationnelle             | pourquoi faire un plan 3D avant de rénover                  | Plan 3D décoration intérieure : l’atout avant de rénover (56), à corriger |
+| `/conseils-deco/decoratrice-interieur-a-distance/`                  | Informationnelle             | décoratrice d'intérieur à distance, conseil déco à distance | Décoratrice d’intérieur à distance : comment ça se passe (56)             |
+| `/contact/`                                                         | Conversion                   | contact décoratrice d'intérieur, devis                      | Contact et devis décoratrice d’intérieur \| AMG Décoration (57)           |
+| `/mentions-legales/`, `/confidentialite/`, `/conditions-generales/` | Légal                        | —                                                           | titres simples + suffixe                                                  |
+| `/merci/`, `/404`, `/styleguide/`                                   | Technique                    | — (`noindex, nofollow`, hors sitemap)                       | —                                                                         |
+
+**Cannibalisation à corriger** : l'article `plan-3d-avant-renovation` vise en tête de title « plan 3D décoration intérieure », mot-clé attribué à `/visualisation-3d/` (page de service). L'article doit garder l'intention informationnelle (« pourquoi un plan 3D avant de rénover ») et lier vers `/visualisation-3d/` avec l'ancre « plan 3D de décoration intérieure ». Proposition transmise au rédacteur (title = h1 : « Pourquoi faire un plan 3D avant de rénover son intérieur ? », 58 car.).
+
+**Mot-clé dans le h1** : les fiches prestations ont pour h1 le seul nom de la formule (« Formule Confort ») ; le mot-clé n'apparaît que dans le title. À améliorer (voir rapport d'audit Phase 4 : champ de titre de héros distinct du nom de la formule).
 
 **Convention d'URL** : slash final partout (`trailingSlash: 'always'` dans `astro.config.mjs`, identique au WordPress actuel ⇒ moins de redirections), slugs en français sans accents. Côté Vercel, la normalisation est la **dernière règle de `redirects`** et non l'option `trailingSlash` (voir §3).
 
@@ -94,7 +108,7 @@ Chaque URL de page est déclarée **avec et sans slash final** (l'accueil WordPr
 | ------------------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `https://amgdecorationdinterieur.com/#site`       | `WebSite`             | `name`, `alternateName` (« AMG Décoration », nom de site Google), `url`, `inLanguage: fr-FR`, `publisher` → `#entreprise`                                                                                                  |
 | `https://amgdecorationdinterieur.com/#entreprise` | `ProfessionalService` | `name`, `alternateName`, `slogan`, `url`, `telephone` (E.164), `email` (affiché dans le pied de page), `address` (région + pays seulement), `areaServed`, `openingHoursSpecification`, `founder` → `#fondatrice`, `sameAs` |
-| `https://amgdecorationdinterieur.com/#fondatrice` | `Person`              | `name`, `jobTitle`, `worksFor` → `#entreprise`                                                                                                                                                                             |
+| `https://amgdecorationdinterieur.com/#fondatrice` | `Person`              | `name`, `jobTitle`, `url` (→ `/a-propos/`), `worksFor` → `#entreprise`                                                                                                                                                     |
 
 - Les nœuds propres à une page (`BreadcrumbList`, `Service`, `CreativeWork`, `BlogPosting`) s'ajoutent au même graphe via la prop `jsonLd` des layouts et référencent les entités globales par `@id` (`provider`, `creator`, `author`, `publisher`).
 - Toutes les données viennent de `src/config/site.ts` (NAP identique partout).
@@ -108,13 +122,27 @@ Chaque URL de page est déclarée **avec et sans slash final** (l'accueil WordPr
 - **Pas d'`AggregateRating` ni de `review`** auto-attribués (non éligibles, contraires aux consignes). Les avis Google seront affichés comme contenu avec lien vers la fiche.
 - `ProfessionalService` : schema.org signale ce type comme « déprécié » au sens de catégorie générique, mais il reste valide et reconnu par Google comme sous-type de `LocalBusiness` ; aucun type plus précis n'existe pour un décorateur d'intérieur.
 
-### Par type de page (à venir)
+### Par type de page (implémenté en Phase 4)
 
-- Prestations : `Service` (+ `provider`). Pas d'`Offer` avec prix tant que les tarifs ne sont pas validés.
-- Réalisations : `CreativeWork` + `ImageObject`.
-- Articles : `BlogPosting` (auteur `Person`, dates, image).
-- Toutes pages internes : `BreadcrumbList` (ajoutée automatiquement par `PageLayout`).
-- FAQ éventuelle : `FAQPage` pour la sémantique uniquement (plus de résultat enrichi pour ce type de site).
+Chaque page émet le graphe global (`WebSite`, `ProfessionalService`, `Person`) puis ses nœuds propres. Contrôlé sur toutes les pages du sitemap par `tests/e2e/seo.spec.ts` (« SEO de toutes les pages »).
+
+| Page                                 | Nœuds propres (ordre du `@graph`)  | Source                                                                                                                                    |
+| ------------------------------------ | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                                  | —                                  | `BaseLayout`                                                                                                                              |
+| `/prestations/`                      | `BreadcrumbList`                   | `PageLayout`                                                                                                                              |
+| `/prestations/<formule>/` (6 fiches) | `Service`, `BreadcrumbList`        | `buildService` (`provider` → `#entreprise`, `areaServed` France, **sans `offers`**)                                                       |
+| `/visualisation-3d/`, pages légales  | `BreadcrumbList`                   | `PageLayout`                                                                                                                              |
+| `/realisations/`, `/conseils-deco/`  | `CollectionPage`, `BreadcrumbList` | `buildCollectionPage` : `mainEntity` = `ItemList` des cartes, dans l'ordre affiché                                                        |
+| `/realisations/<projet>/`            | `CreativeWork`, `BreadcrumbList`   | `buildCreativeWork` (`creator` → `#fondatrice`, images ≥ 1200 px en JPEG absolues)                                                        |
+| `/conseils-deco/<article>/`          | `BlogPosting`, `BreadcrumbList`    | `buildBlogPosting` (`author` → `#fondatrice`, `publisher` → `#entreprise`, `isPartOf` → `#site`, `datePublished`/`dateModified`, `image`) |
+| `/a-propos/`                         | `AboutPage`, `BreadcrumbList`      | `buildAboutPage` (`mainEntity` → `#fondatrice`, `about` → `#entreprise`)                                                                  |
+| `/contact/`                          | `ContactPage`, `BreadcrumbList`    | `buildContactPage` (`about` → `#entreprise` ; coordonnées non dupliquées)                                                                 |
+| `/merci/`, `/404`, `/styleguide/`    | —                                  | `noindex`                                                                                                                                 |
+
+- `BreadcrumbList` : construite depuis le même tableau que le fil visible (`breadcrumbs` du modèle) ; l'e2e vérifie l'égalité des libellés et des URL sur chaque page interne.
+- `Person` : `url` → `/a-propos/` (page de profil, signal E-E-A-T). `sameAs` personnel (LinkedIn) à ajouter quand l'URL sera connue.
+- **Décisions** : `CollectionPage` + `ItemList` sur les index (sémantique uniquement : les carrousels Google ne concernent pas ce type de contenu ; aucun risque car la liste reprend exactement les cartes visibles). `AboutPage` et `ContactPage` : utiles pour relier les pages aux entités par `@id`, sans effet d'affichage attendu. **Pas de `FAQPage`** (FAQ vide ; et plus de résultat enrichi pour ce type de site). Pas de `WebPage` générique sur les autres pages (aucun gain). Le nom des nœuds `WebPage` reprend le title SEO (sans suffixe), la description reprend la meta description.
+- `ImageObject` détaillé (licence, auteur) : à ajouter quand les vrais rendus 3D seront fournis (placeholders aujourd'hui).
 
 Validation : Rich Results Test + validator.schema.org avant chaque livraison de phase SEO.
 
@@ -125,10 +153,10 @@ Composant `src/components/seo/SEO.astro`, valeurs par défaut dans `src/config/s
 - **Titre** : 60 caractères maximum (comptés en NFC). Format « Titre | AMG Décoration » si l'ensemble tient dans 60 caractères, sinon le titre seul ; un titre seul de plus de 60 caractères lève une erreur. Mot-clé en tête.
 - **Description** : 140 à 160 caractères, sinon erreur.
 - **Canonical** : URL absolue avec slash final, sans query ni ancre ; **absente sur les pages `noindex`** (ainsi que `og:url`).
-- **Robots** : `index, follow` par défaut ; `noindex, nofollow` pour la 404 et le styleguide.
+- **Robots** : `index, follow` par défaut ; `noindex, nofollow` pour la 404, `/merci/` et le styleguide.
 - **Open Graph / Twitter** : `og:type`, `og:site_name`, `og:locale` (`fr_FR`), `og:title`, `og:description`, `og:url`, `og:image` (JPEG 1200 × 630 généré par `getImage`, URL absolue) + `og:image:type`, `:width`, `:height`, `:alt` ; `twitter:card` `summary_large_image` + titre, description, image, alt.
 - Ordre du `<head>` : `charset` en premier, puis viewport ; `lang="fr"` sur `<html>` ; pas de `hreflang` (site monolingue).
-- **Sitemap** : `@astrojs/sitemap` ; la 404 est exclue d'office, `/styleguide/` par le `filter` d'`astro.config.mjs` (toute future page `noindex` — ex. `merci` — doit y être ajoutée). `<link rel="sitemap">` dans le `<head>`.
+- **Sitemap** : `@astrojs/sitemap` ; la 404 est exclue d'office, `/styleguide/` et `/merci/` par le `filter` d'`astro.config.mjs` (toute future page `noindex` doit y être ajoutée). Les brouillons d'articles n'ont pas de route, donc pas d'entrée. Pas encore de `lastmod` (voir audit Phase 4). `<link rel="sitemap">` dans le `<head>`.
 - **Prévisualisations Vercel** : en-tête `X-Robots-Tag: noindex` ajouté par Vercel par défaut, **sauf** sur un domaine personnalisé assigné à une branche (voir §6).
 
 ## 5. Calendrier éditorial « Conseils déco » (proposition initiale, à affiner)
@@ -143,6 +171,12 @@ Composant `src/components/seo/SEO.astro`, valeurs par défaut dans `src/config/s
 8. Combien coûte une décoratrice d'intérieur ? (à rédiger uniquement avec les vrais tarifs)
 
 Chaque article : 1 200–2 000 mots, 1 lien vers une prestation, 1 vers une réalisation, 1 CTA contact, visuels 3D propres à Amandine.
+
+## 5 bis. Maillage interne (contrôlé par `tests/e2e/seo.spec.ts`)
+
+- Toutes les pages (sitemap + `noindex`) sont parcourues : chaque lien interne répond **200** sans redirection, porte le **slash final**, ne pointe vers **aucune ancienne URL** (`resolveRedirect`), et chaque ancre `#id` existe ; aucune page du sitemap n'est orpheline.
+- Articles → 1 prestation + 1 réalisation (bloc « Pour aller plus loin ») : en place.
+- Réalisations → prestation correspondante : **à compléter** via le champ `service` des fiches projet (`src/content/projets/*.md`), à renseigner avec Amandine (formule réellement utilisée ; on n'invente pas). En attendant, chaque projet lie `/prestations/` et `/contact/`.
 
 ## 6. Hors site (checklist pour l'humain)
 

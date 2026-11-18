@@ -71,6 +71,7 @@ exports[`serializeJsonLd > produit un graphe global stable 1`] = `
       "@type": "Person",
       "jobTitle": "Designer d’intérieur",
       "name": "Amandine Gaury",
+      "url": "https://amgdecorationdinterieur.com/a-propos/",
       "worksFor": {
         "@id": "https://amgdecorationdinterieur.com/#entreprise",
       },

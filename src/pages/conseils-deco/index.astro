@@ -7,13 +7,14 @@ import ArticleList from '@/components/blocks/ArticleList.astro';
 import CtaBanner from '@/components/blocks/CtaBanner.astro';
 import { getArticlesIndexData } from '@/lib/pages/articles';
 
-const data = await getArticlesIndexData();
+const data = await getArticlesIndexData(Astro.site ?? Astro.url);
 ---
 
 <PageLayout
   title={data.seo.title}
   description={data.seo.description}
   breadcrumbs={data.breadcrumbs}
+  jsonLd={data.jsonLd}
 >
   <PageHero section={data.hero} id="conseils-titre" />
   <ArticleList articles={data.articles} />

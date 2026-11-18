@@ -7,13 +7,14 @@ import ProjectCatalog from '@/components/blocks/ProjectCatalog.astro';
 import CtaBanner from '@/components/blocks/CtaBanner.astro';
 import { getProjectsIndexData } from '@/lib/pages/projects';
 
-const data = await getProjectsIndexData();
+const data = await getProjectsIndexData(Astro.site ?? Astro.url);
 ---
 
 <PageLayout
   title={data.seo.title}
   description={data.seo.description}
   breadcrumbs={data.breadcrumbs}
+  jsonLd={data.jsonLd}
 >
   <PageHero section={data.hero} id="realisations-titre" />
   <ProjectCatalog projects={data.projects} filters={data.filters} />

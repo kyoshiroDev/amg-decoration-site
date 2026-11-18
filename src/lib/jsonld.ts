@@ -5,11 +5,15 @@
  * Pas d'`AggregateRating` auto-attribué, pas d'`Offer` tant que les tarifs ne sont pas validés.
  */
 import type {
+  AboutPage,
   BlogPosting,
   BreadcrumbList,
+  CollectionPage,
+  ContactPage,
   CreativeWork,
   DayOfWeek as SchemaDayOfWeek,
   Graph,
+  ItemList,
   OpeningHoursSpecification,
   Person,
   ProfessionalService,
@@ -21,6 +25,9 @@ import type { InternalPath, OpeningHoursRule, SiteConfig } from '@/config/site';
 import { absoluteUrl } from './url';
 
 export type EntityKey = 'site' | 'entreprise' | 'fondatrice';
+
+/** Page de présentation d'Amandine : `url` de l'entité `Person` (signal E-E-A-T). */
+export const FOUNDER_PROFILE_PATH: InternalPath = '/a-propos/';
 
 export interface BreadcrumbItem {
   readonly label: string;
@@ -62,6 +69,7 @@ export function buildFounder(config: SiteConfig, origin: URL): Person {
     '@id': entityId(origin, 'fondatrice'),
     name: config.founder.name,
     jobTitle: config.founder.jobTitle,
+    url: absoluteUrl(FOUNDER_PROFILE_PATH, origin),
     worksFor: { '@id': entityId(origin, 'entreprise') },
   };
 }
@@ -180,7 +188,103 @@ export function buildBlogPosting(input: BlogPostingInput, origin: URL): BlogPost
     dateModified: (input.dateModified ?? input.datePublished).toISOString(),
     author: { '@id': entityId(origin, 'fondatrice') },
     publisher: { '@id': entityId(origin, 'entreprise') },
+    isPartOf: { '@id': entityId(origin, 'site') },
     inLanguage: 'fr-FR',
+  };
+}
+
+/** Élément d'une liste de pages (carte de réalisation, article…). */
+export interface ListedPage {
+  readonly name: string;
+  readonly path: InternalPath;
+}
+
+/** Liste ordonnée des pages présentées par une page d'index (sémantique : pas de résultat enrichi). */
+export function buildItemList(items: readonly ListedPage[], origin: URL): ItemList {
+  return {
+    '@type': 'ItemList',
+    numberOfItems: items.length,
+    itemListElement: items.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.name,
+      url: absoluteUrl(item.path, origin),
+    })),
+  };
+}
+
+export interface WebPageInput {
+  readonly name: string;
+  readonly description: string;
+  readonly path: InternalPath;
+}
+
+/** Modèle de page minimal : titre et description SEO, fil d'Ariane (dernier élément = page). */
+export interface PageModelLike {
+  readonly seo: { readonly title: string; readonly description: string };
+  readonly breadcrumbs: readonly BreadcrumbItem[];
+}
+
+/** Nom, description et chemin d'un nœud `WebPage` tirés du modèle de page (mêmes textes que le `<head>`). */
+export function webPageInputFrom(model: PageModelLike): WebPageInput {
+  const current = model.breadcrumbs.at(-1);
+  if (!current) {
+    throw new Error('Le fil d’Ariane de la page est vide : chemin de la page inconnu.');
+  }
+  return { name: model.seo.title, description: model.seo.description, path: current.href };
+}
+
+interface WebPageBase {
+  readonly name: string;
+  readonly description: string;
+  readonly url: string;
+  readonly isPartOf: { readonly '@id': string };
+  readonly inLanguage: 'fr-FR';
+}
+
+/** Propriétés communes aux nœuds `WebPage` : rattachement au site par `@id`. */
+function webPageBase(input: WebPageInput, origin: URL): WebPageBase {
+  return {
+    name: input.name,
+    description: input.description,
+    url: absoluteUrl(input.path, origin),
+    isPartOf: { '@id': entityId(origin, 'site') },
+    inLanguage: 'fr-FR',
+  };
+}
+
+/**
+ * Page d'index (réalisations, articles) : `CollectionPage` dont l'entité principale est la
+ * liste des pages présentées. Aucun résultat enrichi Google pour ce type de site ; utile pour
+ * la compréhension de la structure, sans risque (contenu visible identique).
+ */
+export function buildCollectionPage(
+  input: WebPageInput & { readonly items: readonly ListedPage[] },
+  origin: URL,
+): CollectionPage {
+  return {
+    '@type': 'CollectionPage',
+    ...webPageBase(input, origin),
+    mainEntity: buildItemList(input.items, origin),
+  };
+}
+
+/** Page « À propos » : son entité principale est la fondatrice, elle parle de l'entreprise. */
+export function buildAboutPage(input: WebPageInput, origin: URL): AboutPage {
+  return {
+    '@type': 'AboutPage',
+    ...webPageBase(input, origin),
+    mainEntity: { '@id': entityId(origin, 'fondatrice') },
+    about: { '@id': entityId(origin, 'entreprise') },
+  };
+}
+
+/** Page « Contact » : rattachée à l'entreprise (dont les coordonnées sont dans le graphe global). */
+export function buildContactPage(input: WebPageInput, origin: URL): ContactPage {
+  return {
+    '@type': 'ContactPage',
+    ...webPageBase(input, origin),
+    about: { '@id': entityId(origin, 'entreprise') },
   };
 }
 

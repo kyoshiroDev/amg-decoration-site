@@ -1,17 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { site } from '@/config/site';
 import {
+  buildAboutPage,
   buildBlogPosting,
   buildBreadcrumbList,
   buildBusiness,
+  buildCollectionPage,
+  buildContactPage,
   buildCreativeWork,
   buildFounder,
   buildGraph,
+  buildItemList,
   buildOpeningHoursSpecification,
   buildService,
   buildWebSite,
   entityId,
+  FOUNDER_PROFILE_PATH,
   serializeJsonLd,
+  webPageInputFrom,
 } from '@/lib/jsonld';
 
 const origin = new URL('https://amgdecorationdinterieur.com');
@@ -104,6 +110,13 @@ describe('buildWebSite et buildFounder', () => {
       worksFor: { '@id': entityId(origin, 'entreprise') },
     });
   });
+
+  it('donne à la fondatrice l’URL absolue de sa page de présentation', () => {
+    expect(FOUNDER_PROFILE_PATH).toBe('/a-propos/');
+    expect(buildFounder(site, origin)).toMatchObject({
+      url: 'https://amgdecorationdinterieur.com/a-propos/',
+    });
+  });
 });
 
 describe('buildBreadcrumbList', () => {
@@ -176,6 +189,119 @@ describe('buildBlogPosting', () => {
       dateModified: '2026-11-17T00:00:00.000Z',
       image: 'https://amgdecorationdinterieur.com/_astro/cover.jpg',
     });
+  });
+
+  it('attribue l’article à la fondatrice et le rattache au site et à l’entreprise par @id', () => {
+    const post = buildBlogPosting(
+      {
+        headline: 'Titre',
+        description: 'Description',
+        path: '/conseils-deco/article',
+        datePublished: new Date('2026-11-17T00:00:00Z'),
+        dateModified: new Date('2026-11-20T00:00:00Z'),
+        imageUrl: '/_astro/cover.jpg',
+      },
+      origin,
+    );
+    expect(post).toMatchObject({
+      url: 'https://amgdecorationdinterieur.com/conseils-deco/article/',
+      mainEntityOfPage: 'https://amgdecorationdinterieur.com/conseils-deco/article/',
+      dateModified: '2026-11-20T00:00:00.000Z',
+      author: { '@id': entityId(origin, 'fondatrice') },
+      publisher: { '@id': entityId(origin, 'entreprise') },
+      isPartOf: { '@id': entityId(origin, 'site') },
+    });
+  });
+});
+
+describe('webPageInputFrom', () => {
+  it('reprend le titre et la description SEO et le chemin du dernier élément du fil', () => {
+    expect(
+      webPageInputFrom({
+        seo: { title: 'Contact', description: 'Écrivez-moi' },
+        breadcrumbs: [
+          { label: 'Accueil', href: '/' },
+          { label: 'Contact', href: '/contact/' },
+        ],
+      }),
+    ).toEqual({ name: 'Contact', description: 'Écrivez-moi', path: '/contact/' });
+  });
+
+  it('lève une erreur si le fil d’Ariane est vide', () => {
+    expect(() =>
+      webPageInputFrom({ seo: { title: 'T', description: 'D' }, breadcrumbs: [] }),
+    ).toThrow();
+  });
+});
+
+describe('buildItemList et buildCollectionPage', () => {
+  const items = [
+    { name: 'Chalet en Suisse', path: '/realisations/chalet-suisse/' },
+    { name: 'Espace scandinave', path: '/realisations/espace-de-vie-scandinave' },
+  ] as const;
+
+  it('numérote les éléments à partir de 1 avec des URL absolues à slash final', () => {
+    expect(asJson(buildItemList(items, origin))).toEqual({
+      '@type': 'ItemList',
+      numberOfItems: 2,
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Chalet en Suisse',
+          url: 'https://amgdecorationdinterieur.com/realisations/chalet-suisse/',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Espace scandinave',
+          url: 'https://amgdecorationdinterieur.com/realisations/espace-de-vie-scandinave/',
+        },
+      ],
+    });
+  });
+
+  it('rattache la page au site et en fait l’entité principale de la liste', () => {
+    const page = asJson<Record<string, unknown>>(
+      buildCollectionPage(
+        { name: 'Réalisations', description: 'Mes projets', path: '/realisations/', items },
+        origin,
+      ),
+    );
+    expect(page).toMatchObject({
+      '@type': 'CollectionPage',
+      url: 'https://amgdecorationdinterieur.com/realisations/',
+      isPartOf: { '@id': entityId(origin, 'site') },
+      inLanguage: 'fr-FR',
+      mainEntity: { '@type': 'ItemList', numberOfItems: 2 },
+    });
+  });
+});
+
+describe('buildAboutPage et buildContactPage', () => {
+  const input = { name: 'Page', description: 'Description', path: '/a-propos/' } as const;
+
+  it('AboutPage : entité principale = fondatrice, sujet = entreprise', () => {
+    expect(buildAboutPage(input, origin)).toMatchObject({
+      '@type': 'AboutPage',
+      url: 'https://amgdecorationdinterieur.com/a-propos/',
+      mainEntity: { '@id': entityId(origin, 'fondatrice') },
+      about: { '@id': entityId(origin, 'entreprise') },
+      isPartOf: { '@id': entityId(origin, 'site') },
+    });
+  });
+
+  it('ContactPage : rattachée à l’entreprise, sans dupliquer ses coordonnées', () => {
+    const page = asJson<Record<string, unknown>>(
+      buildContactPage({ ...input, path: '/contact/' }, origin),
+    );
+    expect(page).toMatchObject({
+      '@type': 'ContactPage',
+      url: 'https://amgdecorationdinterieur.com/contact/',
+      about: { '@id': entityId(origin, 'entreprise') },
+    });
+    expect(page).not.toHaveProperty('telephone');
+    expect(page).not.toHaveProperty('email');
   });
 });
 

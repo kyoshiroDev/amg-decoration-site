@@ -4,11 +4,12 @@
  * collections pour ces pages.
  */
 import type { ImageMetadata } from 'astro';
-import type { PageSection } from './types';
+import type { PageSection, WithJsonLd } from './types';
 import { getImage } from 'astro:assets';
 import { getCollection, render } from 'astro:content';
 import { microcopy } from '@/config/microcopy';
 import { requireSection } from '../content';
+import { buildCollectionPage, webPageInputFrom } from '../jsonld';
 import { getPageData } from './page';
 import {
   buildProjectPageModel,
@@ -20,17 +21,23 @@ import {
 /** Largeur des images publiées dans le JSON-LD (Google recommande ≥ 1200 px). */
 const JSON_LD_IMAGE_WIDTH = 1200;
 
-export async function getProjectsIndexData(): Promise<ProjectsIndexModel> {
+/** Index des réalisations ; JSON-LD `CollectionPage` listant les projets dans l'ordre affiché. */
+export async function getProjectsIndexData(origin: URL): Promise<WithJsonLd<ProjectsIndexModel>> {
   const [page, projets] = await Promise.all([
     getPageData('realisations'),
     getCollection('projets'),
   ]);
-  return buildProjectsIndexModel({
+  const model = buildProjectsIndexModel({
     page,
     projets,
     roomTypeLabels: microcopy.projects.roomTypes,
     labels: { home: microcopy.home, indexLabel: microcopy.projects.indexLabel },
   });
+  const items = model.projects.map((project) => ({ name: project.title, path: project.href }));
+  return {
+    ...model,
+    jsonLd: [buildCollectionPage({ ...webPageInputFrom(model), items }, origin)],
+  };
 }
 
 /** URL (relatives au site) des visuels d'un projet, en JPEG, sans doublon. */
