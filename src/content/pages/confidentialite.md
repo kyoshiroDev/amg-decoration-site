@@ -90,7 +90,7 @@ Ce site ne lit ni n’enregistre aucune information sur votre appareil : ni coo
 
 ## Liens vers d’autres sites
 
-Le site propose des liens vers Instagram, Facebook, Pinterest, WhatsApp et les avis Google. Aucune donnée n’est transmise à ces services tant que vous ne cliquez pas. Une fois sur leur site, leurs propres règles de confidentialité et de cookies s’appliquent ; ils savent seulement que vous venez de amgdecorationdinterieur.com.
+Le site propose des liens vers Instagram, Facebook, Pinterest, WhatsApp et les avis Google. Aucune donnée n’est transmise à ces services tant que vous ne cliquez pas. Une fois sur leur site, leurs propres règles de confidentialité et de cookies s’appliquent ; ils savent seulement que vous venez du site amgdecorationdinterieur.com.
 
 ## Sécurité
 

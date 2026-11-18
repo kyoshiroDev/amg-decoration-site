@@ -48,7 +48,7 @@ sections:
     eyebrow: 'Les autres formules'
     heading: 'Une autre pièce à imaginer ?'
     headingEmphasis: 'imaginer'
-    lead: 'Chaque formule suit la même méthode 3D : seule la taille de l’espace change.'
+    lead: 'D’une petite entrée à un studio entier, chaque formule suit la même méthode 3D. Choisissez simplement celle qui correspond à votre espace.'
     actions:
       - label: 'Voir toutes les prestations'
         href: '/prestations/'

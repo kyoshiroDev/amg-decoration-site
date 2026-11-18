@@ -2,7 +2,7 @@
 # TODO(contenu): conserver l'« Offre Professionnels » dans le nouveau site ?
 title: 'Offre Professionnels'
 kind: offre
-tagline: 'Investisseurs, agents immobiliers'
+tagline: 'Pour les investisseurs et les agents immobiliers'
 summary: 'Des visuels 3D réalistes pour aider vos acheteurs à se projeter, valoriser vos biens et accélérer vos ventes.'
 includes:
   - '1 rendez-vous à distance pour analyser vos besoins'

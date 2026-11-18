@@ -14,10 +14,10 @@ hero:
       href: '/visualisation-3d/'
 sections:
   missions:
-    eyebrow: 'Mes missions & mes valeurs'
+    eyebrow: 'Mes missions et mes valeurs'
     heading: 'Un intérieur beau, pratique et confortable, pensé avec vous'
     headingEmphasis: 'pensé avec vous'
-    lead: 'La force de mon approche, c’est l’équilibre entre esthétique, fonctionnalité et confort. Je prends le temps de comprendre vos besoins et vos envies, pour concevoir avec vous un intérieur qui vous ressemble pleinement. Et grâce aux visuels 3D, vous vous projetez avant d’investir dans un meuble ou d’engager des travaux.'
+    lead: 'La force de mon approche, c’est l’équilibre entre esthétique, fonctionnalité et confort. Je prends le temps de comprendre vos besoins et vos envies, pour concevoir avec vous un intérieur qui vous ressemble pleinement. Et grâce aux visuels 3D, vous savez à quoi ressemblera votre pièce avant d’engager la moindre dépense.'
     items:
       - title: 'Esthétique'
         text: 'Des couleurs, des matières et un mobilier choisis avec soin, selon vos goûts et votre budget.'
@@ -49,7 +49,7 @@ sections:
     actions:
       - label: 'Faire connaissance'
         href: '/a-propos/'
-      - label: 'Parlons de votre projet'
+      - label: 'Me contacter'
         href: '/contact/'
   projets:
     eyebrow: 'Mes derniers projets'
@@ -76,7 +76,7 @@ sections:
     eyebrow: 'Les avantages de la 3D'
     heading: 'Pourquoi passer par la 3D avant de vous lancer ?'
     headingEmphasis: 'la 3D'
-    lead: 'Volumes, couleurs, ambiance : vous voyez tout avant d’acheter un seul meuble. Vous évitez les erreurs coûteuses et vous avancez avec clarté.'
+    lead: 'Volumes, couleurs, ambiance : vous voyez tout avant de vous engager. Vous évitez les erreurs coûteuses et chaque décision devient plus simple.'
     actions:
       - label: 'Lancer mon projet'
         href: '/contact/'

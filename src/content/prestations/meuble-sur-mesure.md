@@ -1,6 +1,6 @@
 ---
 # TODO(contenu): conserver l'offre « Meuble sur-mesure 3D » dans le nouveau site ?
-title: 'Meuble sur-mesure 3D'
+title: 'Meuble sur mesure 3D'
 kind: offre
 tagline: 'Un meuble unique pour votre intérieur'
 target: 'bibliothèque, meuble TV, bureau, banquette…'

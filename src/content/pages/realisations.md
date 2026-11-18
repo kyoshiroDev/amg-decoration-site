@@ -13,7 +13,7 @@ sections:
   cta:
     heading: 'Votre intérieur pourrait être le prochain'
     headingEmphasis: 'le prochain'
-    lead: 'Une pièce à repenser, un logement à aménager ? Parlons-en : je vous montre votre projet en 3D avant qu’il prenne vie.'
+    lead: 'Une pièce à repenser, un logement à aménager ? Parlons-en : vous découvrirez votre projet en 3D avant même le premier coup de pinceau.'
     actions:
       - label: 'Parlons de votre projet'
         href: '/contact/'

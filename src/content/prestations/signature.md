@@ -1,7 +1,7 @@
 ---
 title: 'Formule Signature'
 kind: formule
-tagline: 'pour les espaces ouverts'
+tagline: 'Pour les espaces ouverts'
 target: 'salon + cuisine ouverte, salon + séjour, suite parentale, terrasse, balcon'
 summary: 'Pour les espaces ouverts : salon et cuisine, salon et séjour, suite parentale, terrasse ou balcon, imaginés en 3D comme un tout harmonieux.'
 # TODO(contenu): nombre de vues 3D et de modifications incluses (à demander à Amandine).
@@ -23,7 +23,7 @@ La formule Signature accompagne les espaces ouverts et les ensembles de pièces�
 
 ## Ce que je vous propose
 
-Après un rendez-vous à distance pour définir vos besoins, je conçois votre espace en 3D. Vous recevez :
+Nous commençons par un rendez-vous à distance, pour définir vos besoins et la façon dont vous vivez cet espace. Je le conçois ensuite en 3D, comme un tout. Vous recevez :
 
 - un plan d’aménagement ;
 - plusieurs vues 3D (perspectives et vues de face) ;
@@ -31,7 +31,7 @@ Après un rendez-vous à distance pour définir vos besoins, je conçois votre e
 - des modifications pour ajuster le projet à vos retours ;
 - un accompagnement par WhatsApp ou par email tout au long du projet.
 
-En option, je peux ajouter une liste de courses détaillée avec liens, un visuel 3D supplémentaire, une modification supplémentaire ou une immersion 360°.
+Selon vos besoins, vous pouvez ajouter en option une liste de courses détaillée avec liens, un visuel 3D supplémentaire, une modification supplémentaire ou une immersion 360°.
 
 ## Pourquoi la 3D pour un espace ouvert ?
 

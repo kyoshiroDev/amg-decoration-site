@@ -3,7 +3,7 @@
 # (page Prestations du site actuel) ? Le slug « essentiel » reste inchangé dans tous les cas.
 title: 'Formule Essentiel'
 kind: formule
-tagline: 'pour les petits espaces'
+tagline: 'Pour les petits espaces'
 target: 'entrée, WC, buanderie, salle de bain, dressing'
 summary: 'Une petite pièce repensée en 3D : plan d’aménagement, vues 3D et sélection de mobilier et de matériaux, pour tirer le meilleur de chaque mètre carré.'
 # TODO(contenu): nombre de vues 3D et de modifications incluses (à demander à Amandine).
@@ -25,7 +25,7 @@ La formule Essentiel s’adresse aux petites pièces du quotidien : entrée, WC
 
 ## Ce que je vous propose
 
-Après un rendez-vous à distance pour définir vos besoins, je conçois votre pièce en 3D. Vous recevez :
+Tout commence par un rendez-vous à distance, pour faire le point sur vos besoins. Je conçois ensuite votre pièce en 3D, et vous recevez :
 
 - un plan d’aménagement ;
 - plusieurs vues 3D (perspectives et vues de face) ;
@@ -33,7 +33,7 @@ Après un rendez-vous à distance pour définir vos besoins, je conçois votre p
 - des modifications pour ajuster le projet à vos retours ;
 - un accompagnement par WhatsApp ou par email tout au long du projet.
 
-En option, je peux ajouter une liste de courses détaillée avec liens, un visuel 3D supplémentaire, une modification supplémentaire ou une immersion 360°.
+Besoin d’un coup de pouce en plus ? En option, je peux ajouter une liste de courses détaillée avec liens, un visuel 3D supplémentaire, une modification supplémentaire ou une immersion 360°.
 
 ## Pourquoi la 3D, même pour une petite pièce ?
 

@@ -1,7 +1,7 @@
 ---
 # TODO(contenu): la chambre des enfants n’est pas décrite sur le site actuel. Quelles couleurs, matières et idées clés Amandine veut-elle mettre en avant ?
 # Source : docs/contenu-source/projet-chalet.md (titre et accroche repris du site actuel).
-title: 'Appartement moderne et cocooning en Suisse'
+title: 'Appartement chalet moderne et cocooning en Suisse'
 summary: 'Appartement moderne et cocooning au cœur des Alpes'
 location: 'Suisse'
 roomTypes:

@@ -37,4 +37,4 @@ Ils habillent un espace avec subtilité et lui donnent une aura noble et authent
 
 ## Le rôle de la 3D
 
-Le chantier étant encore en cours, la visualisation 3D permet de découvrir l’ambiance avant même la fin des travaux, et de valider en amont les matières, les couleurs et l’éclairage.
+Le chantier étant encore en cours, la visualisation 3D permet de découvrir l’ambiance avant même la fin des travaux, et de choisir en toute confiance les matières, les couleurs et l’éclairage.

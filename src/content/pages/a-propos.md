@@ -34,7 +34,7 @@ sections:
         text: 'J’associe les matériaux, les couleurs et les styles avec goût, pour un ensemble cohérent.'
       - title: 'Vous conseiller'
         text: 'Ambiance, mobilier, éclairage, couleurs : je vous guide selon vos goûts et votre budget.'
-      - title: 'Vous faire voir en 3D'
+      - title: 'Vous montrer le projet en 3D'
         text: 'Particuliers ou professionnels, je vous accompagne avec des visuels et des plans 3D pour vous projeter sereinement.'
   valeurs:
     eyebrow: 'Mes valeurs'
@@ -47,12 +47,12 @@ sections:
       - title: 'Confiance'
         text: 'Vous voyez chaque proposition en 3D et vous me faites part de vos retours. Nous avançons ensemble, en toute transparence.'
       - title: 'Rigueur'
-        text: 'Perfectionniste, je soigne chaque détail, car ce sont souvent les petits détails qui font toute la différence.'
+        text: 'Une proportion, une teinte, une finition : je soigne chaque élément du projet, jusqu’au plus petit.'
   temoignages:
     # Témoignages filtrés pour `a-propos` (src/content/temoignages.yaml).
     eyebrow: 'Avis client'
-    heading: 'Ce qu’on retient de notre collaboration'
-    headingEmphasis: 'notre collaboration'
+    heading: 'Tout à distance, en toute confiance'
+    headingEmphasis: 'en toute confiance'
   cta:
     heading: 'Et si nous imaginions ensemble votre intérieur ?'
     headingEmphasis: 'ensemble'
@@ -74,7 +74,7 @@ Aujourd’hui, j’exerce ce métier avec passion. Basée en région parisienne,
 
 J’aime les intérieurs chaleureux et confortables, et je reste à l’écoute des dernières tendances.
 
-Je me suis spécialisée en modélisation 3D. À partir de vos plans et de vos photos, je crée des visuels et des plans 3D qui vous permettent de vous projeter concrètement. Vous voyez votre futur intérieur avant d’acheter un meuble ou de lancer des travaux, et vous décidez en toute sérénité.
+La 3D est devenue ma spécialité. Je modélise votre pièce d’après vos plans et vos photos, puis je vous la montre en visuels et en plans 3D. Vous voyez votre futur intérieur avant d’acheter un meuble ou de lancer des travaux, et vous décidez en toute sérénité.
 
 Nos échanges se font par email, par téléphone ou en visio. Où que vous soyez, nous travaillons en étroite collaboration.
 
