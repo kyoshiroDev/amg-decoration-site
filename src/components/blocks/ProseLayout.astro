@@ -1,0 +1,73 @@
+---
+/**
+ * ProseLayout — corps de page long (Markdown) accompagné d'une colonne latérale : sommaire des
+ * pages légales, carte « En bref » d'une prestation. Mobile : la colonne précède le texte ;
+ * ≥ 64rem : texte à gauche, colonne collante à droite (sous l'en-tête). Aucun titre propre :
+ * le corps Markdown porte ses h2.
+ */
+import Section from '@/components/ui/Section.astro';
+import Container from '@/components/ui/Container.astro';
+
+interface Props {
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  /** Mesure du texte : `body` (66ch) ou `legal` (68ch, lecture longue). */
+  measure?: 'body' | 'legal';
+}
+
+const { background = 'cream', measure = 'body' } = Astro.props;
+const hasAside = Astro.slots.has('aside');
+---
+
+<Section background={background} as="div" spacing="compact" class="prose-layout">
+  <Container
+    class:list={[
+      'prose-layout__grid',
+      `prose-layout__grid--${measure}`,
+      { 'prose-layout__grid--aside': hasAside },
+    ]}
+  >
+    {hasAside && (
+      <div class="prose-layout__aside">
+        <slot name="aside" />
+      </div>
+    )}
+    <div class="prose-layout__body">
+      <slot />
+    </div>
+  </Container>
+</Section>
+
+<style>
+  @layer components {
+    /* minmax(0, 1fr) : une URL longue ne peut pas élargir la colonne au-delà de l'écran. */
+    :global(.prose-layout__grid) {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-xl);
+      align-items: start;
+    }
+
+    :global(.prose-layout__grid--legal .rich-text) {
+      max-inline-size: var(--measure-legal);
+    }
+
+    @media (width >= 64rem) {
+      :global(.prose-layout__grid--aside) {
+        grid-template-columns: minmax(0, 1fr) var(--aside-width);
+        gap: var(--space-3xl);
+      }
+
+      :global(.prose-layout__grid--aside) > .prose-layout__aside {
+        position: sticky;
+        inset-block-start: calc(var(--header-height-compact) + var(--space-m));
+        grid-column: 2;
+        grid-row: 1;
+      }
+
+      :global(.prose-layout__grid--aside) > .prose-layout__body {
+        grid-column: 1;
+        grid-row: 1;
+      }
+    }
+  }
+</style>

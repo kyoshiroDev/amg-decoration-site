@@ -1,0 +1,154 @@
+/*
+ * Styles du bloc OfferCards (blocks/OfferCards.astro), sortis du composant pour rester < 150 lignes.
+ * Même grammaire que ServiceCard (arche filaire, titre-lien, pied fileté), en grand format.
+ */
+@layer components {
+  .offer-cards {
+    display: grid;
+    gap: var(--space-m);
+    padding: 0;
+    margin: 0;
+
+    @media (width >= 64rem) {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-l);
+    }
+  }
+
+  .offer-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    block-size: 100%;
+    padding: var(--space-xl) var(--space-m-xl) var(--space-l);
+    border-radius: var(--radius-lg);
+    background-color: var(--color-surface);
+    box-shadow: var(--shadow-soft);
+
+    &:has(.offer-card__link:focus-visible) {
+      outline: var(--focus-ring);
+      outline-offset: var(--focus-ring-offset);
+    }
+  }
+
+  .offer-card__arch {
+    inline-size: var(--space-xl);
+    aspect-ratio: 3 / 4;
+    margin-block-end: var(--space-xs);
+    border: var(--border-hairline) solid var(--color-accent);
+    border-block-end: 0;
+    border-radius: var(--radius-arch);
+  }
+
+  .offer-card__title {
+    font-size: var(--step-3);
+    font-weight: var(--weight-light);
+    line-height: var(--leading-heading);
+  }
+
+  .offer-card__link {
+    color: var(--color-text);
+    text-decoration: none;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius-lg);
+    }
+
+    &:focus-visible {
+      outline: none;
+    }
+  }
+
+  .offer-card__tagline {
+    font-family: var(--font-display-stack);
+    font-size: var(--step-1);
+    font-style: italic;
+    font-weight: var(--weight-light);
+    color: var(--color-accent-text);
+  }
+
+  .offer-card__summary {
+    max-inline-size: var(--measure);
+    margin-block-start: var(--space-2xs);
+  }
+
+  .offer-card__includes {
+    display: grid;
+    gap: var(--space-2xs);
+    padding-block-start: var(--space-s);
+  }
+
+  .offer-card__label {
+    font-size: var(--text-eyebrow);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--color-accent-text);
+  }
+
+  .offer-card__list {
+    display: grid;
+    gap: var(--space-3xs);
+    padding: 0;
+    margin: 0;
+    color: var(--color-text-soft);
+
+    /* Tiret en colonne : les lignes suivantes s'alignent sur le texte, pas sous le tiret. */
+    & li {
+      display: grid;
+      grid-template-columns: auto 1fr;
+    }
+
+    & li::before {
+      content: '—\00a0' / '';
+      color: var(--color-accent);
+    }
+  }
+
+  .offer-card__footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--space-xs);
+    padding-block-start: var(--space-s);
+    margin-block-start: auto;
+    border-block-start: var(--border-hairline) solid var(--color-border);
+  }
+
+  .offer-card__price {
+    display: grid;
+    gap: var(--space-3xs);
+    font-family: var(--font-display-stack);
+    font-size: var(--step-2);
+    line-height: var(--leading-tight);
+  }
+
+  .offer-card__note {
+    font-family: var(--font-body-stack);
+    font-size: var(--step--1);
+    line-height: var(--leading-ui);
+    color: var(--color-text-soft);
+  }
+
+  .offer-card__more {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3xs);
+    font-size: var(--step--1);
+    font-weight: var(--weight-semibold);
+    color: var(--color-accent-text);
+  }
+
+  .offer-card__icon {
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+
+  .offer-card:hover .offer-card__icon {
+    transform: translateX(var(--space-3xs));
+  }
+}

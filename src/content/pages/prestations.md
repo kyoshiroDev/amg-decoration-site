@@ -43,6 +43,15 @@ sections:
     heading: 'Un meuble sur mesure ou un bien à valoriser ?'
     headingEmphasis: 'sur mesure'
     lead: 'Au-delà des formules, je conçois aussi des meubles uniques, et des visuels 3D pour les investisseurs et les agents immobiliers.'
+  autres:
+    # Pages de détail (/prestations/<slug>/) : liens vers les autres formules.
+    eyebrow: 'Les autres formules'
+    heading: 'Une autre pièce à imaginer ?'
+    headingEmphasis: 'imaginer'
+    lead: 'Chaque formule suit la même méthode 3D : seule la taille de l’espace change.'
+    actions:
+      - label: 'Voir toutes les prestations'
+        href: '/prestations/'
   cta:
     heading: 'Vous hésitez entre deux formules ?'
     headingEmphasis: 'deux formules'

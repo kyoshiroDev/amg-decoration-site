@@ -66,6 +66,11 @@ const { section, testimonials, id, background = 'linen' } = Astro.props;
       }
     }
 
+    /* Un seul avis (page À propos) : une carte en mesure de lecture, alignée sur le titre. */
+    .testimonials:has(> :only-child) {
+      grid-template-columns: minmax(0, var(--measure));
+    }
+
     @media (width >= 64rem) {
       .testimonials__item:nth-child(3n + 2) {
         margin-block-start: var(--grid-stagger);

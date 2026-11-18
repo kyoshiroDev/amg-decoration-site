@@ -28,9 +28,94 @@ export const microcopy = {
     /** Préfixe d'un prix « à partir de » (`price.from`). */
     priceFrom: 'À partir de',
     targetLabel: 'Pour\u00A0:',
+    /** Fil d'Ariane des pages de prestation. */
+    indexLabel: 'Prestations',
+    /** Invitation des cartes d'offres complémentaires. */
+    offerMore: 'Découvrir l’offre',
+    offerIncludes: 'Ce qui est compris',
+    /** Carte « En bref » des pages de prestation. */
+    facts: {
+      label: 'En bref',
+      target: 'Pour qui\u202F?',
+      includes: 'Ce qui est compris',
+      options: 'En option',
+      price: 'Tarif',
+    },
+  },
+  /** Coordonnées de la page Contact (les valeurs viennent de config/site.ts). */
+  contact: {
+    whatsappLabel: 'WhatsApp',
+  },
+  /** Pages légales. */
+  legal: {
+    tocLabel: 'Sommaire',
   },
   projects: {
     more: 'Voir le projet',
+    /** Fil d'Ariane de l'index et des pages projet. */
+    indexLabel: 'Réalisations',
+    /** Surtitre du héros d'une page projet. */
+    eyebrow: 'Réalisation',
+    /** Libellés des types de pièce (`roomTypes`, src/content.config.ts), dans l'ordre des filtres. */
+    roomTypes: {
+      'piece-de-vie': 'Pièce de vie',
+      cuisine: 'Cuisine',
+      chambre: 'Chambre',
+      'chambre-parentale': 'Chambre parentale',
+      'chambre-enfant': 'Chambre d’enfant',
+      'salle-de-bain': 'Salle de bain',
+      dressing: 'Dressing',
+      bureau: 'Bureau',
+      entree: 'Entrée',
+      exterieur: 'Extérieur',
+      studio: 'Studio',
+      'meuble-sur-mesure': 'Meuble sur mesure',
+    },
+    /** Filtres de la page Réalisations (amélioration progressive). */
+    filters: {
+      label: 'Filtrer par pièce',
+      all: 'Tous les projets',
+      /** `{count}` est remplacé par le nombre de projets affichés. */
+      statusOne: '{count}\u00A0projet affiché',
+      statusOther: '{count}\u00A0projets affichés',
+    },
+    facts: {
+      label: 'En bref',
+      location: 'Lieu',
+      rooms: 'Pièces',
+      style: 'Style',
+      service: 'Formule',
+    },
+    gallery: {
+      heading: 'Le projet en images',
+      kinds: { avant: 'Avant', '3d': 'Rendu 3D', apres: 'Réalisé' },
+    },
+    beforeAfter: {
+      heading: 'Du rendu 3D à la réalité',
+      rendering: 'Rendu 3D',
+      result: 'Réalisé',
+    },
+    pager: {
+      label: 'Autres réalisations',
+      previous: 'Projet précédent',
+      next: 'Projet suivant',
+    },
+  },
+  articles: {
+    /** Fil d'Ariane des articles. */
+    indexLabel: 'Conseils déco',
+    more: 'Lire l’article',
+    /** `{minutes}` est remplacé par la durée arrondie. */
+    readingTime: '{minutes}\u00A0min de lecture',
+    published: 'Publié le',
+    updated: 'Mis à jour le',
+    tagsLabel: 'Thèmes de l’article',
+    further: {
+      heading: 'Pour aller plus loin',
+      service: 'La formule',
+      project: 'La réalisation',
+      article: 'À lire aussi',
+    },
   },
   testimonials: {
     googleLink: 'Lire l’avis sur Google',

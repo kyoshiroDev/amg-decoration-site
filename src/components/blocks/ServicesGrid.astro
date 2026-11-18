@@ -43,6 +43,13 @@ const { section, services, id, background = 'sand' } = Astro.props;
       @media (width >= 80rem) {
         grid-template-columns: repeat(4, 1fr);
       }
+
+      /* Trois cartes (autres formules d'une page de détail) : trois colonnes, sans case vide. */
+      @media (width >= 64rem) {
+        &:has(> :last-child:nth-child(3)) {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
     }
 
     /* Décalage par marges (pas de transform : réservé aux apparitions de la Phase 5). */

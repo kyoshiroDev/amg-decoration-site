@@ -1,0 +1,44 @@
+---
+// Page d'une prestation (formule ou offre). Chemins et données : getServicePaths()
+// (src/lib/pages/services.ts) ; corps : src/content/prestations/<slug>.md.
+import PageLayout from '@/layouts/PageLayout.astro';
+import PageHero from '@/components/blocks/PageHero.astro';
+import ProseLayout from '@/components/blocks/ProseLayout.astro';
+import RichText from '@/components/blocks/RichText.astro';
+import ServiceFacts from '@/components/blocks/ServiceFacts.astro';
+import ServicesGrid from '@/components/blocks/ServicesGrid.astro';
+import CtaBanner from '@/components/blocks/CtaBanner.astro';
+import { buildService } from '@/lib/jsonld';
+import { getServicePaths, type ServicePageProps } from '@/lib/pages/services';
+
+export const getStaticPaths = getServicePaths;
+
+type Props = ServicePageProps;
+
+const { model, Content } = Astro.props;
+const origin = Astro.site ?? Astro.url;
+---
+
+<PageLayout
+  title={model.seo.title}
+  description={model.seo.description}
+  breadcrumbs={model.breadcrumbs}
+  jsonLd={[buildService(model.service, origin)]}
+>
+  <PageHero section={model.hero} id="prestation-titre" />
+  <ProseLayout>
+    <ServiceFacts slot="aside" facts={model.facts} action={model.factsAction} />
+    <RichText>
+      <Content />
+    </RichText>
+  </ProseLayout>
+  {model.others.length > 0 && (
+    <ServicesGrid
+      section={model.othersSection}
+      services={model.others}
+      id="autres-formules-titre"
+      background="sand"
+    />
+  )}
+  <CtaBanner section={model.cta} id="contact-titre" />
+</PageLayout>

@@ -25,3 +25,10 @@ export function servicePath(slug: string): ServicePath {
 export function projectPath(slug: string): ProjectPath {
   return `/realisations/${assertSlug(slug)}/`;
 }
+
+export type ArticlePath = `/conseils-deco/${string}/`;
+
+/** `/conseils-deco/<slug>/` */
+export function articlePath(slug: string): ArticlePath {
+  return `/conseils-deco/${assertSlug(slug)}/`;
+}

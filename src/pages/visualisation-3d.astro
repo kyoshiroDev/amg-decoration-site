@@ -1,0 +1,32 @@
+---
+// Visualisation 3D : assemblage des blocs. Données : getMethodData() (src/lib/pages/method.ts),
+// textes : src/content/pages/visualisation-3d.md, collections `etapes` et `avantages`.
+import PageLayout from '@/layouts/PageLayout.astro';
+import PageHero from '@/components/blocks/PageHero.astro';
+import MediaText from '@/components/blocks/MediaText.astro';
+import ProcessSteps from '@/components/blocks/ProcessSteps.astro';
+import Benefits3D from '@/components/blocks/Benefits3D.astro';
+import CtaBanner from '@/components/blocks/CtaBanner.astro';
+import { media } from '@/config/media';
+import { getMethodData } from '@/lib/pages/method';
+
+const data = await getMethodData();
+const { sections } = data;
+---
+
+<PageLayout
+  title={data.seo.title}
+  description={data.seo.description}
+  breadcrumbs={data.breadcrumbs}
+>
+  <PageHero
+    section={data.hero}
+    id="visualisation-titre"
+    image={media.methodHero.image}
+    imageAlt={media.methodHero.alt}
+  />
+  <MediaText section={sections.promesse} id="promesse-titre" background="cream" reverse />
+  <ProcessSteps section={sections.methode} steps={data.steps} id="methode-titre" />
+  <Benefits3D section={sections.avantages} benefits={data.benefits} id="avantages-titre" />
+  <CtaBanner section={sections.cta} id="contact-titre" />
+</PageLayout>

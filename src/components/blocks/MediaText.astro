@@ -3,6 +3,7 @@
  * MediaText — image en arche et texte côte à côte (5/7, ≥ 64rem), ex. « Qui suis-je ? ».
  * Sans image (portrait en attente) : composition décorative en arche (aria-hidden).
  * `items` de la section ⇒ courte liste en deux colonnes ; `actions` ⇒ ghost puis lien.
+ * Slot facultatif (après la liste) : corps Markdown (`RichText`), ex. la biographie d'« À propos ».
  */
 import type { ImageMetadata } from 'astro';
 import Section from '@/components/ui/Section.astro';
@@ -62,6 +63,7 @@ const { section, id, image, imageAlt = '', background = 'linen', reverse = false
           ))}
         </ul>
       )}
+      <slot />
       <ActionGroup actions={section.actions} tone="quiet" />
     </div>
   </Container>

@@ -41,8 +41,8 @@ export default defineConfig({
   integrations: [
     mdx(),
     sitemap({
-      // Le styleguide est un outil interne (noindex) : jamais dans le sitemap.
-      filter: (page) => !page.includes('/styleguide/'),
+      // Pages non indexées (noindex) : jamais dans le sitemap (styleguide interne, remerciement du formulaire).
+      filter: (page) => !page.includes('/styleguide/') && !page.includes('/merci/'),
     }),
   ],
 });

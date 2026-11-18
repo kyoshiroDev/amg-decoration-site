@@ -16,6 +16,7 @@ export default defineConfig(
     'test-results/',
     'coverage/',
     '.lighthouseci/',
+    '.playwright-mcp/',
   ]),
   js.configs.recommended,
   tseslint.configs.strict,

@@ -15,7 +15,7 @@ sections:
     eyebrow: 'Mon parcours'
     heading: 'Du graphisme à la décoration d’intérieur'
     headingEmphasis: 'la décoration d’intérieur'
-    lead: 'Créative depuis très jeune, j’ai suivi un parcours artistique à Paris, d’abord dans le graphisme, puis dans la décoration d’intérieur. Aujourd’hui, j’exerce ce métier avec passion.'
+    # Pas de chapeau : la biographie (corps Markdown) s’affiche juste dessous et l’ouvre déjà.
   citation:
     heading: 'Ce qui m’inspire'
     quote:
@@ -48,6 +48,11 @@ sections:
         text: 'Vous voyez chaque proposition en 3D et vous me faites part de vos retours. Nous avançons ensemble, en toute transparence.'
       - title: 'Rigueur'
         text: 'Perfectionniste, je soigne chaque détail, car ce sont souvent les petits détails qui font toute la différence.'
+  temoignages:
+    # Témoignages filtrés pour `a-propos` (src/content/temoignages.yaml).
+    eyebrow: 'Avis client'
+    heading: 'Ce qu’on retient de notre collaboration'
+    headingEmphasis: 'notre collaboration'
   cta:
     heading: 'Et si nous imaginions ensemble votre intérieur ?'
     headingEmphasis: 'ensemble'
@@ -59,13 +64,13 @@ sections:
         href: '/realisations/'
 ---
 
-## Mon histoire
+### Mon histoire
 
 Créative depuis très jeune, j’ai suivi un parcours artistique à Paris, d’abord dans le graphisme, puis dans la décoration d’intérieur, au cours d’un cursus de cinq ans. J’ai été certifiée décoratrice d’intérieur en 2010.
 
 Aujourd’hui, j’exerce ce métier avec passion. Basée en région parisienne, j’accompagne aussi bien des particuliers que des professionnels, à Paris et partout en France.
 
-## Ma façon de travailler
+### Ma façon de travailler
 
 J’aime les intérieurs chaleureux et confortables, et je reste à l’écoute des dernières tendances.
 
@@ -73,7 +78,7 @@ Je me suis spécialisée en modélisation 3D. À partir de vos plans et de vos p
 
 Nos échanges se font par email, par téléphone ou en visio. Où que vous soyez, nous travaillons en étroite collaboration.
 
-## Ce qui me caractérise
+### Ce qui me caractérise
 
 Je suis perfectionniste dans tout ce que j’entreprends. Souvent, ce sont les petits détails qui font toute la différence.
 

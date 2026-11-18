@@ -1,0 +1,48 @@
+---
+// À propos : assemblage des blocs. Données : getAboutData() (src/lib/pages/about.ts),
+// textes : src/content/pages/a-propos.md (biographie = corps Markdown), témoignages filtrés.
+import PageLayout from '@/layouts/PageLayout.astro';
+import PageHero from '@/components/blocks/PageHero.astro';
+import MediaText from '@/components/blocks/MediaText.astro';
+import RichText from '@/components/blocks/RichText.astro';
+import Quote from '@/components/blocks/Quote.astro';
+import Values from '@/components/blocks/Values.astro';
+import Pillars from '@/components/blocks/Pillars.astro';
+import Testimonials from '@/components/blocks/Testimonials.astro';
+import CtaBanner from '@/components/blocks/CtaBanner.astro';
+import { media } from '@/config/media';
+import { getAboutData } from '@/lib/pages/about';
+
+const { model, Content } = await getAboutData();
+const { sections } = model;
+---
+
+<PageLayout
+  title={model.seo.title}
+  description={model.seo.description}
+  breadcrumbs={model.breadcrumbs}
+>
+  <PageHero section={model.hero} id="a-propos-titre" />
+  <MediaText
+    section={sections.parcours}
+    id="parcours-titre"
+    background="cream"
+    image={media.portrait?.image}
+    imageAlt={media.portrait?.alt}
+  >
+    <RichText>
+      <Content />
+    </RichText>
+  </MediaText>
+  <Quote heading={sections.citation.heading} quote={model.quote} id="citation-titre" />
+  <Values section={sections.missions} id="missions-titre" background="sand" />
+  <Pillars section={sections.valeurs} id="valeurs-titre" />
+  {model.testimonials.length > 0 && (
+    <Testimonials
+      section={sections.temoignages}
+      testimonials={model.testimonials}
+      id="temoignages-titre"
+    />
+  )}
+  <CtaBanner section={sections.cta} id="contact-titre" background="blush" />
+</PageLayout>

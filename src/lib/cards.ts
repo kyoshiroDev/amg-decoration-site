@@ -158,3 +158,11 @@ export function toTextItems(
 export function formatStepNumber(index: number): string {
   return String(index + 1).padStart(2, '0');
 }
+
+/**
+ * Nom de View Transition du visuel de couverture d'un projet : identique sur la carte (grilles)
+ * et sur la page projet, pour le morphing entre les deux (ADR-0006, Phase 5).
+ */
+export function projectTransitionName(slug: string): string {
+  return `projet-${slug}`;
+}
