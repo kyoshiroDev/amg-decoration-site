@@ -49,18 +49,18 @@
 
 ## Phase 4 — Pages
 
-- [ ] Accueil (héro arche, promesse 3D, prestations, réalisations à la une, avant/après, méthode, bénéfices, avis, CTA)
-- [ ] Prestations (liste + détail par formule)
-- [ ] Visualisation 3D / Ma méthode
-- [ ] Réalisations (grille filtrable + page projet avec galerie, avant/après, lightbox)
-- [ ] À propos
-- [ ] Conseils déco (liste + gabarit article + 2 premiers articles rédigés)
-- [ ] Contact (formulaire selon ADR-0003, téléphone, WhatsApp, horaires, zone)
-- [ ] Pages légales (`conformite`)
-- [ ] e2e + axe de `PageLayout`/`Breadcrumbs` sur la première page interne (report de la Phase 2)
-- [ ] Test : chaque destination de redirection (`SITE_ROUTES`, `src/lib/redirects.ts`) répond 200 dans `dist/`
-- [ ] Brouillons exclus partout (`filterPublished` sur les routes dynamiques et le sitemap) ; aucun `TODO` dans `dist/`
-- [ ] Lecture du contenu par les pages via des helpers de `src/lib/` (pages = assemblage, `CLAUDE.md` §3)
+- [x] Accueil (héro arche, promesse 3D, prestations, réalisations à la une, avant/après, méthode, bénéfices, avis, CTA)
+- [x] Prestations (liste + détail par formule)
+- [x] Visualisation 3D / Ma méthode
+- [x] Réalisations (grille filtrable + page projet avec galerie, avant/après, lightbox)
+- [x] À propos
+- [x] Conseils déco (liste + gabarit article + 2 premiers articles rédigés)
+- [x] Contact (formulaire selon ADR-0003, téléphone, WhatsApp, horaires, zone)
+- [x] Pages légales (`conformite`)
+- [x] e2e + axe de `PageLayout`/`Breadcrumbs` sur la première page interne (report de la Phase 2)
+- [x] Test : chaque destination de redirection (`SITE_ROUTES`, `src/lib/redirects.ts`) répond 200 dans `dist/`
+- [x] Brouillons exclus partout (`filterPublished` sur les routes dynamiques et le sitemap) ; aucun `TODO` dans `dist/`
+- [x] Lecture du contenu par les pages via des helpers de `src/lib/` (pages = assemblage, `CLAUDE.md` §3)
 - [ ] Revue + push `dev` + PR mise à jour
 
 ## Phase 5 — Effets et interactions
@@ -78,6 +78,10 @@
 - [ ] Redirections 301 exhaustives + tests
 - [ ] Sitemap, robots.txt, maillage interne audité, `llms.txt`
 - [ ] Audit `seo` complet sur `dist/`
+- [ ] Contenu dupliqué entre l'accueil et `/visualisation-3d/` (6 étapes, 8 avantages affichés mot pour mot) : extrait sur l'accueil + lien, ou textes courts dédiés
+- [ ] h1 des fiches formules orientés mot-clé (champ de titre de héros distinct du nom de la formule, décision `architecte`)
+- [ ] Balises `article:published_time` / `article:modified_time` sur les articles
+- [ ] Test du honeypot en mode service (build de test avec `PUBLIC_FORM_ENDPOINT`)
 
 ## Phase 7 — Qualité finale
 

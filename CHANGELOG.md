@@ -4,6 +4,16 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ## [Non publié]
 
+### Phase 4 — Pages
+
+- 25 pages : accueil définitif, prestations (liste + 6 fiches), visualisation 3D, réalisations filtrables + 4 fiches projet, à propos, conseils déco + 2 articles, contact + merci, mentions légales, confidentialité, CGS.
+- 30 blocks éditoriaux partagés (Hero, ServicesGrid, ProjectGrid, ProcessSteps, Benefits3D, Testimonials, CtaBanner, Marquee, ContactForm…) ; pages = assemblage, contenu lu via `src/lib/pages/*`.
+- Formulaire de contact conforme RGPD (aucune adresse, aucune case de consentement, mention d'information) : `POST` vers `PUBLIC_FORM_ENDPOINT` ou repli `mailto:` expliqué à l'écran ; validation et envoi accessibles avec JS.
+- Pages légales rédigées (`docs/CONFORMITE.md` : 18 points ouverts pour Amandine) ; aucun cookie, donc pas de bandeau.
+- JSON-LD par type de page : `Service`, `CreativeWork`, `BlogPosting`, `CollectionPage`, `AboutPage`, `ContactPage`, `BreadcrumbList`.
+- Garde-fous : liens internes en 200 sans redirection, aucune page orpheline, aucun `TODO` ni brouillon dans `dist/`, débordement à 320 px et espacement WCAG testés sur toutes les pages.
+- Lighthouse CI audite désormais les 25 pages (il n'en découvrait que 5), CLS en médiane, budgets JS/CSS bloquants. CLS de `/realisations/` corrigé (0,057 → 0,0002), Fraunces 400 italique retirée.
+
 ### Phase 3 — Contenu
 
 - Re-crawl complet du site actuel : 26 URLs de contenu inventoriées, textes intégraux, meta et avis exacts archivés dans `docs/contenu-source/`. Correction de l'attribution de l'avis « projet de cuisine » (Sébastien T.).
