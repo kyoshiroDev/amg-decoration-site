@@ -62,8 +62,7 @@
     z-index: var(--z-grain);
     pointer-events: none;
     background-image: var(--grain-image);
-    background-size: 220px 220px;
-    opacity: var(--grain-opacity);
+    background-size: var(--grain-size);
   }
 
   h1,
