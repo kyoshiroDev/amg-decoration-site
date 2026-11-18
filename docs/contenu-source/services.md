@@ -49,6 +49,7 @@ CE QUI EST INCLUS :
 ✓ 1 plan d’élévation détaillé avec toutes les mesures
 ✓ 1 visuel réaliste 4K de votre futur meuble
 Meuble sur-mesure
+339 €
 DEMANDER UN DEVIS Offre Professionnels
 INVESTISSEURS, AGENTS IMMOBILIERS
 Valorisez vos biens et accélérez vos ventes grâce à des visuels 3D réalistes qui facilitent la projection des acheteurs.
