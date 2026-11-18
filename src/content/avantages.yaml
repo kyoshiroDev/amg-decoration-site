@@ -1,33 +1,34 @@
-# Les 8 avantages de la 3D (accueil, docs/contenu-source/accueil.md). Titres exacts ; textes à rédiger.
+# Les 8 avantages de la 3D (accueil, docs/contenu-source/accueil.md). Titres exacts ;
+# textes réécrits d'après la source, sans fait ajouté.
 se-projeter:
   title: 'Se projeter facilement'
-  text: 'TODO(contenu): texte de l’avantage 1'
+  text: 'Vous visualisez votre futur intérieur de façon réaliste et comprenez tout de suite les volumes, les couleurs et l’ambiance.'
   order: 1
 eviter-les-erreurs:
   title: 'Éviter les erreurs coûteuses'
-  text: 'TODO(contenu): texte de l’avantage 2'
+  text: 'Vous testez différentes options en 3D avant de vous lancer : le bon choix se fait à l’écran, pas après l’achat.'
   order: 2
 gagner-du-temps:
   title: 'Gagner du temps'
-  text: 'TODO(contenu): texte de l’avantage 3'
+  text: 'Tout est pensé et validé en amont, ce qui simplifie ensuite la mise en œuvre de votre projet.'
   order: 3
 optimiser-l-espace:
   title: 'Optimiser chaque espace'
-  text: 'TODO(contenu): texte de l’avantage 4'
+  text: 'La 3D permet de tirer le meilleur de votre intérieur, même dans une petite surface ou une configuration complexe.'
   order: 4
 personnaliser:
   title: 'Personnaliser votre projet'
-  text: 'TODO(contenu): texte de l’avantage 5'
+  text: 'Couleurs, matériaux, mobilier… chaque détail est ajusté selon vos goûts et vos besoins.'
   order: 5
 faciliter-la-decision:
   title: 'Faciliter la prise de décision'
-  text: 'TODO(contenu): texte de l’avantage 6'
+  text: 'Comparer plusieurs propositions devient simple et visuel. Vous choisissez en connaissance de cause.'
   order: 6
 rendu-realiste:
   title: 'Un rendu réaliste et immersif'
-  text: 'TODO(contenu): texte de l’avantage 7'
+  text: 'Les visuels 3D vous offrent une vision proche du résultat final.'
   order: 7
 serenite:
   title: 'Un véritable outil de sérénité'
-  text: 'TODO(contenu): texte de l’avantage 8'
+  text: 'Vous avancez dans votre projet avec clarté et assurance, sans mauvaise surprise.'
   order: 8

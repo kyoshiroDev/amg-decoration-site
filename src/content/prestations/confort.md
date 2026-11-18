@@ -3,7 +3,7 @@ title: 'Formule Confort'
 kind: formule
 tagline: 'pour les espaces de vie'
 target: 'salon, salle à manger, cuisine, chambre, bureau'
-summary: 'TODO(contenu): résumé de la prestation Formule Confort (1 à 2 phrases)'
+summary: 'Ma formule la plus demandée : salon, salle à manger, cuisine, chambre ou bureau imaginés en 3D, avec plan d’aménagement et sélection de mobilier.'
 # TODO(contenu): nombre de vues 3D et de modifications incluses (à demander à Amandine).
 includes: []
 # « La formule confort est la formule la plus demandée. » (site actuel)
@@ -15,8 +15,26 @@ price:
   currency: EUR
 order: 2
 seo:
-  title: 'TODO(contenu): titre SEO de « Formule Confort »'
-  description: 'TODO(contenu): meta description de « Formule Confort », à rédiger depuis docs/contenu-source/services.md, entre 140 et 160 caractères (texte provisoire à rem…'
+  title: 'Formule Confort : décoration de pièce de vie en 3D'
+  description: 'Formule Confort, la plus demandée : salon, cuisine, chambre ou bureau imaginés en 3D, avec plan d’aménagement et sélection de mobilier. Demandez un devis.'
 ---
 
-<!-- TODO(contenu): présentation détaillée de la prestation (redacteur). -->
+## Pour qui ?
+
+La formule Confort est pensée pour les pièces où l’on vit vraiment : salon, salle à manger, cuisine, chambre ou bureau. C’est aussi la formule la plus demandée par mes clients.
+
+## Ce que je vous propose
+
+Après un rendez-vous à distance pour définir vos besoins, je conçois votre pièce en 3D. Vous recevez :
+
+- un plan d’aménagement ;
+- plusieurs vues 3D (perspectives et vues de face) ;
+- une sélection de mobilier et de matériaux ;
+- des modifications pour ajuster le projet à vos retours ;
+- un accompagnement par WhatsApp ou par email tout au long du projet.
+
+En option, je peux ajouter une liste de courses détaillée avec liens, un visuel 3D supplémentaire, une modification supplémentaire ou une immersion 360°.
+
+## Pourquoi la 3D pour une pièce de vie ?
+
+Un canapé, une table, une couleur de mur : dans une pièce de vie, chaque choix compte. Grâce à la 3D, vous comparez plusieurs propositions de façon simple et visuelle, et vous décidez sereinement, avant le moindre achat.

@@ -20,8 +20,24 @@ gallery:
 featured: true
 order: 4
 seo:
-  title: 'TODO(contenu): titre SEO du projet « Du sous-sol à une ch »'
-  description: 'TODO(contenu): meta description du projet « Du sous-sol à une ch », à rédiger depuis docs/contenu-source/projet_magali.md, entre 140 et 160 caractères'
+  title: 'Transformer un sous-sol en suite parentale'
+  description: 'Un sous-sol transformé en suite parentale lumineuse : dressing, salle d’eau, tête de lit sur mesure et coiffeuse, imaginés en 3D dans des tons poudrés.'
 ---
 
-<!-- TODO(contenu): récit du projet (contexte, demande, parti pris, matières), redacteur. -->
+Je vous présente l’un de mes derniers projets : accompagner la transformation complète d’un ancien sous-sol en une suite parentale élégante et lumineuse.
+
+## Repenser chaque volume
+
+L’espace a été entièrement repensé pour optimiser chaque volume et créer une circulation fluide et harmonieuse. Dès l’entrée, un grand dressing structure l’accueil, avec une salle d’eau discrètement intégrée à proximité. Deux ouvertures en arche adoucissent les lignes et donnent du caractère à l’ensemble.
+
+## Une chambre douce et contemporaine
+
+La tête de lit sur mesure intègre des niches encastrées, sublimées par un éclairage LED. J’ai aussi imaginé un espace coiffeuse habillé de tasseaux de bois, avec un miroir rond rétroéclairé, pour une touche de chaleur et de sophistication.
+
+## Une palette poudrée
+
+Claire et lumineuse, elle transforme radicalement cet ancien sous-sol en un véritable cocon, raffiné et apaisant.
+
+## Le rôle de la 3D
+
+Transformer un sous-sol demande d’anticiper : la 3D permet de valider l’agencement, la circulation et l’ambiance avant d’engager les travaux.

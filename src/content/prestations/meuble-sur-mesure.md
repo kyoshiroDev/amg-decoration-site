@@ -1,9 +1,10 @@
 ---
+# TODO(contenu): conserver l'offre « Meuble sur-mesure 3D » dans le nouveau site ?
 title: 'Meuble sur-mesure 3D'
 kind: offre
 tagline: 'Un meuble unique pour votre intérieur'
 target: 'bibliothèque, meuble TV, bureau, banquette…'
-summary: 'TODO(contenu): résumé de la prestation Meuble sur-mesure 3D (1 à 2 phrases)'
+summary: 'Vous ne trouvez pas le meuble idéal dans le commerce ? Je le conçois pour vous, sur mesure, et vous le découvrez en 3D avant sa fabrication.'
 includes:
   - 'Analyse des besoins et contraintes'
   - '1 planche ambiance de la pièce'
@@ -17,8 +18,16 @@ price:
   currency: EUR
 order: 5
 seo:
-  title: 'TODO(contenu): titre SEO de « Meuble sur-mesure 3D »'
-  description: 'TODO(contenu): meta description de « Meuble sur-mesure 3D », à rédiger depuis docs/contenu-source/services.md, entre 140 et 160 caractères (texte provisoire…'
+  title: 'Meuble sur mesure en 3D, conçu pour votre intérieur'
+  description: 'Meuble sur mesure en 3D : bibliothèque, meuble TV, bureau ou banquette conçus pour votre espace, avec plan d’élévation coté et visuel 4K. Demandez un devis.'
 ---
 
-<!-- TODO(contenu): présentation détaillée de la prestation (redacteur). -->
+## Le meuble qui n’existe pas encore
+
+Vous ne trouvez pas le meuble parfait dans le commerce ? Je conçois pour vous un meuble entièrement personnalisé, selon vos besoins et les contraintes techniques de votre pièce : dimensions, prises électriques, circulation…
+
+Bibliothèque, meuble TV, bureau, banquette : chaque création est pensée pour s’intégrer parfaitement à votre intérieur.
+
+## Voir votre meuble avant sa fabrication
+
+Grâce à une modélisation 2D et 3D réaliste, vous découvrez votre meuble avant qu’il soit fabriqué. Vous pouvez ensuite le présenter à un artisan qualifié pour sa réalisation sur mesure.

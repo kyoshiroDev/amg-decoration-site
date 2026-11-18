@@ -17,8 +17,24 @@ gallery:
 featured: true
 order: 2
 seo:
-  title: 'TODO(contenu): titre SEO du projet « Une pièce de vie élé »'
-  description: 'TODO(contenu): meta description du projet « Une pièce de vie élé », à rédiger depuis docs/contenu-source/projet-lamyae.md, entre 140 et 160 caractères'
+  title: 'Pièce de vie bois et pierre, projet 3D'
+  description: 'Une pièce de vie en bois et pierre, imaginée en 3D dès la phase de plan d’une maison en construction : matières nobles, tons doux et lumière sublimée.'
 ---
 
-<!-- TODO(contenu): récit du projet (contexte, demande, parti pris, matières), redacteur. -->
+Ce projet 3D accompagne la construction d’une maison d’exception. Mon rôle : offrir aux propriétaires une projection fidèle et sensible de leur futur intérieur, dès la phase de plan.
+
+## Voir sa maison avant qu’elle existe
+
+Quand les murs ne sont encore que des traits sur un plan, il est difficile d’imaginer l’ambiance d’une pièce. La 3D donne corps au projet : les propriétaires découvrent les volumes, les matières et la lumière bien avant la fin du chantier.
+
+## Une esthétique naturelle et lumineuse
+
+J’ai imaginé la pièce de vie autour d’une esthétique naturelle et lumineuse, où chaque détail participe à une atmosphère chaleureuse et raffinée.
+
+## Le bois et la pierre
+
+Le mariage de ces matières nobles apporte profondeur et authenticité. Une palette de tons doux sublime la lumière et révèle les volumes.
+
+## Un lieu de vie intemporel
+
+Pensé comme un lieu de vie apaisant, cet intérieur allie élégance, confort et harmonie, pour un espace aussi beau que fonctionnel.

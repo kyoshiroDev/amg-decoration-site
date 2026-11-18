@@ -1,14 +1,21 @@
 ---
-# TODO(contenu): squelette à remplir par le redacteur (voir docs/ARCHITECTURE.md § Collections).
+# Source : docs/contenu-source/contact.md. Coordonnées et horaires : src/config/site.ts (jamais ici).
+# Mot-clé : contact décoratrice d'intérieur devis.
 seo:
-  title: 'TODO(contenu): titre SEO de la page Contact'
-  description: 'TODO(contenu): meta description de la page Contact, à rédiger depuis docs/contenu-source/contact.md, entre 140 et 160 caractères (texte provisoire à remplacer)'
+  title: 'Contact et devis décoratrice d’intérieur'
+  description: 'Un projet de décoration ? Contactez votre décoratrice d’intérieur pour un devis personnalisé : parlez-moi de votre pièce, je vous réponds avec plaisir.'
 hero:
-  heading: 'TODO(contenu): titre h1 de la page Contact'
-  lead: 'TODO(contenu): chapeau de la page Contact'
+  eyebrow: 'Contact et devis'
+  heading: 'Contactez-moi pour parler de votre projet'
+  headingEmphasis: 'votre projet'
+  lead: 'Vous avez un projet ou une question ? Partagez-moi quelques détails : le lieu, la surface, vos besoins et votre budget. Je pourrai ainsi vous accompagner au mieux et vous proposer un devis personnalisé.'
 sections:
   formulaire:
-    heading: 'TODO(contenu): titre de la section formulaire'
+    heading: 'Décrivez-moi votre projet'
+    headingEmphasis: 'votre projet'
+    lead: 'Quelques lignes suffisent pour commencer. Plus vous me donnez de détails (lieu, surface, besoins, budget), plus ma réponse sera précise. Si vous avez déjà des photos de la pièce ou un plan, dites-le-moi : ils me serviront à établir votre devis.'
   coordonnees:
-    heading: 'TODO(contenu): titre de la section coordonnees'
+    heading: 'Me joindre directement'
+    headingEmphasis: 'directement'
+    lead: 'Vous préférez un échange de vive voix ? Appelez-moi ou écrivez-moi directement. Pour une collaboration, une mission en freelance ou de la sous-traitance, je reste également à votre écoute.'
 ---

@@ -1,8 +1,9 @@
 ---
+# TODO(contenu): conserver l'« Offre Professionnels » dans le nouveau site ?
 title: 'Offre Professionnels'
 kind: offre
 tagline: 'Investisseurs, agents immobiliers'
-summary: 'TODO(contenu): résumé de la prestation Offre Professionnels (1 à 2 phrases)'
+summary: 'Des visuels 3D réalistes pour aider vos acheteurs à se projeter, valoriser vos biens et accélérer vos ventes.'
 includes:
   - '1 rendez-vous à distance pour analyser vos besoins'
   - '1 plan 3D de l’aménagement'
@@ -10,11 +11,23 @@ includes:
   - 'Mise en valeur du potentiel du bien'
 quote:
   label: 'Devis professionnel'
-  note: 'Tarif dégressif à partir de 3 biens'
+  note: 'Tarif dégressif à partir de 3 biens'
 order: 6
 seo:
-  title: 'TODO(contenu): titre SEO de « Offre Professionnels »'
-  description: 'TODO(contenu): meta description de « Offre Professionnels », à rédiger depuis docs/contenu-source/services.md, entre 140 et 160 caractères (texte provisoire…'
+  title: 'Visuels 3D pour agents immobiliers et investisseurs'
+  description: 'Agents immobiliers, investisseurs : valorisez vos biens avec des visuels 3D réalistes qui aident les acheteurs à se projeter. Tarif dégressif dès 3 biens.'
 ---
 
-<!-- TODO(contenu): présentation détaillée de la prestation (redacteur). -->
+## Valorisez vos biens
+
+Vous êtes agent immobilier ou investisseur ? Je réalise des visuels 3D réalistes qui révèlent le potentiel de vos biens et facilitent la projection des acheteurs.
+
+## Les bénéfices pour vous
+
+- Vos clients se projettent immédiatement.
+- Les hésitations lors des visites se réduisent.
+- La prise de décision s’accélère.
+
+## Un devis adapté à votre volume
+
+Chaque demande fait l’objet d’un devis professionnel, avec un tarif dégressif à partir de 3 biens.

@@ -1,12 +1,22 @@
 ---
-# TODO(contenu): squelette à remplir par le redacteur (voir docs/ARCHITECTURE.md § Collections).
+# Source : docs/contenu-source/about.md (page « Réalisations » du site actuel).
+# Mot-clé : réalisations décoratrice d'intérieur.
 seo:
-  title: 'TODO(contenu): titre SEO de la page Réalisations'
-  description: 'TODO(contenu): meta description de la page Réalisations, à rédiger depuis docs/contenu-source/about.md, entre 140 et 160 caractères (texte provisoire à rempl…'
+  title: 'Réalisations : décoration d’intérieur en 3D'
+  description: 'Découvrez mes réalisations de décoratrice d’intérieur : chalet en Suisse, pièces de vie, suite parentale… Chaque projet est imaginé en 3D dans le détail.'
 hero:
-  heading: 'TODO(contenu): titre h1 de la page Réalisations'
-  lead: 'TODO(contenu): chapeau de la page Réalisations'
+  eyebrow: 'Réalisations'
+  heading: 'Mes réalisations : des intérieurs imaginés en 3D'
+  headingEmphasis: 'imaginés en 3D'
+  lead: 'Voici une sélection de projets qui m’ont été confiés. Chacun est le fruit d’une réflexion sur mesure, entièrement imaginé et modélisé en 3D, avec exigence et sens du détail. Je vous souhaite une visite inspirante.'
 sections:
   cta:
-    heading: 'TODO(contenu): titre de la section cta'
+    heading: 'Votre intérieur pourrait être le prochain'
+    headingEmphasis: 'le prochain'
+    lead: 'Une pièce à repenser, un logement à aménager ? Parlons-en : je vous montre votre projet en 3D avant qu’il prenne vie.'
+    actions:
+      - label: 'Parlons de votre projet'
+        href: '/contact/'
+      - label: 'Voir les formules'
+        href: '/prestations/'
 ---

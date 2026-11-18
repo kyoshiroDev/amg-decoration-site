@@ -5,7 +5,7 @@ summary: 'Aménagement et décoration d’un espace de vie, projet en constructi
 # TODO(contenu): lieu (ville ou région) à demander à Amandine.
 roomTypes:
   - piece-de-vie
-style: 'Scandinave moderne'
+style: 'Scandinave moderne et épuré'
 # TODO(contenu): placeholders ; remplacer par les originaux HD dans src/assets/projets/espace-de-vie-scandinave/.
 cover:
   image: ../../assets/placeholders/interieur-lumiere.jpg
@@ -17,8 +17,24 @@ gallery:
 featured: true
 order: 3
 seo:
-  title: 'TODO(contenu): titre SEO du projet « Espace de vie scandi »'
-  description: 'TODO(contenu): meta description du projet « Espace de vie scandi », à rédiger depuis docs/contenu-source/projet-iryna.md, entre 140 et 160 caractères'
+  title: 'Espace de vie scandinave imaginé en 3D'
+  description: 'Un espace de vie scandinave imaginé en 3D : bois clair, tables en ciment aux lignes organiques et fibres naturelles pour un intérieur apaisant et élégant.'
 ---
 
-<!-- TODO(contenu): récit du projet (contexte, demande, parti pris, matières), redacteur. -->
+J’ai réalisé ce projet de visualisation 3D pour l’espace de vie d’Iryna et de son mari, dans un logement encore en construction.
+
+## La demande
+
+Créer un intérieur à la fois apaisant et élégant, ancré dans une esthétique scandinave moderne et épurée.
+
+## Le parti pris : des matières qui se répondent
+
+Bois clair, tables aux lignes organiques en ciment, fibres naturelles pour les rideaux et le tapis, luminaires choisis avec soin… Chaque élément a été sélectionné pour composer une atmosphère chaleureuse, où il fait naturellement bon vivre. Les matières nobles s’équilibrent et offrent une élégance intemporelle, loin de tout superflu.
+
+## La magie des matériaux naturels
+
+Ils habillent un espace avec subtilité et lui donnent une aura noble et authentique. Surtout, ils apportent ce supplément de douceur et de confort qui transforme une maison en véritable cocon.
+
+## Le rôle de la 3D
+
+Le chantier étant encore en cours, la visualisation 3D permet de découvrir l’ambiance avant même la fin des travaux, et de valider en amont les matières, les couleurs et l’éclairage.
