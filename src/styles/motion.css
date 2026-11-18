@@ -40,6 +40,24 @@
     transform: scale(var(--reveal-image-scale));
   }
 
+  /*
+   * Focus clavier dans un élément encore en attente : visible tout de suite, sans transition
+   * (reveal.ts retire aussitôt l'état ; cette règle couvre la première image).
+   */
+  [data-reveal][data-reveal-state]:focus-within,
+  :focus [data-reveal][data-reveal-state] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  [data-reveal='image'][data-reveal][data-reveal-state]:focus-within img,
+  :focus [data-reveal='image'][data-reveal][data-reveal-state] img {
+    clip-path: none;
+    transform: none;
+    transition: none;
+  }
+
   /* Impression : tout est visible, quel que soit l'état. */
   @media print {
     [data-reveal-state],

@@ -47,6 +47,12 @@ test.describe('Comparateur avant / après', () => {
     );
   });
 
+  test('consigne visible reliée au curseur (souris, tactile et clavier)', async ({ page }) => {
+    const slider = compare(page).getByRole('slider', { name: copy.slider });
+    await expect(slider).toHaveAccessibleDescription(copy.hint);
+    await expect(compare(page).getByText(copy.hint)).toBeVisible();
+  });
+
   test('0 violation axe, poignée focalisée', async ({ page }) => {
     await compare(page).getByRole('slider').focus();
     await expectNoAxeViolations(page);
@@ -107,6 +113,18 @@ test.describe('Comparateur avant / après', () => {
       await session.detach();
     },
   );
+});
+
+test.describe('Comparateur, appui simple (WCAG 2.5.7)', () => {
+  test('un appui bref sans glisser place la poignée', { tag: '@mobile' }, async ({ page }) => {
+    await page.goto('/styleguide/');
+    const stage = compare(page).locator('[data-before-after-stage]');
+    await stage.scrollIntoViewIfNeeded();
+    const box = await stage.boundingBox();
+    if (!box) throw new Error('scène introuvable');
+    await stage.tap({ position: { x: box.width * 0.25, y: box.height / 2 } });
+    await expect(compare(page).getByRole('slider')).toHaveValue('25');
+  });
 });
 
 test.describe('Comparateur sans JavaScript', () => {

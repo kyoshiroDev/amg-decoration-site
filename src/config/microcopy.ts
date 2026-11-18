@@ -112,7 +112,8 @@ export const microcopy = {
       slider: 'Comparer le rendu 3D et la réalisation',
       /** `aria-valuetext` : `{rendering}` et `{result}` remplacés par les parts visibles. */
       valueText: '{rendering}\u202F% rendu 3D, {result}\u202F% réalisé',
-      hint: 'Faites glisser la poignée pour comparer les deux images.',
+      /** Consigne visible, reliée au curseur (`aria-describedby`) : souris, tactile et clavier. */
+      hint: 'Faites glisser la poignée, touchez l’image ou utilisez les flèches du clavier pour comparer les deux images.',
     },
     pager: {
       label: 'Autres réalisations',

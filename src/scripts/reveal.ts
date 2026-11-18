@@ -5,6 +5,9 @@
  *   ce qui est déjà à l'écran ne disparaît (aucun clignotement, LCP intact).
  * - Déclenchement à 15 % de visibilité, une seule fois ; les éléments entrés ensemble
  *   apparaissent en cascade (`--reveal-order` × `--stagger`), puis l'état est retiré.
+ * - Focus clavier (WCAG 2.4.7, 2.4.11) : un élément encore en attente qui reçoit le focus (ou
+ *   dont un descendant le reçoit) est révélé immédiatement, sans transition ; motion.css le
+ *   rend visible dès la première image via `:focus-within`.
  * transform, opacity et clip-path uniquement (src/styles/motion.css) : aucun décalage (CLS).
  */
 import { onPageReady } from './lifecycle';
@@ -52,6 +55,28 @@ onPageReady((signal) => {
     element.dataset['revealState'] = 'pending';
     observer.observe(element);
   }
+
+  // Focus clavier dans un élément pas encore révélé : affichage immédiat, sans attendre
+  // IntersectionObserver ni la transition (le focus ne doit jamais être invisible).
+  const showNow = (element: HTMLElement): void => {
+    observer.unobserve(element);
+    delete element.dataset['revealState'];
+    element.style.removeProperty('--reveal-order');
+  };
+  document.addEventListener(
+    'focusin',
+    (event) => {
+      if (!(event.target instanceof Element)) return;
+      // Ancêtres (carte, liste) et descendants (image reveal dans un lien de galerie).
+      const pending = [...event.target.querySelectorAll<HTMLElement>('[data-reveal-state]')];
+      for (let node = event.target.closest<HTMLElement>('[data-reveal-state]'); node;) {
+        pending.push(node);
+        node = node.parentElement?.closest<HTMLElement>('[data-reveal-state]') ?? null;
+      }
+      for (const element of pending) showNow(element);
+    },
+    { signal },
+  );
 
   signal.addEventListener(
     'abort',

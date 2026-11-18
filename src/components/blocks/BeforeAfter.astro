@@ -38,6 +38,7 @@ interface Props {
 const { heading, rendering, result, labels, id, lead, background = 'blush' } = Astro.props;
 const copy = microcopy.projects.beforeAfter;
 const START = 50;
+const hintId = `${id}-consigne`;
 const figures = [
   { ...rendering, label: labels.rendering, kind: 'rendering' },
   { ...result, label: labels.result, kind: 'result' },
@@ -73,6 +74,7 @@ const figures = [
         <input
           class="before-after__range"
           aria-label={copy.slider}
+          aria-describedby={hintId}
           type="range"
           min="0"
           max="100"
@@ -83,7 +85,9 @@ const figures = [
           data-before-after-range
         />
       </div>
-      <p class="before-after__hint">{copy.hint}</p>
+      <p class="before-after__hint" id={hintId}>
+        {copy.hint}
+      </p>
     </div>
   </Container>
 </Section>

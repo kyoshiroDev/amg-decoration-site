@@ -48,6 +48,19 @@ test.describe('Apparitions au scroll', () => {
     await expect(target).toHaveCSS('transform', 'none');
   });
 
+  test('un élément en attente qui reçoit le focus clavier apparaît aussitôt', async ({ page }) => {
+    await page.goto('/');
+    const card = page.locator('.project-grid [data-reveal]').first();
+    await expect(card).toHaveAttribute('data-reveal-state', 'pending');
+    // Focus sans défilement préalable : l'état doit tomber sans attendre IntersectionObserver.
+    const opacity = await card.evaluate((element) => {
+      element.querySelector<HTMLElement>('a')?.focus();
+      return getComputedStyle(element).opacity;
+    });
+    expect(opacity).toBe('1');
+    await expect(card).not.toHaveAttribute('data-reveal-state', /.*/);
+  });
+
   test('après un défilement complet, plus aucun élément transparent', async ({ page }) => {
     await page.goto('/');
     await scrollThroughPage(page);
