@@ -70,6 +70,8 @@
 - [ ] View Transitions grille → projet
 - [ ] Marquee, soulignés animés, CTA magnétique léger
 - [ ] Tout vérifié en `prefers-reduced-motion` et sans JS
+- [ ] Masquage sans JS des filtres en CSS valide (`@media (scripting: none)` ou classe `no-js`) au lieu de `<noscript><style>` dans le `body`
+- [ ] Marquee animé : bouton pause accessible au clavier (WCAG 2.2.2), arrêt en mouvement réduit
 
 ## Phase 6 — SEO avancé
 
@@ -96,3 +98,5 @@
 - [ ] Checklist de mise en production dans la PR (domaine sur Vercel, DNS, HTTPS, Search Console, GBP)
 - [ ] Liste consolidée des `TODO(contenu)` et infos à fournir par Amandine
 - [ ] Synthèse finale (scores, captures)
+- [ ] Confidentialité : adapter les sections « Les données que je reçois » et « Qui reçoit vos données » au mode réel du formulaire (repli `mailto:` ou service choisi) ; faire valider « je suis la seule personne à lire vos messages »
+- [ ] Pages légales : injecter email, téléphone et SIRET depuis `src/config/site.ts` (jetons) au lieu de les recopier
