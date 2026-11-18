@@ -26,7 +26,16 @@ export default defineConfig({
       weights: [300, 400],
       styles: ['normal', 'italic'],
       subsets: ['latin'],
-      fallbacks: ['Georgia', 'serif'],
+      // Replis ajustés maison (src/styles/font-fallbacks.css) : Times New Roman/Liberation,
+      // Noto Serif (Android), DejaVu Serif (Ubuntu). Ceux d'Astro ne couvrent ni Linux ni Android.
+      optimizedFallbacks: false,
+      fallbacks: [
+        'fraunces-fallback-times',
+        'fraunces-fallback-noto',
+        'fraunces-fallback-dejavu',
+        'Georgia',
+        'serif',
+      ],
     },
     {
       provider: fontProviders.fontsource(),
@@ -35,7 +44,16 @@ export default defineConfig({
       weights: ['400 700'],
       styles: ['normal'],
       subsets: ['latin'],
-      fallbacks: ['sans-serif', 'system-ui'],
+      // Replis ajustés maison (src/styles/font-fallbacks.css) : Arial/Liberation/Roboto,
+      // Noto Sans, DejaVu Sans (Ubuntu).
+      optimizedFallbacks: false,
+      fallbacks: [
+        'manrope-fallback-sans',
+        'manrope-fallback-noto',
+        'manrope-fallback-dejavu',
+        'system-ui',
+        'sans-serif',
+      ],
     },
   ],
   integrations: [

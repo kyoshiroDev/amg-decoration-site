@@ -1,0 +1,198 @@
+/*
+ * Polices de repli ajustées (anti-CLS au moment du swap de Manrope et Fraunces).
+ *
+ * Pourquoi pas les replis générés par la Fonts API d'Astro (`optimizedFallbacks`, désactivé
+ * dans astro.config.mjs) : ils ne visent que `local("Times New Roman")` et `local("Arial")`
+ * (+ Roboto, Segoe UI… pour Manrope), absents de Linux (runner CI, Lighthouse) et de la
+ * plupart des Android. Le navigateur tombait alors sur DejaVu/Noto non ajustées, 10 à 20 %
+ * plus larges : le texte se recomposait à l'arrivée des polices (CLS 0,06 sur /contact/).
+ * Astro calcule en outre la largeur de Manrope sur son instance ExtraLight (−3 % à 400).
+ *
+ * Une famille par jeu de métriques, insérées dans les piles par `fallbacks`
+ * (astro.config.mjs) avant les génériques. Liberation Sans / Arimo ont exactement les chasses
+ * d'Arial, Liberation Serif / Tinos celles de Times New Roman : mêmes réglages.
+ *
+ * Valeurs : `size-adjust` = rapport de largeur mesuré dans Chrome sur ~6 000 caractères de
+ * textes du site (police web / repli, même graisse et même style) ;
+ * `ascent/descent-override` = métriques hhea de la police web (@capsizecss/unpack) divisées
+ * par size-adjust, comme le fait Astro.
+ *   Manrope : ascent 2132, descent 600, unitsPerEm 2000.
+ *   Fraunces : ascent 1956, descent 510, unitsPerEm 2000.
+ * Noms `local()` : nom complet ET nom PostScript (Chrome n'accepte que ceux-là ; « Noto
+ * Serif » seul ne correspond à rien, « Noto Serif Regular » / « NotoSerif-Regular » oui).
+ * À recalculer si les polices ou leurs graisses changent (docs/DESIGN-SYSTEM.md §3).
+ */
+
+/* ---------- Manrope ---------- */
+
+/* Arial (macOS, iOS, Windows), Liberation Sans / Arimo (Linux), Roboto (Android, chasses d'Arial). */
+@font-face {
+  font-family: manrope-fallback-sans;
+  src:
+    local('Arial'), local('ArialMT'), local('Liberation Sans'), local('LiberationSans'),
+    local('Arimo'), local('Roboto'), local('Roboto Regular'), local('Roboto-Regular');
+  font-weight: 100 549;
+  font-display: swap;
+  size-adjust: 102.34%;
+  ascent-override: 104.16%;
+  descent-override: 29.31%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: manrope-fallback-sans;
+  src:
+    local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'),
+    local('LiberationSans-Bold'), local('Arimo Bold'), local('Roboto Bold'), local('Roboto-Bold');
+  font-weight: 550 900;
+  font-display: swap;
+  size-adjust: 98.64%;
+  ascent-override: 108.07%;
+  descent-override: 30.41%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: manrope-fallback-noto;
+  src: local('Noto Sans Regular'), local('NotoSans-Regular'), local('Noto Sans');
+  font-weight: 100 549;
+  font-display: swap;
+  size-adjust: 97.13%;
+  ascent-override: 109.75%;
+  descent-override: 30.89%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: manrope-fallback-noto;
+  src: local('Noto Sans Bold'), local('NotoSans-Bold');
+  font-weight: 550 900;
+  font-display: swap;
+  size-adjust: 94.68%;
+  ascent-override: 112.59%;
+  descent-override: 31.69%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: manrope-fallback-dejavu;
+  src: local('DejaVu Sans'), local('DejaVuSans');
+  font-weight: 100 549;
+  font-display: swap;
+  size-adjust: 89.94%;
+  ascent-override: 118.52%;
+  descent-override: 33.36%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: manrope-fallback-dejavu;
+  src: local('DejaVu Sans Bold'), local('DejaVuSans-Bold');
+  font-weight: 550 900;
+  font-display: swap;
+  size-adjust: 82.69%;
+  ascent-override: 128.92%;
+  descent-override: 36.28%;
+  line-gap-override: 0%;
+}
+
+/* ---------- Fraunces (300, 400, 300 italique) ---------- */
+
+/* Times New Roman (macOS, iOS, Windows), Liberation Serif / Tinos (Linux, mêmes chasses). */
+@font-face {
+  font-family: fraunces-fallback-times;
+  src:
+    local('Times New Roman'), local('TimesNewRomanPSMT'), local('Liberation Serif'),
+    local('LiberationSerif'), local('Tinos');
+  font-weight: 100 349;
+  font-display: swap;
+  size-adjust: 111.4%;
+  ascent-override: 87.79%;
+  descent-override: 22.89%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: fraunces-fallback-times;
+  src:
+    local('Times New Roman'), local('TimesNewRomanPSMT'), local('Liberation Serif'),
+    local('LiberationSerif'), local('Tinos');
+  font-weight: 350 900;
+  font-display: swap;
+  size-adjust: 115.16%;
+  ascent-override: 84.93%;
+  descent-override: 22.14%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: fraunces-fallback-times;
+  src:
+    local('Times New Roman Italic'), local('TimesNewRomanPS-ItalicMT'),
+    local('Liberation Serif Italic'), local('LiberationSerif-Italic'), local('Tinos Italic');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+  size-adjust: 102.64%;
+  ascent-override: 95.28%;
+  descent-override: 24.84%;
+  line-gap-override: 0%;
+}
+
+/* Noto Serif : serif par défaut d'Android et de nombreuses distributions Linux. */
+@font-face {
+  font-family: fraunces-fallback-noto;
+  src: local('Noto Serif Regular'), local('NotoSerif-Regular'), local('Noto Serif');
+  font-weight: 100 349;
+  font-display: swap;
+  size-adjust: 94.02%;
+  ascent-override: 104.02%;
+  descent-override: 27.12%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: fraunces-fallback-noto;
+  src: local('Noto Serif Regular'), local('NotoSerif-Regular'), local('Noto Serif');
+  font-weight: 350 900;
+  font-display: swap;
+  size-adjust: 97.19%;
+  ascent-override: 100.63%;
+  descent-override: 26.24%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: fraunces-fallback-noto;
+  src: local('Noto Serif Italic'), local('NotoSerif-Italic');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+  size-adjust: 89.78%;
+  ascent-override: 108.93%;
+  descent-override: 28.4%;
+  line-gap-override: 0%;
+}
+
+/* DejaVu Serif (serif par défaut d'Ubuntu, sans italique : oblique synthétique). */
+@font-face {
+  font-family: fraunces-fallback-dejavu;
+  src: local('DejaVu Serif'), local('DejaVuSerif');
+  font-weight: 100 349;
+  font-display: swap;
+  size-adjust: 87.22%;
+  ascent-override: 112.13%;
+  descent-override: 29.24%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: fraunces-fallback-dejavu;
+  src: local('DejaVu Serif'), local('DejaVuSerif');
+  font-weight: 350 900;
+  font-display: swap;
+  size-adjust: 90.16%;
+  ascent-override: 108.47%;
+  descent-override: 28.28%;
+  line-gap-override: 0%;
+}

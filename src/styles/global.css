@@ -6,6 +6,7 @@
 @layer reset, base, components, utilities;
 
 @import url('./tokens.css');
+@import url('./font-fallbacks.css');
 @import url('./reset.css');
 @import url('./utilities.css');
 
