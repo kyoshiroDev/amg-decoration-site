@@ -8,32 +8,38 @@ import type { ProjectFact } from '@/lib/pages/projects-model';
 
 interface Props {
   facts: readonly ProjectFact[];
-  /** Nom accessible de la liste (lu avant les définitions). */
+  /** Nom du groupe qui entoure le <dl> (un nom posé sur le <dl> lui-même n'est pas exposé). */
   label: string;
 }
 
 const { facts, label } = Astro.props;
 ---
 
-<dl class="project-facts" aria-label={label}>
-  {facts.map((fact) => (
-    <div class="project-facts__row">
-      <dt class="project-facts__term">{fact.label}</dt>
-      <dd class="project-facts__value">
-        {fact.href ? (
-          <Link href={fact.href} variant="draw" icon="arrow-right">
-            {fact.value}
-          </Link>
-        ) : (
-          fact.value
-        )}
-      </dd>
-    </div>
-  ))}
-</dl>
+<div class="project-facts-group" role="group" aria-label={label}>
+  <dl class="project-facts">
+    {facts.map((fact) => (
+      <div class="project-facts__row">
+        <dt class="project-facts__term">{fact.label}</dt>
+        <dd class="project-facts__value">
+          {fact.href ? (
+            <Link href={fact.href} variant="draw" icon="arrow-right">
+              {fact.value}
+            </Link>
+          ) : (
+            fact.value
+          )}
+        </dd>
+      </div>
+    ))}
+  </dl>
+</div>
 
 <style>
   @layer components {
+    .project-facts-group {
+      inline-size: 100%;
+    }
+
     .project-facts {
       display: grid;
       inline-size: 100%;

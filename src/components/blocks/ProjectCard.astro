@@ -95,8 +95,11 @@ const meta = [project.style, project.location].filter((part): part is string => 
         inset: 0;
       }
 
-      &:focus-visible {
-        outline: none;
+      /* Anneau reporté sur la carte entière (:has) ; sans :has, le lien garde le sien. */
+      @supports selector(:has(*)) {
+        &:focus-visible {
+          outline: none;
+        }
       }
     }
 

@@ -20,12 +20,13 @@ const { articles, background = 'cream', headingLevel = 2 } = Astro.props;
 <Section background={background} as="div" spacing="compact">
   <Container>
     <ul class="article-list">
-      {articles.map((article) => (
+      {articles.map((article, index) => (
         <li class="article-list__item">
           <ArticleCard
             article={article}
             headingLevel={headingLevel}
-            sizes="(min-width: 80rem) 36rem, (min-width: 48rem) 45vw, 90vw"
+            sizes="(min-width: 80rem) 38rem, (min-width: 48rem) 45vw, 90vw"
+            priority={index === 0}
           />
         </li>
       ))}

@@ -14,9 +14,11 @@ interface Props {
   article: ArticleCardData;
   sizes: string;
   headingLevel?: 2 | 3;
+  /** Première carte au-dessus de la ligne de flottaison : image chargée en priorité (élément LCP). */
+  priority?: boolean;
 }
 
-const { article, sizes, headingLevel = 2 } = Astro.props;
+const { article, sizes, headingLevel = 2, priority = false } = Astro.props;
 const Title = `h${headingLevel}` as const;
 ---
 
@@ -25,6 +27,7 @@ const Title = `h${headingLevel}` as const;
     src={article.cover.image}
     alt={article.cover.alt}
     sizes={sizes}
+    priority={priority}
     shape="rounded"
     ratio="3 / 2"
     class="article-card__media"
@@ -89,8 +92,11 @@ const Title = `h${headingLevel}` as const;
         inset: 0;
       }
 
-      &:focus-visible {
-        outline: none;
+      /* Anneau reporté sur la carte entière (:has) ; sans :has, le lien garde le sien. */
+      @supports selector(:has(*)) {
+        &:focus-visible {
+          outline: none;
+        }
       }
     }
 

@@ -36,9 +36,9 @@ const { fg, bg, hideOnMobile = false } = Astro.props;
       vertical-align: middle;
     }
 
-    /* Échantillon en contenu généré : décoratif, hors du calcul de contraste d'axe. */
+    /* Échantillon en contenu généré : décoratif, hors du calcul de contraste d'axe, non lu. */
     .contrast-sample::before {
-      content: 'Aa';
+      content: 'Aa' / '';
     }
 
     .contrast-sample--desktop {

@@ -18,6 +18,11 @@ interface Props {
 }
 
 const { section, testimonials, id, background = 'linen' } = Astro.props;
+
+/** Jeton facultatif de la microcopie : sans lui, l'intitulé reste identique pour chaque avis. */
+const AUTHOR_TOKEN = '{author}';
+const sourceLabel = (author: string): string =>
+  microcopy.testimonials.googleLink.replaceAll(AUTHOR_TOKEN, author);
 ---
 
 <ContentSection section={section} id={id} background={background}>
@@ -38,7 +43,7 @@ const { section, testimonials, id, background = 'linen' } = Astro.props;
             )}
             {testimonial.url && (
               <Link href={testimonial.url} variant="draw" external class="testimonials__source">
-                {microcopy.testimonials.googleLink}
+                {sourceLabel(testimonial.author)}
               </Link>
             )}
           </figcaption>

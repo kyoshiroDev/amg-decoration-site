@@ -109,8 +109,11 @@ const { heading, items, id, background = 'linen' } = Astro.props;
         inset: 0;
       }
 
-      &:focus-visible {
-        outline: none;
+      /* Anneau reporté sur la carte entière (:has) ; sans :has, le lien garde le sien. */
+      @supports selector(:has(*)) {
+        &:focus-visible {
+          outline: none;
+        }
       }
 
       &:hover {

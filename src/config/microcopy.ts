@@ -32,12 +32,12 @@ export const microcopy = {
     indexLabel: 'Prestations',
     /** Invitation des cartes d'offres complémentaires. */
     offerMore: 'Découvrir l’offre',
-    offerIncludes: 'Ce qui est compris',
+    offerIncludes: 'Ce qui est inclus',
     /** Carte « En bref » des pages de prestation. */
     facts: {
       label: 'En bref',
       target: 'Pour qui\u202F?',
-      includes: 'Ce qui est compris',
+      includes: 'Ce qui est inclus',
       options: 'En option',
       price: 'Tarif',
     },
@@ -51,7 +51,7 @@ export const microcopy = {
     tocLabel: 'Sommaire',
   },
   projects: {
-    more: 'Voir le projet',
+    more: 'Voir la réalisation',
     /** Fil d'Ariane de l'index et des pages projet. */
     indexLabel: 'Réalisations',
     /** Surtitre du héros d'une page projet. */
@@ -118,21 +118,22 @@ export const microcopy = {
     },
   },
   testimonials: {
-    googleLink: 'Lire l’avis sur Google',
+    /** `{author}` : remplacé par l'auteur de l'avis (intitulé explicite hors contexte, WCAG 2.4.4). */
+    googleLink: 'Lire l’avis de {author} sur Google',
     projectLabel: 'Projet\u00A0:',
   },
   footer: {
     tagline:
-      'Je dessine votre intérieur en 3D avant qu’il prenne vie, pour que vous avanciez sereinement, à Paris ou partout en France.',
+      'Je conçois votre intérieur en 3D pour que vous le voyiez avant de vous lancer, à Paris ou à distance partout en France.',
     contactTitle: 'Me contacter',
     hoursTitle: 'Horaires',
     areaTitle: 'Zone d’intervention',
     socialTitle: 'Me suivre',
     sitemapTitle: 'Plan du site',
-    area: 'Basée en région parisienne, j’accompagne vos projets à Paris et partout en France à distance.',
+    area: 'Basée en région parisienne, je vous accompagne à Paris, et à distance partout en France.',
     whatsapp: 'M’écrire sur WhatsApp',
     phoneLabel: 'Téléphone',
-    emailLabel: 'E-mail',
+    emailLabel: 'Email',
     /** `{year}` est remplacé par l'année du build. */
     copyright: '© {year} AMG Décoration d’Intérieur — Amandine Gaury',
   },

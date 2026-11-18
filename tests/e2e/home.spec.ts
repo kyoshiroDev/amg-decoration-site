@@ -43,9 +43,12 @@ test.describe('Accueil : contenu', () => {
     const section = page.locator('#temoignages-titre').locator('xpath=ancestor::section[1]');
     const quotes = section.locator('blockquote');
     expect(await quotes.count()).toBeGreaterThan(0);
-    const sources = section.getByRole('link', { name: microcopy.testimonials.googleLink });
+    const [before = '', after = ''] = microcopy.testimonials.googleLink.split('{author}');
+    const sources = section.getByRole('link', { name: before });
     await expect(sources).toHaveCount(await quotes.count());
     for (const link of await sources.all()) {
+      // Intitulé explicite hors contexte : chaque lien nomme l'auteur de l'avis (WCAG 2.4.4).
+      await expect(link).toHaveAccessibleName(new RegExp(`^${before}\\S.*${after}`));
       await expect(link).toHaveAttribute('href', /^https:\/\//);
       await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     }

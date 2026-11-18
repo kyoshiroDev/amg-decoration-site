@@ -68,6 +68,9 @@ const { section, id, background = 'cream' } = Astro.props;
       font-family: var(--font-display-stack);
       font-size: var(--step--1);
       font-style: italic;
+
+      /* 300 : seul italique chargé au-dessus de la ligne de flottaison (pas de Fraunces 400 italique). */
+      font-weight: var(--weight-light);
       color: var(--color-accent-text);
     }
 

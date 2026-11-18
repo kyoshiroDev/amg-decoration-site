@@ -1,6 +1,6 @@
 /**
  * Filtres de la page Réalisations (amélioration progressive, voir ProjectFilters.astro).
- * Affiche la barre de filtres, masque (`hidden`) les projets d'un autre type de pièce, tient
+ * Active la barre de filtres (visible dès le rendu, masquée par <noscript> sans JS), masque (`hidden`) les projets d'un autre type de pièce, tient
  * `aria-pressed` à jour et annonce le nombre de projets affichés (`role="status"`).
  * Sans JS : barre absente, grille complète.
  */
@@ -39,11 +39,9 @@ onPageReady((signal) => {
     { signal },
   );
 
-  root.hidden = false;
   signal.addEventListener(
     'abort',
     () => {
-      root.hidden = true;
       apply('');
     },
     { once: true },
