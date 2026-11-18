@@ -24,21 +24,64 @@ Double ancrage :
 | `/contact/`                                                         | Conversion                   | contact décoratrice d'intérieur devis                         |
 | `/mentions-legales/`, `/confidentialite/`, `/conditions-generales/` | Légal                        | —                                                             |
 
-**Convention d'URL** : `trailingSlash: 'always'` (identique au WordPress actuel ⇒ moins de redirections), slugs en français sans accents.
+**Convention d'URL** : slash final partout (`trailingSlash: 'always'` dans `astro.config.mjs`, identique au WordPress actuel ⇒ moins de redirections), slugs en français sans accents. Côté Vercel, la normalisation est la **dernière règle de `redirects`** et non l'option `trailingSlash` (voir §3).
+
+### Réalisations migrées (slugs retenus en Phase 3)
+
+Slug = sujet du projet (pièce, lieu ou style), jamais le prénom du client : c'est ce que tape l'internaute, et cela évite d'exposer un prénom dans l'URL. Constantes exportées par `src/lib/redirects.ts` (`PROJECT_SLUGS`).
+
+| Ancienne URL      | Nouvelle URL                              | Contenu                                                        | Requête visée (à valider)                                    |
+| ----------------- | ----------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------ |
+| `/projet-chalet/` | `/realisations/chalet-suisse/`            | Appartement-chalet, résidence secondaire dans les Alpes        | décoration chalet, aménagement résidence secondaire montagne |
+| `/projet-lamyae/` | `/realisations/piece-de-vie-bois-pierre/` | Pièce de vie d'une maison en construction, bois et pierre      | pièce de vie bois et pierre, salon bois pierre 3D            |
+| `/projet-iryna/`  | `/realisations/espace-de-vie-scandinave/` | Espace de vie scandinave, bois clair, ciment, fibres           | espace de vie scandinave, salon scandinave 3D                |
+| `/projet_magali/` | `/realisations/sous-sol-suite-parentale/` | Sous-sol transformé en suite parentale (dressing, salle d'eau) | transformer un sous-sol en chambre / suite parentale         |
 
 ## 3. Redirections 301 (`vercel.json`)
 
-| Ancienne                                                | Nouvelle                   | Statut                               |
-| ------------------------------------------------------- | -------------------------- | ------------------------------------ |
-| `/services/`                                            | `/prestations/`            | dans `vercel.json`, cible en Phase 4 |
-| `/about/`                                               | `/realisations/`           | dans `vercel.json`, cible en Phase 4 |
-| `/a-propos/`                                            | `/a-propos/`               | identique                            |
-| `/contact/`                                             | `/contact/`                | identique                            |
-| Pages projets WordPress                                 | `/realisations/<slug>/`    | **à relever (phase 3)**              |
-| Pages légales WordPress                                 | nouvelles URLs légales     | **à relever (phase 3)**              |
-| `/feed/`, `/wp-*`, `/category/*`, `/tag/*`, `/author/*` | `/` ou page la plus proche | à décider selon l'indexation réelle  |
+Base : inventaire exhaustif du 18/11/2026 (`docs/CONTENU-EXISTANT.md` §1). **Source de vérité : `src/lib/redirects.ts`** ; `vercel.json` → `redirects` doit lui être strictement égal (test `tests/unit/redirects.test.ts`, qui vérifie aussi : aucun doublon, aucune chaîne, aucune page du nouveau site redirigée, chaque ancienne URL — avec et sans slash final — aboutit en **un seul saut** à une page servie en 200). Pour ajouter une redirection : modifier `redirects.ts`, puis recopier `buildVercelRedirects()` dans `vercel.json`.
 
-Avant mise en production : exporter les URLs indexées depuis la Search Console (ou `site:amgdecorationdinterieur.com`) et vérifier que **100 %** ont une destination 200 ou 301.
+### Tableau final
+
+Chaque URL de page est déclarée **avec et sans slash final** (l'accueil WordPress lie `/projet-chalet`, `/projet-lamyae`, `/projet-iryna` sans slash).
+
+| Ancienne URL                                                                                                                                    | Nouvelle URL                              | Motif                                                       |
+| ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------- |
+| `/`, `/a-propos/`, `/contact/`                                                                                                                  | identique (200)                           | URL conservée                                               |
+| `/services/`                                                                                                                                    | `/prestations/`                           | même contenu                                                |
+| `/about/`                                                                                                                                       | `/realisations/`                          | la page « Réalisations » WordPress                          |
+| `/politique-de-confidentialite/`                                                                                                                | `/mentions-legales/`                      | contenait en réalité les mentions légales                   |
+| `/conditions-generales-de-services-cgs/`                                                                                                        | `/conditions-generales/`                  | même contenu                                                |
+| `/projet-chalet/` et `/projet-iryna/projet-chalet/` (lien cassé de `/about/`)                                                                   | `/realisations/chalet-suisse/`            | même projet                                                 |
+| `/projet-lamyae/`                                                                                                                               | `/realisations/piece-de-vie-bois-pierre/` | même projet                                                 |
+| `/projet-iryna/`                                                                                                                                | `/realisations/espace-de-vie-scandinave/` | même projet                                                 |
+| `/projet_magali/`                                                                                                                               | `/realisations/sous-sol-suite-parentale/` | même projet                                                 |
+| `/projet-1/` à `/projet-7/`, `/projet-marine/`, `/projet-marine-dupliquer-3417/`, `/projet-chambre-ado/`, `/projet-chambre-ado-dupliquer-3454/` | `/realisations/`                          | projets sans texte non migrés : page parente la plus proche |
+| `/bonjour-tout-le-monde/`, `/2593-2/`                                                                                                           | `/conseils-deco/`                         | articles vides (test WordPress, « Feed Instagram »)         |
+| `/category/blog/`, `/category/*` (pagination, flux de catégorie)                                                                                | `/conseils-deco/`                         | archive du blog                                             |
+| `/author/amgdecorationdinterieur-com/`, `/author/*`                                                                                             | `/a-propos/`                              | archive auteur → présentation d'Amandine                    |
+| `/feed/`, `/feed/*` (`rss2`, `atom`…), `/comments/feed/`, `/bonjour-tout-le-monde/feed/`, `/2593-2/feed/`                                       | `/conseils-deco/`                         | voir « Flux RSS » ci-dessous                                |
+| `/sitemap.xml`, `/sitemap_index.xml`, `/wp-sitemap.xml`, `/page-sitemap.xml`, `/post-sitemap.xml`, `/category-sitemap.xml`, `/sitemap.rss`      | `/sitemap-index.xml`                      | sitemap Astro                                               |
+| `/wp-admin/*`, `/wp-login.php`, `/xmlrpc.php`, `/wp-json/*`, `/wp-includes/*`, `/wp-content/*` (y compris `uploads`)                            | **404** (aucune règle)                    | voir décisions ci-dessous                                   |
+| toute URL sans slash final (hors fichiers)                                                                                                      | même URL + `/`                            | normalisation, dernière règle                               |
+
+### Décisions techniques et sources
+
+- **Code HTTP** : `permanent: true` ⇒ Vercel renvoie **308**, pas 301. Google : « 308 — Equivalent to 301 », signal de redirection fort ([Google Search Central, codes HTTP](https://developers.google.com/search/docs/crawling-indexing/http-network-errors)). On garde `permanent: true` (convention Vercel) ; `statusCode: 301` serait possible mais n'apporte rien.
+- **Pas d'option `trailingSlash` dans `vercel.json`** : le compilateur de routes de Vercel (`@vercel/routing-utils`, `getTransformedRoutes`, v6.6.1) insère les règles de `trailingSlash` **avant** celles de `redirects`. Avec `trailingSlash: true`, `/projet-chalet` faisait donc `/projet-chalet` → 308 `/projet-chalet/` → 308 `/realisations/chalet-suisse/` (chaîne). On déclare les anciennes URLs sans slash explicitement, puis une **dernière règle** reproduit la normalisation de Vercel : `/:path((?!(?:\.well-known|_vercel)/)(?:[^/]+/)*[^/.]+)` → `/:path/` (dernier segment sans point : les fichiers `/_astro/*.css`, `robots.txt`, sitemaps ne sont pas touchés). Vérifié en simulant le `vercel.json` compilé par `@vercel/routing-utils` sur toutes les anciennes URLs et les pages du nouveau site : 0 écart avec `resolveRedirect()`, 0 chaîne. Seule différence avec l'ancienne option : un fichier suivi d'un slash (`/robots.txt/`) n'est plus redirigé vers `/robots.txt` (404, sans importance).
+- **Casse** : les `source` de `redirects` sont sensibles à la casse (« the `source` property is case-sensitive », [doc `vercel.json`](https://vercel.com/docs/project-configuration/vercel-json)). Les URLs WordPress étant en minuscules, aucune variante en majuscules n'est déclarée.
+- **Ordre** : première règle correspondante gagnante ; ordre fixé par `buildVercelRedirects()` (pages exactes → préfixes `/:rest+` → fichiers → normalisation du slash). Limite Vercel : 2 048 redirections ([Configuration Redirects, Limits](https://vercel.com/docs/routing/redirects/configuration-redirects)) ; nous en avons 70.
+- **Query strings** : conservées par Vercel vers la destination. `/?p=123` ou `/?page_id=…` (liens courts WordPress) tombent sur l'accueil (200, canonical sans paramètre) : acceptable, aucun lien de ce type n'est relevé.
+- **`/wp-admin`, `/wp-login.php`, `/wp-json/*`, `/xmlrpc.php`, `/wp-includes/*` → 404** : ce ne sont pas des contenus (`/wp-admin/` était déjà en `Disallow`), le trafic y est surtout celui de robots d'attaque, et rediriger vers l'accueil créerait des « soft 404 ». 410 n'apporterait rien : Google « traite tous les 4xx (sauf 429) de la même façon » (source ci-dessus) ; et Vercel ne sait pas renvoyer 410 depuis `redirects` (seulement 301/302/303/307/308) — il faudrait une fonction ou la syntaxe historique `routes`, incompatible avec `redirects`/`headers`. Les règles de type `trailingSlash` ajoutent seulement un slash aux chemins sans point (`/wp-admin` → `/wp-admin/` → 404) : sans conséquence.
+- **Médias `/wp-content/uploads/*` → 404** : Google Images envoie l'internaute vers la **page** hôte (déjà redirigée vers la bonne fiche), pas vers le fichier. Une image ne peut être remplacée que par une image équivalente ; or les nouvelles images passent par `astro:assets` (noms hachés, AVIF/WebP), donc sans URL stable à cibler. Rediriger ~100 PNG vers une page HTML (`/realisations/`) serait traité comme un soft 404. Le 404 laisse Google remplacer proprement les anciennes images par les nouveaux rendus, indexés via les nouvelles pages (avec `alt` descriptifs, ce que l'ancienne médiathèque n'avait pas). À réexaminer seulement si la Search Console montre un trafic Google Images significatif sur ces fichiers.
+- **Flux RSS** → `/conseils-deco/` (contenu le plus proche : le flux listait les articles). `/` n'aurait pas été plus utile. Si un flux est créé plus tard (`@astrojs/rss`, ex. `/conseils-deco/rss.xml`), changer la destination de `/feed/` et `/feed/*` vers ce flux dans `redirects.ts`.
+- **Pages pièces jointes WordPress** (`/<page>/<image>/`, `/?attachment_id=`) : non relevées dans les sitemaps ni l'API ; non traitées.
+
+### Avant la mise en production (Phase 6)
+
+- [ ] Exporter les URLs indexées depuis la Search Console (Pages + Images) ou `site:amgdecorationdinterieur.com`, et vérifier que **100 %** ont une destination 200 ou 301 (ajouter les manquantes dans `LEGACY_URLS` du test et dans `redirects.ts`).
+- [ ] Après bascule : `curl -sI https://amgdecorationdinterieur.com/projet-chalet` → `308` + `location: /realisations/chalet-suisse/` ; idem un échantillon du tableau.
+- [ ] Soumettre `/sitemap-index.xml` dans la Search Console ; suivre le rapport « Pages » (404, redirections) pendant 3 mois ; garder les redirections au moins un an (idéalement indéfiniment).
 
 ## 4. Données structurées
 

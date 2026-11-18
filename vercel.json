@@ -1,6 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "trailingSlash": true,
   "redirects": [
     {
       "source": "/services/",
@@ -8,8 +7,348 @@
       "permanent": true
     },
     {
+      "source": "/services",
+      "destination": "/prestations/",
+      "permanent": true
+    },
+    {
       "source": "/about/",
       "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/about",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/politique-de-confidentialite/",
+      "destination": "/mentions-legales/",
+      "permanent": true
+    },
+    {
+      "source": "/politique-de-confidentialite",
+      "destination": "/mentions-legales/",
+      "permanent": true
+    },
+    {
+      "source": "/conditions-generales-de-services-cgs/",
+      "destination": "/conditions-generales/",
+      "permanent": true
+    },
+    {
+      "source": "/conditions-generales-de-services-cgs",
+      "destination": "/conditions-generales/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-chalet/",
+      "destination": "/realisations/chalet-suisse/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-chalet",
+      "destination": "/realisations/chalet-suisse/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-iryna/projet-chalet/",
+      "destination": "/realisations/chalet-suisse/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-iryna/projet-chalet",
+      "destination": "/realisations/chalet-suisse/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-lamyae/",
+      "destination": "/realisations/piece-de-vie-bois-pierre/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-lamyae",
+      "destination": "/realisations/piece-de-vie-bois-pierre/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-iryna/",
+      "destination": "/realisations/espace-de-vie-scandinave/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-iryna",
+      "destination": "/realisations/espace-de-vie-scandinave/",
+      "permanent": true
+    },
+    {
+      "source": "/projet_magali/",
+      "destination": "/realisations/sous-sol-suite-parentale/",
+      "permanent": true
+    },
+    {
+      "source": "/projet_magali",
+      "destination": "/realisations/sous-sol-suite-parentale/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-1/",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-1",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-2/",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-2",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-3/",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-3",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-4/",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-4",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-5/",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-5",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-6/",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-6",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-7/",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-7",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-marine/",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-marine",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-marine-dupliquer-3417/",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-marine-dupliquer-3417",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-chambre-ado/",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-chambre-ado",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-chambre-ado-dupliquer-3454/",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/projet-chambre-ado-dupliquer-3454",
+      "destination": "/realisations/",
+      "permanent": true
+    },
+    {
+      "source": "/bonjour-tout-le-monde/",
+      "destination": "/conseils-deco/",
+      "permanent": true
+    },
+    {
+      "source": "/bonjour-tout-le-monde",
+      "destination": "/conseils-deco/",
+      "permanent": true
+    },
+    {
+      "source": "/2593-2/",
+      "destination": "/conseils-deco/",
+      "permanent": true
+    },
+    {
+      "source": "/2593-2",
+      "destination": "/conseils-deco/",
+      "permanent": true
+    },
+    {
+      "source": "/category/blog/",
+      "destination": "/conseils-deco/",
+      "permanent": true
+    },
+    {
+      "source": "/category/blog",
+      "destination": "/conseils-deco/",
+      "permanent": true
+    },
+    {
+      "source": "/author/amgdecorationdinterieur-com/",
+      "destination": "/a-propos/",
+      "permanent": true
+    },
+    {
+      "source": "/author/amgdecorationdinterieur-com",
+      "destination": "/a-propos/",
+      "permanent": true
+    },
+    {
+      "source": "/feed/",
+      "destination": "/conseils-deco/",
+      "permanent": true
+    },
+    {
+      "source": "/feed",
+      "destination": "/conseils-deco/",
+      "permanent": true
+    },
+    {
+      "source": "/comments/feed/",
+      "destination": "/conseils-deco/",
+      "permanent": true
+    },
+    {
+      "source": "/comments/feed",
+      "destination": "/conseils-deco/",
+      "permanent": true
+    },
+    {
+      "source": "/bonjour-tout-le-monde/feed/",
+      "destination": "/conseils-deco/",
+      "permanent": true
+    },
+    {
+      "source": "/bonjour-tout-le-monde/feed",
+      "destination": "/conseils-deco/",
+      "permanent": true
+    },
+    {
+      "source": "/2593-2/feed/",
+      "destination": "/conseils-deco/",
+      "permanent": true
+    },
+    {
+      "source": "/2593-2/feed",
+      "destination": "/conseils-deco/",
+      "permanent": true
+    },
+    {
+      "source": "/category/:rest+",
+      "destination": "/conseils-deco/",
+      "permanent": true
+    },
+    {
+      "source": "/category/:rest+/",
+      "destination": "/conseils-deco/",
+      "permanent": true
+    },
+    {
+      "source": "/author/:rest+",
+      "destination": "/a-propos/",
+      "permanent": true
+    },
+    {
+      "source": "/author/:rest+/",
+      "destination": "/a-propos/",
+      "permanent": true
+    },
+    {
+      "source": "/feed/:rest+",
+      "destination": "/conseils-deco/",
+      "permanent": true
+    },
+    {
+      "source": "/feed/:rest+/",
+      "destination": "/conseils-deco/",
+      "permanent": true
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/sitemap-index.xml",
+      "permanent": true
+    },
+    {
+      "source": "/sitemap_index.xml",
+      "destination": "/sitemap-index.xml",
+      "permanent": true
+    },
+    {
+      "source": "/wp-sitemap.xml",
+      "destination": "/sitemap-index.xml",
+      "permanent": true
+    },
+    {
+      "source": "/page-sitemap.xml",
+      "destination": "/sitemap-index.xml",
+      "permanent": true
+    },
+    {
+      "source": "/post-sitemap.xml",
+      "destination": "/sitemap-index.xml",
+      "permanent": true
+    },
+    {
+      "source": "/category-sitemap.xml",
+      "destination": "/sitemap-index.xml",
+      "permanent": true
+    },
+    {
+      "source": "/sitemap.rss",
+      "destination": "/sitemap-index.xml",
+      "permanent": true
+    },
+    {
+      "source": "/:path((?!(?:\\.well-known|_vercel)/)(?:[^/]+/)*[^/.]+)",
+      "destination": "/:path/",
       "permanent": true
     }
   ],
