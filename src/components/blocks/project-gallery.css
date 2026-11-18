@@ -1,0 +1,123 @@
+/*
+ * Styles de la galerie de projet (blocks/ProjectGallery.astro), sortis du composant pour rester
+ * sous 150 lignes. Classes BEM préfixées « project-gallery » : aucune collision possible.
+ */
+@layer components {
+  .project-gallery {
+    display: grid;
+    gap: var(--space-l-2xl);
+  }
+
+  .project-gallery__group {
+    display: grid;
+    gap: var(--space-m);
+
+    @media (width >= 64rem) {
+      grid-template-columns: 3fr 9fr;
+      gap: var(--grid-gap);
+      align-items: start;
+    }
+  }
+
+  .project-gallery__label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-family: var(--font-display-stack);
+    font-size: var(--step-3);
+    font-style: italic;
+    font-weight: var(--weight-light);
+    line-height: var(--leading-heading);
+    color: var(--color-accent-text);
+
+    @media (width >= 64rem) {
+      position: sticky;
+      inset-block-start: calc(var(--header-height) + var(--space-m));
+    }
+
+    /* Petite arche filaire terracotta (décor). */
+    &::before {
+      content: '';
+      flex: none;
+      inline-size: var(--space-s);
+      block-size: var(--space-m);
+      border: var(--border-hairline) solid var(--color-accent);
+      border-block-end: 0;
+      border-radius: var(--radius-arch);
+    }
+  }
+
+  .project-gallery__list {
+    display: grid;
+    gap: var(--space-m);
+    margin: 0;
+
+    @media (width >= 48rem) {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--grid-gap);
+    }
+  }
+
+  @media (width >= 48rem) {
+    .project-gallery__item:first-child:nth-last-child(odd) {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .project-gallery__figure {
+    display: grid;
+    gap: var(--space-xs);
+    margin: 0;
+  }
+
+  .project-gallery__zoom {
+    position: relative;
+    display: block;
+    border-radius: var(--radius-lg);
+    color: var(--color-text);
+    cursor: zoom-in;
+
+    &:focus-visible {
+      border-radius: var(--radius-lg);
+    }
+  }
+
+  /* Pastille « + » : signale l'agrandissement, y compris au toucher (pas de survol). */
+  .project-gallery__badge {
+    position: absolute;
+    inset-block-end: var(--space-s);
+    inset-inline-end: var(--space-s);
+    display: grid;
+    place-items: center;
+    inline-size: var(--tap-target);
+    block-size: var(--tap-target);
+    border-radius: var(--radius-pill);
+    background-color: var(--color-surface);
+    box-shadow: var(--shadow-soft);
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+
+  .project-gallery__zoom:is(:hover, :focus-visible) {
+    & .project-gallery__badge {
+      transform: rotate(90deg);
+    }
+
+    & .arch-image__img {
+      transform: scale(var(--hover-zoom));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .project-gallery__zoom:is(:hover, :focus-visible) {
+      & .project-gallery__badge,
+      & .arch-image__img {
+        transform: none;
+      }
+    }
+  }
+
+  .project-gallery__caption {
+    font-size: var(--step--1);
+    color: var(--color-text-soft);
+  }
+}

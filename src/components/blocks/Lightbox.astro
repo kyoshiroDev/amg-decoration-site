@@ -1,0 +1,145 @@
+---
+/**
+ * Lightbox — visionneuse plein écran d'une galerie (`<dialog>` natif, ouvert en `showModal()`
+ * par scripts/lightbox.ts : focus piégé, Échap et fond inerte natifs). Rendue fermée : sans
+ * JavaScript, elle n'apparaît jamais et les vignettes restent de simples liens vers l'image.
+ * L'image grand format est créée et chargée à l'ouverture seulement.
+ */
+import Button from '@/components/ui/Button.astro';
+import { microcopy } from '@/config/microcopy';
+
+const labels = microcopy.lightbox;
+---
+
+<dialog class="lightbox" aria-label={labels.label} data-lightbox data-counter={labels.counter}>
+  <div class="lightbox__bar">
+    <p class="lightbox__counter" data-lightbox-counter aria-live="polite"></p>
+    <Button
+      variant="ghost"
+      iconOnly
+      icon="close"
+      label={labels.close}
+      class="lightbox__close"
+      attrs={{ 'data-lightbox-close': '', autofocus: true }}
+    />
+  </div>
+  <figure class="lightbox__figure" data-lightbox-figure>
+    <figcaption class="lightbox__caption" data-lightbox-caption></figcaption>
+  </figure>
+  <div class="lightbox__nav" data-lightbox-nav>
+    <Button
+      variant="ghost"
+      iconOnly
+      icon="arrow-left"
+      label={labels.previous}
+      attrs={{ 'data-lightbox-step': '-1' }}
+    />
+    <Button
+      variant="ghost"
+      iconOnly
+      icon="arrow-right"
+      label={labels.next}
+      attrs={{ 'data-lightbox-step': '1' }}
+    />
+  </div>
+</dialog>
+
+<script>
+  import '@/scripts/lightbox';
+</script>
+
+<style>
+  @layer components {
+    .lightbox {
+      inline-size: 100%;
+      max-inline-size: none;
+      block-size: 100dvh;
+      max-block-size: none;
+      padding: var(--space-s) var(--gutter);
+      margin: 0;
+      border: 0;
+      background-color: var(--color-lightbox-bg);
+      color: var(--color-text);
+      opacity: 0;
+      transition:
+        opacity var(--dur-base) var(--ease-out),
+        display var(--dur-base) allow-discrete,
+        overlay var(--dur-base) allow-discrete;
+
+      &[open] {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        gap: var(--space-s);
+        opacity: 1;
+
+        @starting-style {
+          opacity: 0;
+        }
+      }
+
+      &::backdrop {
+        background-color: transparent;
+      }
+    }
+
+    /* Page dessous figée pendant l'ouverture (même parti que le menu mobile). */
+    :global(html:has(.lightbox[open])) {
+      overflow: hidden;
+      scrollbar-gutter: stable;
+    }
+
+    .lightbox__bar,
+    .lightbox__nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-s);
+    }
+
+    .lightbox__nav {
+      justify-content: center;
+
+      &[hidden] {
+        display: none;
+      }
+    }
+
+    .lightbox__counter {
+      font-size: var(--text-eyebrow);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-eyebrow);
+      color: var(--color-text-soft);
+    }
+
+    .lightbox__figure {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      place-items: center;
+      gap: var(--space-xs);
+      min-block-size: 0;
+      margin: 0;
+    }
+
+    .lightbox__figure :global(img) {
+      max-inline-size: 100%;
+      max-block-size: 100%;
+      inline-size: auto;
+      block-size: auto;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lifted);
+      object-fit: contain;
+      transition: opacity var(--dur-fast) var(--ease-out);
+    }
+
+    .lightbox__figure :global(img[data-loading]) {
+      opacity: var(--opacity-disabled);
+    }
+
+    .lightbox__caption {
+      max-inline-size: var(--measure);
+      font-size: var(--step--1);
+      color: var(--color-text-soft);
+      text-align: center;
+    }
+  }
+</style>
