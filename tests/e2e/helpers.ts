@@ -48,9 +48,41 @@ export async function openMenuWithKeyboard(page: Page): Promise<void> {
   await expect(menuPanel(page)).toBeVisible();
 }
 
-/** Attend la fin de toutes les animations et transitions CSS en cours. */
+/**
+ * Attend la fin de toutes les animations et transitions CSS en cours, hors animations infinies
+ * (défilement continu du bandeau de mots, qui ne s'arrête jamais par définition).
+ */
 export async function waitForAnimationsToSettle(page: Page): Promise<void> {
-  await page.waitForFunction(() => document.getAnimations().length === 0);
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .every((animation) => animation.effect?.getComputedTiming().endTime === Infinity),
+  );
+}
+
+/** Fait défiler toute la page par paliers, pour déclencher les apparitions au scroll. */
+export async function scrollThroughPage(page: Page): Promise<void> {
+  const [height, step] = await page.evaluate(() => [
+    document.documentElement.scrollHeight,
+    Math.round(window.innerHeight / 2),
+  ]);
+  for (let y = 0; y < height; y += step) {
+    await page.evaluate((delta) => window.scrollBy(0, delta), step);
+    await page.waitForTimeout(100);
+  }
+}
+
+/**
+ * Éléments rendus et visibles mais à opacité nulle (un contenu caché par une animation).
+ * Les éléments non rendus (`display: none`, dialogue fermé) ne comptent pas.
+ */
+export async function countTransparentElements(page: Page): Promise<number> {
+  return page.evaluate(
+    () =>
+      [...document.querySelectorAll('body *')].filter(
+        (element) => element.checkVisibility() && getComputedStyle(element).opacity === '0',
+      ).length,
+  );
 }
 
 /**

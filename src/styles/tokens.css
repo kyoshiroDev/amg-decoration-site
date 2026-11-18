@@ -36,6 +36,7 @@
   --color-border-control: var(--color-taupe); /* contour des boutons ghost */
   --color-scrim: rgb(248 243 236 / 90%); /* lin à 90 % : accent-text ≥ 4.5:1 sur tout fond */
   --color-backdrop: rgb(47 38 34 / 28%); /* voile derrière le menu mobile */
+  --color-lightbox-bg: rgb(248 243 236 / 97%); /* lin quasi opaque : visionneuse plein écran */
 
   /* ---------- Typographie ---------- */
 
@@ -125,6 +126,11 @@
   --mobile-nav-width: 30rem;
   --footer-arch-size: clamp(7rem, 14vw, 11rem); /* arche filaire en filigrane du pied de page */
 
+  /* Comparateur « Rendu 3D ↔ Réalisé » (BeforeAfter). */
+  --compare-handle-size: 3rem; /* poignée ronde ≥ --tap-target */
+  --compare-start: 50%; /* position initiale du curseur (avant interaction) */
+  --compare-max: 60rem; /* largeur maximale du comparateur interactif */
+
   /*
    * Points de rupture (documentaires : les custom properties ne sont pas utilisables
    * dans @media). Utiliser ces valeurs littérales en min-width, mobile first :
@@ -176,6 +182,10 @@
   --stagger: 70ms;
   --reveal-distance: 20px;
   --hover-zoom: 1.04;
+  --dur-morph: 600ms; /* morphing d'un visuel de projet entre deux pages (View Transition) */
+  --reveal-image-scale: 1.08; /* image reveal : léger dézoom pendant la levée du masque */
+  --magnetic-max: 6px; /* CTA magnétique : déplacement maximal vers le pointeur */
+  --marquee-duration: 48s; /* une copie du bandeau défile en 48 s (défilement continu, lent) */
   --opacity-disabled: 0.55;
   --opacity-ornament: 0.4; /* numéros d'étapes géants (décor) */
 

@@ -4,6 +4,7 @@
  */
 export const iconNames = [
   'arrow-right',
+  'arrow-left',
   'external',
   'phone',
   'mail',
@@ -15,6 +16,8 @@ export const iconNames = [
   'menu',
   'close',
   'plus',
+  'pause',
+  'play',
 ] as const;
 
 export type IconName = (typeof iconNames)[number];
@@ -22,6 +25,7 @@ export type IconName = (typeof iconNames)[number];
 // Chemins dessinés sur une grille 24×24 ; formes simplifiées des marques sociales.
 export const iconPaths: Record<IconName, string> = {
   'arrow-right': '<path d="M4 12h15"/><path d="m13 6 6 6-6 6"/>',
+  'arrow-left': '<path d="M20 12H5"/><path d="m11 6-6 6 6 6"/>',
   // Flèche oblique : lien qui s'ouvre dans un nouvel onglet (indice visuel, toujours décoratif).
   external: '<path d="M8 16 17 7"/><path d="M9.5 7H17v7.5"/>',
   phone:
@@ -40,4 +44,6 @@ export const iconPaths: Record<IconName, string> = {
   menu: '<path d="M4 8h16"/><path d="M4 16h16"/>',
   close: '<path d="m6 6 12 12"/><path d="M18 6 6 18"/>',
   plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+  pause: '<path d="M9 6v12"/><path d="M15 6v12"/>',
+  play: '<path d="M8 5.5v13l10.5-6.5Z"/>',
 };

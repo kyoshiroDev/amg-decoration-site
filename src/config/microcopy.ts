@@ -20,6 +20,20 @@ export const microcopy = {
   marquee: {
     label: 'L’esprit de l’atelier',
     words: ['Douceur', 'Matières', 'Lumière', '3D'],
+    /** Bouton du défilement (WCAG 2.2.2) : nom accessible selon l'état. */
+    pause: 'Mettre en pause le défilement des mots',
+    play: 'Reprendre le défilement des mots',
+  },
+  /** Visionneuse des galeries de projet (ProjectGallery). */
+  lightbox: {
+    label: 'Visionneuse d’images',
+    /** Préfixe masqué du nom des vignettes : « Agrandir l’image : <alt> ». */
+    open: 'Agrandir l’image\u00A0:',
+    close: 'Fermer la visionneuse',
+    previous: 'Image précédente',
+    next: 'Image suivante',
+    /** `{current}` et `{total}` remplacés par le rang de l'image et le nombre d'images. */
+    counter: '{current}\u00A0/\u00A0{total}',
   },
   services: {
     highlight: 'La plus demandée',
@@ -94,6 +108,11 @@ export const microcopy = {
       heading: 'Du rendu 3D à la réalité',
       rendering: 'Rendu 3D',
       result: 'Réalisé',
+      /** Nom accessible du curseur du comparateur. */
+      slider: 'Comparer le rendu 3D et la réalisation',
+      /** `aria-valuetext` : `{rendering}` et `{result}` remplacés par les parts visibles. */
+      valueText: '{rendering}\u202F% rendu 3D, {result}\u202F% réalisé',
+      hint: 'Faites glisser la poignée pour comparer les deux images.',
     },
     pager: {
       label: 'Autres réalisations',

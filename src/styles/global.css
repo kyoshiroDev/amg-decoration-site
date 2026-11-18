@@ -9,6 +9,7 @@
 @import url('./font-fallbacks.css');
 @import url('./reset.css');
 @import url('./utilities.css');
+@import url('./motion.css');
 
 @layer base {
   html {
@@ -228,5 +229,27 @@
   ::view-transition-new(root) {
     animation-duration: var(--dur-base);
     animation-timing-function: var(--ease-out);
+  }
+
+  /*
+   * Morphing du visuel d'un projet (carte → couverture, `view-transition-class: projet`,
+   * posé par ArchImage) : le cadre glisse et change de forme ; les deux instantanés couvrent
+   * le cadre (object-fit: cover) au lieu de se déformer quand les ratios diffèrent (5/4 → 4/5).
+   */
+  ::view-transition-group(.projet) {
+    animation-duration: var(--dur-morph);
+    animation-timing-function: var(--ease-in-out);
+  }
+
+  ::view-transition-image-pair(.projet) {
+    overflow: clip;
+  }
+
+  ::view-transition-old(.projet),
+  ::view-transition-new(.projet) {
+    block-size: 100%;
+    object-fit: cover;
+    animation-duration: var(--dur-morph);
+    animation-timing-function: var(--ease-in-out);
   }
 }

@@ -3,6 +3,9 @@
  * BlockSamples — tous les blocs de src/components/blocks/, alimentés par les contenus réels de
  * l'accueil. Exceptions assumées du styleguide : titres d'ouverture en h2, aucune image
  * `priority` (celle de SgIntro suffit), plusieurs pastels à la suite.
+ * BeforeAfter et ProjectGallery (visionneuse) : démontrés avec des placeholders libellés comme
+ * tels (aucun projet n'a encore de vraie paire rendu 3D / photo, TODO(contenu) dans
+ * src/assets/placeholders/README.md).
  */
 import Container from '@/components/ui/Container.astro';
 import Section from '@/components/ui/Section.astro';
@@ -19,11 +22,15 @@ import Benefits3D from '@/components/blocks/Benefits3D.astro';
 import Testimonials from '@/components/blocks/Testimonials.astro';
 import CtaBanner from '@/components/blocks/CtaBanner.astro';
 import RichText from '@/components/blocks/RichText.astro';
+import BeforeAfter from '@/components/blocks/BeforeAfter.astro';
+import ProjectGallery from '@/components/blocks/ProjectGallery.astro';
 import SgBlockLabel from './SgBlockLabel.astro';
 import { media } from '@/config/media';
 import { microcopy } from '@/config/microcopy';
 import type { HomeModel } from '@/lib/pages/home-model';
 import type { StyleguideData } from '@/lib/pages/styleguide';
+import compareRendering from '@/assets/placeholders/comparatif-rendu-3d.jpg';
+import compareResult from '@/assets/placeholders/comparatif-realise.jpg';
 
 interface Props {
   home: HomeModel;
@@ -33,6 +40,32 @@ interface Props {
 
 const { home, content: Content } = Astro.props;
 const { sections } = home;
+const labels = microcopy.projects;
+const placeholders = {
+  rendering: {
+    image: compareRendering,
+    alt: 'Placeholder\u00A0: dessin au trait d’un salon (canapé, fenêtre en arche, plante), à remplacer par un rendu 3D',
+  },
+  result: {
+    image: compareResult,
+    alt: 'Placeholder\u00A0: le même salon en aplats de couleur (canapé terracotta, plante sauge), à remplacer par une photo du projet réalisé',
+  },
+};
+const galleryGroups = [
+  {
+    kind: '3d',
+    label: labels.gallery.kinds['3d'],
+    items: [{ ...placeholders.rendering, caption: 'Placeholder · rendu 3D' }],
+  },
+  {
+    kind: 'apres',
+    label: labels.gallery.kinds.apres,
+    items: [
+      { ...placeholders.result, caption: 'Placeholder · réalisé' },
+      { image: media.homeHero.image, alt: media.homeHero.alt, caption: undefined },
+    ],
+  },
+] as const;
 ---
 
 <SgBlockLabel name="Hero" note="Accueil · h1, arche, seule image priority de la page" />
@@ -47,7 +80,7 @@ const { sections } = home;
 />
 <SgBlockLabel name="PageHero" note="Pages internes · h1 sous le fil d’Ariane, sans image" />
 <PageHero section={sections.missions} id="sg-b-page-hero" headingLevel={2} />
-<SgBlockLabel name="Marquee" note="Statique (défilement : Phase 5) · copies aria-hidden" />
+<SgBlockLabel name="Marquee" note="Défilement continu · bouton pause · 3 copies, 2 aria-hidden" />
 <Marquee words={microcopy.marquee.words} label={microcopy.marquee.label} />
 <SgBlockLabel name="Values" note="ContentSection split · items d’une section" />
 <Values section={sections.missions} id="sg-b-values" />
@@ -71,6 +104,25 @@ const { sections } = home;
 />
 <SgBlockLabel name="CtaBanner" note="Fin de page · actions et étapes suivantes" />
 <CtaBanner section={sections.cta} id="sg-b-cta" />
+<SgBlockLabel
+  name="BeforeAfter"
+  note="Placeholders · curseur clavier (flèches, Page, Début/Fin), souris et tactile"
+/>
+<BeforeAfter
+  heading={labels.beforeAfter.heading}
+  lead="Démonstration avec deux images provisoires, en attendant une vraie paire rendu 3D / photo."
+  rendering={placeholders.rendering}
+  result={placeholders.result}
+  labels={labels.beforeAfter}
+  id="sg-b-before-after"
+/>
+<SgBlockLabel name="ProjectGallery + Lightbox" note="Placeholders · vignettes cliquables" />
+<ProjectGallery
+  heading={labels.gallery.heading}
+  lead="Cliquez sur une image pour l’agrandir (flèches ← → pour naviguer, Échap pour fermer)."
+  groups={galleryGroups}
+  id="sg-b-gallery"
+/>
 <SgBlockLabel name="RichText" note="Corps Markdown (ici : formule Essentiel)" />
 <Section spacing="compact">
   <Container>

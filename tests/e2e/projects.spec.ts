@@ -100,13 +100,15 @@ test.describe('Réalisations : page projet', () => {
     );
   });
 
-  test('galerie groupée par nature, sans lien sur les images', async ({ page }) => {
+  test('galerie groupée par nature, chaque vignette mène au grand format', async ({ page }) => {
     const gallery = page.locator('#galerie-titre').locator('xpath=ancestor::section[1]');
     const kinds = Object.values(microcopy.projects.gallery.kinds);
     for (const label of await gallery.locator('h3').allInnerTexts()) {
       expect(kinds).toContain(label);
     }
-    await expect(gallery.locator('a img')).toHaveCount(0);
+    const images = await gallery.locator('li img').count();
+    expect(images).toBeGreaterThan(0);
+    await expect(gallery.locator('a[data-lightbox-item][href$=".webp"] img')).toHaveCount(images);
   });
 
   test('navigation vers les autres projets et CTA', async ({ page }) => {
