@@ -8,6 +8,7 @@
 import { defineCollection, reference } from 'astro:content';
 import { file, glob } from 'astro/loaders';
 import { z } from 'astro/zod';
+import { EMAIL_TOKEN } from '@/lib/contact-form';
 import { isDescriptionLengthValid, isTitleLengthValid, seoLimits } from '@/lib/seo';
 
 /* ------------------------------------------------------------------ */
@@ -77,6 +78,49 @@ const pageSection = z
 /** Clé de section : kebab-case, lue explicitement par la route (`requireSection`). */
 const sectionKey = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 
+const textWithEmail = text.refine((value) => value.includes(EMAIL_TOKEN), {
+  message: `Texte attendu avec le jeton « ${EMAIL_TOKEN} » (remplacé par site.email).`,
+});
+
+/** Champ de formulaire : libellé visible et aide facultative (reliée par `aria-describedby`). */
+const formField = z.strictObject({ label: text, hint: text.optional() });
+
+/**
+ * Microcopies du formulaire de contact (docs/CONFORMITE.md §5). Les champs eux-mêmes (types,
+ * `autocomplete`, obligation) sont fixés par le composant : le contenu ne porte que les textes.
+ */
+const contactForm = z.strictObject({
+  fields: z.strictObject({
+    name: formField,
+    email: formField,
+    phone: formField,
+    project: formField
+      .extend({ options: z.array(text).min(2), defaultOption: text })
+      .refine((field) => field.options.includes(field.defaultOption), {
+        message: '`defaultOption` doit faire partie de `options`.',
+        path: ['defaultOption'],
+      }),
+    message: formField,
+  }),
+  /** Suffixe du libellé d'un champ facultatif : « (facultatif) ». */
+  optionalMark: text,
+  /** Libellé du champ piège (honeypot), jamais visible. */
+  honeypotLabel: text,
+  submit: z.strictObject({ label: text, sending: text }),
+  /** Mention d'information RGPD sous le bouton, suivie d'un lien vers la politique. */
+  notice: z.strictObject({ text: textWithEmail, moreLabel: text, link: action }),
+  errors: z.strictObject({
+    summary: text,
+    nameRequired: text,
+    emailRequired: text,
+    emailInvalid: text,
+    phoneInvalid: text,
+    messageRequired: text,
+  }),
+  success: z.strictObject({ title: text, text }),
+  failure: textWithEmail,
+});
+
 /* ------------------------------------------------------------------ */
 /* Collections                                                         */
 /* ------------------------------------------------------------------ */
@@ -90,6 +134,8 @@ const pages = defineCollection({
     /** Ouverture de la page : `heading` est le `<h1>`. */
     hero: pageSection,
     sections: z.record(sectionKey, pageSection).default({}),
+    /** Formulaire de contact (page `contact` uniquement). */
+    form: contactForm.optional(),
   }),
 });
 

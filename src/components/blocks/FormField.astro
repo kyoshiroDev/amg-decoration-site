@@ -1,0 +1,79 @@
+---
+/**
+ * FormField — un champ de formulaire complet : libellé (avec « (facultatif) »), aide, message
+ * d'erreur et contrôle. L'aide et l'erreur sont reliées par `aria-describedby` ; l'erreur est
+ * vide tant que la validation (src/scripts/contact-form.ts) ne l'a pas remplie.
+ * Styles : ./contact-form.css (classes `form-field__*`).
+ */
+interface Props {
+  /** Préfixe des identifiants : `<id>`, `<id>-aide`, `<id>-erreur`. */
+  id: string;
+  name: string;
+  label: string;
+  hint?: string | undefined;
+  control: 'text' | 'email' | 'tel' | 'textarea' | 'select';
+  autocomplete: string;
+  required?: boolean;
+  /** Suffixe du libellé d'un champ facultatif (« (facultatif) »). */
+  optionalMark?: string | undefined;
+  options?: readonly string[];
+  defaultOption?: string | undefined;
+}
+
+const {
+  id,
+  name,
+  label,
+  hint,
+  control,
+  autocomplete,
+  required = false,
+  optionalMark,
+  options = [],
+  defaultOption,
+} = Astro.props;
+
+const hintId = `${id}-aide`;
+const errorId = `${id}-erreur`;
+const describedBy = [hint ? hintId : undefined, errorId].filter(Boolean).join(' ');
+const common = {
+  id,
+  name,
+  autocomplete,
+  required,
+  'aria-describedby': describedBy,
+  'data-field': name,
+};
+---
+
+<div class="form-field">
+  <label class="form-field__label" for={id}>
+    {label}
+    {!required && optionalMark && <span class="form-field__optional"> {optionalMark}</span>}
+  </label>
+  {hint && (
+    <p class="form-field__hint" id={hintId}>
+      {hint}
+    </p>
+  )}
+  <p class="form-field__error" id={errorId} data-field-error={name}></p>
+  {control === 'textarea' ? (
+    <textarea class="form-field__control form-field__control--textarea" {...common} />
+  ) : control === 'select' ? (
+    <select class="form-field__control form-field__control--select" {...common}>
+      {options.map((option) => (
+        <option value={option} selected={option === defaultOption}>
+          {option}
+        </option>
+      ))}
+    </select>
+  ) : (
+    <input
+      class="form-field__control"
+      type={control}
+      inputmode={control === 'tel' ? 'tel' : undefined}
+      spellcheck={control === 'text' ? undefined : 'false'}
+      {...common}
+    />
+  )}
+</div>

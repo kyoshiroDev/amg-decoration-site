@@ -14,22 +14,60 @@ sections:
     heading: 'Décrivez-moi votre projet'
     headingEmphasis: 'votre projet'
     lead: 'Quelques lignes suffisent pour commencer. Plus vous me donnez de détails (lieu, surface, besoins, budget), plus ma réponse sera précise. Si vous avez déjà des photos de la pièce ou un plan, dites-le-moi : ils me serviront à établir votre devis.'
-    # Champs du formulaire, dans l’ordre (spécification complète : docs/CONFORMITE.md § Formulaire) :
-    # `title` = libellé du champ, `text` = aide affichée sous le champ (reliée par aria-describedby).
-    # Pas d’adresse postale (minimisation RGPD), pas de case de consentement. Le honeypot n’a pas de libellé visible.
-    items:
-      - title: 'Votre nom'
-        text: 'Obligatoire. Votre prénom et votre nom, comme vous préférez.'
-      - title: 'Votre email'
-        text: 'Obligatoire. Je l’utilise uniquement pour vous répondre.'
-      - title: 'Votre téléphone'
-        text: 'Facultatif. Si vous préférez que je vous rappelle.'
-      - title: 'Votre projet'
-        text: 'Choisissez la formule qui vous intéresse, ou « Je ne sais pas encore ».'
-      - title: 'Votre message'
-        text: 'Obligatoire. Lieu, surface, besoins, budget, photos ou plan disponibles : tout ce qui m’aide à comprendre votre projet.'
   coordonnees:
     heading: 'Me joindre directement'
     headingEmphasis: 'directement'
     lead: 'Vous préférez un échange de vive voix ? Appelez-moi ou écrivez-moi directement. Pour une collaboration, une mission en freelance ou de la sous-traitance, je reste également à votre écoute.'
+# Formulaire : textes EXACTS de docs/CONFORMITE.md §5. Types, `autocomplete` et champs obligatoires
+# sont fixés par le composant ContactForm. `{email}` est remplacé par l’adresse de src/config/site.ts.
+# Pas d’adresse postale (minimisation RGPD), pas de case de consentement.
+form:
+  fields:
+    name:
+      label: 'Votre nom'
+      hint: 'Obligatoire. Votre prénom et votre nom, comme vous préférez.'
+    email:
+      label: 'Votre email'
+      hint: 'Obligatoire. Je l’utilise uniquement pour vous répondre.'
+    phone:
+      label: 'Votre téléphone'
+      hint: 'Si vous préférez que je vous rappelle.'
+    project:
+      label: 'Votre projet'
+      hint: 'Choisissez la formule qui vous intéresse, ou « Je ne sais pas encore ».'
+      options:
+        - 'Formule Essentiel'
+        - 'Formule Confort'
+        - 'Formule Signature'
+        - 'Formule Studio'
+        - 'Meuble sur mesure 3D'
+        - 'Offre professionnels'
+        - 'Autre demande (collaboration, sous-traitance…)'
+        - 'Je ne sais pas encore'
+      defaultOption: 'Je ne sais pas encore'
+    message:
+      label: 'Votre message'
+      hint: 'Obligatoire. Lieu, surface, besoins, budget, photos ou plan disponibles : tout ce qui m’aide à comprendre votre projet.'
+  optionalMark: '(facultatif)'
+  honeypotLabel: 'Ne remplissez pas ce champ'
+  submit:
+    label: 'Envoyer ma demande'
+    sending: 'Envoi en cours…'
+  notice:
+    text: 'Vos informations servent uniquement à répondre à votre demande et, si vous le souhaitez, à préparer votre devis. Elles sont transmises par un service de formulaire sécurisé et conservées au maximum 3 ans après notre dernier échange. Vous pouvez y accéder, les rectifier ou les faire supprimer en m’écrivant à {email}.'
+    moreLabel: 'En savoir plus :'
+    link:
+      label: 'politique de confidentialité'
+      href: '/confidentialite/'
+  errors:
+    summary: 'Votre demande n’est pas encore partie : corrigez le ou les champs signalés ci-dessous, puis renvoyez-la.'
+    nameRequired: 'Indiquez votre nom pour que je sache comment m’adresser à vous.'
+    emailRequired: 'Indiquez votre adresse email pour que je puisse vous répondre.'
+    emailInvalid: 'Cette adresse email semble incomplète. Exemple : prenom.nom@exemple.fr'
+    phoneInvalid: 'Ce numéro semble incomplet. Exemple : 06 12 34 56 78'
+    messageRequired: 'Dites-m’en un peu plus sur votre projet, même en quelques mots.'
+  success:
+    title: 'Merci, votre message est bien parti !'
+    text: 'Je l’ai bien reçu et je vous réponds au plus vite, du lundi au vendredi. Pensez à jeter un œil à vos courriers indésirables.'
+  failure: 'Votre message n’a pas pu être envoyé. Vérifiez votre connexion et réessayez, ou écrivez-moi directement à {email}.'
 ---

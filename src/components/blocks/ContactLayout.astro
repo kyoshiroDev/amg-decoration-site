@@ -1,0 +1,53 @@
+---
+/**
+ * ContactLayout — page Contact : formulaire (slot par défaut, 7/12) et coordonnées (slot
+ * `aside`, 5/12, collantes sous l'en-tête) à partir de 64rem ; empilés sur mobile, formulaire
+ * d'abord. Le formulaire est posé sur une carte crème.
+ */
+import Section from '@/components/ui/Section.astro';
+import Container from '@/components/ui/Container.astro';
+---
+
+<Section as="div" spacing="compact" class="contact-layout">
+  <Container class="contact-layout__grid">
+    <div class="contact-layout__main">
+      <slot />
+    </div>
+    <div class="contact-layout__aside">
+      <slot name="aside" />
+    </div>
+  </Container>
+</Section>
+
+<style>
+  @layer components {
+    :global(.contact-layout__grid) {
+      display: grid;
+      gap: var(--space-l-2xl);
+      align-items: start;
+
+      @media (width >= 64rem) {
+        grid-template-columns: 7fr 5fr;
+        gap: var(--space-2xl);
+      }
+    }
+
+    .contact-layout__main {
+      padding: var(--space-l) var(--space-m);
+      border-radius: var(--radius-lg);
+      background-color: var(--color-surface);
+      box-shadow: var(--shadow-soft);
+
+      @media (width >= 48rem) {
+        padding: var(--space-xl) var(--space-xl);
+      }
+    }
+
+    .contact-layout__aside {
+      @media (width >= 64rem) {
+        position: sticky;
+        inset-block-start: calc(var(--header-height-compact) + var(--space-m));
+      }
+    }
+  }
+</style>

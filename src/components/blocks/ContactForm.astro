@@ -1,0 +1,133 @@
+---
+/**
+ * ContactForm — formulaire de contact (docs/CONFORMITE.md §5, ADR-0003).
+ * Sans JS : POST HTML vers le service (`PUBLIC_FORM_ENDPOINT`), redirection vers /merci/ ; en
+ * repli, action `mailto:`. Avec JS (src/scripts/contact-form.ts) : validation, résumé des
+ * erreurs, envoi `fetch`, statut annoncé (`role="status"`) et focus géré.
+ * Microcopies : clé `form` de src/content/pages/contact.md. Styles : ./contact-form.css.
+ */
+import Button from '@/components/ui/Button.astro';
+import SectionIntro from './SectionIntro.astro';
+import FormField from './FormField.astro';
+import { CONTACT_FIELDS, HONEYPOT_NAME, REDIRECT_NAME } from '@/lib/contact-form';
+import type { ContactFormModel } from '@/lib/pages/contact-model';
+import type { PageSection } from '@/lib/pages/types';
+import './contact-form.css';
+
+interface Props {
+  section: PageSection;
+  form: ContactFormModel;
+  id: string;
+}
+
+const { section, form, id } = Astro.props;
+const { content, target } = form;
+const { fields } = content;
+const fieldId = (name: string): string => `contact-${name}`;
+const summaryId = `${id}-erreurs`;
+---
+
+<section class="contact-form" aria-labelledby={id}>
+  <SectionIntro
+    id={id}
+    size="lg"
+    heading={section.heading}
+    emphasis={section.headingEmphasis}
+    lead={section.lead}
+  />
+  <div class="contact-form__summary" id={summaryId} tabindex="-1" data-form-summary hidden>
+    <p class="contact-form__summary-text">{content.errors.summary}</p>
+    <ul class="contact-form__summary-list" data-form-summary-list></ul>
+  </div>
+  <div class="contact-form__status" role="status" tabindex="-1" data-form-status></div>
+  <form
+    class="contact-form__form"
+    action={target.action}
+    method="post"
+    enctype={target.kind === 'mailto' ? 'text/plain' : undefined}
+    data-contact-form
+    data-kind={target.kind}
+    data-sending={content.submit.sending}
+    data-messages={JSON.stringify(content.errors)}
+  >
+    {form.redirectUrl && <input type="hidden" name={REDIRECT_NAME} value={form.redirectUrl} />}
+    <FormField
+      id={fieldId(CONTACT_FIELDS.name)}
+      name={CONTACT_FIELDS.name}
+      control="text"
+      autocomplete="name"
+      required
+      {...fields.name}
+    />
+    <FormField
+      id={fieldId(CONTACT_FIELDS.email)}
+      name={CONTACT_FIELDS.email}
+      control="email"
+      autocomplete="email"
+      required
+      {...fields.email}
+    />
+    <FormField
+      id={fieldId(CONTACT_FIELDS.phone)}
+      name={CONTACT_FIELDS.phone}
+      control="tel"
+      autocomplete="tel"
+      optionalMark={content.optionalMark}
+      {...fields.phone}
+    />
+    <FormField
+      id={fieldId(CONTACT_FIELDS.project)}
+      name={CONTACT_FIELDS.project}
+      control="select"
+      autocomplete="off"
+      required
+      label={fields.project.label}
+      hint={fields.project.hint}
+      options={fields.project.options}
+      defaultOption={fields.project.defaultOption}
+    />
+    <FormField
+      id={fieldId(CONTACT_FIELDS.message)}
+      name={CONTACT_FIELDS.message}
+      control="textarea"
+      autocomplete="off"
+      required
+      {...fields.message}
+    />
+    <div class="visually-hidden" aria-hidden="true">
+      <label for={fieldId(HONEYPOT_NAME)}>{content.honeypotLabel}</label>
+      <input
+        type="text"
+        id={fieldId(HONEYPOT_NAME)}
+        name={HONEYPOT_NAME}
+        tabindex="-1"
+        autocomplete="off"
+      />
+    </div>
+    <div class="contact-form__footer">
+      <Button type="submit" icon="arrow-right" class="contact-form__submit">
+        {content.submit.label}
+      </Button>
+      <p class="contact-form__notice">
+        {form.notice.before}
+        <a href={`mailto:${form.email}`}>{form.email}</a>
+        {form.notice.after}
+        <span class="contact-form__notice-more">
+          {content.notice.moreLabel}{' '}
+          <a href={content.notice.link.href}>{content.notice.link.label}</a>
+        </span>
+      </p>
+    </div>
+  </form>
+  <template data-form-success>
+    <p class="contact-form__status-title">{content.success.title}</p>
+    <p>{content.success.text}</p>
+  </template>
+  <template data-form-failure>
+    <p>{form.failure}</p>
+  </template>
+</section>
+
+<script>
+  import '@/scripts/contact-form';
+</script>

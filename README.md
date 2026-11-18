@@ -40,6 +40,14 @@ Claude enchaîne les 9 phases de `docs/ROADMAP.md`. À chaque phase : il code, f
 3. Chaque push sur `dev` produit une **preview** ; chaque merge dans `main` met en **production**.
 4. Le jour J : ajouter le domaine `amgdecorationdinterieur.com` dans Vercel et modifier les DNS chez le registrar actuel.
 
+## Variables d’environnement
+
+| Variable               | Obligatoire | Rôle                                                                                                                                                                                       |
+| ---------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PUBLIC_FORM_ENDPOINT` | non         | URL **https** du service de formulaire (ADR-0003, Formspark recommandé). Lue au build. Absente : le formulaire de contact se replie sur un `mailto:` vers l’email de `src/config/site.ts`. |
+
+À définir dans Vercel (_Settings → Environment Variables_) pour Production et Preview. En local, un fichier `.env` (ignoré par git) suffit : `PUBLIC_FORM_ENDPOINT=https://…`.
+
 ## Commandes Claude
 
 | Commande        | Effet                                                           |

@@ -1,0 +1,25 @@
+---
+// Contact : formulaire (docs/CONFORMITE.md §5) et coordonnées. Données : getContactData()
+// (src/lib/pages/contact.ts), textes : src/content/pages/contact.md (clé `form`).
+import PageLayout from '@/layouts/PageLayout.astro';
+import PageHero from '@/components/blocks/PageHero.astro';
+import ContactLayout from '@/components/blocks/ContactLayout.astro';
+import ContactForm from '@/components/blocks/ContactForm.astro';
+import ContactDetails from '@/components/blocks/ContactDetails.astro';
+import { getContactData } from '@/lib/pages/contact';
+
+const data = await getContactData(Astro.site ?? Astro.url);
+const { sections } = data;
+---
+
+<PageLayout
+  title={data.seo.title}
+  description={data.seo.description}
+  breadcrumbs={data.breadcrumbs}
+>
+  <PageHero section={data.hero} id="contact-page-titre" />
+  <ContactLayout>
+    <ContactForm section={sections.formulaire} form={data.form} id="formulaire-titre" />
+    <ContactDetails slot="aside" section={sections.coordonnees} id="coordonnees-titre" />
+  </ContactLayout>
+</PageLayout>

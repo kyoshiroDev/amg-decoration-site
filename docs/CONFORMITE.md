@@ -104,11 +104,11 @@ Aucune case à cocher n'est nécessaire, et il ne faut pas en ajouter : le trait
 | Succès (texte)               | Je l’ai bien reçu et je vous réponds au plus vite, du lundi au vendredi. Pensez à jeter un œil à vos courriers indésirables.  |
 | Échec de l’envoi             | Votre message n’a pas pu être envoyé. Vérifiez votre connexion et réessayez, ou écrivez-moi directement à am.gaury@gmail.com. |
 
-Les libellés et les aides des champs sont dans `src/content/pages/contact.md` (section `formulaire`, `items`). La mention d'information et les microcopies ci-dessus n'y figurent pas : le schéma `pages` n'a pas de clé dédiée, à arbitrer par l'agent `architecte` (par exemple des sections `formulaire-mention` et `formulaire-envoi`, ou une clé `form` typée).
+Toutes ces microcopies (libellés et aides des champs, options, mention, erreurs, succès, échec, bouton) sont dans la clé `form` de `src/content/pages/contact.md`, validée strictement par `src/content.config.ts`. L'adresse email n'y est jamais écrite : le jeton `{email}` est remplacé au rendu par `site.email`. Types, `autocomplete` et caractère obligatoire des champs sont fixés par `src/components/blocks/ContactForm.astro` ; validation pure dans `src/lib/contact-form.ts`.
 
 ### Comportement
 
-- Sans JS : `POST` HTML classique vers le service, redirection vers une page de remerciement **du site**.
+- Sans JS : `POST` HTML classique vers le service (`PUBLIC_FORM_ENDPOINT`, voir README § Variables d’environnement), redirection vers `/merci/` (champ `_redirect`, noindex, hors sitemap). **Tant que la variable n'est pas définie**, le formulaire reste affiché et son action est un repli `mailto:` vers `site.email` (`enctype="text/plain"`) : le message s'ouvre dans la messagerie du visiteur, aucun service tiers n'est appelé.
 - Avec JS : envoi `fetch`, message de succès ou d'échec annoncé dans une région `aria-live="polite"`, focus déplacé sur le message.
 - Alternatives visibles à côté du formulaire : téléphone, email, WhatsApp.
 - Service recommandé : **Formspark** (Belgique, hébergement en Irlande, DPA d'office) ; comparatif et sources dans l'ADR-0003. Décision humaine.
