@@ -17,10 +17,20 @@ La Phase 4 masquait les filtres sans JS par un `<noscript><style is:inline>` pla
 Un mini-script **inline et bloquant**, placé dans le `<head>` de `BaseLayout` juste après la balise `viewport`, pose la classe `js` sur `<html>` avant le premier rendu :
 
 ```js
-document.documentElement.classList.add('js');
+var d = document.documentElement;
+d.classList.add('js');
+addEventListener(
+  'error',
+  function (e) {
+    var t = e.target;
+    if (t == window || t.tagName == 'SCRIPT') d.classList.remove('js');
+  },
+  true,
+);
 ```
 
-- Chaîne exacte : `JS_CLASS_SCRIPT` dans `src/lib/inline-scripts.ts`, rendue par `<script is:inline set:html={JS_CLASS_SCRIPT} />` (44 octets).
+- Chaîne exacte (minifiée) : `JS_CLASS_SCRIPT` dans `src/lib/inline-scripts.ts`, rendue par `<script is:inline set:html={JS_CLASS_SCRIPT} />` (170 octets).
+- **Filet de sécurité** (audit accessibilité de la Phase 5) : si un module ne se charge pas ou lève une exception, le script retire la classe `js`. Le site revient alors à sa version sans JS, complète, au lieu d'afficher des filtres ou un comparateur inertes accompagnés d'une consigne fausse. Les erreurs d'images ne déclenchent pas ce retour (cible `<img>`). Vérifié par `tests/e2e/js-fallback.spec.ts`.
 - Les styles dépendants du JS s'écrivent `.js .composant { … }` (ou `:global(.js) .composant` dans un style scopé) ; par défaut, le composant est dans son état sans JS.
 - Les **états d'animation** (apparitions au scroll) ne dépendent pas de cette classe : ils restent posés élément par élément par `scripts/reveal.ts`, uniquement hors écran, pour ne jamais cacher le contenu visible au chargement.
 
@@ -29,7 +39,6 @@ document.documentElement.classList.add('js');
 Le script est inline : la future `Content-Security-Policy` devra l'autoriser par son empreinte, jamais par `'unsafe-inline'`.
 
 - Empreinte actuelle : `sha256-oO9dQz2/+Q17QWsmmtXJ9ZNoha86yQvUljQCBOLLu2E=` (170 octets).
-- **Filet de sécurité** (audit accessibilité de la Phase 5) : si un module ne se charge pas ou lève une exception, le script retire la classe `js`. Le site revient alors à sa version sans JS, complète, au lieu d'afficher des filtres ou un comparateur inertes accompagnés d'une consigne fausse. Les erreurs d'images ne déclenchent pas ce retour (cible `<img>`). Contrepartie acceptée : une exception sans rapport, venant par exemple d'une extension du navigateur, peut aussi faire repasser la page en version sans JS, ce qui reste sans danger.
 - À déclarer dans `security.csp.scriptDirective.hashes` (configuration Astro) ou dans l'en-tête CSP de `vercel.json`. La documentation d'Astro ne garantit pas que les scripts `is:inline` soient hachés automatiquement : à vérifier sur le build en Phase 7.
 - `tests/unit/inline-scripts.test.ts` vérifie la taille (< 200 octets) et l'empreinte : toute modification du script fait échouer le test, ce qui oblige à mettre à jour cette ADR et la CSP.
 
@@ -41,5 +50,6 @@ Le script est inline : la future `Content-Security-Policy` devra l'autoriser par
 
 ## Conséquences
 
-- Un navigateur avec JS mais dont les modules échouent affiche les filtres et le comparateur sans interactivité (le curseur natif reste utilisable au clavier, sans effet visuel). Cas marginal, accepté.
+- Un navigateur avec JS mais dont les modules échouent retombe sur la version sans JS : filtres masqués, grille complète, comparateur remplacé par ses deux images. Aucun composant inerte.
+- Contreparties acceptées : une exception sans rapport (extension du navigateur, par exemple) fait aussi repasser la page en version sans JS ; et une exception levée **après** le chargement, pendant l'usage, fait basculer la mise en page en cours de visite. Les deux cas restent sans danger : le contenu reste complet et lisible.
 - Le script bloquant coûte moins d'une milliseconde ; il n'a aucune dépendance.

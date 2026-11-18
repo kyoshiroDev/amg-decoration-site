@@ -73,7 +73,7 @@
 - [x] Masquage sans JS des filtres en CSS valide (`@media (scripting: none)` ou classe `no-js`) au lieu de `<noscript><style>` dans le `body`
 - [x] Marquee animé : bouton pause accessible au clavier (WCAG 2.2.2), arrêt en mouvement réduit
 - [x] Lightbox de la galerie projet (clavier, focus piégé, Échap, sans JS = images visibles)
-- [x] Revue + push `dev` + PR mise à jour
+- [ ] Revue + push `dev` + PR mise à jour
 
 ## Phase 6 — SEO avancé
 

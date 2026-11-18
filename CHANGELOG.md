@@ -12,7 +12,7 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 - Morphing grille → projet en View Transitions natives (ADR-0006), bandeau de mots animé avec bouton pause (WCAG 2.2.2), CTA magnétique léger (pointeur fin seulement).
 - Classe `js` posée par un script inline de 170 octets, retirée si un module échoue : retour à la version sans JS (ADR-0010).
 - Audit performance : ouverture de la visionneuse 184 → 88 ms (INP), glisser du comparateur sans layout forcé (97 → 5 layouts pour 100 déplacements), scripts communs réunis en un module (3 requêtes et 590 o de moins par page), bandeau hors écran sans calque composité.
-- JS par page : 2,6 à 4,6 Ko gzip (budget 30 Ko) ; CSS total 14,1 Ko (budget 35 Ko).
+- JS par page : 2,7 à 4,0 Ko gzip sur les pages publiques, 4,8 Ko sur le styleguide (budget 30 Ko) ; CSS total 14,1 Ko (budget 35 Ko).
 
 ### Phase 4 — Pages
 

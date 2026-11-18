@@ -89,21 +89,21 @@ Schémas dans `src/content.config.ts` (Content Layer API d'Astro 7, `z` importé
 
 ## Scripts client
 
-JavaScript vanilla, chargé par un `<script>` Astro dans le composant qui en a besoin (Astro le regroupe en module, dédupliqué, différé). Tout est **amélioration progressive** : le HTML et le CSS fonctionnent seuls.
+JavaScript vanilla, chargé par un `<script>` Astro dans le composant qui en a besoin (Astro le regroupe en module, dédupliqué, différé). Les scripts présents sur toutes les pages sont réunis dans le seul `<script>` de `BaseLayout` (une requête au lieu de quatre). Tout est **amélioration progressive** : le HTML et le CSS fonctionnent seuls.
 
 - **Cycle de vie** : `src/scripts/lifecycle.ts` exporte `onPageReady(init: (signal: AbortSignal) => void)`. `init` est appelée tout de suite, puis à chaque `astro:page-load` ; le contrôleur précédent est coupé (`abort()`) avant chaque relance et sur `astro:before-swap`. Chaque script passe le `signal` à `addEventListener(…, { signal })` et déconnecte ses observers sur `abort` : aucune fuite, aucun double écouteur.
 - **View Transitions natives** (ADR-0006) : pas de `<ClientRouter />`, donc chaque navigation recharge le document et les scripts ne s'exécutent qu'une fois par page ; les écouteurs `astro:*` gardent le code prêt pour un éventuel retour du routeur client. Les transitions sont purement CSS (`@view-transition` dans `global.css`).
 - **Popover API** pour le menu mobile : ouverture, fermeture, Échap, clic extérieur, `aria-expanded` et retour du focus sont natifs ; le script ne fait qu'ajouter du confort (focus initial, fermeture au `focusout` et au clic sur un lien). Repli sans support : lien vers le plan du site du pied de page.
-- **Classe `js`** : un script inline de 44 octets en tête de `BaseLayout` (`JS_CLASS_SCRIPT`, `src/lib/inline-scripts.ts`) pose `js` sur `<html>` avant le premier rendu. Les composants qui n'ont de sens qu'avec JS (filtres, comparateur, bandeau animé) s'affichent sous `.js` sans décalage de mise en page. Empreinte CSP et test : ADR-0010.
+- **Classe `js`** : un script inline de 170 octets en tête de `BaseLayout` (`JS_CLASS_SCRIPT`, `src/lib/inline-scripts.ts`) pose `js` sur `<html>` avant le premier rendu, et la retire si un module échoue (retour à la version sans JS). Les composants qui n'ont de sens qu'avec JS (filtres, comparateur, bandeau animé) s'affichent sous `.js` sans décalage de mise en page. Empreinte CSP et test : ADR-0010.
 - **Logique pure** des scripts dans `src/lib/` (testée par Vitest) : `before-after.ts` (position sous le pointeur, `aria-valuetext`), `magnetic.ts` (décalage borné), `lightbox.ts` (index en boucle, compteur).
 
 | Script              | Chargé par                      | Rôle                                                                                                   | Poids (gzip) |
 | ------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------ |
 | `lifecycle.ts`      | importé par tous                | `onPageReady(signal)`                                                                                  | 0,2 Ko       |
-| `header.ts`         | `Header` (toutes les pages)     | IntersectionObserver sur un repère à 80 px → `data-compact`                                            | 0,3 Ko       |
-| `mobile-nav.ts`     | `MobileNav` (toutes)            | Confort du menu mobile (Popover API native)                                                            | 0,5 Ko       |
+| `header.ts`         | `BaseLayout` (toutes)           | IntersectionObserver sur un repère à 80 px → `data-compact`                                            | 0,3 Ko       |
+| `mobile-nav.ts`     | `BaseLayout` (toutes)           | Confort du menu mobile (Popover API native)                                                            | 0,5 Ko       |
 | `reveal.ts`         | `BaseLayout` (toutes)           | Apparitions au scroll et image reveal (`data-reveal`, hors écran uniquement, rien en mouvement réduit) | 0,6 Ko       |
-| `magnetic.ts`       | `ActionGroup` (toutes)          | CTA magnétique (`[data-magnetic]`, pointeur fin, ≤ 6 px)                                               | 0,7 Ko       |
+| `magnetic.ts`       | `BaseLayout` (toutes)           | CTA magnétique (`[data-magnetic]`, pointeur fin, ≤ 6 px)                                               | 0,7 Ko       |
 | `marquee.ts`        | `Marquee` (accueil)             | Bouton pause / lecture, pause hors écran                                                               | 0,4 Ko       |
 | `project-filter.ts` | `ProjectFilters` (Réalisations) | Filtre par type de pièce, `aria-pressed`, annonce du nombre                                            | 0,5 Ko       |
 | `lightbox.ts`       | `Lightbox` (pages projet)       | Visionneuse `<dialog>` : ouverture, image à la demande, ← →, retour du focus                           | 0,9 Ko       |
@@ -111,7 +111,7 @@ JavaScript vanilla, chargé par un `<script>` Astro dans le composant qui en a b
 | `contact-form.ts`   | `ContactForm` (`/contact/`)     | Validation et envoi `fetch`, repli HTML sans JS                                                        | 1,4 Ko       |
 | _prefetch d'Astro_  | toutes                          | Préchargement au survol                                                                                | 1,1 Ko       |
 
-Poids total mesuré par page (gzip, Phase 5) : 2,4 Ko sur la plupart des pages, 2,5 Ko sur l'accueil, 2,6 Ko sur `/realisations/`, 2,9 Ko sur les pages projet, 3,4 Ko sur `/contact/`, 3,5 Ko sur `/styleguide/` (tous les scripts). Budget : 30 Ko.
+Poids total mesuré par page (gzip, fin de Phase 5, hors script inline de 0,15 Ko) : 2,7 Ko sur la plupart des pages, 3,0 Ko sur l'accueil, 3,1 Ko sur `/realisations/`, 3,6 Ko sur les pages projet, 4,0 Ko sur `/contact/`, 4,8 Ko sur `/styleguide/` (tous les scripts). Budget : 30 Ko.
 
 - Interdits : `console.*`, écouteur `scroll` (préférer IntersectionObserver), état d'animation présent dans le HTML initial (il est posé par le script, ou par du CSS sous `.js`).
 

@@ -56,7 +56,12 @@ function enhance(root: HTMLElement, signal: AbortSignal): void {
       show(items.indexOf(link));
       // showModal() rend tout le document inerte (recalcul de style coûteux) : on le diffère
       // après le prochain rendu pour que le clic se peigne aussitôt (INP).
-      requestAnimationFrame(() => setTimeout(() => dialog.showModal(), 0));
+      requestAnimationFrame(() =>
+        setTimeout(() => {
+          // Deux clics dans la même image, ou page quittée entre-temps : rien à ouvrir.
+          if (!signal.aborted && !dialog.open) dialog.showModal();
+        }, 0),
+      );
     },
     { signal },
   );
@@ -65,7 +70,10 @@ function enhance(root: HTMLElement, signal: AbortSignal): void {
     'click',
     (event) => {
       const target = event.target instanceof Element ? event.target : null;
-      if (target === dialog || target === figure || target?.closest('[data-lightbox-close]')) {
+      // Le second clic d'un double clic sur la vignette tombe sur le fond de la visionneuse à
+      // peine ouverte : il ne doit pas la refermer (les clics rapides sur ← → restent comptés).
+      const onBackdrop = target === dialog || target === figure;
+      if ((onBackdrop && event.detail < 2) || target?.closest('[data-lightbox-close]')) {
         dialog.close();
         return;
       }
