@@ -35,7 +35,7 @@ export default defineConfig({
       weights: ['400 700'],
       styles: ['normal'],
       subsets: ['latin'],
-      fallbacks: ['system-ui', 'sans-serif'],
+      fallbacks: ['sans-serif', 'system-ui'],
     },
   ],
   integrations: [

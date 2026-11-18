@@ -28,7 +28,7 @@ export const media: SiteMedia = {
   // et décrire ce qu'il montre dans `alt`.
   methodHero: {
     image: heroPlaceholder,
-    alt: 'Illustration d’une pièce lumineuse imaginée en amont\u00A0: fenêtre en arche, assise terracotta et plante vert sauge',
+    alt: 'Illustration provisoire d’un intérieur lumineux\u00A0: fenêtre en arche, assise terracotta et plante vert sauge',
   },
   // TODO(contenu): portrait d'Amandine (photo HD, format portrait) et son texte alternatif.
   portrait: undefined,
