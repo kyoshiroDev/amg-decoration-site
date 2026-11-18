@@ -35,7 +35,7 @@
 - [x] ADR-0006 : View Transitions natives (`@view-transition`), sans `<ClientRouter />` (compatibilité CSP, 0 Ko de JS)
 - [x] Reports de la Phase 1 : convention d'espaces insécables (« : », « ; », « ? », « ! », « € »), erreur au build si un token du styleguide est manquant, contraste comparé sans arrondi, `--z-grain` dédié, assertion `warn` de perf/LCP sur `/styleguide/`, sémantique des listes sans puces (Safari/VoiceOver), découpage de `Button.astro` et `ContrastTable.astro` sous ~150 lignes
 - [x] Reports a11y de la Phase 1 : nom accessible obligatoire pour un `Button` icône seule, zone de clic de 44 px sur les liens de navigation, icône visuelle « externe », liseré du bouton ghost
-- [ ] Revue + push `dev` + PR mise à jour
+- [x] Revue + push `dev` + PR mise à jour (PR #1, CI verte)
 
 ## Phase 3 — Contenu
 
@@ -44,6 +44,8 @@
 - [ ] Migration et réécriture des contenus (`redacteur`) ; `TODO(contenu)` pour les manques
 - [ ] Migrer les textes provisoires de `src/config/pages.ts` vers les collections de contenu
 - [ ] Placeholders d'images documentés
+- [ ] Reports de la Phase 2 : commentaire de `serializeJsonLd`, tests `isActivePath` dans `url.test.ts`, test de `buildCreativeWork`, sélecteurs robustes du menu mobile (`data-*` au lieu de l'id et de `popovertarget`), poids du grain harmonisé, couverture e2e + axe de `PageLayout`/`Breadcrumbs` dès la première page interne
+- [ ] Revue + push `dev` + PR mise à jour
 
 ## Phase 4 — Pages
 
