@@ -4,7 +4,7 @@ import { JS_CLASS_SCRIPT } from '@/lib/inline-scripts';
 
 // Empreinte CSP du script inline de <head> (ADR-0010). Si ce test échoue après une modification
 // volontaire du script : reporter la nouvelle empreinte dans l'ADR et dans la CSP (Phase 7).
-const EXPECTED_SHA256 = 'sha256-Du+OJKJSbdUgz5nrHeWWINvez6XKDDU/tyj/5c2uvwo=';
+const EXPECTED_SHA256 = 'sha256-oO9dQz2/+Q17QWsmmtXJ9ZNoha86yQvUljQCBOLLu2E=';
 
 describe('JS_CLASS_SCRIPT', () => {
   it('tient en moins de 200 octets', () => {
