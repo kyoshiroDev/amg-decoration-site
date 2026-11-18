@@ -1,23 +1,60 @@
 ---
-// Accueil PROVISOIRE (Phase 2) : remplacé en Phase 4 par l'assemblage des blocks définitifs.
-// Textes : src/content/pages/accueil.md.
-import { getEntry } from 'astro:content';
+// Accueil : assemblage des blocs. Données : getHomeData() (src/lib/pages/home.ts),
+// textes : src/content/pages/accueil.md et collections partagées.
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import ProvisionalHero from '@/components/blocks/ProvisionalHero.astro';
-import { site } from '@/config/site';
-import { seoDefaults } from '@/config/seo';
-import { requireEntry } from '@/lib/content';
+import Hero from '@/components/blocks/Hero.astro';
+import Marquee from '@/components/blocks/Marquee.astro';
+import Values from '@/components/blocks/Values.astro';
+import ServicesGrid from '@/components/blocks/ServicesGrid.astro';
+import MediaText from '@/components/blocks/MediaText.astro';
+import ProjectGrid from '@/components/blocks/ProjectGrid.astro';
+import ProcessSteps from '@/components/blocks/ProcessSteps.astro';
+import Quote from '@/components/blocks/Quote.astro';
+import Benefits3D from '@/components/blocks/Benefits3D.astro';
+import Testimonials from '@/components/blocks/Testimonials.astro';
+import CtaBanner from '@/components/blocks/CtaBanner.astro';
+import { media } from '@/config/media';
+import { microcopy } from '@/config/microcopy';
+import { getHomeData } from '@/lib/pages/home';
 
-const { seo, hero } = requireEntry(await getEntry('pages', 'accueil'), 'pages', 'accueil').data;
+const home = await getHomeData();
+const { sections } = home;
 ---
 
-<BaseLayout title={seo.title} description={seo.description}>
-  <ProvisionalHero
-    eyebrow={site.founder.name}
-    heading={hero.heading}
-    emphasis={hero.headingEmphasis}
-    lead={hero.lead}
-    image={seoDefaults.ogImage}
-    imageAlt={seoDefaults.ogImageAlt}
+<BaseLayout title={home.seo.title} description={home.seo.description}>
+  <Hero
+    section={home.hero}
+    eyebrow={home.heroEyebrow}
+    image={media.homeHero.image}
+    imageAlt={media.homeHero.alt}
   />
+  <Marquee words={microcopy.marquee.words} label={microcopy.marquee.label} />
+  <Values section={sections.missions} id="missions-titre" background="cream" />
+  <ServicesGrid
+    section={sections.prestations}
+    services={home.services}
+    id="prestations-titre"
+    background="sand"
+  />
+  <MediaText
+    section={sections.presentation}
+    id="presentation-titre"
+    image={media.portrait?.image}
+    imageAlt={media.portrait?.alt}
+  />
+  <ProjectGrid
+    section={sections.projets}
+    projects={home.projects}
+    id="projets-titre"
+    background="cream"
+  />
+  <ProcessSteps section={sections.methode} steps={home.steps} id="methode-titre" />
+  <Quote heading={sections.citation.heading} quote={home.quote} id="citation-titre" />
+  <Benefits3D section={sections.avantages} benefits={home.benefits} id="avantages-titre" />
+  <Testimonials
+    section={sections.temoignages}
+    testimonials={home.testimonials}
+    id="temoignages-titre"
+  />
+  <CtaBanner section={sections.cta} id="contact-titre" />
 </BaseLayout>

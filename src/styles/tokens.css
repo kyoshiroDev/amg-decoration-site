@@ -63,6 +63,8 @@
   --weight-semibold: 600;
   --weight-bold: 700;
   --measure: 66ch;
+  --measure-intro: 46rem; /* ouverture de section : titre + chapeau */
+  --measure-title: 20ch; /* titre long du héros (phrase complète) */
 
   /* ---------- Espacements (Utopia) ---------- */
   --space-3xs: clamp(0.25rem, 0.2292rem + 0.0926vw, 0.3125rem);
@@ -89,6 +91,13 @@
   --grid-columns: 12;
   --grid-gap: var(--space-m-xl);
   --tap-target: 44px;
+  --grid-stagger: var(--space-2xl); /* décalage vertical des cartes en grille éditoriale */
+
+  /* Blocs : largeur maximale des visuels (les grilles 7/5 et 5/7 les contiennent déjà). */
+  --hero-visual-max: 30rem;
+  --page-hero-visual-max: 26rem;
+  --page-hero-arch-size: 14rem;
+  --media-text-visual-max: 28rem;
 
   /* En-tête : hauteur de mise en page FIXE (aucun décalage au scroll), compactage visuel en transform. */
   --header-height: 5.5rem;
@@ -152,6 +161,7 @@
   --reveal-distance: 20px;
   --hover-zoom: 1.04;
   --opacity-disabled: 0.55;
+  --opacity-ornament: 0.4; /* numéros d'étapes géants (décor) */
 
   /* ---------- Focus ---------- */
   --focus-ring-color: var(--color-terracotta-700);

@@ -1,0 +1,111 @@
+---
+/**
+ * CtaBanner — appel à l'action de fin de page : titre, chapeau et actions (7/12) ; à droite,
+ * une carte crème qui liste ce qui attend le visiteur (`items` de la section, titres seuls).
+ */
+import Section from '@/components/ui/Section.astro';
+import Container from '@/components/ui/Container.astro';
+import ActionGroup from '@/components/ui/ActionGroup.astro';
+import SectionIntro from './SectionIntro.astro';
+import type { PageSection } from '@/lib/pages/types';
+
+interface Props {
+  section: PageSection;
+  id: string;
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+}
+
+const { section, id, background = 'sage' } = Astro.props;
+---
+
+<Section background={background} labelledby={id} class="cta-banner">
+  <Container class="cta-banner__grid">
+    <div class="cta-banner__text">
+      <SectionIntro
+        id={id}
+        eyebrow={section.eyebrow}
+        heading={section.heading}
+        emphasis={section.headingEmphasis}
+        lead={section.lead}
+      />
+      <ActionGroup actions={section.actions} />
+    </div>
+    {section.items.length > 0 && (
+      <ul class="cta-banner__list" data-reveal>
+        {section.items.map((item) => (
+          <li class="cta-banner__item">
+            <span class="cta-banner__item-title">{item.title}</span>
+            {item.text && <span class="cta-banner__item-text">{item.text}</span>}
+          </li>
+        ))}
+      </ul>
+    )}
+  </Container>
+</Section>
+
+<style>
+  @layer components {
+    :global(.cta-banner__grid) {
+      display: grid;
+      gap: var(--space-2xl);
+      align-items: center;
+
+      @media (width >= 64rem) {
+        grid-template-columns: 7fr 5fr;
+        gap: var(--space-3xl);
+      }
+    }
+
+    .cta-banner__text {
+      display: grid;
+      justify-items: start;
+      gap: var(--space-l);
+    }
+
+    .cta-banner__list {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: var(--space-s);
+      padding: var(--space-l);
+      margin: 0;
+      border-radius: var(--radius-lg);
+      background-color: var(--color-surface);
+      box-shadow: var(--shadow-soft);
+      counter-reset: cta;
+    }
+
+    .cta-banner__item {
+      display: grid;
+      grid-column: 1 / -1;
+      grid-template-columns: subgrid;
+      gap: var(--space-3xs) var(--space-s);
+      align-items: baseline;
+      padding-block-end: var(--space-s);
+      border-block-end: var(--border-hairline) solid var(--color-border);
+      counter-increment: cta;
+
+      &:last-child {
+        padding-block-end: 0;
+        border-block-end: 0;
+      }
+
+      /* Numéro décoratif (texte de remplacement vide). */
+      &::before {
+        content: counter(cta, decimal-leading-zero) / '';
+        font-family: var(--font-display-stack);
+        font-size: var(--step-1);
+        font-style: italic;
+        color: var(--color-accent-text);
+      }
+    }
+
+    .cta-banner__item-title {
+      font-weight: var(--weight-medium);
+    }
+
+    .cta-banner__item-text {
+      grid-column: 2;
+      color: var(--color-text-soft);
+    }
+  }
+</style>

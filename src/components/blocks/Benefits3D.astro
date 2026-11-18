@@ -1,0 +1,69 @@
+---
+/**
+ * Benefits3D — les bénéfices de la 3D : ouverture collante à gauche (mise en page `split`),
+ * grille de 2 colonnes à droite, chaque bénéfice coiffé d'une petite arche filaire (décor).
+ */
+import ContentSection from './ContentSection.astro';
+import Heading from '@/components/ui/Heading.astro';
+import type { TextItemData } from '@/lib/cards';
+import type { PageSection } from '@/lib/pages/types';
+
+interface Props {
+  section: PageSection;
+  benefits: readonly TextItemData[];
+  id: string;
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+}
+
+const { section, benefits, id, background = 'blush' } = Astro.props;
+---
+
+<ContentSection section={section} id={id} background={background} layout="split">
+  <ul class="benefits">
+    {benefits.map((benefit) => (
+      <li class="benefits__item" data-reveal>
+        <span class="benefits__arch" aria-hidden="true" />
+        <Heading level={3} size="sm">
+          {benefit.title}
+        </Heading>
+        <p class="benefits__text">{benefit.text}</p>
+      </li>
+    ))}
+  </ul>
+</ContentSection>
+
+<style>
+  @layer components {
+    .benefits {
+      display: grid;
+      gap: var(--space-l) var(--grid-gap);
+      padding: 0;
+      margin: 0;
+
+      @media (width >= 40rem) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .benefits__item {
+      display: grid;
+      align-content: start;
+      gap: var(--space-2xs);
+      padding-block-start: var(--space-m);
+      border-block-start: var(--border-hairline) solid var(--color-border-strong);
+    }
+
+    .benefits__arch {
+      inline-size: var(--space-m);
+      aspect-ratio: 3 / 4;
+      margin-block-end: var(--space-2xs);
+      border: var(--border-thin) solid var(--color-accent);
+      border-block-end: 0;
+      border-radius: var(--radius-arch);
+    }
+
+    .benefits__text {
+      color: var(--color-text-soft);
+    }
+  }
+</style>

@@ -7,7 +7,7 @@
 import Section from '@/components/ui/Section.astro';
 import Container from '@/components/ui/Container.astro';
 import Heading from '@/components/ui/Heading.astro';
-import Button from '@/components/ui/Button.astro';
+import ActionGroup from '@/components/ui/ActionGroup.astro';
 import Divider from '@/components/ui/Divider.astro';
 import type { NavItem } from '@/config/site';
 
@@ -19,7 +19,6 @@ interface Props {
 }
 
 const { heading, lead, actions } = Astro.props;
-const variants = ['primary', 'secondary'] as const;
 ---
 
 <Section labelledby="introuvable-titre">
@@ -30,20 +29,7 @@ const variants = ['primary', 'secondary'] as const;
         {heading}
       </Heading>
       {lead && <p class="not-found__lead">{lead}</p>}
-      <div class="not-found__actions">
-        {actions.map((action, index) => {
-          const variant = variants[index] ?? 'link';
-          return (
-            <Button
-              href={action.href}
-              variant={variant}
-              icon={variant === 'link' ? 'arrow-right' : undefined}
-            >
-              {action.label}
-            </Button>
-          );
-        })}
-      </div>
+      <ActionGroup actions={actions} class="not-found__actions" />
     </div>
     <div class="not-found__door" aria-hidden="true">
       <span class="not-found__sun"></span>
@@ -74,11 +60,7 @@ const variants = ['primary', 'secondary'] as const;
       color: var(--color-text-soft);
     }
 
-    .not-found__actions {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--space-s) var(--space-m);
+    :global(.not-found__actions) {
       margin-block-start: var(--space-xs);
     }
 

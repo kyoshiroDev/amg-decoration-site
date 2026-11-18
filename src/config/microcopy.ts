@@ -16,6 +16,26 @@ export const microcopy = {
     close: 'Fermer le menu',
   },
   home: 'Accueil',
+  /** Bandeau de mots-clés (Marquee) : décoratif, lu une seule fois par les lecteurs d'écran. */
+  marquee: {
+    label: 'L’esprit de l’atelier',
+    words: ['Douceur', 'Matières', 'Lumière', '3D'],
+  },
+  services: {
+    highlight: 'La plus demandée',
+    more: 'Découvrir la formule',
+    priceLabel: 'Tarif\u00A0:',
+    /** Préfixe d'un prix « à partir de » (`price.from`). */
+    priceFrom: 'À partir de',
+    targetLabel: 'Pour\u00A0:',
+  },
+  projects: {
+    more: 'Voir le projet',
+  },
+  testimonials: {
+    googleLink: 'Lire l’avis sur Google',
+    projectLabel: 'Projet\u00A0:',
+  },
   footer: {
     tagline:
       'Je dessine votre intérieur en 3D avant qu’il prenne vie, pour que vous avanciez sereinement, à Paris ou partout en France.',

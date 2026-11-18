@@ -1,0 +1,81 @@
+---
+/**
+ * BlockSamples — tous les blocs de src/components/blocks/, alimentés par les contenus réels de
+ * l'accueil. Exceptions assumées du styleguide : titres d'ouverture en h2, aucune image
+ * `priority` (celle de SgIntro suffit), plusieurs pastels à la suite.
+ */
+import Container from '@/components/ui/Container.astro';
+import Section from '@/components/ui/Section.astro';
+import Hero from '@/components/blocks/Hero.astro';
+import PageHero from '@/components/blocks/PageHero.astro';
+import Marquee from '@/components/blocks/Marquee.astro';
+import Values from '@/components/blocks/Values.astro';
+import ServicesGrid from '@/components/blocks/ServicesGrid.astro';
+import MediaText from '@/components/blocks/MediaText.astro';
+import ProjectGrid from '@/components/blocks/ProjectGrid.astro';
+import ProcessSteps from '@/components/blocks/ProcessSteps.astro';
+import Quote from '@/components/blocks/Quote.astro';
+import Benefits3D from '@/components/blocks/Benefits3D.astro';
+import Testimonials from '@/components/blocks/Testimonials.astro';
+import CtaBanner from '@/components/blocks/CtaBanner.astro';
+import RichText from '@/components/blocks/RichText.astro';
+import SgBlockLabel from './SgBlockLabel.astro';
+import { media } from '@/config/media';
+import { microcopy } from '@/config/microcopy';
+import type { HomeModel } from '@/lib/pages/home-model';
+import type { StyleguideData } from '@/lib/pages/styleguide';
+
+interface Props {
+  home: HomeModel;
+  /** Corps Markdown rendu (`render(entry).Content`). */
+  content: StyleguideData['richText']['Content'];
+}
+
+const { home, content: Content } = Astro.props;
+const { sections } = home;
+---
+
+<SgBlockLabel name="Hero" note="Accueil · h1, arche, seule image priority de la page" />
+<Hero
+  section={home.hero}
+  eyebrow={home.heroEyebrow}
+  image={media.homeHero.image}
+  imageAlt={media.homeHero.alt}
+  id="sg-b-hero"
+  headingLevel={2}
+  priority={false}
+/>
+<SgBlockLabel name="PageHero" note="Pages internes · h1 sous le fil d’Ariane, sans image" />
+<PageHero section={sections.missions} id="sg-b-page-hero" headingLevel={2} />
+<SgBlockLabel name="Marquee" note="Statique (défilement : Phase 5) · copies aria-hidden" />
+<Marquee words={microcopy.marquee.words} label={microcopy.marquee.label} />
+<SgBlockLabel name="Values" note="ContentSection split · items d’une section" />
+<Values section={sections.missions} id="sg-b-values" />
+<SgBlockLabel name="ServicesGrid + ServiceCard" note="Formules, prix si site.pricing.showPrices" />
+<ServicesGrid section={sections.prestations} services={home.services} id="sg-b-services" />
+<SgBlockLabel name="MediaText" note="Image en arche 5/7 · décor tant que le portrait manque" />
+<MediaText section={sections.presentation} id="sg-b-media" />
+<SgBlockLabel name="ProjectGrid + ProjectCard" note="Zigzag 7 · 4 / 4 · 7, cartes cliquables" />
+<ProjectGrid section={sections.projets} projects={home.projects} id="sg-b-projects" />
+<SgBlockLabel name="ProcessSteps" note="Liste ordonnée, numéros décoratifs géants" />
+<ProcessSteps section={sections.methode} steps={home.steps} id="sg-b-steps" />
+<SgBlockLabel name="Quote" note="Citation en exergue" />
+<Quote heading={sections.citation.heading} quote={home.quote} id="sg-b-quote" />
+<SgBlockLabel name="Benefits3D" note="ContentSection split · 2 colonnes" />
+<Benefits3D section={sections.avantages} benefits={home.benefits} id="sg-b-benefits" />
+<SgBlockLabel name="Testimonials" note="Texte exact, lien vers l’avis, aucune note" />
+<Testimonials
+  section={sections.temoignages}
+  testimonials={home.testimonials}
+  id="sg-b-testimonials"
+/>
+<SgBlockLabel name="CtaBanner" note="Fin de page · actions et étapes suivantes" />
+<CtaBanner section={sections.cta} id="sg-b-cta" />
+<SgBlockLabel name="RichText" note="Corps Markdown (ici : formule Essentiel)" />
+<Section spacing="compact">
+  <Container>
+    <RichText>
+      <Content />
+    </RichText>
+  </Container>
+</Section>

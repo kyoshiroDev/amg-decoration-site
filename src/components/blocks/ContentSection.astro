@@ -1,0 +1,95 @@
+---
+/**
+ * ContentSection — charpente commune des sections éditoriales : fond, ouverture (SectionIntro),
+ * contenu du bloc (slot), actions de fin de section. Deux mises en page :
+ * - `stacked` : ouverture au-dessus du contenu ;
+ * - `split` (≥ 64rem) : ouverture et actions en colonne gauche (5/12, collante), contenu à droite.
+ */
+import Section from '@/components/ui/Section.astro';
+import Container from '@/components/ui/Container.astro';
+import ActionGroup from '@/components/ui/ActionGroup.astro';
+import SectionIntro from './SectionIntro.astro';
+import type { PageSection } from '@/lib/pages/types';
+
+interface Props {
+  section: PageSection;
+  /** Identifiant du titre h2 (nomme la région). */
+  id: string;
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  layout?: 'stacked' | 'split';
+  align?: 'start' | 'center';
+  /** Masque le chapeau quand le bloc l'affiche lui-même ailleurs. */
+  showLead?: boolean;
+  class?: string | undefined;
+}
+
+const {
+  section,
+  id,
+  background = 'linen',
+  layout = 'stacked',
+  align = 'start',
+  showLead = true,
+  class: className,
+} = Astro.props;
+---
+
+<Section background={background} labelledby={id} class={className}>
+  <Container class:list={['content-section', `content-section--${layout}`]}>
+    <SectionIntro
+      class="content-section__intro"
+      id={id}
+      eyebrow={section.eyebrow}
+      heading={section.heading}
+      emphasis={section.headingEmphasis}
+      lead={showLead ? section.lead : undefined}
+      align={align}
+    />
+    <div class="content-section__body">
+      <slot />
+    </div>
+    <ActionGroup
+      class:list={[
+        'content-section__actions',
+        { 'content-section__actions--center': align === 'center' },
+      ]}
+      actions={section.actions}
+      tone="quiet"
+    />
+  </Container>
+</Section>
+
+<style>
+  @layer components {
+    :global(.content-section) {
+      display: grid;
+      gap: var(--space-l-2xl);
+    }
+
+    :global(.content-section__actions--center) {
+      justify-content: center;
+    }
+
+    @media (width >= 64rem) {
+      :global(.content-section--split) {
+        grid-template:
+          'intro body' auto
+          'actions body' 1fr / 5fr 7fr;
+        gap: var(--space-l) var(--space-3xl);
+        align-items: start;
+      }
+
+      :global(.content-section--split > .content-section__intro) {
+        grid-area: intro;
+      }
+
+      :global(.content-section--split > .content-section__body) {
+        grid-area: body;
+      }
+
+      :global(.content-section--split > .content-section__actions) {
+        grid-area: actions;
+      }
+    }
+  }
+</style>

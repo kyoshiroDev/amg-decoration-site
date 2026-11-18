@@ -1,0 +1,88 @@
+---
+/**
+ * Values — valeurs ou piliers (`items` d'une section) en lignes éditoriales : petit numéro,
+ * titre Fraunces, texte, séparées par un filet. Mise en page `split` : ouverture à gauche.
+ */
+import ContentSection from './ContentSection.astro';
+import Heading from '@/components/ui/Heading.astro';
+import { formatStepNumber } from '@/lib/cards';
+import type { PageSection } from '@/lib/pages/types';
+
+interface Props {
+  section: PageSection;
+  id: string;
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+}
+
+const { section, id, background = 'cream' } = Astro.props;
+---
+
+<ContentSection section={section} id={id} background={background} layout="split">
+  <ul class="values">
+    {section.items.map((item, index) => (
+      <li class="values__item" data-reveal>
+        <span class="values__number" aria-hidden="true">
+          {formatStepNumber(index)}
+        </span>
+        <Heading level={3} size="lg" class="values__title">
+          {item.title}
+        </Heading>
+        {item.text && <p class="values__text">{item.text}</p>}
+      </li>
+    ))}
+  </ul>
+</ContentSection>
+
+<style>
+  @layer components {
+    /* Les lignes partagent les colonnes de la liste (subgrid) : textes alignés d'une ligne à l'autre. */
+    .values {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      padding: 0;
+      margin: 0;
+
+      @media (width >= 48rem) {
+        grid-template-columns: auto 2fr 3fr;
+      }
+    }
+
+    .values__item {
+      display: grid;
+      grid-column: 1 / -1;
+      grid-template-columns: subgrid;
+      gap: var(--space-2xs) var(--space-m);
+      padding-block: var(--space-l);
+      border-block-start: var(--border-hairline) solid var(--color-border);
+
+      &:last-child {
+        border-block-end: var(--border-hairline) solid var(--color-border);
+      }
+
+      @media (width >= 48rem) {
+        align-items: baseline;
+      }
+    }
+
+    .values__number {
+      font-family: var(--font-display-stack);
+      font-size: var(--step--1);
+      font-style: italic;
+      color: var(--color-accent-text);
+    }
+
+    :global(.values__title) {
+      font-style: italic;
+      font-weight: var(--weight-light);
+    }
+
+    .values__text {
+      grid-column: 2;
+      color: var(--color-text-soft);
+
+      @media (width >= 48rem) {
+        grid-column: 3;
+      }
+    }
+  }
+</style>

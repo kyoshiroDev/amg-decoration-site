@@ -1,0 +1,54 @@
+---
+/**
+ * ActionGroup — rangée de 1 à 3 actions issues du contenu (`actions[]` d'une section).
+ * La hiérarchie visuelle suit l'ordre : `tone="primary"` ⇒ bouton principal, secondaire, puis
+ * liens ; `tone="quiet"` (actions de fin de section) ⇒ bouton ghost, puis liens.
+ */
+import Button from './Button.astro';
+
+interface Action {
+  readonly label: string;
+  readonly href: string;
+}
+
+interface Props {
+  actions: readonly Action[];
+  tone?: 'primary' | 'quiet';
+  class?: string | undefined;
+}
+
+const { actions, tone = 'primary', class: className } = Astro.props;
+const ladders = {
+  primary: ['primary', 'secondary'],
+  quiet: ['ghost'],
+} as const;
+const ladder: readonly ('primary' | 'secondary' | 'ghost')[] = ladders[tone];
+---
+
+{actions.length > 0 && (
+  <div class:list={['action-group', className]}>
+    {actions.map((action, index) => {
+      const variant = ladder[index] ?? 'link';
+      return (
+        <Button
+          href={action.href}
+          variant={variant}
+          icon={variant === 'secondary' ? undefined : 'arrow-right'}
+        >
+          {action.label}
+        </Button>
+      );
+    })}
+  </div>
+)}
+
+<style>
+  @layer components {
+    .action-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-s) var(--space-m);
+    }
+  }
+</style>

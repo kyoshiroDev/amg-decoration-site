@@ -1,0 +1,80 @@
+---
+/**
+ * ProjectGrid — section des réalisations : ouverture, grille éditoriale, actions.
+ * ≥ 64rem, motif de 4 cartes sur 12 colonnes en zigzag : large (7) · arche (4) / arche (4) · large (7).
+ * Sans filtre pour l'instant (filtres par type de pièce : page Réalisations, lot 2).
+ */
+import ContentSection from './ContentSection.astro';
+import ProjectCard from './ProjectCard.astro';
+import type { ProjectCardData } from '@/lib/cards';
+import type { PageSection } from '@/lib/pages/types';
+
+interface Props {
+  section: PageSection;
+  projects: readonly ProjectCardData[];
+  id: string;
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+}
+
+const { section, projects, id, background = 'linen' } = Astro.props;
+
+/** Cartes larges : 1re et 4e de chaque motif de 4. */
+const isWide = (index: number): boolean => index % 4 === 0 || index % 4 === 3;
+const SIZES = {
+  wide: '(min-width: 64rem) 52vw, (min-width: 48rem) 45vw, 90vw',
+  arch: '(min-width: 64rem) 30vw, (min-width: 48rem) 45vw, 90vw',
+} as const;
+---
+
+<ContentSection section={section} id={id} background={background}>
+  <ul class="project-grid">
+    {projects.map((project, index) => {
+      const shape = isWide(index) ? 'wide' : 'arch';
+      return (
+        <li class="project-grid__item" data-reveal>
+          <ProjectCard project={project} shape={shape} sizes={SIZES[shape]} />
+        </li>
+      );
+    })}
+  </ul>
+</ContentSection>
+
+<style>
+  @layer components {
+    .project-grid {
+      display: grid;
+      gap: var(--space-2xl) var(--grid-gap);
+      padding: 0;
+      margin: 0;
+
+      @media (width >= 48rem) {
+        grid-template-columns: repeat(2, 1fr);
+        align-items: start;
+      }
+
+      @media (width >= 64rem) {
+        grid-template-columns: repeat(var(--grid-columns), 1fr);
+      }
+    }
+
+    @media (width >= 64rem) {
+      .project-grid__item:nth-child(4n + 1) {
+        grid-column: 1 / span 7;
+      }
+
+      .project-grid__item:nth-child(4n + 2) {
+        grid-column: 9 / span 4;
+        margin-block-start: var(--grid-stagger);
+      }
+
+      .project-grid__item:nth-child(4n + 3) {
+        grid-column: 1 / span 4;
+      }
+
+      .project-grid__item:nth-child(4n) {
+        grid-column: 6 / span 7;
+        margin-block-start: var(--grid-stagger);
+      }
+    }
+  }
+</style>

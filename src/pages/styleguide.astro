@@ -21,16 +21,14 @@ import MarkerSamples from '@/components/styleguide/MarkerSamples.astro';
 import ImageSamples from '@/components/styleguide/ImageSamples.astro';
 import SectionSamples from '@/components/styleguide/SectionSamples.astro';
 import FocusSamples from '@/components/styleguide/FocusSamples.astro';
+import BlockSamples from '@/components/styleguide/BlockSamples.astro';
 import placeholder from '@/assets/placeholders/interieur-lumiere.jpg';
-import { getEntry } from 'astro:content';
-import { requireEntry } from '@/lib/content';
+import { getStyleguideData } from '@/lib/pages/styleguide';
 
-// Textes d'ouverture : src/content/pages/styleguide.md (le reste est un échantillonnage interne).
-const { seo, noindex, hero } = requireEntry(
-  await getEntry('pages', 'styleguide'),
-  'pages',
-  'styleguide',
-).data;
+// Textes d'ouverture : src/content/pages/styleguide.md ; blocs alimentés par les contenus de
+// l'accueil (getStyleguideData) ; le reste est un échantillonnage interne.
+const { page, home, richText } = await getStyleguideData();
+const { seo, noindex, hero } = page;
 ---
 
 <BaseLayout title={seo.title} description={seo.description} noindex={noindex}>
@@ -107,9 +105,24 @@ const { seo, noindex, hero } = requireEntry(
 
   <SectionSamples />
 
+  <Section spacing="compact" labelledby="sg-blocs">
+    <Container class="flow sg-stack">
+      <SgHeader id="sg-blocs" number="05" eyebrow="Blocs">
+        Les sections, <em>avec les vrais textes</em>
+      </SgHeader>
+      <p class="sg-blocs__lead">
+        Chaque bloc de <code>src/components/blocks/</code>, alimenté par les contenus de l’accueil.
+        Aucune animation à ce stade&nbsp;: les attributs <code>data-reveal</code> préparent la
+        Phase&nbsp;5.
+      </p>
+    </Container>
+  </Section>
+
+  <BlockSamples home={home} content={richText.Content} />
+
   <Section background="blush" labelledby="sg-motion">
     <Container class="flow sg-stack">
-      <SgHeader id="sg-motion" number="05" eyebrow="Mouvement & focus">
+      <SgHeader id="sg-motion" number="06" eyebrow="Mouvement & focus">
         Des effets <em>qui murmurent</em>
       </SgHeader>
       <MotionTokens />
@@ -123,7 +136,7 @@ const { seo, noindex, hero } = requireEntry(
   <Section spacing="compact">
     <Container class="sg-end">
       <Divider ornament width="short" />
-      <p class="sg-end__text">Fin du styleguide · Phase 2</p>
+      <p class="sg-end__text">Fin du styleguide · Phase 4</p>
       <div class="sg-end__actions">
         <Button href="#sg-couleurs" variant="ghost">
           Revenir aux couleurs
@@ -154,6 +167,10 @@ const { seo, noindex, hero } = requireEntry(
       justify-items: center;
       gap: var(--space-m);
       text-align: center;
+    }
+
+    .sg-blocs__lead {
+      color: var(--color-text-soft);
     }
 
     .sg-end__text {

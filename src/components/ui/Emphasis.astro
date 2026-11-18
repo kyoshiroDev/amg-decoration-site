@@ -1,0 +1,18 @@
+---
+/**
+ * Emphasis — texte dont un fragment passe en italique (<em>) : titres « Atelier <em>lumineux</em> ».
+ * Fragment absent ou introuvable : texte rendu tel quel. Aucun blanc ajouté entre les morceaux.
+ */
+import { splitEmphasis } from '@/lib/format';
+
+interface Props {
+  text: string;
+  emphasis?: string | undefined;
+}
+
+const { text, emphasis } = Astro.props;
+const parts = splitEmphasis(text, emphasis);
+---
+
+{/* Une seule expression : Prettier ne peut pas insérer de saut de ligne (donc d'espace) entre les morceaux. */}
+{[parts.before, parts.emphasis ? <em>{parts.emphasis}</em> : '', parts.after]}

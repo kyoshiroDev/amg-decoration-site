@@ -10,3 +10,6 @@ Aucune image de banque d'images n'est utilisée ici.
 Réutilisation provisoire de `interieur-lumiere.jpg` (Phase 3) : `cover` et `gallery` des 4 réalisations
 (`src/content/projets/*.md`) et `cover` du modèle d'article (`src/content/articles/modele-article.mdx`),
 en attendant les originaux HD (`TODO(contenu)`, docs/CONTENU-EXISTANT.md §8).
+
+Réutilisation provisoire (Phase 4) : image du héros de l'accueil (`src/config/media.ts`, `TODO(contenu)` : rendu 3D
+d'Amandine). Le portrait de la section « Qui suis-je ? » est remplacé par un décor CSS en attendant la photo.
