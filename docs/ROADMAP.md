@@ -26,15 +26,15 @@
 
 ## Phase 2 — Squelette et navigation
 
-- [ ] `src/config/site.ts` (NAP, horaires, réseaux, navigation) et `seo.ts`
-- [ ] `lib/seo.ts`, `lib/jsonld.ts` + tests unitaires
-- [ ] `BaseLayout` (SEO, JSON-LD global, View Transitions, skip link), `PageLayout`
-- [ ] Header (compactage au scroll), MobileNav accessible, Footer (NAP, réseaux, liens légaux), Breadcrumbs
-- [ ] Page 404
-- [ ] Tests e2e : navigation, menu mobile, axe
-- [ ] ADR-0006 : View Transitions natives (`@view-transition`), sans `<ClientRouter />` (compatibilité CSP, 0 Ko de JS)
-- [ ] Reports de la Phase 1 : convention d'espaces insécables (« : », « ; », « ? », « ! », « € »), erreur au build si un token du styleguide est manquant, contraste comparé sans arrondi, `--z-grain` dédié, assertion `warn` de perf/LCP sur `/styleguide/`, sémantique des listes sans puces (Safari/VoiceOver), découpage de `Button.astro` et `ContrastTable.astro` sous ~150 lignes
-- [ ] Reports a11y de la Phase 1 : nom accessible obligatoire pour un `Button` icône seule, zone de clic de 44 px sur les liens de navigation, icône visuelle « externe », liseré du bouton ghost
+- [x] `src/config/site.ts` (NAP, horaires, réseaux, navigation) et `seo.ts`
+- [x] `lib/seo.ts`, `lib/jsonld.ts` + tests unitaires
+- [x] `BaseLayout` (SEO, JSON-LD global, View Transitions, skip link), `PageLayout`
+- [x] Header (compactage au scroll), MobileNav accessible, Footer (NAP, réseaux, liens légaux), Breadcrumbs
+- [x] Page 404
+- [x] Tests e2e : navigation, menu mobile, axe
+- [x] ADR-0006 : View Transitions natives (`@view-transition`), sans `<ClientRouter />` (compatibilité CSP, 0 Ko de JS)
+- [x] Reports de la Phase 1 : convention d'espaces insécables (« : », « ; », « ? », « ! », « € »), erreur au build si un token du styleguide est manquant, contraste comparé sans arrondi, `--z-grain` dédié, assertion `warn` de perf/LCP sur `/styleguide/`, sémantique des listes sans puces (Safari/VoiceOver), découpage de `Button.astro` et `ContrastTable.astro` sous ~150 lignes
+- [x] Reports a11y de la Phase 1 : nom accessible obligatoire pour un `Button` icône seule, zone de clic de 44 px sur les liens de navigation, icône visuelle « externe », liseré du bouton ghost
 - [ ] Revue + push `dev` + PR mise à jour
 
 ## Phase 3 — Contenu
@@ -42,6 +42,7 @@
 - [ ] Re-crawl complet du site actuel → compléter `CONTENU-EXISTANT.md` + liste exhaustive des URLs
 - [ ] `content.config.ts` (projets, prestations, articles, témoignages, faq)
 - [ ] Migration et réécriture des contenus (`redacteur`) ; `TODO(contenu)` pour les manques
+- [ ] Migrer les textes provisoires de `src/config/pages.ts` vers les collections de contenu
 - [ ] Placeholders d'images documentés
 
 ## Phase 4 — Pages
