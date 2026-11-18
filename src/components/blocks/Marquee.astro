@@ -1,23 +1,31 @@
 ---
 /**
  * Marquee — bandeau de mots-clés en Fraunces italique, séparés par de petites arches.
- * STATIQUE dans ce lot (défilement en Phase 5, en pause au survol, coupé si mouvement réduit).
- * Accessibilité : la première liste est lue une fois ; les copies (nécessaires à la boucle
- * du défilement) sont `aria-hidden`.
+ * Défilement lent et continu (transform) seulement sous `html.js` et sans mouvement réduit ;
+ * sinon : statique. Pause au survol, au focus, et par un bouton (WCAG 2.2.2, scripts/marquee.ts),
+ * affiché dans les mêmes conditions que le défilement.
+ * Accessibilité : la première liste est lue une fois ; les copies (nécessaires à la boucle, 3 au
+ * total pour couvrir les grands écrans) sont `aria-hidden`. Styles : ./marquee.css.
  */
+import Icon from '@/components/ui/Icon.astro';
+import { microcopy } from '@/config/microcopy';
+import './marquee.css';
+
 interface Props {
   words: readonly string[];
   /** Nom accessible de la liste lue. */
   label: string;
-  /** Nombre total de copies du mot-clé (≥ 2 pour un défilement sans couture). */
+  /** Nombre total de copies de la liste (la boucle avance d'une copie : `100% / copies`). */
   copies?: number;
 }
 
-const { words, label, copies = 2 } = Astro.props;
-const duplicates = Array.from({ length: Math.max(0, copies - 1) }, (_, index) => index);
+const { words, label, copies = 3 } = Astro.props;
+const total = Math.max(2, copies);
+const duplicates = Array.from({ length: total - 1 }, (_, index) => index);
+const labels = microcopy.marquee;
 ---
 
-<div class="marquee" data-marquee>
+<div class="marquee" data-marquee style={`--marquee-copies: ${total}`}>
   <div class="marquee__track">
     <ul class="marquee__list" aria-label={label}>
       {words.map((word) => (
@@ -32,49 +40,21 @@ const duplicates = Array.from({ length: Math.max(0, copies - 1) }, (_, index) =>
       </ul>
     ))}
   </div>
+  <button
+    type="button"
+    class="marquee__toggle"
+    data-marquee-toggle
+    data-label-pause={labels.pause}
+    data-label-play={labels.play}
+  >
+    <Icon name="pause" class="marquee__icon marquee__icon--pause" />
+    <Icon name="play" class="marquee__icon marquee__icon--play" />
+    <span class="visually-hidden" data-marquee-label>
+      {labels.pause}
+    </span>
+  </button>
 </div>
 
-<style>
-  @layer components {
-    .marquee {
-      overflow: hidden;
-      padding-block: var(--space-m);
-      border-block: var(--border-hairline) solid var(--color-border);
-    }
-
-    .marquee__track {
-      display: flex;
-      inline-size: max-content;
-    }
-
-    .marquee__list {
-      display: flex;
-      flex-shrink: 0;
-      align-items: center;
-      padding: 0;
-      margin: 0;
-    }
-
-    .marquee__word {
-      display: flex;
-      align-items: center;
-      font-family: var(--font-display-stack);
-      font-size: var(--step-3);
-      font-style: italic;
-      font-weight: var(--weight-light);
-      line-height: var(--leading-tight);
-      white-space: nowrap;
-
-      /* Petite arche terracotta entre les mots (décor). */
-      &::after {
-        content: '';
-        inline-size: var(--space-s);
-        aspect-ratio: 3 / 4;
-        margin-inline: var(--space-l);
-        border: var(--border-thin) solid var(--color-accent);
-        border-block-end: 0;
-        border-radius: var(--radius-arch);
-      }
-    }
-  }
-</style>
+<script>
+  import '@/scripts/marquee';
+</script>

@@ -3,6 +3,7 @@
  * ActionGroup — rangée de 1 à 3 actions issues du contenu (`actions[]` d'une section).
  * La hiérarchie visuelle suit l'ordre : `tone="primary"` ⇒ bouton principal, secondaire, puis
  * liens ; `tone="quiet"` (actions de fin de section) ⇒ bouton ghost, puis liens.
+ * `magnetic` : la première action devient un CTA magnétique léger (scripts/magnetic.ts).
  */
 import Button from './Button.astro';
 
@@ -14,10 +15,12 @@ interface Action {
 interface Props {
   actions: readonly Action[];
   tone?: 'primary' | 'quiet';
+  /** Première action magnétique (héros, appel à l'action de fin de page). */
+  magnetic?: boolean;
   class?: string | undefined;
 }
 
-const { actions, tone = 'primary', class: className } = Astro.props;
+const { actions, tone = 'primary', magnetic = false, class: className } = Astro.props;
 const ladders = {
   primary: ['primary', 'secondary'],
   quiet: ['ghost'],
@@ -34,6 +37,7 @@ const ladder: readonly ('primary' | 'secondary' | 'ghost')[] = ladders[tone];
           href={action.href}
           variant={variant}
           icon={variant === 'secondary' ? undefined : 'arrow-right'}
+          attrs={magnetic && index === 0 ? { 'data-magnetic': '' } : {}}
         >
           {action.label}
         </Button>
@@ -41,6 +45,10 @@ const ladder: readonly ('primary' | 'secondary' | 'ghost')[] = ladders[tone];
     })}
   </div>
 )}
+
+<script>
+  import '@/scripts/magnetic';
+</script>
 
 <style>
   @layer components {

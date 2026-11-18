@@ -28,7 +28,7 @@ const { section, id, background = 'sage' } = Astro.props;
         emphasis={section.headingEmphasis}
         lead={section.lead}
       />
-      <ActionGroup actions={section.actions} />
+      <ActionGroup actions={section.actions} magnetic />
     </div>
     {section.items.length > 0 && (
       <ul class="cta-banner__list" data-reveal>
