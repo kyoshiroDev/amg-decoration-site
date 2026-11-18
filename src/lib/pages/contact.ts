@@ -5,19 +5,22 @@
  */
 import { microcopy } from '@/config/microcopy';
 import { site } from '@/config/site';
+import { buildContactPage, webPageInputFrom } from '../jsonld';
 import { buildContactModel, type ContactModel } from './contact-model';
 import { getPageData } from './page';
-import type { PageData } from './types';
+import type { PageData, WithJsonLd } from './types';
 
-export async function getContactData(origin: URL): Promise<ContactModel> {
+/** Page Contact ; JSON-LD `ContactPage` rattachée à l'entreprise. */
+export async function getContactData(origin: URL): Promise<WithJsonLd<ContactModel>> {
   const page = await getPageData('contact');
-  return buildContactModel({
+  const model = buildContactModel({
     page,
     endpoint: import.meta.env.PUBLIC_FORM_ENDPOINT,
     email: site.email,
     origin,
     homeLabel: microcopy.home,
   });
+  return { ...model, jsonLd: [buildContactPage(webPageInputFrom(model), origin)] };
 }
 
 /** Page de remerciement (noindex) : textes de src/content/pages/merci.md. */

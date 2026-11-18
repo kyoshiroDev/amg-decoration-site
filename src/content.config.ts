@@ -107,8 +107,18 @@ const contactForm = z.strictObject({
   /** Libellé du champ piège (honeypot), jamais visible. */
   honeypotLabel: text,
   submit: z.strictObject({ label: text, sending: text }),
-  /** Mention d'information RGPD sous le bouton, suivie d'un lien vers la politique. */
-  notice: z.strictObject({ text: textWithEmail, moreLabel: text, link: action }),
+  /**
+   * Mention d'information RGPD sous le bouton, suivie d'un lien vers la politique. `text` :
+   * envoi par le service de formulaire ; `mailtoText` : repli `mailto:` (aucun service configuré).
+   */
+  notice: z.strictObject({
+    text: textWithEmail,
+    mailtoText: textWithEmail,
+    moreLabel: text,
+    link: action,
+  }),
+  /** Repli `mailto:` : indice visible près du bouton si la messagerie ne s'ouvre pas. */
+  mailtoHint: textWithEmail,
   errors: z.strictObject({
     summary: text,
     nameRequired: text,

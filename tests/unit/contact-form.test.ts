@@ -5,6 +5,7 @@ import {
   isValidEmail,
   isValidPhone,
   resolveFormTarget,
+  selectNoticeText,
   splitOnEmail,
   validateContact,
   type ContactValues,
@@ -90,5 +91,17 @@ describe('resolveFormTarget', () => {
 
   it('refuse un endpoint non https', () => {
     expect(() => resolveFormTarget('http://exemple.fr', 'a@b.fr')).toThrow(/https/);
+  });
+});
+
+describe('selectNoticeText', () => {
+  const notice = { text: 'Service sécurisé', mailtoText: 'Votre messagerie s’ouvre' };
+
+  it('mention du service quand un endpoint est configuré', () => {
+    expect(selectNoticeText(notice, 'service')).toBe('Service sécurisé');
+  });
+
+  it('mention adaptée au repli mailto: (aucun service ne transmet les données)', () => {
+    expect(selectNoticeText(notice, 'mailto')).toBe('Votre messagerie s’ouvre');
   });
 });

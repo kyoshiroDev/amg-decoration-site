@@ -3,7 +3,13 @@
  * (docs/CONFORMITE.md §5) et destination d'envoi. Fonctions PURES (tests/unit/contact-model.test.ts),
  * accès aux collections et à l'environnement dans ./contact.ts.
  */
-import { fillEmail, resolveFormTarget, splitOnEmail, type FormTarget } from '../contact-form';
+import {
+  fillEmail,
+  resolveFormTarget,
+  selectNoticeText,
+  splitOnEmail,
+  type FormTarget,
+} from '../contact-form';
 import { ContentError } from '../content';
 import type { BreadcrumbItem } from '../jsonld';
 import { breadcrumbTrail } from './breadcrumb-trail';
@@ -26,8 +32,13 @@ export interface ContactFormModel {
   readonly redirectUrl: string | undefined;
   readonly email: string;
   readonly content: ContactFormContent;
-  /** Mention d'information découpée autour de l'adresse (insérée en lien `mailto:`). */
+  /**
+   * Mention d'information (variante service ou repli `mailto:`) découpée autour de l'adresse
+   * (insérée en lien `mailto:`).
+   */
   readonly notice: { readonly before: string; readonly after: string };
+  /** Repli `mailto:` uniquement : indice « si rien ne s'ouvre », découpé autour de l'adresse. */
+  readonly mailtoHint: { readonly before: string; readonly after: string } | undefined;
   /** Message d'échec, adresse insérée. */
   readonly failure: string;
 }
@@ -59,7 +70,8 @@ export function buildContactFormModel(
     redirectUrl: target.kind === 'service' ? new URL(THANKS_PATH, options.origin).href : undefined,
     email: options.email,
     content,
-    notice: splitOnEmail(content.notice.text),
+    notice: splitOnEmail(selectNoticeText(content.notice, target.kind)),
+    mailtoHint: target.kind === 'mailto' ? splitOnEmail(content.mailtoHint) : undefined,
     failure: fillEmail(content.failure, options.email),
   };
 }

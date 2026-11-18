@@ -88,6 +88,14 @@ Aucune case à cocher n'est nécessaire, et il ne faut pas en ajouter : le trait
 
 (L'email vient de `site.email` ; « un service de formulaire sécurisé » pourra être remplacé par le nom du service une fois choisi.)
 
+### Repli sans service de formulaire (`mailto:`)
+
+Tant que `PUBLIC_FORM_ENDPOINT` n'est pas défini, le formulaire s'envoie via la messagerie du visiteur. La mention et l'indice affichés changent (clés `form.notice.mailtoText` et `form.mailtoHint` de `src/content/pages/contact.md`), et le champ piège n'est pas rendu :
+
+> En cliquant sur « Envoyer ma demande », votre messagerie s’ouvre avec votre demande pré-remplie : il vous reste à l’envoyer. Vos informations servent uniquement à répondre à votre demande et, si vous le souhaitez, à préparer votre devis. Elles sont conservées au maximum 3 ans après notre dernier échange. Vous pouvez y accéder, les rectifier ou les faire supprimer en m’écrivant à {email}.
+
+Indice visible sous le bouton (et annoncé dans `role="status"` avec JS) : « Si rien ne s’ouvre, écrivez-moi directement à {email}. »
+
 ### Microcopies
 
 | Situation                    | Texte                                                                                                                         |

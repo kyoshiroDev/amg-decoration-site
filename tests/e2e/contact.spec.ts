@@ -16,6 +16,9 @@ const TEXTS = {
   phoneInvalid: /Ce numéro semble incomplet/,
   success: /Merci, votre message est bien parti/,
   failure: /Votre message n’a pas pu être envoyé/,
+  mailtoNotice: /votre messagerie s’ouvre avec votre demande pré-remplie/,
+  serviceNotice: /service de formulaire/,
+  mailtoHint: /Si rien ne s’ouvre, écrivez-moi directement à/,
 };
 
 async function blockExternalRequests(page: Page): Promise<void> {
@@ -68,18 +71,31 @@ test.describe('Contact : sans JavaScript', () => {
     await expect(project.locator('option')).toHaveCount(8);
   });
 
-  test('ni adresse, ni case de consentement ; honeypot hors écran et masqué', async ({ page }) => {
+  test('ni adresse, ni case de consentement', async ({ page }) => {
     await page.goto('/contact/');
     const form = page.locator('form[data-contact-form]');
     await expect(form.locator('input[type="checkbox"]')).toHaveCount(0);
     await expect(
       form.locator('[autocomplete*="address"], [autocomplete="postal-code"]'),
     ).toHaveCount(0);
-    const honeypot = form.locator('input[name="_honeypot"]');
-    await expect(honeypot).toHaveAttribute('tabindex', '-1');
-    await expect(honeypot).toHaveAttribute('autocomplete', 'off');
-    await expect(honeypot.locator('xpath=ancestor::*[@aria-hidden="true"]')).toHaveCount(1);
-    await expect(page.getByRole('textbox', { name: 'Ne remplissez pas ce champ' })).toHaveCount(0);
+  });
+
+  test('repli mailto: mention adaptée, indice visible, aucun champ piège', async ({ page }) => {
+    await page.goto('/contact/');
+    const form = page.locator('form[data-contact-form]');
+    await expect(form).toHaveAttribute('action', `mailto:${site.email}`);
+    const notice = page.locator('.contact-form__notice');
+    await expect(notice).toContainText(TEXTS.mailtoNotice);
+    await expect(notice).not.toContainText(TEXTS.serviceNotice);
+    const hint = form.locator('[data-form-mailto-hint]');
+    await expect(hint).toBeVisible();
+    await expect(hint).toContainText(TEXTS.mailtoHint);
+    await expect(hint.getByRole('link', { name: site.email })).toHaveAttribute(
+      'href',
+      `mailto:${site.email}`,
+    );
+    await expect(form.locator('input[name="_honeypot"]')).toHaveCount(0);
+    await expect(form.locator('input[name="_redirect"]')).toHaveCount(0);
   });
 
   test('mention d’information sous le bouton, email du site et lien politique', async ({
@@ -165,6 +181,7 @@ test.describe('Contact : avec JavaScript', () => {
     const button = page.locator('form[data-contact-form] button[type="submit"]');
     await expect(button).toHaveText(TEXTS.sending);
     await expect(button).toHaveAttribute('aria-disabled', 'true');
+    await expect(page.getByRole('status')).toHaveText(TEXTS.sending);
     release();
 
     const status = page.getByRole('status');
@@ -175,7 +192,6 @@ test.describe('Contact : avec JavaScript', () => {
       nom: 'Camille Martin',
       email: 'camille@exemple.fr',
       projet: 'Je ne sais pas encore',
-      _honeypot: '',
     });
     await expectNoAxeViolations(page);
   });
@@ -195,6 +211,21 @@ test.describe('Contact : avec JavaScript', () => {
       'aria-disabled',
       'false',
     );
+  });
+
+  test('repli mailto: l’indice est annoncé avant l’ouverture de la messagerie', async ({
+    page,
+  }) => {
+    // Le script du site s'exécute d'abord ; ce second écouteur empêche seulement l'ouverture
+    // réelle d'un client mail pendant le test.
+    await page
+      .locator('form[data-contact-form]')
+      .evaluate((form) => form.addEventListener('submit', (event) => event.preventDefault()));
+    await fillValidForm(page);
+    await page.getByRole('button', { name: TEXTS.submit }).click();
+    await expect(page.getByRole('status')).toContainText(TEXTS.mailtoHint);
+    await expect(page.getByRole('status')).toContainText(site.email);
+    await expect(page.locator('[data-form-summary]')).toBeHidden();
   });
 
   test('0 violation axe au repos', async ({ page }) => {

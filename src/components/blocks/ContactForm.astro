@@ -2,13 +2,15 @@
 /**
  * ContactForm — formulaire de contact (docs/CONFORMITE.md §5, ADR-0003).
  * Sans JS : POST HTML vers le service (`PUBLIC_FORM_ENDPOINT`), redirection vers /merci/ ; en
- * repli, action `mailto:`. Avec JS (src/scripts/contact-form.ts) : validation, résumé des
- * erreurs, envoi `fetch`, statut annoncé (`role="status"`) et focus géré.
+ * repli, action `mailto:` : mention adaptée, indice visible « si rien ne s'ouvre », sans champ
+ * piège (inutile en mailto, il polluerait le message). Pied (bouton, indice, mention) :
+ * ContactFormFooter. Avec JS (src/scripts/contact-form.ts) : validation, résumé des erreurs,
+ * envoi `fetch`, statut annoncé (`role="status"`) et focus géré.
  * Microcopies : clé `form` de src/content/pages/contact.md. Styles : ./contact-form.css.
  */
-import Button from '@/components/ui/Button.astro';
 import SectionIntro from './SectionIntro.astro';
 import FormField from './FormField.astro';
+import ContactFormFooter from './ContactFormFooter.astro';
 import { CONTACT_FIELDS, HONEYPOT_NAME, REDIRECT_NAME } from '@/lib/contact-form';
 import type { ContactFormModel } from '@/lib/pages/contact-model';
 import type { PageSection } from '@/lib/pages/types';
@@ -35,8 +37,18 @@ const summaryId = `${id}-erreurs`;
     emphasis={section.headingEmphasis}
     lead={section.lead}
   />
-  <div class="contact-form__summary" id={summaryId} tabindex="-1" data-form-summary hidden>
-    <p class="contact-form__summary-text">{content.errors.summary}</p>
+  <div
+    class="contact-form__summary"
+    id={summaryId}
+    role="group"
+    aria-labelledby={`${summaryId}-titre`}
+    tabindex="-1"
+    data-form-summary
+    hidden
+  >
+    <p class="contact-form__summary-text" id={`${summaryId}-titre`}>
+      {content.errors.summary}
+    </p>
     <ul class="contact-form__summary-list" data-form-summary-list></ul>
   </div>
   <div class="contact-form__status" role="status" tabindex="-1" data-form-status></div>
@@ -94,30 +106,19 @@ const summaryId = `${id}-erreurs`;
       required
       {...fields.message}
     />
-    <div class="visually-hidden" aria-hidden="true">
-      <label for={fieldId(HONEYPOT_NAME)}>{content.honeypotLabel}</label>
-      <input
-        type="text"
-        id={fieldId(HONEYPOT_NAME)}
-        name={HONEYPOT_NAME}
-        tabindex="-1"
-        autocomplete="off"
-      />
-    </div>
-    <div class="contact-form__footer">
-      <Button type="submit" icon="arrow-right" class="contact-form__submit">
-        {content.submit.label}
-      </Button>
-      <p class="contact-form__notice">
-        {form.notice.before}
-        <a href={`mailto:${form.email}`}>{form.email}</a>
-        {form.notice.after}
-        <span class="contact-form__notice-more">
-          {content.notice.moreLabel}{' '}
-          <a href={content.notice.link.href}>{content.notice.link.label}</a>
-        </span>
-      </p>
-    </div>
+    {target.kind === 'service' && (
+      <div class="visually-hidden" aria-hidden="true">
+        <label for={fieldId(HONEYPOT_NAME)}>{content.honeypotLabel}</label>
+        <input
+          type="text"
+          id={fieldId(HONEYPOT_NAME)}
+          name={HONEYPOT_NAME}
+          tabindex="-1"
+          autocomplete="off"
+        />
+      </div>
+    )}
+    <ContactFormFooter form={form} />
   </form>
   <template data-form-success>
     <p class="contact-form__status-title">{content.success.title}</p>

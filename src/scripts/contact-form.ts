@@ -4,7 +4,8 @@
  * Ajouts : validation avec les microcopies du contenu, erreurs reliées aux champs
  * (`aria-invalid`, `aria-describedby`), résumé des erreurs focalisé en tête, envoi `fetch` vers
  * le service, état « Envoi en cours… », succès ou échec annoncé (`role="status"`) puis focalisé.
- * En repli `mailto:` (aucun service configuré), le script valide puis laisse l'envoi natif.
+ * En repli `mailto:` (aucun service configuré), le script valide, annonce l'indice « si rien ne
+ * s'ouvre » (`role="status"`) puis laisse l'envoi natif ouvrir la messagerie.
  */
 import {
   CONTACT_FIELDS,
@@ -111,7 +112,10 @@ onPageReady((signal) => {
         summary.focus();
         return;
       }
-      if (form.dataset['kind'] !== 'service') return; // repli mailto: envoi natif
+      if (form.dataset['kind'] !== 'service') {
+        announceMailto(); // repli mailto: envoi natif, la page reste affichée
+        return;
+      }
       event.preventDefault();
       if (sending) return;
       void send();
@@ -119,11 +123,22 @@ onPageReady((signal) => {
     { signal },
   );
 
+  function announceMailto(): void {
+    const hint = form
+      ?.querySelector('[data-form-mailto-hint]')
+      ?.textContent?.replace(/\s+/g, ' ')
+      .trim();
+    if (!status || !hint) return;
+    status.dataset['state'] = 'mailto';
+    status.textContent = hint;
+  }
+
   async function send(): Promise<void> {
     if (!form || !status) return;
     setSending(true);
+    // Annonce fiable de l'attente : le changement de libellé du bouton n'est pas toujours lu.
     status.dataset['state'] = 'sending';
-    status.textContent = '';
+    status.textContent = form.dataset['sending'] ?? '';
     try {
       const response = await fetch(form.action, {
         method: 'POST',

@@ -93,3 +93,11 @@ export function resolveFormTarget(endpoint: string | undefined, email: string): 
   }
   return { action: `mailto:${email}`, kind: 'mailto' };
 }
+
+/** Mention d'information adaptée à la destination : le repli `mailto:` ne passe par aucun service. */
+export function selectNoticeText(
+  notice: { readonly text: string; readonly mailtoText: string },
+  kind: FormTarget['kind'],
+): string {
+  return kind === 'mailto' ? notice.mailtoText : notice.text;
+}

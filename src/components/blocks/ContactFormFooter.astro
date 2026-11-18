@@ -1,0 +1,37 @@
+---
+/**
+ * ContactFormFooter — pied du formulaire de contact : bouton d'envoi, indice du repli `mailto:`
+ * (« si rien ne s'ouvre… », visible avec et sans JS) et mention d'information RGPD.
+ * Styles : ./contact-form.css (chargé par ContactForm).
+ */
+import Button from '@/components/ui/Button.astro';
+import type { ContactFormModel } from '@/lib/pages/contact-model';
+
+interface Props {
+  form: ContactFormModel;
+}
+
+const { form } = Astro.props;
+const { content } = form;
+---
+
+<div class="contact-form__footer">
+  <Button type="submit" icon="arrow-right" class="contact-form__submit">
+    {content.submit.label}
+  </Button>
+  {form.mailtoHint && (
+    <p class="contact-form__mailto-hint" data-form-mailto-hint>
+      {form.mailtoHint.before}
+      <a href={`mailto:${form.email}`}>{form.email}</a>
+      {form.mailtoHint.after}
+    </p>
+  )}
+  <p class="contact-form__notice">
+    {form.notice.before}
+    <a href={`mailto:${form.email}`}>{form.email}</a>
+    {form.notice.after}
+    <span class="contact-form__notice-more">
+      {content.notice.moreLabel} <a href={content.notice.link.href}>{content.notice.link.label}</a>
+    </span>
+  </p>
+</div>

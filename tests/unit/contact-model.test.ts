@@ -25,9 +25,11 @@ const form: ContactFormContent = {
   submit: { label: 'Envoyer', sending: 'Envoi…' },
   notice: {
     text: 'Écrivez-moi à {email}. Merci',
+    mailtoText: 'Messagerie : écrivez-moi à {email}.',
     moreLabel: 'En savoir plus :',
     link: { label: 'politique', href: '/confidentialite/' },
   },
+  mailtoHint: 'Sinon, écrivez à {email}.',
   errors: {
     summary: 'S',
     nameRequired: 'N',
@@ -73,6 +75,17 @@ describe('buildContactModel', () => {
     const model = buildContactModel(input());
     expect(model.form.notice).toEqual({ before: 'Écrivez-moi à ', after: '. Merci' });
     expect(model.form.failure).toBe('Échec : écrivez à a@b.fr.');
+  });
+
+  it('mode service : mention du service, pas d’indice mailto', () => {
+    const model = buildContactModel(input());
+    expect(model.form.mailtoHint).toBeUndefined();
+  });
+
+  it('repli mailto: mention et indice adaptés, adresse insérée', () => {
+    const model = buildContactModel(input({ endpoint: undefined }));
+    expect(model.form.notice).toEqual({ before: 'Messagerie : écrivez-moi à ', after: '.' });
+    expect(model.form.mailtoHint).toEqual({ before: 'Sinon, écrivez à ', after: '.' });
   });
 
   it('fil d’Ariane : Accueil › Contact et devis', () => {
