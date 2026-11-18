@@ -61,7 +61,7 @@
 - [x] Test : chaque destination de redirection (`SITE_ROUTES`, `src/lib/redirects.ts`) répond 200 dans `dist/`
 - [x] Brouillons exclus partout (`filterPublished` sur les routes dynamiques et le sitemap) ; aucun `TODO` dans `dist/`
 - [x] Lecture du contenu par les pages via des helpers de `src/lib/` (pages = assemblage, `CLAUDE.md` §3)
-- [ ] Revue + push `dev` + PR mise à jour
+- [x] Revue + push `dev` + PR mise à jour (PR #1, CI verte sur 25 pages)
 
 ## Phase 5 — Effets et interactions
 
@@ -72,6 +72,8 @@
 - [ ] Tout vérifié en `prefers-reduced-motion` et sans JS
 - [ ] Masquage sans JS des filtres en CSS valide (`@media (scripting: none)` ou classe `no-js`) au lieu de `<noscript><style>` dans le `body`
 - [ ] Marquee animé : bouton pause accessible au clavier (WCAG 2.2.2), arrêt en mouvement réduit
+- [ ] Lightbox de la galerie projet (clavier, focus piégé, Échap, sans JS = images visibles)
+- [ ] Revue + push `dev` + PR mise à jour
 
 ## Phase 6 — SEO avancé
 

@@ -13,6 +13,8 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 - JSON-LD par type de page : `Service`, `CreativeWork`, `BlogPosting`, `CollectionPage`, `AboutPage`, `ContactPage`, `BreadcrumbList`.
 - Garde-fous : liens internes en 200 sans redirection, aucune page orpheline, aucun `TODO` ni brouillon dans `dist/`, débordement à 320 px et espacement WCAG testés sur toutes les pages.
 - Lighthouse CI audite désormais les 25 pages (il n'en découvrait que 5), CLS en médiane, budgets JS/CSS bloquants. CLS de `/realisations/` corrigé (0,057 → 0,0002), Fraunces 400 italique retirée.
+- Polices de repli ajustées écrites à la main pour Linux et Android (ADR-0009) : CLS de `/contact/` 0,0597 → 0 en CI.
+- CI : un seul run par push (PR), actions en v7 (Node 24), Lighthouse sur l'artefact `dist` vérifié, rapports conservés.
 
 ### Phase 3 — Contenu
 
