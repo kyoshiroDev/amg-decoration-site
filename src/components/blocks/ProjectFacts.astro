@@ -1,0 +1,69 @@
+---
+/**
+ * ProjectFacts — fiche d'identité d'un projet en liste de définitions : lieu, pièces, style,
+ * formule liée (lien vers la prestation). Libellés en capitales terracotta-700, valeurs en encre.
+ */
+import Link from '@/components/ui/Link.astro';
+import type { ProjectFact } from '@/lib/pages/projects-model';
+
+interface Props {
+  facts: readonly ProjectFact[];
+  /** Nom accessible de la liste (lu avant les définitions). */
+  label: string;
+}
+
+const { facts, label } = Astro.props;
+---
+
+<dl class="project-facts" aria-label={label}>
+  {facts.map((fact) => (
+    <div class="project-facts__row">
+      <dt class="project-facts__term">{fact.label}</dt>
+      <dd class="project-facts__value">
+        {fact.href ? (
+          <Link href={fact.href} variant="draw" icon="arrow-right">
+            {fact.value}
+          </Link>
+        ) : (
+          fact.value
+        )}
+      </dd>
+    </div>
+  ))}
+</dl>
+
+<style>
+  @layer components {
+    .project-facts {
+      display: grid;
+      inline-size: 100%;
+      margin: 0;
+
+      @media (width >= 40rem) {
+        grid-template-columns: repeat(2, 1fr);
+        column-gap: var(--space-l);
+      }
+    }
+
+    .project-facts__row {
+      display: grid;
+      align-content: start;
+      gap: var(--space-3xs);
+      padding-block: var(--space-s);
+      border-block-start: var(--border-hairline) solid var(--color-border);
+    }
+
+    .project-facts__term {
+      font-size: var(--text-eyebrow);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-eyebrow);
+      text-transform: uppercase;
+      color: var(--color-accent-text);
+    }
+
+    .project-facts__value {
+      margin: 0;
+      font-weight: var(--weight-medium);
+    }
+  }
+</style>

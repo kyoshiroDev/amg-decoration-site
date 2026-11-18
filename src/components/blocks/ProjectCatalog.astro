@@ -1,0 +1,94 @@
+---
+/**
+ * ProjectCatalog — toutes les réalisations (page Réalisations) : filtres par type de pièce
+ * (ProjectFilters, amélioration progressive) et grille éditoriale de cartes en arche.
+ * Grille ≥ 64rem : cartes impaires en colonnes 1–5, paires en 8–12, décalées vers le bas.
+ * Le rythme est recalculé sur les seules cartes visibles (`:nth-child(… of :not([hidden]))`) ;
+ * les règles sans `of` servent de repli aux navigateurs qui ne le comprennent pas.
+ */
+import Section from '@/components/ui/Section.astro';
+import Container from '@/components/ui/Container.astro';
+import ProjectCard from './ProjectCard.astro';
+import ProjectFilters from './ProjectFilters.astro';
+import type { CatalogItem, FilterOption } from '@/lib/pages/projects-model';
+
+interface Props {
+  projects: readonly CatalogItem[];
+  filters: readonly FilterOption[];
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  /** Niveau des titres de carte (2 si la page n'a pas de h2 au-dessus). */
+  headingLevel?: 2 | 3;
+}
+
+const { projects, filters, background = 'cream', headingLevel = 2 } = Astro.props;
+const SIZES = '(min-width: 64rem) 36vw, (min-width: 48rem) 45vw, 90vw';
+---
+
+<Section background={background} as="div" spacing="compact" class="project-catalog">
+  <Container>
+    {filters.length > 0 && <ProjectFilters filters={filters} total={projects.length} />}
+    <ul class="project-catalog__grid">
+      {projects.map((project) => (
+        <li class="project-catalog__item" data-project-rooms={project.rooms.join(' ')}>
+          <ProjectCard project={project} sizes={SIZES} headingLevel={headingLevel} />
+        </li>
+      ))}
+    </ul>
+  </Container>
+</Section>
+
+<style>
+  @layer components {
+    .project-catalog__grid {
+      display: grid;
+      gap: var(--space-2xl) var(--grid-gap);
+      padding: 0;
+      margin: 0;
+
+      @media (width >= 48rem) {
+        grid-template-columns: repeat(2, 1fr);
+        align-items: start;
+      }
+
+      @media (width >= 64rem) {
+        grid-template-columns: repeat(var(--grid-columns), 1fr);
+        row-gap: 0;
+      }
+    }
+
+    @media (width >= 48rem) {
+      .project-catalog__item:nth-child(even) {
+        margin-block-start: var(--grid-stagger);
+      }
+
+      .project-catalog__item:nth-child(odd of :not([hidden])) {
+        margin-block-start: 0;
+      }
+
+      .project-catalog__item:nth-child(even of :not([hidden])) {
+        margin-block-start: var(--grid-stagger);
+      }
+    }
+
+    @media (width >= 64rem) {
+      .project-catalog__item:nth-child(odd) {
+        grid-column: 1 / span 5;
+      }
+
+      .project-catalog__item:nth-child(even) {
+        grid-column: 8 / span 5;
+        margin-block-start: calc(var(--grid-stagger) * 2);
+      }
+
+      .project-catalog__item:nth-child(odd of :not([hidden])) {
+        grid-column: 1 / span 5;
+        margin-block-start: 0;
+      }
+
+      .project-catalog__item:nth-child(even of :not([hidden])) {
+        grid-column: 8 / span 5;
+        margin-block-start: calc(var(--grid-stagger) * 2);
+      }
+    }
+  }
+</style>

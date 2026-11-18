@@ -1,0 +1,17 @@
+---
+// Article « Conseils déco » : assemblage. Données : getArticlePaths() (src/lib/pages/articles.ts,
+// articles publiés uniquement), corps : src/content/articles/<slug>.mdx.
+import ArticleLayout from '@/layouts/ArticleLayout.astro';
+import { getArticlePaths, type ArticlePageProps } from '@/lib/pages/articles';
+
+export function getStaticPaths() {
+  return getArticlePaths();
+}
+
+type Props = ArticlePageProps;
+const { article, imageUrl, cta, Content } = Astro.props;
+---
+
+<ArticleLayout article={article} imageUrl={imageUrl} cta={cta}>
+  <Content />
+</ArticleLayout>

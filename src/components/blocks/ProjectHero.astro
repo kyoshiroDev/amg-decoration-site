@@ -1,0 +1,104 @@
+---
+/**
+ * ProjectHero — ouverture d'une page projet (sous le fil d'Ariane) : surtitre, h1, accroche,
+ * fiche d'identité (ProjectFacts) ; à droite, la couverture en arche cadrée, posée sur un soleil
+ * sauge. C'est la seule image `priority` de la page ; son cadre porte le nom de View Transition
+ * de la carte du projet (morphing grille → page, ADR-0006).
+ */
+import type { ImageMetadata } from 'astro';
+import Section from '@/components/ui/Section.astro';
+import Container from '@/components/ui/Container.astro';
+import ArchImage from '@/components/ui/ArchImage.astro';
+import SectionIntro from './SectionIntro.astro';
+import ProjectFacts from './ProjectFacts.astro';
+import type { ProjectFact } from '@/lib/pages/projects-model';
+
+interface Props {
+  eyebrow: string;
+  title: string;
+  summary: string;
+  facts: readonly ProjectFact[];
+  factsLabel: string;
+  image: ImageMetadata;
+  imageAlt: string;
+  transitionName: string;
+  id?: string;
+}
+
+const {
+  eyebrow,
+  title,
+  summary,
+  facts,
+  factsLabel,
+  image,
+  imageAlt,
+  transitionName,
+  id = 'projet-titre',
+} = Astro.props;
+---
+
+<Section spacing="compact" labelledby={id} class="project-hero">
+  <Container class="project-hero__grid">
+    <div class="project-hero__text">
+      <SectionIntro id={id} level={1} size="xl" eyebrow={eyebrow} heading={title} lead={summary} />
+      <ProjectFacts facts={facts} label={factsLabel} />
+    </div>
+    <div class="project-hero__visual">
+      <span class="project-hero__sun" aria-hidden="true"></span>
+      <ArchImage
+        src={image}
+        alt={imageAlt}
+        sizes="(min-width: 64rem) 30rem, (min-width: 40rem) 26rem, 85vw"
+        widths={[360, 540, 720, 960]}
+        priority
+        framed
+        ratio="4 / 5"
+        transitionName={transitionName}
+        class="project-hero__image"
+      />
+    </div>
+  </Container>
+</Section>
+
+<style>
+  @layer components {
+    :global(.project-hero) {
+      overflow-x: clip;
+    }
+
+    :global(.project-hero__grid) {
+      display: grid;
+      gap: var(--space-xl);
+      align-items: center;
+
+      @media (width >= 64rem) {
+        grid-template-columns: 7fr 5fr;
+        gap: var(--space-3xl);
+      }
+    }
+
+    .project-hero__text {
+      display: grid;
+      justify-items: start;
+      gap: var(--space-l);
+    }
+
+    .project-hero__visual {
+      position: relative;
+      justify-self: center;
+      inline-size: min(100%, var(--hero-visual-max));
+    }
+
+    /* Soleil sauge derrière l'arche (décor), déborde en bas à gauche. */
+    .project-hero__sun {
+      position: absolute;
+      inset-block-end: calc(var(--space-l) * -1);
+      inset-inline-start: calc(var(--space-l) * -1);
+      inline-size: 45%;
+      aspect-ratio: 1;
+      border-radius: var(--radius-pill);
+      background-color: var(--color-sage);
+    }
+  }
+</style>

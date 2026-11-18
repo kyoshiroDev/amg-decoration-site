@@ -1,0 +1,124 @@
+---
+/**
+ * ProjectFilters — filtres par type de pièce de la page Réalisations (amélioration progressive).
+ * Rendu `hidden` : sans JavaScript, la barre n'apparaît pas et la grille complète reste visible.
+ * `scripts/project-filter.ts` l'affiche, gère `aria-pressed` et annonce le nombre de projets
+ * affichés dans une région `role="status"` (lue poliment, sans déplacer le focus).
+ */
+import { microcopy } from '@/config/microcopy';
+import type { FilterOption } from '@/lib/pages/projects-model';
+
+interface Props {
+  filters: readonly FilterOption[];
+  total: number;
+  /** Identifiant du libellé du groupe de boutons. */
+  id?: string;
+}
+
+const { filters, total, id = 'filtres-titre' } = Astro.props;
+const labels = microcopy.projects.filters;
+const options = [{ value: '', label: labels.all }, ...filters];
+---
+
+<div class="project-filters" data-project-filters hidden>
+  <p class="project-filters__label" id={id}>
+    {labels.label}
+  </p>
+  <div class="project-filters__list" role="group" aria-labelledby={id}>
+    {options.map((option) => (
+      <button
+        type="button"
+        class="project-filters__button"
+        data-filter={option.value}
+        aria-pressed={option.value === '' ? 'true' : 'false'}
+      >
+        {option.label}
+      </button>
+    ))}
+  </div>
+  <p
+    class="project-filters__status"
+    role="status"
+    data-filter-status
+    data-one={labels.statusOne}
+    data-other={labels.statusOther}
+  >
+    {(total === 1 ? labels.statusOne : labels.statusOther).replace('{count}', String(total))}
+  </p>
+</div>
+
+<script>
+  import '@/scripts/project-filter';
+</script>
+
+<style>
+  @layer components {
+    .project-filters {
+      display: grid;
+      gap: var(--space-s);
+      margin-block-end: var(--space-xl-3xl);
+      padding-block-end: var(--space-m);
+      border-block-end: var(--border-hairline) solid var(--color-border);
+
+      @media (width >= 64rem) {
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: var(--space-l);
+      }
+    }
+
+    .project-filters__label,
+    .project-filters__status {
+      font-size: var(--text-eyebrow);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-eyebrow);
+      text-transform: uppercase;
+    }
+
+    .project-filters__label {
+      color: var(--color-accent-text);
+    }
+
+    .project-filters__status {
+      color: var(--color-text-soft);
+    }
+
+    .project-filters__list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2xs);
+    }
+
+    .project-filters__button {
+      min-block-size: var(--tap-target);
+      padding-inline: var(--space-s);
+      border: 0;
+      border-radius: var(--radius-pill);
+      background-color: transparent;
+      box-shadow: inset 0 0 0 var(--border-hairline) var(--color-border-control);
+      font: inherit;
+      font-size: var(--step--1);
+      font-weight: var(--weight-medium);
+      line-height: var(--leading-ui);
+      color: var(--color-text);
+      cursor: pointer;
+      transition:
+        background-color var(--dur-fast) var(--ease-out),
+        box-shadow var(--dur-fast) var(--ease-out);
+
+      &:hover {
+        box-shadow: inset 0 0 0 var(--border-thin) var(--color-accent-text);
+      }
+
+      &:focus-visible {
+        border-radius: var(--radius-pill);
+      }
+
+      &[aria-pressed='true'] {
+        background-color: var(--color-action);
+        box-shadow: none;
+        color: var(--color-on-action);
+      }
+    }
+  }
+</style>

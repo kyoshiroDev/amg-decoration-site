@@ -1,0 +1,64 @@
+---
+/**
+ * ArticleMeta — ligne d'informations d'un article : date de publication (et de mise à jour)
+ * en `<time datetime>`, temps de lecture. Séparateurs en petites pastilles terracotta (CSS).
+ */
+import type { DateDisplay } from '@/lib/pages/articles-model';
+
+interface Props {
+  published: DateDisplay;
+  updated?: DateDisplay | undefined;
+  readingTime: string;
+  /** Préfixes « Publié le » / « Mis à jour le » (page article) ; date seule sinon. */
+  labels?: { readonly published: string; readonly updated: string } | undefined;
+  class?: string | undefined;
+}
+
+const { published, updated, readingTime, labels, class: className } = Astro.props;
+---
+
+<p class:list={['article-meta', className]}>
+  <span class="article-meta__item">
+    <span>
+      {labels && `${labels.published} `}
+      <time datetime={published.iso}>{published.label}</time>
+    </span>
+  </span>
+  {updated && labels && (
+    <span class="article-meta__item">
+      <span>
+        {`${labels.updated} `}
+        <time datetime={updated.iso}>{updated.label}</time>
+      </span>
+    </span>
+  )}
+  <span class="article-meta__item">{readingTime}</span>
+</p>
+
+<style>
+  @layer components {
+    .article-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-3xs) var(--space-xs);
+      font-size: var(--step--1);
+      color: var(--color-text-soft);
+    }
+
+    .article-meta__item {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+
+    /* Pastille terracotta entre deux informations (décor, non lue). */
+    .article-meta__item + .article-meta__item::before {
+      content: '';
+      inline-size: var(--space-3xs);
+      block-size: var(--space-3xs);
+      border-radius: var(--radius-pill);
+      background-color: var(--color-accent);
+    }
+  }
+</style>

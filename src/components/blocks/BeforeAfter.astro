@@ -1,0 +1,94 @@
+---
+/**
+ * BeforeAfter — « Rendu 3D ↔ Réalisé » (signature du site). Version statique (Phase 4) : les deux
+ * images côte à côte (empilées sur mobile), cadrées à l'identique, chacune nommée par une pastille
+ * en légende. La Phase 5 en fera un slider accessible au clavier sur la même structure
+ * (`data-before-after`), sans changer le rendu sans JavaScript.
+ */
+import type { ImageMetadata } from 'astro';
+import Section from '@/components/ui/Section.astro';
+import Container from '@/components/ui/Container.astro';
+import ArchImage from '@/components/ui/ArchImage.astro';
+import SectionIntro from './SectionIntro.astro';
+
+interface Figure {
+  readonly image: ImageMetadata;
+  readonly alt: string;
+}
+
+interface Props {
+  heading: string;
+  rendering: Figure;
+  result: Figure;
+  labels: { readonly rendering: string; readonly result: string };
+  id: string;
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+}
+
+const { heading, rendering, result, labels, id, background = 'blush' } = Astro.props;
+const figures = [
+  { ...rendering, label: labels.rendering, kind: 'rendering' },
+  { ...result, label: labels.result, kind: 'result' },
+] as const;
+---
+
+<Section background={background} labelledby={id}>
+  <Container class="before-after">
+    <SectionIntro id={id} heading={heading} />
+    <div class="before-after__pair" data-before-after>
+      {figures.map((figure) => (
+        <figure class="before-after__figure" data-before-after-kind={figure.kind}>
+          <ArchImage
+            src={figure.image}
+            alt={figure.alt}
+            shape="rounded"
+            ratio="4 / 3"
+            sizes="(min-width: 48rem) 45vw, 90vw"
+          />
+          <figcaption class="before-after__label">{figure.label}</figcaption>
+        </figure>
+      ))}
+    </div>
+  </Container>
+</Section>
+
+<style>
+  @layer components {
+    :global(.before-after) {
+      display: grid;
+      gap: var(--space-l-2xl);
+    }
+
+    .before-after__pair {
+      display: grid;
+      gap: var(--space-m);
+
+      @media (width >= 48rem) {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--grid-gap);
+      }
+    }
+
+    .before-after__figure {
+      position: relative;
+      margin: 0;
+    }
+
+    /* Pastille posée sur l'image, en haut à gauche (texte encre sur crème : contraste AA). */
+    .before-after__label {
+      position: absolute;
+      inset-block-start: var(--space-s);
+      inset-inline-start: var(--space-s);
+      padding-block: var(--space-3xs);
+      padding-inline: var(--space-xs);
+      border-radius: var(--radius-pill);
+      background-color: var(--color-surface);
+      box-shadow: var(--shadow-soft);
+      font-size: var(--text-eyebrow);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-eyebrow);
+      text-transform: uppercase;
+      color: var(--color-text);
+    }
+  }
+</style>

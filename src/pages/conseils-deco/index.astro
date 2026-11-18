@@ -1,0 +1,21 @@
+---
+// Conseils déco : assemblage. Données : getArticlesIndexData() (src/lib/pages/articles.ts,
+// articles publiés uniquement), textes : src/content/pages/conseils-deco.md.
+import PageLayout from '@/layouts/PageLayout.astro';
+import PageHero from '@/components/blocks/PageHero.astro';
+import ArticleList from '@/components/blocks/ArticleList.astro';
+import CtaBanner from '@/components/blocks/CtaBanner.astro';
+import { getArticlesIndexData } from '@/lib/pages/articles';
+
+const data = await getArticlesIndexData();
+---
+
+<PageLayout
+  title={data.seo.title}
+  description={data.seo.description}
+  breadcrumbs={data.breadcrumbs}
+>
+  <PageHero section={data.hero} id="conseils-titre" />
+  <ArticleList articles={data.articles} />
+  <CtaBanner section={data.cta} id="contact-titre" />
+</PageLayout>

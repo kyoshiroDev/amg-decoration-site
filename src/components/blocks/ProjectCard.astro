@@ -3,10 +3,11 @@
  * ProjectCard — carte d'une réalisation : visuel (arche ou paysage arrondi), style et lieu,
  * titre-lien (zone cliquable étendue à toute la carte), accroche.
  * Le zoom lent du visuel suit le survol de la carte entière (le lien recouvre l'image).
+ * Le visuel porte le même nom de View Transition que la couverture de la page projet.
  */
 import ArchImage from '@/components/ui/ArchImage.astro';
 import { microcopy } from '@/config/microcopy';
-import type { ProjectCardData } from '@/lib/cards';
+import { projectTransitionName, type ProjectCardData } from '@/lib/cards';
 
 interface Props {
   project: ProjectCardData;
@@ -29,6 +30,7 @@ const meta = [project.style, project.location].filter((part): part is string => 
     sizes={sizes}
     shape={shape === 'arch' ? 'arch' : 'rounded'}
     ratio={shape === 'arch' ? '4 / 5' : '5 / 4'}
+    transitionName={projectTransitionName(project.slug)}
     class="project-card__media"
   />
   <div class="project-card__body">

@@ -1,0 +1,59 @@
+---
+/**
+ * ArticleList — liste des articles publiés (index « Conseils déco ») : 1 colonne, puis 2 colonnes
+ * à partir de 48rem, la seconde décalée vers le bas (rythme de magazine, marges et non transform).
+ */
+import Section from '@/components/ui/Section.astro';
+import Container from '@/components/ui/Container.astro';
+import ArticleCard from './ArticleCard.astro';
+import type { ArticleCardData } from '@/lib/pages/articles-model';
+
+interface Props {
+  articles: readonly ArticleCardData[];
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  headingLevel?: 2 | 3;
+}
+
+const { articles, background = 'cream', headingLevel = 2 } = Astro.props;
+---
+
+<Section background={background} as="div" spacing="compact">
+  <Container>
+    <ul class="article-list">
+      {articles.map((article) => (
+        <li class="article-list__item">
+          <ArticleCard
+            article={article}
+            headingLevel={headingLevel}
+            sizes="(min-width: 80rem) 36rem, (min-width: 48rem) 45vw, 90vw"
+          />
+        </li>
+      ))}
+    </ul>
+  </Container>
+</Section>
+
+<style>
+  @layer components {
+    .article-list {
+      display: grid;
+      gap: var(--space-2xl) var(--grid-gap);
+      margin: 0;
+
+      @media (width >= 48rem) {
+        grid-template-columns: repeat(2, 1fr);
+        align-items: start;
+      }
+
+      @media (width >= 64rem) {
+        column-gap: var(--space-3xl);
+      }
+    }
+
+    @media (width >= 48rem) {
+      .article-list__item:nth-child(even) {
+        margin-block-start: var(--grid-stagger);
+      }
+    }
+  }
+</style>
