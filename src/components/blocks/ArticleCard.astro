@@ -118,16 +118,19 @@ const Title = `h${headingLevel}` as const;
       color: var(--color-accent-text);
     }
 
-    .article-card:hover .article-card__more::after {
-      transform: scaleX(1);
-    }
+    /* Survol ou focus clavier de la carte : invitation dessinée et zoom lent du visuel. */
+    .article-card:is(:hover, :has(.article-card__link:focus-visible)) {
+      & .article-card__more::after {
+        transform: scaleX(1);
+      }
 
-    .article-card:hover :global(.arch-image__img) {
-      transform: scale(var(--hover-zoom));
+      & :global(.arch-image__img) {
+        transform: scale(var(--hover-zoom));
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .article-card:hover :global(.arch-image__img) {
+      .article-card:is(:hover, :has(.article-card__link:focus-visible)) :global(.arch-image__img) {
         transform: none;
       }
     }

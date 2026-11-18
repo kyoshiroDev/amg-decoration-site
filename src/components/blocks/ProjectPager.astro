@@ -6,7 +6,7 @@
  */
 import ArchImage from '@/components/ui/ArchImage.astro';
 import Container from '@/components/ui/Container.astro';
-import { projectTransitionName, type ProjectCardData } from '@/lib/cards';
+import { PROJECT_TRANSITION_CLASS, projectTransitionName, type ProjectCardData } from '@/lib/cards';
 
 interface Link {
   readonly project: ProjectCardData;
@@ -46,6 +46,7 @@ const links: Link[] = [
               widths={[180, 360]}
               ratio="4 / 5"
               transitionName={projectTransitionName(link.project.slug)}
+              transitionClass={PROJECT_TRANSITION_CLASS}
               class="project-pager__image"
             />
             <span class="project-pager__text">

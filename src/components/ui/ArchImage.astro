@@ -4,12 +4,16 @@
  * `alt` est obligatoire (chaîne vide pour une image décorative).
  * `priority` : image héro (loading="eager", fetchpriority="high", decoding="sync").
  * Zoom lent au survol (transform uniquement, désactivé si mouvement réduit).
- * `transitionName` : `view-transition-name` posé sur le cadre (morphing grille → page projet).
+ * `transitionName` : `view-transition-name` posé sur le cadre (morphing grille → page projet),
+ * `transitionClass` : `view-transition-class` associée (durée et cadrage du morphing, global.css).
+ * `reveal` : image reveal au scroll (`data-reveal="image"` sur le cadre, scripts/reveal.ts).
  * Volontairement pas la directive `transition:name` : sans valeur, elle génère quand même un nom
  * automatique et un bloc de CSS par image (animations du ClientRouter, inutiles ici, ADR-0006).
+ * Styles : ./arch-image.css.
  */
 import type { ImageMetadata } from 'astro';
 import { Picture } from 'astro:assets';
+import './arch-image.css';
 
 type Shape = 'arch' | 'rounded';
 
@@ -30,6 +34,10 @@ interface Props {
   caption?: string | undefined;
   /** Nom de View Transition du cadre, unique dans la page (identifiant CSS, ADR-0006). */
   transitionName?: string | undefined;
+  /** Classe de View Transition (cible `::view-transition-group(.classe)`). */
+  transitionClass?: string | undefined;
+  /** Révélation par masque à l'entrée dans l'écran (jamais sur l'image `priority`). */
+  reveal?: boolean;
   class?: string | undefined;
 }
 
@@ -44,10 +52,20 @@ const {
   framed = false,
   caption,
   transitionName,
+  transitionClass,
+  reveal = false,
   class: className,
 } = Astro.props;
 
 const Element = caption ? 'figure' : 'div';
+const transitionStyle = transitionName
+  ? [
+      `view-transition-name: ${transitionName}`,
+      transitionClass && `view-transition-class: ${transitionClass}`,
+    ]
+      .filter(Boolean)
+      .join('; ')
+  : undefined;
 ---
 
 <Element
@@ -56,7 +74,8 @@ const Element = caption ? 'figure' : 'div';
 >
   <div
     class="arch-image__frame"
-    style={transitionName ? `view-transition-name: ${transitionName}` : undefined}
+    style={transitionStyle}
+    data-reveal={reveal && !priority ? 'image' : undefined}
   >
     <Picture
       src={src}
@@ -71,76 +90,3 @@ const Element = caption ? 'figure' : 'div';
   </div>
   {caption && <figcaption class="arch-image__caption">{caption}</figcaption>}
 </Element>
-
-<style>
-  @layer components {
-    .arch-image {
-      position: relative;
-      margin: 0;
-    }
-
-    .arch-image__frame {
-      position: relative;
-      aspect-ratio: var(--arch-ratio);
-      overflow: hidden;
-      background-color: var(--color-sand);
-      isolation: isolate;
-    }
-
-    .arch-image--arch .arch-image__frame {
-      border-radius: var(--radius-arch);
-    }
-
-    .arch-image--rounded .arch-image__frame {
-      border-radius: var(--radius-lg);
-    }
-
-    /* Le liseré déborde en haut à droite : on lui réserve la place (pas de chevauchement). */
-    .arch-image--framed {
-      margin-block-start: var(--space-s);
-      margin-inline-end: var(--space-s);
-    }
-
-    .arch-image--framed::before {
-      content: '';
-      position: absolute;
-      inset: 0 0 auto;
-      aspect-ratio: var(--arch-ratio);
-      border: var(--border-hairline) solid var(--color-accent);
-      border-radius: var(--radius-arch);
-      transform: translate(var(--space-s), calc(var(--space-s) * -1));
-      pointer-events: none;
-    }
-
-    .arch-image--framed.arch-image--rounded::before {
-      border-radius: var(--radius-lg);
-    }
-
-    .arch-image__frame :global(picture),
-    .arch-image__frame :global(img) {
-      inline-size: 100%;
-      block-size: 100%;
-    }
-
-    .arch-image__frame :global(img) {
-      object-fit: cover;
-      transition: transform var(--dur-slow) var(--ease-out);
-    }
-
-    .arch-image:hover .arch-image__frame :global(img) {
-      transform: scale(var(--hover-zoom));
-    }
-
-    .arch-image__caption {
-      margin-block-start: var(--space-xs);
-      font-size: var(--step--1);
-      color: var(--color-text-soft);
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .arch-image:hover .arch-image__frame :global(img) {
-        transform: none;
-      }
-    }
-  }
-</style>

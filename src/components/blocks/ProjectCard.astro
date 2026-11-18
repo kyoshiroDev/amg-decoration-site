@@ -7,7 +7,7 @@
  */
 import ArchImage from '@/components/ui/ArchImage.astro';
 import { microcopy } from '@/config/microcopy';
-import { projectTransitionName, type ProjectCardData } from '@/lib/cards';
+import { PROJECT_TRANSITION_CLASS, projectTransitionName, type ProjectCardData } from '@/lib/cards';
 
 interface Props {
   project: ProjectCardData;
@@ -31,6 +31,7 @@ const meta = [project.style, project.location].filter((part): part is string => 
     shape={shape === 'arch' ? 'arch' : 'rounded'}
     ratio={shape === 'arch' ? '4 / 5' : '5 / 4'}
     transitionName={projectTransitionName(project.slug)}
+    transitionClass={PROJECT_TRANSITION_CLASS}
     class="project-card__media"
   />
   <div class="project-card__body">
@@ -114,16 +115,19 @@ const meta = [project.style, project.location].filter((part): part is string => 
       color: var(--color-accent-text);
     }
 
-    .project-card:hover .project-card__more::after {
-      transform: scaleX(1);
-    }
+    /* Survol ou focus clavier de la carte : invitation dessinée et zoom lent du visuel. */
+    .project-card:is(:hover, :has(.project-card__link:focus-visible)) {
+      & .project-card__more::after {
+        transform: scaleX(1);
+      }
 
-    .project-card:hover :global(.arch-image__img) {
-      transform: scale(var(--hover-zoom));
+      & :global(.arch-image__img) {
+        transform: scale(var(--hover-zoom));
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .project-card:hover :global(.arch-image__img) {
+      .project-card:is(:hover, :has(.project-card__link:focus-visible)) :global(.arch-image__img) {
         transform: none;
       }
     }

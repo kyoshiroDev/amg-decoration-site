@@ -166,3 +166,6 @@ export function formatStepNumber(index: number): string {
 export function projectTransitionName(slug: string): string {
   return `projet-${slug}`;
 }
+
+/** Classe de View Transition commune à tous les visuels de projet (durée et cadrage, global.css). */
+export const PROJECT_TRANSITION_CLASS = 'projet';

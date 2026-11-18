@@ -12,6 +12,7 @@ import ArchImage from '@/components/ui/ArchImage.astro';
 import SectionIntro from './SectionIntro.astro';
 import ProjectFacts from './ProjectFacts.astro';
 import type { ProjectFact } from '@/lib/pages/projects-model';
+import { PROJECT_TRANSITION_CLASS } from '@/lib/cards';
 
 interface Props {
   eyebrow: string;
@@ -55,6 +56,7 @@ const {
         framed
         ratio="4 / 5"
         transitionName={transitionName}
+        transitionClass={PROJECT_TRANSITION_CLASS}
         class="project-hero__image"
       />
     </div>
