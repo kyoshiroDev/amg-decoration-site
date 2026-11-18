@@ -189,7 +189,7 @@ export function buildGraph(nodes: readonly Thing[]): Graph {
 }
 
 /**
- * Sérialisation sûre pour `set:html` : `<` est échappé en `<`, ce qui neutralise
+ * Sérialisation sûre pour `set:html` : `<` est échappé en `\u003c`, ce qui neutralise
  * toute séquence `</script>` ou `<!--` dans les données (le JSON reste équivalent).
  */
 export function serializeJsonLd(data: Graph): string {

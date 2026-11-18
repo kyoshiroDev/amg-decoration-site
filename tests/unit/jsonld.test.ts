@@ -4,6 +4,7 @@ import {
   buildBlogPosting,
   buildBreadcrumbList,
   buildBusiness,
+  buildCreativeWork,
   buildFounder,
   buildGraph,
   buildOpeningHoursSpecification,
@@ -133,6 +134,28 @@ describe('buildService', () => {
     );
     expect(service).not.toHaveProperty('offers');
     expect(service).toMatchObject({ provider: { '@id': entityId(origin, 'entreprise') } });
+  });
+});
+
+describe('buildCreativeWork', () => {
+  it('rend les images absolues et attribue la création à la fondatrice', () => {
+    const work = buildCreativeWork(
+      {
+        name: 'Chalet en Suisse',
+        description: 'Résidence secondaire',
+        path: '/realisations/chalet-suisse/',
+        imageUrls: ['/_astro/rendu.jpg', 'https://cdn.example.com/photo.jpg'],
+      },
+      origin,
+    );
+    expect(work).toMatchObject({
+      url: 'https://amgdecorationdinterieur.com/realisations/chalet-suisse/',
+      image: [
+        'https://amgdecorationdinterieur.com/_astro/rendu.jpg',
+        'https://cdn.example.com/photo.jpg',
+      ],
+      creator: { '@id': entityId(origin, 'fondatrice') },
+    });
   });
 });
 

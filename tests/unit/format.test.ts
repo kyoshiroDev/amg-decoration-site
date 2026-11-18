@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { formatClockTime, formatOpeningHours, formatPhoneHref } from '@/lib/format';
-import { isActivePath } from '@/lib/url';
 
-const NBSP = ' ';
+const NBSP = '\u00A0';
 
 describe('formatClockTime', () => {
   it('formate une heure ronde et une heure avec minutes', () => {
@@ -43,21 +42,5 @@ describe('formatOpeningHours', () => {
 describe('formatPhoneHref', () => {
   it('produit un lien tel: sans espace', () => {
     expect(formatPhoneHref('+33 7 82 35 81 32')).toBe('tel:+33782358132');
-  });
-});
-
-describe('isActivePath', () => {
-  it('reconnaît la page courante', () => {
-    expect(isActivePath('/contact/', '/contact/')).toBe('page');
-    expect(isActivePath('/contact', '/contact/')).toBe('page');
-  });
-
-  it('reconnaît une page enfant de la section', () => {
-    expect(isActivePath('/realisations/chalet/', '/realisations/')).toBe('section');
-  });
-
-  it('ne marque l’accueil que sur l’accueil', () => {
-    expect(isActivePath('/contact/', '/')).toBe(false);
-    expect(isActivePath('/', '/')).toBe('page');
   });
 });

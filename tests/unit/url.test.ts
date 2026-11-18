@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { absoluteUrl, withTrailingSlash } from '@/lib/url';
+import { absoluteUrl, isActivePath, withTrailingSlash } from '@/lib/url';
 
 describe('withTrailingSlash', () => {
   it('ajoute un slash final à un chemin de page', () => {
@@ -30,5 +30,21 @@ describe('absoluteUrl', () => {
     expect(absoluteUrl('/a-propos', 'https://amgdecorationdinterieur.com')).toBe(
       'https://amgdecorationdinterieur.com/a-propos/',
     );
+  });
+});
+
+describe('isActivePath', () => {
+  it('reconnaît la page courante', () => {
+    expect(isActivePath('/contact/', '/contact/')).toBe('page');
+    expect(isActivePath('/contact', '/contact/')).toBe('page');
+  });
+
+  it('reconnaît une page enfant de la section', () => {
+    expect(isActivePath('/realisations/chalet/', '/realisations/')).toBe('section');
+  });
+
+  it('ne marque l’accueil que sur l’accueil', () => {
+    expect(isActivePath('/contact/', '/')).toBe(false);
+    expect(isActivePath('/', '/')).toBe('page');
   });
 });
