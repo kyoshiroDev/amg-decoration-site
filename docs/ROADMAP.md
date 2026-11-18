@@ -44,7 +44,7 @@
 - [x] Migration et réécriture des contenus (`redacteur`) ; `TODO(contenu)` pour les manques
 - [x] Migrer les textes provisoires de `src/config/pages.ts` vers les collections de contenu
 - [x] Placeholders d'images documentés
-- [x] Reports de la Phase 2 : commentaire de `serializeJsonLd`, tests `isActivePath` dans `url.test.ts`, test de `buildCreativeWork`, sélecteurs robustes du menu mobile (`data-*` au lieu de l'id et de `popovertarget`), poids du grain harmonisé, couverture e2e + axe de `PageLayout`/`Breadcrumbs` dès la première page interne
+- [x] Reports de la Phase 2 : commentaire de `serializeJsonLd`, tests `isActivePath` dans `url.test.ts`, test de `buildCreativeWork`, sélecteurs robustes du menu mobile (`data-*` au lieu de l'id et de `popovertarget`), poids du grain harmonisé
 - [ ] Revue + push `dev` + PR mise à jour
 
 ## Phase 4 — Pages
@@ -57,6 +57,11 @@
 - [ ] Conseils déco (liste + gabarit article + 2 premiers articles rédigés)
 - [ ] Contact (formulaire selon ADR-0003, téléphone, WhatsApp, horaires, zone)
 - [ ] Pages légales (`conformite`)
+- [ ] e2e + axe de `PageLayout`/`Breadcrumbs` sur la première page interne (report de la Phase 2)
+- [ ] Test : chaque destination de redirection (`SITE_ROUTES`, `src/lib/redirects.ts`) répond 200 dans `dist/`
+- [ ] Brouillons exclus partout (`filterPublished` sur les routes dynamiques et le sitemap) ; aucun `TODO` dans `dist/`
+- [ ] Lecture du contenu par les pages via des helpers de `src/lib/` (pages = assemblage, `CLAUDE.md` §3)
+- [ ] Revue + push `dev` + PR mise à jour
 
 ## Phase 5 — Effets et interactions
 
