@@ -1,0 +1,26 @@
+# Méthode en 6 étapes (accueil « Déroulement de votre projet 3D », docs/contenu-source/accueil.md).
+# Titres repris du site actuel ; textes à rédiger par le redacteur.
+prise-de-contact:
+  title: 'Prise de contact'
+  text: 'TODO(contenu): texte de l’étape 1'
+  order: 1
+photos-et-devis:
+  title: 'Photos et devis'
+  text: 'TODO(contenu): texte de l’étape 2'
+  order: 2
+validation-ambiance:
+  title: 'Validation de l’ambiance'
+  text: 'TODO(contenu): texte de l’étape 3'
+  order: 3
+conception-3d:
+  title: 'Aménagement et conception 3D'
+  text: 'TODO(contenu): texte de l’étape 4'
+  order: 4
+modifications:
+  title: 'Modifications'
+  text: 'TODO(contenu): texte de l’étape 5'
+  order: 5
+validation-projet:
+  title: 'Validation du projet'
+  text: 'TODO(contenu): texte de l’étape 6'
+  order: 6

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatClockTime, formatOpeningHours, formatPhoneHref } from '@/lib/format';
+import { formatClockTime, formatOpeningHours, formatPhoneHref, splitEmphasis } from '@/lib/format';
 
 const NBSP = '\u00A0';
 
@@ -42,5 +42,29 @@ describe('formatOpeningHours', () => {
 describe('formatPhoneHref', () => {
   it('produit un lien tel: sans espace', () => {
     expect(formatPhoneHref('+33 7 82 35 81 32')).toBe('tel:+33782358132');
+  });
+});
+
+describe('splitEmphasis', () => {
+  it('découpe le titre autour du fragment', () => {
+    expect(splitEmphasis('Atelier lumineux du jour', 'lumineux')).toEqual({
+      before: 'Atelier ',
+      emphasis: 'lumineux',
+      after: ' du jour',
+    });
+  });
+
+  it('ne retient que la première occurrence', () => {
+    expect(splitEmphasis('en 3D, toujours en 3D', 'en 3D')).toEqual({
+      before: '',
+      emphasis: 'en 3D',
+      after: ', toujours en 3D',
+    });
+  });
+
+  it('rend le titre entier sans fragment ou si le fragment est introuvable', () => {
+    const whole = { before: 'Contact', emphasis: undefined, after: '' };
+    expect(splitEmphasis('Contact', undefined)).toEqual(whole);
+    expect(splitEmphasis('Contact', '3D')).toEqual(whole);
   });
 });

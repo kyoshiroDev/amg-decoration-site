@@ -17,39 +17,75 @@
 
 ```
 src/config/site.ts ──────┐
-src/config/microcopy.ts ─┤
-src/config/pages.ts ─────┼──> layouts/BaseLayout.astro ──> components/seo/SEO.astro + JsonLd.astro
+src/config/microcopy.ts ─┼──> layouts/BaseLayout.astro ──> components/seo/SEO.astro + JsonLd.astro
 src/lib/jsonld.ts ───────┘                │            └─> components/layout/* (SkipLink, Header, Footer)
                                       ▼
-src/content/** ──(getCollection)──> pages/*.astro ──> components/blocks/* ──> components/ui/*
-       ▲
-src/content.config.ts (schémas Zod 4)
+src/content/** ──(getEntry / getCollection)──> pages/*.astro ──> components/blocks/* ──> components/ui/*
+       ▲                                            │
+src/content.config.ts (schémas Zod 4)        src/lib/content.ts (tri, filtres, requireEntry)
 ```
 
 ### Configuration (`src/config/`)
 
 | Fichier        | Contenu                                                                                                                        |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `site.ts`      | Source de vérité unique : nom, NAP, horaires, zone, réseaux, `mainNav`, `headerCta`, `legalNav`.                               |
+| `site.ts`      | Source de vérité unique : nom, NAP, horaires, zone, réseaux, `mainNav`, `headerCta`, `legalNav`, `pricing.showPrices`.         |
 | `microcopy.ts` | Tous les libellés d'interface : lien d'évitement, `aria-label` des navigations, menu mobile, titres et textes du pied de page. |
-| `pages.ts`     | Textes des pages techniques et provisoires (accueil temporaire, 404, styleguide), en attendant les collections (Phase 3).      |
 | `seo.ts`       | Valeurs SEO par défaut et image OG (réservé aux composants : importe une image).                                               |
 
-Aucun composant n'écrit de texte en dur : il lit l'un de ces modules ou reçoit le texte en prop.
+Aucun composant n'écrit de texte en dur : il lit l'un de ces modules ou reçoit le texte en prop. Les textes éditoriaux (y compris ceux des pages techniques : 404, styleguide) vivent dans `src/content/` (§ Collections).
 
 ### JSON-LD : un graphe relié par `@id`
 
 `BaseLayout` émet **un seul** `<script type="application/ld+json">` contenant un `@graph` (`buildGraph`) : `WebSite`, `ProfessionalService` (l'entreprise) et `Person` (la fondatrice), plus les nœuds propres à la page passés en prop `jsonLd` (ex. `BreadcrumbList` ajouté par `PageLayout`). Les entités globales ont un identifiant stable `https://domaine/#site|#entreprise|#fondatrice` (`entityId`) et se référencent par `{ "@id": … }` au lieu d'être dupliquées.
 
-## Collections de contenu (cible)
+## Collections de contenu
 
-| Collection    | Loader                                 | Champs clés                                                                                                                                                                                         |
-| ------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `projets`     | `glob('src/content/projets/*.md')`     | title, slug, summary, location, roomTypes (enum), style, cover (`image()`), gallery[{image, alt, kind: `'avant' \| '3d' \| 'apres'`}], beforeAfter?, featured, publishedAt, seo{title, description} |
-| `prestations` | `glob`                                 | title, formula (enum Essentiel/Confort/Signature/Studio), target, includes[], deliverables[], price? (optionnel, masqué si absent), order                                                           |
-| `articles`    | `glob('**/*.mdx')`                     | title, description, publishedAt, updatedAt?, cover, tags[], relatedService, relatedProject, draft                                                                                                   |
-| `temoignages` | `file('src/content/temoignages.yaml')` | author, text, source ('google'), projectType?, url?                                                                                                                                                 |
-| `faq`         | `file('src/content/faq.yaml')`         | question, answer, page                                                                                                                                                                              |
+Schémas dans `src/content.config.ts` (Content Layer API d'Astro 7, `z` importé de `astro/zod`, loaders de `astro/loaders`). Décisions : ADR-0007. **Tout contenu invalide fait échouer le build** avec un message en français qui indique le fichier et le champ.
+
+| Collection    | Loader et fichiers                           | Identifiant = URL                  | Champs clés                                                                                                                                                                                                                                                           |
+| ------------- | -------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pages`       | `glob` · `src/content/pages/<page>.md`       | nom du fichier (`accueil`, `404`…) | `seo{title, description}`, `noindex`, `hero` (section dont `heading` = h1), `sections{<clé>: section}` ; corps Markdown facultatif (texte long : à propos, pages légales)                                                                                             |
+| `prestations` | `glob` · `src/content/prestations/<slug>.md` | `/prestations/<slug>/`             | `title`, `kind` (`formule` \| `offre`), `tagline`, `target?`, `summary`, `includes[]`, `options[]`, `highlight`, `price?{amount, currency: 'EUR', from, note?}`, `quote?{label, note?}`, `cover?`, `order`, `seo` ; corps = présentation                              |
+| `projets`     | `glob` · `src/content/projets/<slug>.md`     | `/realisations/<slug>/`            | `title`, `summary`, `location?`, `roomTypes[]` (enum), `style`, `service?` (→ `prestations`), `cover{image, alt}`, `gallery[{image, alt, kind: 'avant' \| '3d' \| 'apres', caption?}]`, `beforeAfter?{rendering, result}`, `featured`, `order`, `seo` ; corps = récit |
+| `articles`    | `glob` · `src/content/articles/**/*.mdx`     | `/conseils-deco/<slug>/`           | `title`, `publishedAt`, `updatedAt?` (≥ `publishedAt`), `cover{image, alt}`, `tags[]`, `relatedService?` (→ `prestations`), `relatedProject?` (→ `projets`), `draft`, `seo` ; corps MDX                                                                               |
+| `temoignages` | `file` · `src/content/temoignages.yaml`      | clé YAML (`patrick-v`)             | `author`, `text` (**exact**), `source` (`google` \| `direct`), `url?` (obligatoire si `google`), `projectType?`, `pages[]`, `order` — jamais de note ni de date                                                                                                       |
+| `faq`         | `file` · `src/content/faq.yaml`              | clé YAML                           | `question`, `answer`, `pages[]`, `order`                                                                                                                                                                                                                              |
+| `etapes`      | `file` · `src/content/etapes.yaml`           | clé YAML                           | `title`, `text`, `order` (méthode en 6 étapes, partagée accueil / visualisation 3D / prestations)                                                                                                                                                                     |
+| `avantages`   | `file` · `src/content/avantages.yaml`        | clé YAML                           | `title`, `text`, `order` (les 8 bénéfices de la 3D, partagés accueil / visualisation 3D)                                                                                                                                                                              |
+
+### Règles communes
+
+- **Objets stricts** (`z.strictObject`) : une clé inconnue (faute de frappe) est une erreur, pas un champ ignoré.
+- **SEO validé dans le schéma** : `seo.title` ≤ 60 caractères, `seo.description` de 140 à 160, comptés en NFC (`isTitleLengthValid`, `isDescriptionLengthValid` et `seoLimits` de `src/lib/seo.ts`, les mêmes que le composant `SEO`).
+- **Images** : `image()` (chemin relatif au fichier de contenu), toujours accompagnées d'un `alt` non vide qui ne commence pas par « image de », « photo de »…
+- **Liens internes** (`actions[].href`) : `/chemin/` en minuscules avec slash final, ancre facultative.
+- **Pages où afficher** (`pages[]` des témoignages et de la FAQ) : `accueil`, `prestations`, `visualisation-3d`, `realisations`, `a-propos`, `contact`.
+- **Section de page** : `eyebrow?`, `heading`, `headingEmphasis?` (fragment exact de `heading`, mis en italique), `lead?`, `items[{title, text?}]`, `quote?{text, author}`, `actions[]` (3 au plus). La route lit chaque section par sa clé avec `requireSection` : une section manquante fait échouer le build au lieu de publier une page amputée.
+- **Prix** : stockés quand ils sont publics, affichés seulement si `site.pricing.showPrices` vaut `true`, **jamais** en JSON-LD (`Offer`) tant qu'Amandine ne les a pas confirmés (ADR-0007).
+- **Lecture dans une route** : `requireEntry(await getEntry('pages', 'accueil'), 'pages', 'accueil')` (pas de `!`), puis `sortByOrder`, `filterPublished` (articles) et `filterByPage` (témoignages, FAQ) de `src/lib/content.ts`.
+
+### Nommage des fichiers
+
+- Un fichier = une entrée ; **le nom du fichier est le slug de l'URL** : minuscules, sans accents, mots séparés par des tirets (`chalet-suisse.md`, `bien-choisir-sa-peinture.mdx`). Le renommer change l'URL : prévoir une redirection 301 dans `vercel.json`.
+- Dans les fichiers YAML, la clé de chaque entrée suit la même règle (`sebastien-t`).
+- Images d'un projet : `src/assets/projets/<slug>/` (`01-avant.jpg`, `02-3d-salon.jpg`, `03-apres.jpg`…) ; images d'un article : `src/assets/articles/<slug>/`. En attendant les originaux : `src/assets/placeholders/` (listés dans son `README.md`).
+- Aucun texte de la forme `TODO(contenu): …` ne doit rester dans une page publiée.
+
+### Ajouter une réalisation (pas à pas)
+
+1. Déposer les images dans `src/assets/projets/<slug>/` (JPEG ou PNG en haute définition, Astro produit l'AVIF et le WebP).
+2. Copier un fichier de `src/content/projets/`, le renommer `<slug>.md`.
+3. Remplir l'en-tête (entre les `---`) : `title`, `summary`, `roomTypes`, `style`, `cover`, puis une entrée de `gallery` par image avec son `alt` (ce que l'on voit) et son `kind` (`avant`, `3d` ou `apres`). Pour le slider « Rendu 3D ↔ Réalisé », ajouter `beforeAfter` avec les deux images cadrées à l'identique.
+4. Écrire `seo.title` (60 caractères au plus) et `seo.description` (140 à 160).
+5. Écrire le récit du projet sous l'en-tête, en Markdown.
+6. Lancer `npm run build` : un champ manquant ou trop long est signalé avec son nom.
+
+### Ajouter un article (pas à pas)
+
+1. Copier `src/content/articles/modele-article.mdx`, le renommer `<slug>.mdx`, passer `draft` à `false` quand il est prêt.
+2. Remplir `title`, `publishedAt` (AAAA-MM-JJ), `cover` (image + `alt`), `tags`, `seo`, et éventuellement `relatedService` (ex. `confort`) et `relatedProject` (ex. `chalet-suisse`) : un identifiant inexistant fait échouer le build.
+3. Rédiger le corps avec des intertitres `##` (jamais `#` : le titre de l'article est le seul h1) et au moins un lien vers une prestation ou une réalisation.
 
 ## Scripts client
 

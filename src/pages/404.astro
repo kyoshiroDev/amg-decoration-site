@@ -1,21 +1,14 @@
 ---
-// Page 404 (non indexée) : trois sorties vers l'accueil, les réalisations et le contact.
+// Page 404 (non indexée) : sorties vers l'accueil, les réalisations et le contact.
+// Textes : src/content/pages/404.md.
+import { getEntry } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import NotFoundHero from '@/components/blocks/NotFoundHero.astro';
-import { pageTexts } from '@/config/pages';
-import { site } from '@/config/site';
+import { requireEntry } from '@/lib/content';
 
-const { notFound } = pageTexts;
+const { seo, noindex, hero } = requireEntry(await getEntry('pages', '404'), 'pages', '404').data;
 ---
 
-<BaseLayout title={notFound.title} description={notFound.description} noindex>
-  <NotFoundHero
-    heading={notFound.heading}
-    lead={notFound.lead}
-    links={[
-      { label: notFound.links.home, href: '/' },
-      { label: notFound.links.projects, href: '/realisations/' },
-      { label: notFound.links.contact, href: site.headerCta.href },
-    ]}
-  />
+<BaseLayout title={seo.title} description={seo.description} noindex={noindex}>
+  <NotFoundHero heading={hero.heading} lead={hero.lead} actions={hero.actions} />
 </BaseLayout>

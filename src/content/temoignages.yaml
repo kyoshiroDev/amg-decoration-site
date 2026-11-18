@@ -1,0 +1,33 @@
+# Avis clients : textes EXACTS repris de docs/CONTENU-EXISTANT.md §3 (relevé du 18/11/2026).
+# Ne jamais reformuler, ne jamais ajouter de note ni de date.
+# La clé (ex. « patrick-v ») est l'identifiant de l'entrée.
+# TODO(contenu): confirmer avec Amandine l'attribution des avis (avis « cuisine » = Sébastien T.
+# d'après le HTML), la source de l'avis de Christine C et son accord de publication.
+patrick-v:
+  author: 'Patrick V.'
+  text: 'Amandine est très professionnelle, très réactive et à l’écoute. Le travail des différentes planches (en 3D et mobiliers) ainsi que les conseils sont exceptionnels et de très grande qualité. Pour ceux qui souhaitent obtenir des idées nouvelles et originales pour une rénovation de son intérieur, je conseille vivement.'
+  source: google
+  url: 'https://g.co/kgs/9j2HT7H'
+  pages: [accueil]
+  order: 1
+sebastien-t:
+  author: 'Sébastien T.'
+  text: 'Une jeune femme tout à fait compétente qui a su bien nous guider dans notre projet de cuisine en nous projetant dans la modélisation 3D en y intégrant nos goûts, mais à laquelle sans elle nous n’aurions jamais su nous mettre d’accord sur le style et les couleurs. Je recommande ses services et son professionnel.'
+  source: google
+  url: 'https://g.co/kgs/e32cpzA'
+  projectType: 'Cuisine'
+  pages: [accueil]
+  order: 2
+catherine-t:
+  author: 'Catherine T.'
+  text: 'Personne chaleureuse, très professionnelle, sa créativité, sa rigueur et son sens du détail nous ont tout de suite séduit. Nous la recommandons vivement.'
+  source: google
+  url: 'https://g.co/kgs/jLNWYSE'
+  pages: [accueil]
+  order: 3
+christine-c:
+  author: 'Christine C'
+  text: 'Tout s’est passé par mail (envoi de photos et réponses à nos diverses demandes), Amandine a su nous amener vers d’autres horizons que nous ne pensions pas réalisables et nous a même fourni les références catalogues et peinture. Nous pensons la recontacter en 2024 pour finir la dernière pièce de notre appartement. Recommandation à 100% et beaucoup de réussites pour l’avenir'
+  source: direct
+  pages: [a-propos]
+  order: 4

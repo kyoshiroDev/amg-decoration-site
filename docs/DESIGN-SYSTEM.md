@@ -223,6 +223,6 @@ Hero (accueil, avec arche et accroche) · PageHero · ServiceCard · ServicesGri
 
 ## 7. Styleguide
 
-`/styleguide/` (`src/pages/styleguide.astro`, `BaseLayout` en `noindex`, textes de `config/pages.ts`, exclu du sitemap) présente tous les tokens et composants : c'est la référence visuelle du `designer` et du `reviewer`. Les nuanciers, échelles, rayons, ombres, durées et ratios de contraste sont **lus dans `tokens.css` au build** (`src/lib/design-tokens.ts`, `src/lib/color-contrast.ts`) : la page ne peut pas diverger des tokens. Ses composants internes vivent dans `src/components/styleguide/` et ne sont jamais utilisés sur le site public. Test e2e : `tests/e2e/styleguide.spec.ts` (h1 unique, noindex, pas de débordement horizontal, 0 violation axe).
+`/styleguide/` (`src/pages/styleguide.astro`, `BaseLayout` en `noindex`, textes d’ouverture dans `src/content/pages/styleguide.md`, exclu du sitemap) présente tous les tokens et composants : c'est la référence visuelle du `designer` et du `reviewer`. Les nuanciers, échelles, rayons, ombres, durées et ratios de contraste sont **lus dans `tokens.css` au build** (`src/lib/design-tokens.ts`, `src/lib/color-contrast.ts`) : la page ne peut pas diverger des tokens. Ses composants internes vivent dans `src/components/styleguide/` et ne sont jamais utilisés sur le site public. Test e2e : `tests/e2e/styleguide.spec.ts` (h1 unique, noindex, pas de débordement horizontal, 0 violation axe).
 
 Favicon provisoire : arche terracotta sur fond lin (`public/favicon.svg`), en attendant le logo vectoriel.

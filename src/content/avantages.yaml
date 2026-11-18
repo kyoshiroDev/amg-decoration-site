@@ -1,0 +1,33 @@
+# Les 8 avantages de la 3D (accueil, docs/contenu-source/accueil.md). Titres exacts ; textes à rédiger.
+se-projeter:
+  title: 'Se projeter facilement'
+  text: 'TODO(contenu): texte de l’avantage 1'
+  order: 1
+eviter-les-erreurs:
+  title: 'Éviter les erreurs coûteuses'
+  text: 'TODO(contenu): texte de l’avantage 2'
+  order: 2
+gagner-du-temps:
+  title: 'Gagner du temps'
+  text: 'TODO(contenu): texte de l’avantage 3'
+  order: 3
+optimiser-l-espace:
+  title: 'Optimiser chaque espace'
+  text: 'TODO(contenu): texte de l’avantage 4'
+  order: 4
+personnaliser:
+  title: 'Personnaliser votre projet'
+  text: 'TODO(contenu): texte de l’avantage 5'
+  order: 5
+faciliter-la-decision:
+  title: 'Faciliter la prise de décision'
+  text: 'TODO(contenu): texte de l’avantage 6'
+  order: 6
+rendu-realiste:
+  title: 'Un rendu réaliste et immersif'
+  text: 'TODO(contenu): texte de l’avantage 7'
+  order: 7
+serenite:
+  title: 'Un véritable outil de sérénité'
+  text: 'TODO(contenu): texte de l’avantage 8'
+  order: 8

@@ -3,6 +3,7 @@
  * Importe une image : ce module est réservé aux composants, `lib/` ne l'importe jamais.
  */
 import type { ImageMetadata } from 'astro';
+import { seoLimits } from '@/lib/seo';
 // TODO(contenu): remplacer par un visuel OG de marque (rendu 3D d'Amandine, 1200 × 630).
 import defaultOgImage from '@/assets/placeholders/interieur-lumiere.jpg';
 
@@ -21,8 +22,8 @@ export interface SeoDefaults {
 export const seoDefaults = {
   titleSuffix: 'AMG Décoration',
   titleSeparator: ' | ',
-  titleMaxLength: 60,
-  descriptionLength: { min: 140, max: 160 },
+  titleMaxLength: seoLimits.titleMaxLength,
+  descriptionLength: seoLimits.descriptionLength,
   locale: 'fr_FR',
   ogImage: defaultOgImage,
   ogImageAlt:

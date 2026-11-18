@@ -1,20 +1,22 @@
 ---
 // Accueil PROVISOIRE (Phase 2) : remplacé en Phase 4 par l'assemblage des blocks définitifs.
+// Textes : src/content/pages/accueil.md.
+import { getEntry } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import ProvisionalHero from '@/components/blocks/ProvisionalHero.astro';
-import { pageTexts } from '@/config/pages';
 import { site } from '@/config/site';
 import { seoDefaults } from '@/config/seo';
+import { requireEntry } from '@/lib/content';
 
-const { home } = pageTexts;
+const { seo, hero } = requireEntry(await getEntry('pages', 'accueil'), 'pages', 'accueil').data;
 ---
 
-<BaseLayout title={home.title} description={home.description}>
+<BaseLayout title={seo.title} description={seo.description}>
   <ProvisionalHero
     eyebrow={site.founder.name}
-    heading={home.heading}
-    emphasis={home.headingEmphasis}
-    lead={home.lead}
+    heading={hero.heading}
+    emphasis={hero.headingEmphasis}
+    lead={hero.lead}
     image={seoDefaults.ogImage}
     imageAlt={seoDefaults.ogImageAlt}
   />

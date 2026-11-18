@@ -51,6 +51,8 @@ export interface SiteConfig {
   readonly mainNav: readonly NavItem[];
   readonly headerCta: NavItem;
   readonly legalNav: readonly NavItem[];
+  /** Affichage public des prix des prestations (`price` dans src/content/prestations/, ADR-0007). */
+  readonly pricing: { readonly showPrices: boolean };
 }
 
 export const site = {
@@ -102,4 +104,7 @@ export const site = {
     { label: 'Confidentialité', href: '/confidentialite/' },
     { label: 'Conditions générales', href: '/conditions-generales/' },
   ],
+  // TODO(contenu): prix affichés sur le site actuel ; Amandine doit les confirmer avant la mise
+  // en production (sinon passer à false). Jamais d'`Offer` JSON-LD tant qu'ils ne sont pas validés.
+  pricing: { showPrices: true },
 } as const satisfies SiteConfig;

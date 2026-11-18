@@ -2,7 +2,7 @@
 /**
  * NotFoundHero — page 404 : texte 7/5 et « porte vers ailleurs », une arche pleine rose poudré
  * doublée d'un liseré terracotta décalé et d'un soleil sauge (décor CSS, aria-hidden).
- * Trois sorties : action principale, secondaire, lien.
+ * Sorties (1 à 3) : la première est l'action principale, la deuxième secondaire, les suivantes des liens.
  */
 import Section from '@/components/ui/Section.astro';
 import Container from '@/components/ui/Container.astro';
@@ -13,13 +13,13 @@ import type { NavItem } from '@/config/site';
 
 interface Props {
   heading: string;
-  lead: string;
-  /** Sorties dans l'ordre : principale, secondaire, lien. */
-  links: readonly [NavItem, NavItem, NavItem];
+  lead?: string | undefined;
+  /** Sorties dans l'ordre : principale, secondaire, puis liens. */
+  actions: readonly NavItem[];
 }
 
-const { heading, lead, links } = Astro.props;
-const [primary, secondary, tertiary] = links;
+const { heading, lead, actions } = Astro.props;
+const variants = ['primary', 'secondary'] as const;
 ---
 
 <Section labelledby="introuvable-titre">
@@ -29,15 +29,20 @@ const [primary, secondary, tertiary] = links;
       <Heading level={1} size="xl" id="introuvable-titre">
         {heading}
       </Heading>
-      <p class="not-found__lead">{lead}</p>
+      {lead && <p class="not-found__lead">{lead}</p>}
       <div class="not-found__actions">
-        <Button href={primary.href}>{primary.label}</Button>
-        <Button href={secondary.href} variant="secondary">
-          {secondary.label}
-        </Button>
-        <Button href={tertiary.href} variant="link" icon="arrow-right">
-          {tertiary.label}
-        </Button>
+        {actions.map((action, index) => {
+          const variant = variants[index] ?? 'link';
+          return (
+            <Button
+              href={action.href}
+              variant={variant}
+              icon={variant === 'link' ? 'arrow-right' : undefined}
+            >
+              {action.label}
+            </Button>
+          );
+        })}
       </div>
     </div>
     <div class="not-found__door" aria-hidden="true">

@@ -19,9 +19,30 @@ export interface LengthRange {
   readonly max: number;
 }
 
+/**
+ * Limites SEO (CLAUDE.md §5), source unique : lues par `config/seo.ts` (composant SEO)
+ * et par `content.config.ts` (validation Zod des contenus).
+ */
+export const seoLimits = {
+  titleMaxLength: 60,
+  descriptionLength: { min: 140, max: 160 },
+} as const satisfies { titleMaxLength: number; descriptionLength: LengthRange };
+
 /** Nombre de caractères perçus (forme NFC : « é » décomposé compte pour 1). */
 export function countCharacters(text: string): number {
   return [...text.normalize('NFC')].length;
+}
+
+/** Vrai si le texte (espaces de bord retirés) est non vide et tient dans `maxLength` caractères. */
+export function isTitleLengthValid(text: string, maxLength: number): boolean {
+  const length = countCharacters(text.trim());
+  return length > 0 && length <= maxLength;
+}
+
+/** Vrai si la longueur du texte (espaces de bord retirés) est dans l'intervalle, bornes incluses. */
+export function isDescriptionLengthValid(text: string, range: LengthRange): boolean {
+  const length = countCharacters(text.trim());
+  return length >= range.min && length <= range.max;
 }
 
 /**

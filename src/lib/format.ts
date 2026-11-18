@@ -72,3 +72,23 @@ export function formatOpeningHours(rules: readonly OpeningHoursRule[]): string[]
 export function formatPhoneHref(e164: string): `tel:${string}` {
   return `tel:${e164.replace(/[^\d+]/g, '')}`;
 }
+
+export interface EmphasisParts {
+  readonly before: string;
+  /** Fragment à mettre en italique ; `undefined` s'il est absent ou introuvable dans le titre. */
+  readonly emphasis: string | undefined;
+  readonly after: string;
+}
+
+/** Découpe un titre autour de la première occurrence de `emphasis` (titres « Atelier <em>lumineux</em> »). */
+export function splitEmphasis(heading: string, emphasis: string | undefined): EmphasisParts {
+  const index = emphasis ? heading.indexOf(emphasis) : -1;
+  if (!emphasis || index < 0) {
+    return { before: heading, emphasis: undefined, after: '' };
+  }
+  return {
+    before: heading.slice(0, index),
+    emphasis,
+    after: heading.slice(index + emphasis.length),
+  };
+}

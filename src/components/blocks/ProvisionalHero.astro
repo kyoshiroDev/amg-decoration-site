@@ -12,22 +12,20 @@ import Heading from '@/components/ui/Heading.astro';
 import Button from '@/components/ui/Button.astro';
 import ArchImage from '@/components/ui/ArchImage.astro';
 import { site } from '@/config/site';
-import { formatPhoneHref } from '@/lib/format';
+import { formatPhoneHref, splitEmphasis } from '@/lib/format';
 
 interface Props {
   eyebrow: string;
   heading: string;
   /** Fragment de `heading` à mettre en italique (ignoré s'il n'y figure pas). */
   emphasis?: string | undefined;
-  lead: string;
+  lead?: string | undefined;
   image: ImageMetadata;
   imageAlt: string;
 }
 
 const { eyebrow, heading, emphasis, lead, image, imageAlt } = Astro.props;
-const index = emphasis ? heading.indexOf(emphasis) : -1;
-const before = index >= 0 ? heading.slice(0, index) : heading;
-const after = index >= 0 && emphasis ? heading.slice(index + emphasis.length) : '';
+const title = splitEmphasis(heading, emphasis);
 ---
 
 <Section spacing="compact" labelledby="accueil-titre" class="provisional-hero">
@@ -35,11 +33,11 @@ const after = index >= 0 && emphasis ? heading.slice(index + emphasis.length) : 
     <div class="provisional-hero__text">
       <Eyebrow>{eyebrow}</Eyebrow>
       <Heading level={1} size="xl" id="accueil-titre">
-        {before}
-        {index >= 0 && <em>{emphasis}</em>}
-        {after}
+        {title.before}
+        {title.emphasis && <em>{title.emphasis}</em>}
+        {title.after}
       </Heading>
-      <p class="provisional-hero__lead">{lead}</p>
+      {lead && <p class="provisional-hero__lead">{lead}</p>}
       <div class="provisional-hero__actions">
         <Button href={site.headerCta.href} icon="arrow-right">
           {site.headerCta.label}

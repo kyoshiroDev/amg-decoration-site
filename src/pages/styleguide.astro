@@ -22,13 +22,26 @@ import ImageSamples from '@/components/styleguide/ImageSamples.astro';
 import SectionSamples from '@/components/styleguide/SectionSamples.astro';
 import FocusSamples from '@/components/styleguide/FocusSamples.astro';
 import placeholder from '@/assets/placeholders/interieur-lumiere.jpg';
-import { pageTexts } from '@/config/pages';
+import { getEntry } from 'astro:content';
+import { requireEntry } from '@/lib/content';
 
-const { styleguide } = pageTexts;
+// Textes d'ouverture : src/content/pages/styleguide.md (le reste est un échantillonnage interne).
+const { seo, noindex, hero } = requireEntry(
+  await getEntry('pages', 'styleguide'),
+  'pages',
+  'styleguide',
+).data;
 ---
 
-<BaseLayout title={styleguide.title} description={styleguide.description} noindex>
-  <SgIntro image={placeholder} />
+<BaseLayout title={seo.title} description={seo.description} noindex={noindex}>
+  <SgIntro
+    image={placeholder}
+    eyebrow={hero.eyebrow}
+    heading={hero.heading}
+    emphasis={hero.headingEmphasis}
+    lead={hero.lead}
+    actions={hero.actions}
+  />
 
   <Section background="cream" labelledby="sg-couleurs">
     <Container class="flow sg-stack">

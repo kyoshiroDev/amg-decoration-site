@@ -9,32 +9,44 @@ import Eyebrow from '@/components/ui/Eyebrow.astro';
 import Heading from '@/components/ui/Heading.astro';
 import Button from '@/components/ui/Button.astro';
 import ArchImage from '@/components/ui/ArchImage.astro';
+import type { NavItem } from '@/config/site';
+import { splitEmphasis } from '@/lib/format';
 
 interface Props {
   image: ImageMetadata;
+  eyebrow?: string | undefined;
+  heading: string;
+  /** Fragment de `heading` en italique. */
+  emphasis?: string | undefined;
+  lead?: string | undefined;
+  /** Action principale puis secondaire. */
+  actions: readonly NavItem[];
 }
 
-const { image } = Astro.props;
+const { image, eyebrow, heading, emphasis, lead, actions } = Astro.props;
+const title = splitEmphasis(heading, emphasis);
 ---
 
 <Section labelledby="sg-titre">
   <Container class="sg-intro__grid">
     <div class="sg-intro__text">
-      <Eyebrow>Design system · Phase 1</Eyebrow>
+      {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
       <Heading level={1} id="sg-titre">
-        Atelier <em>lumineux</em>
+        {title.before}
+        {title.emphasis && <em>{title.emphasis}</em>}
+        {title.after}
       </Heading>
-      <p class="sg-intro__lead">
-        La référence visuelle du site&nbsp;: couleurs, typographie, espacements, formes, mouvements
-        et composants. Chaque valeur affichée ici est lue directement dans <code>tokens.css</code>.
-      </p>
+      {lead && <p class="sg-intro__lead">{lead}</p>}
       <div class="sg-intro__actions">
-        <Button href="#sg-composants" icon="arrow-right">
-          Voir les composants
-        </Button>
-        <Button href="#sg-couleurs" variant="secondary">
-          La palette
-        </Button>
+        {actions.map((action, index) => (
+          <Button
+            href={action.href}
+            variant={index === 0 ? 'primary' : 'secondary'}
+            icon={index === 0 ? 'arrow-right' : undefined}
+          >
+            {action.label}
+          </Button>
+        ))}
       </div>
     </div>
     <ArchImage
