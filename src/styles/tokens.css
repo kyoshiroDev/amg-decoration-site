@@ -133,7 +133,7 @@
   /* ---------- Matière ---------- */
 
   /*
-   * Grain de papier : tuile WebP sans perte de 96 px (2,6 Ko, inlinée en data-URI par Vite),
+   * Grain de papier : tuile WebP sans perte de 96 px (2,1 Ko, inlinée en data-URI par Vite),
    * pré-rendue depuis l'ancien bruit SVG feTurbulence (fractalNoise .85, 3 octaves, teinte encre)
    * avec l'opacité 0.035 intégrée à l'alpha. Un SVG à filtre instancie un document SVG au calcul
    * de style puis rasterise le filtre : ~25 ms de style + ~6 ms de peinture mesurés (CPU ×4).

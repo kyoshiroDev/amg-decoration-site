@@ -3,7 +3,7 @@
  */
 import type { DayOfWeek, OpeningHoursRule } from '@/config/site';
 
-const NBSP = ' ';
+const NBSP = '\u00A0';
 
 const DAY_ORDER: readonly DayOfWeek[] = [
   'Monday',

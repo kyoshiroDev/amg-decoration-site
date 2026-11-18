@@ -58,7 +58,7 @@ export const site = {
   shortName: 'AMG Décoration',
   tagline: 'Visualisez votre intérieur idéal en 3D, avant même qu’il prenne vie.',
   founder: { name: 'Amandine Gaury', jobTitle: 'Designer d’intérieur' },
-  phone: { display: '07 82 35 81 32', e164: '+33782358132' },
+  phone: { display: '07\u00A082\u00A035\u00A081\u00A032', e164: '+33782358132' },
   email: 'am.gaury@gmail.com',
   // TODO(contenu): confirmer que le compte WhatsApp utilise bien le même numéro que le téléphone.
   whatsapp: { url: 'https://wa.me/33782358132' },

@@ -26,7 +26,7 @@ export const seoDefaults = {
   locale: 'fr_FR',
   ogImage: defaultOgImage,
   ogImageAlt:
-    'Illustration abstraite d’un intérieur lumineux : arche terracotta, petite plante vert sauge et sol couleur sable',
+    'Illustration abstraite d’un intérieur lumineux\u00A0: arche terracotta, petite plante vert sauge et sol couleur sable',
   ogImageSize: { width: 1200, height: 630 },
   twitterCard: 'summary_large_image',
 } as const satisfies SeoDefaults;

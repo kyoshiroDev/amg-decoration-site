@@ -13,7 +13,7 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 - Page 404 (noindex) ; accueil provisoire et styleguide migrés sur `BaseLayout`.
 - Reports de la Phase 1 : convention typographique française (espaces insécables), contrastes comparés sans arrondi, token manquant = build en échec, `--z-grain`, `Button` icône seule avec nom accessible obligatoire, zone de clic de 44 px sur la navigation, icône « externe », liseré du bouton ghost à ≥ 3:1, listes sans puces qui gardent leur sémantique (`list-style-type: ''`), composants découpés sous 150 lignes.
 - Lighthouse CI : 404 et styleguide exclus des assertions SEO (noindex) ; en-tête `X-Robots-Tag: noindex` sur les domaines `*.vercel.app`.
-- Performance : grain de papier en tuile WebP pré-rendue (2 Ko) au lieu d'un SVG `feTurbulence` rasterisé à chaque rendu.
+- Performance : grain de papier en tuile WebP pré-rendue (2,1 Ko) au lieu d'un SVG `feTurbulence` rasterisé à chaque rendu.
 
 ### Phase 1 — Design system
 

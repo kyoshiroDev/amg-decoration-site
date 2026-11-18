@@ -11,14 +11,14 @@ export const pageTexts = {
       'Décoratrice d’intérieur à Paris, je vous montre votre intérieur en 3D avant qu’il prenne vie',
     /** Fragment du titre mis en italique Fraunces terracotta (doit figurer dans `heading`). */
     headingEmphasis: 'en 3D',
-    lead: 'Le site fait peau neuve ; d’ici là, je reste à votre écoute pour parler de votre projet, à Paris ou à distance partout en France.',
+    lead: 'Le site fait peau neuve\u202F; d’ici là, je reste à votre écoute pour parler de votre projet, à Paris ou à distance partout en France.',
   },
   notFound: {
     title: 'Page introuvable',
     description:
       'Cette page n’existe plus ou a changé d’adresse. Retrouvez mes réalisations en 3D, mes prestations de décoration d’intérieur ou contactez-moi directement.',
     heading: 'Cette page n’existe pas (ou plus)',
-    lead: 'Son adresse a peut-être changé avec le nouveau site. Je vous propose de reprendre depuis l’une de ces pages, ou de m’écrire directement : je vous répondrai avec plaisir.',
+    lead: 'Son adresse a peut-être changé avec le nouveau site. Je vous propose de reprendre depuis l’une de ces pages, ou de m’écrire directement\u00A0: je vous répondrai avec plaisir.',
     links: {
       home: 'Revenir à l’accueil',
       projects: 'Voir mes réalisations',
@@ -26,8 +26,8 @@ export const pageTexts = {
     },
   },
   styleguide: {
-    title: 'Guide de style : tokens et composants',
+    title: 'Guide de style\u00A0: tokens et composants',
     description:
-      'Page interne de référence du site AMG Décoration d’Intérieur : couleurs, typographie, espacements et composants réunis pour garder un design cohérent.',
+      'Page interne de référence du site AMG Décoration d’Intérieur\u00A0: couleurs, typographie, espacements et composants réunis pour garder un design cohérent.',
   },
 } as const;
