@@ -1,4 +1,5 @@
 ---
+# TODO(contenu): le site actuel affiche à la fois « certifiée par MJM Design Graphic à Paris » (accueil) et « cursus de 5 ans… certifiée décoratrice d’intérieur en 2010 » (à propos). Quel est l’intitulé exact de la certification, quel organisme l’a délivrée, et le cursus de 5 ans inclut-il MJM ? Faut-il citer MJM Design Graphic ?
 # Source : docs/contenu-source/a-propos.md (et accueil.md pour la 3D et le travail à distance).
 # Mot-clé : Amandine Gaury décoratrice.
 seo:
@@ -61,8 +62,6 @@ sections:
 ## Mon histoire
 
 Créative depuis très jeune, j’ai suivi un parcours artistique à Paris, d’abord dans le graphisme, puis dans la décoration d’intérieur, au cours d’un cursus de cinq ans. J’ai été certifiée décoratrice d’intérieur en 2010.
-
-<!-- TODO(contenu): le site actuel affiche à la fois « certifiée par MJM Design Graphic à Paris » (accueil) et « cursus de 5 ans… certifiée décoratrice d’intérieur en 2010 » (à propos). Quel est l’intitulé exact de la certification, quel organisme l’a délivrée, et le cursus de 5 ans inclut-il MJM ? Faut-il citer MJM Design Graphic ? -->
 
 Aujourd’hui, j’exerce ce métier avec passion. Basée en région parisienne, j’accompagne aussi bien des particuliers que des professionnels, à Paris et partout en France.
 

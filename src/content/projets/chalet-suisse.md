@@ -1,4 +1,5 @@
 ---
+# TODO(contenu): la chambre des enfants n’est pas décrite sur le site actuel. Quelles couleurs, matières et idées clés Amandine veut-elle mettre en avant ?
 # Source : docs/contenu-source/projet-chalet.md (titre et accroche repris du site actuel).
 title: 'Appartement moderne et cocooning en Suisse'
 summary: 'Appartement moderne et cocooning au cœur des Alpes'
@@ -41,8 +42,6 @@ Le bois clair habille les murs et réchauffe l’atmosphère. Des touches de rou
 ## La chambre parentale, tout en douceur
 
 Ici, place à la sérénité. Les teintes crème et grises, la tête de lit capitonnée et les suspensions dorées créent un écrin douillet, empreint de douceur et d’intimité, avec vue sur les sommets enneigés.
-
-<!-- TODO(contenu): la chambre des enfants n’est pas décrite sur le site actuel. Quelles couleurs, matières et idées clés Amandine veut-elle mettre en avant ? -->
 
 ## Le rôle de la 3D
 
