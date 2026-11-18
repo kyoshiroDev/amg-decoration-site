@@ -1,7 +1,8 @@
 /**
  * Filtres de la page Réalisations (amélioration progressive, voir ProjectFilters.astro).
- * Active la barre de filtres (visible dès le rendu, masquée par <noscript> sans JS), masque (`hidden`) les projets d'un autre type de pièce, tient
- * `aria-pressed` à jour et annonce le nombre de projets affichés (`role="status"`).
+ * Active la barre de filtres (affichée sous `html.js`, ADR-0010), masque (`hidden`) les projets
+ * d'un autre type de pièce, tient `aria-pressed` à jour et annonce le nombre de projets affichés
+ * (`role="status"`).
  * Sans JS : barre absente, grille complète.
  */
 import { onPageReady } from './lifecycle';

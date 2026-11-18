@@ -1,8 +1,9 @@
 ---
 /**
  * ProjectFilters — filtres par type de pièce de la page Réalisations (amélioration progressive).
- * Rendue visible d'emblée (pas de `hidden` retiré par le script : évitait un décalage de mise en
- * page, CLS) ; sans JavaScript, `<noscript>` la masque et la grille complète reste visible.
+ * Affichée seulement sous `html.js` (classe posée en tête de page avant le premier rendu,
+ * ADR-0010) : présente dès la première image, donc sans décalage (CLS) ; sans JavaScript, la
+ * barre n'apparaît jamais et la grille complète reste visible.
  * `scripts/project-filter.ts` gère `aria-pressed` et annonce le nombre de projets
  * affichés dans une région `role="status"` (lue poliment, sans déplacer le focus).
  */
@@ -21,13 +22,6 @@ const labels = microcopy.projects.filters;
 const options = [{ value: '', label: labels.all }, ...filters];
 ---
 
-<noscript>
-  <style is:inline>
-    .project-filters {
-      display: none;
-    }
-  </style>
-</noscript>
 <div class="project-filters" data-project-filters>
   <p class="project-filters__label" id={id}>
     {labels.label}
@@ -62,7 +56,7 @@ const options = [{ value: '', label: labels.all }, ...filters];
 <style>
   @layer components {
     .project-filters {
-      display: grid;
+      display: none;
       gap: var(--space-s);
       margin-block-end: var(--space-xl-3xl);
       padding-block-end: var(--space-m);
@@ -73,6 +67,10 @@ const options = [{ value: '', label: labels.all }, ...filters];
         align-items: center;
         gap: var(--space-l);
       }
+    }
+
+    :global(.js) .project-filters {
+      display: grid;
     }
 
     .project-filters__label,
