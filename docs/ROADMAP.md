@@ -65,15 +65,15 @@
 
 ## Phase 5 — Effets et interactions
 
-- [ ] Reveal au scroll, image reveal, hover zoom
-- [ ] BeforeAfter accessible (clavier, tactile, `aria-valuetext`)
-- [ ] View Transitions grille → projet
-- [ ] Marquee, soulignés animés, CTA magnétique léger
-- [ ] Tout vérifié en `prefers-reduced-motion` et sans JS
-- [ ] Masquage sans JS des filtres en CSS valide (`@media (scripting: none)` ou classe `no-js`) au lieu de `<noscript><style>` dans le `body`
-- [ ] Marquee animé : bouton pause accessible au clavier (WCAG 2.2.2), arrêt en mouvement réduit
-- [ ] Lightbox de la galerie projet (clavier, focus piégé, Échap, sans JS = images visibles)
-- [ ] Revue + push `dev` + PR mise à jour
+- [x] Reveal au scroll, image reveal, hover zoom
+- [x] BeforeAfter accessible (clavier, tactile, `aria-valuetext`)
+- [x] View Transitions grille → projet
+- [x] Marquee, soulignés animés, CTA magnétique léger
+- [x] Tout vérifié en `prefers-reduced-motion` et sans JS
+- [x] Masquage sans JS des filtres en CSS valide (`@media (scripting: none)` ou classe `no-js`) au lieu de `<noscript><style>` dans le `body`
+- [x] Marquee animé : bouton pause accessible au clavier (WCAG 2.2.2), arrêt en mouvement réduit
+- [x] Lightbox de la galerie projet (clavier, focus piégé, Échap, sans JS = images visibles)
+- [x] Revue + push `dev` + PR mise à jour
 
 ## Phase 6 — SEO avancé
 
@@ -94,6 +94,10 @@
 - [ ] Régression visuelle de référence
 - [ ] Vérification des liens, console propre, en-têtes de sécurité
 - [ ] `/audit` global : 0 point P1
+- [ ] Coût des apparitions au défilement (audit perf Phase 5 : 386 recalculs de style sur l'accueil) : animations pilotées par le scroll en CSS (`animation-timeline: view()`) ou animer les listes plutôt que chaque élément ; décision `designer` (ADR si changement de rendu)
+- [ ] HTML de l'accueil sous 14 Ko gzip (fenêtre TCP initiale) : sprite SVG `<use>` pour les icônes, contrôle en CI
+- [ ] `view-transition-name` posé seulement sur la carte cliquée si le nombre de projets grandit
+- [ ] Accessibilité (P3) : visionneuse annonçant « Image n sur N : légende », pause du bandeau au focus, visibilité du trait du comparateur
 
 ## Phase 8 — Préparation à la mise en ligne
 

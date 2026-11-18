@@ -35,7 +35,7 @@ function enhance(root: HTMLElement, signal: AbortSignal): void {
     image.alt = alt;
     image.width = Number(width);
     image.height = Number(height);
-    image.sizes = '100vw';
+    image.sizes = item.dataset['sizes'] ?? '100vw';
     image.srcset = srcset;
     image.src = item.href;
     if (!image.isConnected) figure.prepend(image);
@@ -54,7 +54,9 @@ function enhance(root: HTMLElement, signal: AbortSignal): void {
       event.preventDefault();
       origin = link;
       show(items.indexOf(link));
-      dialog.showModal();
+      // showModal() rend tout le document inerte (recalcul de style coûteux) : on le diffère
+      // après le prochain rendu pour que le clic se peigne aussitôt (INP).
+      requestAnimationFrame(() => setTimeout(() => dialog.showModal(), 0));
     },
     { signal },
   );

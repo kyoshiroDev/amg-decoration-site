@@ -29,7 +29,14 @@ interface Props {
 
 const { heading, groups, id, lead, background = 'cream' } = Astro.props;
 /** Largeurs du grand format (bornées à la largeur source). */
-const LARGE_WIDTHS = [960, 1600, 2400];
+const LARGE_WIDTHS = [640, 960, 1280, 1600, 2400];
+/**
+ * `sizes` de l'image en visionneuse : elle tient dans la largeur (moins les marges du dialogue,
+ * 2,75rem) ET dans la hauteur (moins le cadre, légende et compteur, 8,5rem) : en portrait c'est
+ * la hauteur qui borne, `100vw` ferait charger une image bien trop large sur ordinateur.
+ */
+const lightboxSizes = (width: number, height: number): string =>
+  `min(calc(100vw - 2.75rem), calc((100vh - 8.5rem) * ${(width / height).toFixed(3)}))`;
 
 const views = await Promise.all(
   groups.map(async (group) => ({
@@ -68,6 +75,7 @@ const views = await Promise.all(
                     data-srcset={item.large.srcSet.attribute}
                     data-width={item.image.width}
                     data-height={item.image.height}
+                    data-sizes={lightboxSizes(item.image.width, item.image.height)}
                     data-alt={item.alt}
                     data-caption={item.caption}
                   >

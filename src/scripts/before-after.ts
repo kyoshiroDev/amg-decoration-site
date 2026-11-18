@@ -26,9 +26,37 @@ function enhance(root: HTMLElement, signal: AbortSignal): void {
     root.style.setProperty('--compare-pos', `${percent}%`);
   };
 
+  // Glisser : la boîte de la scène est mesurée une fois par geste et seule `--compare-pos` est
+  // écrite, au plus une fois par image (rAF). La valeur du range et `aria-valuetext` sont
+  // validées en fin de geste (commit) : pas de layout forcé à chaque pointermove.
+  let box: DOMRect | undefined;
+  let frame = 0;
+  let lastX = 0;
+  let moved = false;
+  const paint = (value: number): void => {
+    root.style.setProperty('--compare-pos', `${clampPercent(value)}%`);
+  };
+
   const fromPointer = (clientX: number): void => {
-    const box = stage.getBoundingClientRect();
-    render(positionFromPointer(clientX, box.left, box.width));
+    lastX = clientX;
+    moved = true;
+    if (frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      box ??= stage.getBoundingClientRect();
+      paint(positionFromPointer(lastX, box.left, box.width));
+    });
+  };
+
+  const commit = (): void => {
+    cancelAnimationFrame(frame);
+    frame = 0;
+    if (moved) {
+      box ??= stage.getBoundingClientRect();
+      render(positionFromPointer(lastX, box.left, box.width));
+    }
+    moved = false;
+    box = undefined;
   };
 
   let pointerId: number | undefined;
@@ -37,6 +65,7 @@ function enhance(root: HTMLElement, signal: AbortSignal): void {
   let dragging = false;
 
   const stop = (): void => {
+    commit();
     pointerId = undefined;
     dragging = false;
     delete root.dataset['dragging'];
@@ -90,6 +119,7 @@ function enhance(root: HTMLElement, signal: AbortSignal): void {
   stage.addEventListener('pointercancel', stop, { signal });
 
   range.addEventListener('input', () => render(Number(range.value)), { signal });
+  signal.addEventListener('abort', () => cancelAnimationFrame(frame), { once: true });
   render(Number(range.value));
 }
 

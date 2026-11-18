@@ -95,8 +95,14 @@
       display: grid;
     }
 
-    .marquee:is(:hover, :focus-within, [data-paused], [data-offscreen]) .marquee__track {
+    .marquee:is(:hover, :focus-within, [data-paused]) .marquee__track {
       animation-play-state: paused;
+    }
+
+    /* Hors écran : animation retirée (et non en pause), sinon le calque composité reste et en
+       force d'autres par recouvrement. La position repart de zéro, invisible hors écran. */
+    .marquee[data-offscreen] .marquee__track {
+      animation: none;
     }
   }
 

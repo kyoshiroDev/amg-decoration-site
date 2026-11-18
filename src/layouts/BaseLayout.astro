@@ -4,7 +4,7 @@
  * global relié par @id) et <body> (lien d'évitement, en-tête, <main>, pied de page).
  * View Transitions : natives, en CSS (`@view-transition`), sans ClientRouter (ADR-0006).
  * Classe `js` posée sur <html> par un script inline en tête, avant le premier rendu (ADR-0010).
- * Apparitions au scroll : scripts/reveal.ts, chargé sur toutes les pages.
+ * Scripts communs (en-tête, menu mobile, CTA magnétique, apparitions) : un seul module en fin de body.
  */
 import type { ImageMetadata } from 'astro';
 import type { Thing } from 'schema-dts';
@@ -84,6 +84,10 @@ const graph = buildGraph([
     </main>
     <Footer />
     <script>
+      // Scripts communs à toutes les pages, réunis en un seul module (moins de requêtes).
+      import '@/scripts/header';
+      import '@/scripts/mobile-nav';
+      import '@/scripts/magnetic';
       import '@/scripts/reveal';
     </script>
   </body>

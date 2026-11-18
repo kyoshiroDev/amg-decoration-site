@@ -1,7 +1,7 @@
 /**
  * CTA magnétique léger (`[data-magnetic]`) : le bouton glisse d'au plus `--magnetic-max`
  * (6 px) vers le pointeur, puis revient au repos quand il s'en va. Pointeur fin uniquement et
- * jamais en mouvement réduit. transform seul (via `--magnet-x/y`, button.css) : la cible de clic
+ * jamais en mouvement réduit. propriété `translate` seule (écrite en style inline, transition dans button.css) : la cible de clic
  * suit le bouton, le focus et le clic ne sont pas affectés.
  */
 import { onPageReady } from './lifecycle';
@@ -21,8 +21,7 @@ onPageReady((signal) => {
     let frame = 0;
     const reset = (): void => {
       cancelAnimationFrame(frame);
-      element.style.removeProperty('--magnet-x');
-      element.style.removeProperty('--magnet-y');
+      element.style.removeProperty('translate');
     };
 
     element.addEventListener(
@@ -35,16 +34,17 @@ onPageReady((signal) => {
           // Boîte au repos : on retire la translation affichée (transition comprise), sinon
           // le bouton « fuirait » le pointeur.
           const box = element.getBoundingClientRect();
-          const shift = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+          const [shiftX = 0, shiftY = 0] = getComputedStyle(element)
+            .translate.split(' ')
+            .map((part) => Number.parseFloat(part) || 0);
           const rest = {
-            left: box.left - shift.m41,
-            top: box.top - shift.m42,
+            left: box.left - shiftX,
+            top: box.top - shiftY,
             width: box.width,
             height: box.height,
           };
           const offset = magneticOffset(clientX, clientY, rest, max);
-          element.style.setProperty('--magnet-x', `${offset.x}px`);
-          element.style.setProperty('--magnet-y', `${offset.y}px`);
+          element.style.translate = `${offset.x}px ${offset.y}px`;
         });
       },
       { signal },

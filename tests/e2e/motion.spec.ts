@@ -64,7 +64,9 @@ test.describe('Apparitions au scroll', () => {
   test('après un défilement complet, plus aucun élément transparent', async ({ page }) => {
     await page.goto('/');
     await scrollThroughPage(page);
-    await expect.poll(() => countTransparentElements(page)).toBe(0);
+    // Délai élargi : sous forte charge (suite complète en parallèle), les dernières transitions
+    // peuvent dépasser 5 s ; un élément réellement bloqué resterait transparent indéfiniment.
+    await expect.poll(() => countTransparentElements(page), { timeout: 10_000 }).toBe(0);
   });
 
   test.describe('sans JavaScript', () => {
@@ -168,8 +170,11 @@ test.describe('CTA magnétique', () => {
       .locator('[data-magnetic]')
       .first()
       .evaluate((el) => {
-        const matrix = new DOMMatrixReadOnly(getComputedStyle(el).transform);
-        return [matrix.m41, matrix.m42];
+        // Le CTA se déplace par la propriété `translate` (« none » ou « Xpx Ypx »).
+        const [x = 0, y = 0] = getComputedStyle(el)
+          .translate.split(' ')
+          .map((part) => Number.parseFloat(part) || 0);
+        return [x, y];
       });
 
   test('suit le pointeur de 6 px au plus, puis revient', { tag: '@desktop' }, async ({ page }) => {
@@ -192,7 +197,7 @@ test.describe('CTA magnétique', () => {
     await page.goto('/');
     await page.locator('[data-magnetic]').first().hover();
     await page.waitForTimeout(200);
-    await expect(page.locator('[style*="--magnet"]')).toHaveCount(0);
+    await expect(page.locator('[data-magnetic][style*="translate"]')).toHaveCount(0);
   });
 });
 

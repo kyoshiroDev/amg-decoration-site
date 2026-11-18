@@ -32,10 +32,6 @@ const { currentPath, id = 'menu-mobile' } = Astro.props;
   <MobileNavPanel id={id} currentPath={currentPath} />
 </div>
 
-<script>
-  import '@/scripts/mobile-nav';
-</script>
-
 <style>
   @layer components {
     .mobile-nav :global(.mobile-nav__toggle) {
