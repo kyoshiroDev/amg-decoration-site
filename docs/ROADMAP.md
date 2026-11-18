@@ -45,7 +45,7 @@
 - [x] Migrer les textes provisoires de `src/config/pages.ts` vers les collections de contenu
 - [x] Placeholders d'images documentés
 - [x] Reports de la Phase 2 : commentaire de `serializeJsonLd`, tests `isActivePath` dans `url.test.ts`, test de `buildCreativeWork`, sélecteurs robustes du menu mobile (`data-*` au lieu de l'id et de `popovertarget`), poids du grain harmonisé
-- [ ] Revue + push `dev` + PR mise à jour
+- [x] Revue + push `dev` + PR mise à jour (PR #1, CI verte)
 
 ## Phase 4 — Pages
 
