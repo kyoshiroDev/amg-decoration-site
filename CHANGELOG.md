@@ -4,6 +4,14 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ## [Non publié]
 
+### Phase 3 — Contenu
+
+- Re-crawl complet du site actuel : 26 URLs de contenu inventoriées, textes intégraux, meta et avis exacts archivés dans `docs/contenu-source/`. Correction de l'attribution de l'avis « projet de cuisine » (Sébastien T.).
+- Collections de contenu (ADR-0007) : `pages`, `prestations` (4 formules + meuble sur mesure + offre professionnels, prix stockés et pilotables par `site.pricing.showPrices`), `projets` (4 réalisations aux slugs descriptifs), `articles`, `temoignages` (4 avis mot pour mot), `faq`, `etapes`, `avantages`. Longueurs SEO, `alt` et liens internes validés au schéma.
+- Textes réécrits par le `redacteur` à partir des seuls faits du site actuel ; chaque information manquante est un `TODO(contenu)`.
+- Redirections de migration en un seul saut (ADR-0008) : 70 règles permanentes générées depuis `src/lib/redirects.ts` et testées.
+- Placeholders d'images documentés dans `src/assets/placeholders/README.md`.
+
 ### Phase 2 — Squelette et navigation
 
 - Source de vérité `src/config/site.ts` (NAP, horaires, zone, réseaux, navigation), microcopie d'interface (`config/microcopy.ts`) et textes provisoires des pages (`config/pages.ts`, à migrer en Phase 3).

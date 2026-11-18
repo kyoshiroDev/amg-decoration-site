@@ -39,12 +39,12 @@
 
 ## Phase 3 — Contenu
 
-- [ ] Re-crawl complet du site actuel → compléter `CONTENU-EXISTANT.md` + liste exhaustive des URLs
-- [ ] `content.config.ts` (projets, prestations, articles, témoignages, faq)
-- [ ] Migration et réécriture des contenus (`redacteur`) ; `TODO(contenu)` pour les manques
-- [ ] Migrer les textes provisoires de `src/config/pages.ts` vers les collections de contenu
-- [ ] Placeholders d'images documentés
-- [ ] Reports de la Phase 2 : commentaire de `serializeJsonLd`, tests `isActivePath` dans `url.test.ts`, test de `buildCreativeWork`, sélecteurs robustes du menu mobile (`data-*` au lieu de l'id et de `popovertarget`), poids du grain harmonisé, couverture e2e + axe de `PageLayout`/`Breadcrumbs` dès la première page interne
+- [x] Re-crawl complet du site actuel → compléter `CONTENU-EXISTANT.md` + liste exhaustive des URLs
+- [x] `content.config.ts` (projets, prestations, articles, témoignages, faq)
+- [x] Migration et réécriture des contenus (`redacteur`) ; `TODO(contenu)` pour les manques
+- [x] Migrer les textes provisoires de `src/config/pages.ts` vers les collections de contenu
+- [x] Placeholders d'images documentés
+- [x] Reports de la Phase 2 : commentaire de `serializeJsonLd`, tests `isActivePath` dans `url.test.ts`, test de `buildCreativeWork`, sélecteurs robustes du menu mobile (`data-*` au lieu de l'id et de `popovertarget`), poids du grain harmonisé, couverture e2e + axe de `PageLayout`/`Breadcrumbs` dès la première page interne
 - [ ] Revue + push `dev` + PR mise à jour
 
 ## Phase 4 — Pages
