@@ -73,19 +73,20 @@
 - [x] Masquage sans JS des filtres en CSS valide (`@media (scripting: none)` ou classe `no-js`) au lieu de `<noscript><style>` dans le `body`
 - [x] Marquee animé : bouton pause accessible au clavier (WCAG 2.2.2), arrêt en mouvement réduit
 - [x] Lightbox de la galerie projet (clavier, focus piégé, Échap, sans JS = images visibles)
-- [ ] Revue + push `dev` + PR mise à jour
+- [x] Revue + push `dev` + PR mise à jour
 
 ## Phase 6 — SEO avancé
 
-- [ ] JSON-LD complet par type de page, validé
-- [ ] Images OG (1200×630) par page/projet/article (générées au build ou statiques)
-- [ ] Redirections 301 exhaustives + tests
-- [ ] Sitemap, robots.txt, maillage interne audité, `llms.txt`
-- [ ] Audit `seo` complet sur `dist/`
-- [ ] Contenu dupliqué entre l'accueil et `/visualisation-3d/` (6 étapes, 8 avantages affichés mot pour mot) : extrait sur l'accueil + lien, ou textes courts dédiés
-- [ ] h1 des fiches formules orientés mot-clé (champ de titre de héros distinct du nom de la formule, décision `architecte`)
-- [ ] Balises `article:published_time` / `article:modified_time` sur les articles
-- [ ] Test du honeypot en mode service (build de test avec `PUBLIC_FORM_ENDPOINT`)
+- [x] JSON-LD complet par type de page, validé
+- [x] Images OG (1200×630) par page/projet/article (générées au build ou statiques)
+- [x] Redirections 301 exhaustives + tests
+- [x] Sitemap, robots.txt, maillage interne audité, `llms.txt`
+- [x] Audit `seo` complet sur `dist/`
+- [x] Contenu dupliqué entre l'accueil et `/visualisation-3d/` (6 étapes, 8 avantages affichés mot pour mot) : extrait sur l'accueil + lien, ou textes courts dédiés
+- [x] h1 des fiches formules orientés mot-clé (champ de titre de héros distinct du nom de la formule, décision `architecte`)
+- [x] Balises `article:published_time` / `article:modified_time` sur les articles
+- [x] Test du honeypot en mode service (build de test avec `PUBLIC_FORM_ENDPOINT`)
+- [ ] Revue + push `dev` + PR mise à jour
 
 ## Phase 7 — Qualité finale
 
@@ -98,6 +99,7 @@
 - [ ] HTML de l'accueil sous 14 Ko gzip (fenêtre TCP initiale) : sprite SVG `<use>` pour les icônes, contrôle en CI
 - [ ] `view-transition-name` posé seulement sur la carte cliquée si le nombre de projets grandit
 - [ ] Accessibilité (P3) : visionneuse annonçant « Image n sur N : légende », pause du bandeau au focus, visibilité du trait du comparateur
+- [ ] Accessibilité (P3, Phase 6) : ancre `#avantages-titre` dont le surtitre passe sous le header collant (`scroll-margin`), nature de la carte « Pour aller plus loin » lue après son titre, nom de la formule dans la navigation par titres des fiches (à arbitrer avec le SEO), fond des cartes « Pour aller plus loin » sur section crème (`designer`)
 
 ## Phase 8 — Préparation à la mise en ligne
 
@@ -106,3 +108,4 @@
 - [ ] Synthèse finale (scores, captures)
 - [ ] Confidentialité : adapter les sections « Les données que je reçois » et « Qui reçoit vos données » au mode réel du formulaire (repli `mailto:` ou service choisi) ; faire valider « je suis la seule personne à lire vos messages »
 - [ ] Pages légales : injecter email, téléphone et SIRET depuis `src/config/site.ts` (jetons) au lieu de les recopier
+- [ ] Reports de l'audit SEO de la Phase 6 : formule réelle de chaque réalisation (champ `service`), 150 à 300 mots propres par fiche prestation (`redacteur`), section accueil vers les offres Meuble / Pros ou les derniers articles (`designer`), logo et localité dans le JSON-LD, title de `/prestations/` selon `showPrices`, redirection `www` → domaine nu, décision sur les robots d'IA

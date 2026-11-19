@@ -4,6 +4,16 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ## [Non publié]
 
+### Phase 6 — SEO avancé
+
+- JSON-LD relié par `@id` sur chaque page (`#service`, `#projet`, `#article`, `#page`, `#fil-ariane`), `CollectionPage` des prestations, zone desservie tirée de `site.ts` ; un test valide le graphe de chaque page de `dist/` (références résolues, URL absolues, propriétés requises).
+- Image Open Graph 1200 × 630 propre à chaque page (recadrage `getImage`, build en échec si la source est trop petite) ; balises `article:published_time`, `modified_time`, `author`, `section` et `tag`.
+- `robots.txt` (sans `Disallow`) et `llms.txt` générés au build depuis `site.ts` et les collections (ADR-0011) ; `lastmod` du sitemap pour le blog, à partir des dates réelles.
+- h1 orientés mot-clé sur les 6 fiches prestations (`heroTitle`, le nom passe en surtitre) ; Essentiel recentré sur la petite pièce, Professionnels sur le home staging virtuel.
+- Accueil : méthode et avantages en résumé (titres seuls) avec lien vers `/visualisation-3d/`, plus aucun texte dupliqué.
+- Maillage : « Pour aller plus loin » sur les fiches prestations et la page 3D, ancres descriptives, signature visible de l'autrice sur les articles, LinkedIn d'Amandine, zone Paris et Île-de-France dans le pied de page.
+- Honeypot du formulaire testé sur un build en mode service (`npm run test:e2e:service`, en CI).
+
 ### Phase 5 — Effets et interactions
 
 - Apparitions au scroll (texte décalé, révélation des images en arche) préparées en JS pour les seuls éléments sous la ligne de flottaison : le contenu est visible sans JS, en mouvement réduit et dès qu'il reçoit le focus clavier.
