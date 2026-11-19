@@ -10,6 +10,7 @@ export default defineConfig(
   globalIgnores([
     'dist/',
     'dist-service/',
+    'dist-visual/',
     '.astro/',
     '.vercel/',
     'node_modules/',
