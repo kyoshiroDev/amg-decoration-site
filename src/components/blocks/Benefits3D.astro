@@ -72,5 +72,19 @@ const { section, benefits, id, background = 'blush', variant = 'full' } = Astro.
     .benefits--summary {
       row-gap: var(--space-m);
     }
+
+    /* Mobile, titres seuls : l'arche passe en pictogramme devant le titre, la liste de huit
+       bénéfices garde sa lecture rapide sans s'étirer sur plusieurs écrans. */
+    @media (width < 40rem) {
+      .benefits--summary .benefits__item {
+        grid-template-columns: auto 1fr;
+        align-items: end;
+        column-gap: var(--space-s);
+      }
+
+      .benefits--summary .benefits__arch {
+        margin-block-end: 0;
+      }
+    }
   }
 </style>

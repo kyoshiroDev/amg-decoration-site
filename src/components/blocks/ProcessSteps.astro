@@ -94,5 +94,13 @@ const { section, steps, id, background = 'sage', variant = 'full' } = Astro.prop
     .process-steps--summary {
       row-gap: var(--space-l);
     }
+
+    /* Sans texte, l'élément est à peine plus haut que le décalage complet : la colonne
+       centrale semblerait flotter entre deux rangées. Demi-décalage, le zigzag reste lisible. */
+    @media (width >= 64rem) {
+      .process-steps--summary .process-steps__item:nth-child(3n + 2) {
+        margin-block-start: calc(var(--grid-stagger) / 2);
+      }
+    }
   }
 </style>

@@ -20,7 +20,7 @@ seo:
   description: 'Agents immobiliers, investisseurs : valorisez vos biens avec des visuels 3D réalistes qui aident les acheteurs à se projeter. Tarif dégressif dès 3 biens.'
 ---
 
-## Valorisez vos biens
+## Pour les agents immobiliers et les investisseurs
 
 Vous êtes agent immobilier ou investisseur ? Je réalise des visuels 3D réalistes qui révèlent le potentiel de vos biens et facilitent la projection des acheteurs.
 
