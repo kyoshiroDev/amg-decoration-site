@@ -85,7 +85,20 @@ export function buildFounder(config: SiteConfig, origin: URL): Person {
     jobTitle: config.founder.jobTitle,
     url: absoluteUrl(FOUNDER_PROFILE_PATH, origin),
     worksFor: { '@id': entityId(origin, 'entreprise') },
+    ...withSameAs(socialUrls(config, 'founder')),
   };
+}
+
+/** URL des profils sociaux d'un titulaire (`founder` = profil personnel, sinon entreprise). */
+export function socialUrls(config: SiteConfig, owner: 'business' | 'founder'): string[] {
+  return config.socials
+    .filter((social) => (social.owner ?? 'business') === owner)
+    .map((social) => social.url);
+}
+
+/** `sameAs` n'est émis que s'il existe au moins un profil. */
+function withSameAs(urls: readonly string[]): { sameAs?: string[] } {
+  return urls.length > 0 ? { sameAs: [...urls] } : {};
 }
 
 /** Visuels de marque de l'entreprise (URL relatives ou absolues), publiés seulement s'ils existent. */
@@ -126,7 +139,7 @@ export function buildBusiness(
     areaServed: buildAreaServed(config.areaServed),
     openingHoursSpecification: buildOpeningHoursSpecification(config.openingHours),
     founder: { '@id': entityId(origin, 'fondatrice') },
-    sameAs: config.socials.map((social) => social.url),
+    ...withSameAs(socialUrls(config, 'business')),
   };
 }
 

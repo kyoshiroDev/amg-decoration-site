@@ -19,6 +19,7 @@ import {
   FOUNDER_PROFILE_PATH,
   pageNodeId,
   serializeJsonLd,
+  socialUrls,
   webPageInputFrom,
 } from '@/lib/jsonld';
 
@@ -86,8 +87,13 @@ describe('buildBusiness', () => {
     ]);
   });
 
-  it('reprend exactement les réseaux de la configuration dans sameAs', () => {
-    expect(business['sameAs']).toEqual(site.socials.map((s) => s.url));
+  it('reprend les réseaux de l’entreprise dans sameAs, sans les profils personnels', () => {
+    expect(business['sameAs']).toEqual(
+      site.socials.filter((s) => s.owner !== 'founder').map((s) => s.url),
+    );
+    expect(business['sameAs']).not.toContain(
+      'https://www.linkedin.com/in/amandine-gaury-97a263193/',
+    );
   });
 
   it('relie la fondatrice par @id et publie le téléphone en E.164', () => {
@@ -118,6 +124,27 @@ describe('buildWebSite et buildFounder', () => {
     expect(buildFounder(site, origin)).toMatchObject({
       url: 'https://amgdecorationdinterieur.com/a-propos/',
     });
+  });
+
+  it('publie le profil LinkedIn personnel dans le sameAs de la fondatrice', () => {
+    expect(asJson<Record<string, unknown>>(buildFounder(site, origin))['sameAs']).toEqual([
+      'https://www.linkedin.com/in/amandine-gaury-97a263193/',
+    ]);
+  });
+});
+
+describe('socialUrls', () => {
+  it('répartit les profils entre entreprise et fondatrice sans en perdre', () => {
+    const business = socialUrls(site, 'business');
+    const founder = socialUrls(site, 'founder');
+    expect([...business, ...founder].sort()).toEqual(site.socials.map((s) => s.url).sort());
+    expect(founder).toEqual(['https://www.linkedin.com/in/amandine-gaury-97a263193/']);
+  });
+
+  it('n’émet pas de sameAs vide quand aucun profil n’existe', () => {
+    const bare = { ...site, socials: [] };
+    expect(buildFounder(bare, origin)).not.toHaveProperty('sameAs');
+    expect(buildBusiness(bare, origin)).not.toHaveProperty('sameAs');
   });
 });
 

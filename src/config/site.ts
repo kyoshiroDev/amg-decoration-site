@@ -29,6 +29,11 @@ export interface SocialLink {
   readonly network: SocialNetwork;
   readonly label: string;
   readonly url: `https://${string}`;
+  /**
+   * Titulaire du profil : `founder` pour un profil personnel d'Amandine (`sameAs` de `Person`),
+   * sinon profil de l'entreprise (`sameAs` de `ProfessionalService`).
+   */
+  readonly owner?: 'founder';
 }
 
 export interface AreaServed {
@@ -79,7 +84,6 @@ export const site = {
     { type: 'AdministrativeArea', name: 'Île-de-France' },
     { type: 'Country', name: 'France' },
   ],
-  // TODO(contenu): URL exacte du profil LinkedIn d'Amandine Gaury (non publiée tant qu'inconnue).
   socials: [
     {
       network: 'instagram',
@@ -88,6 +92,14 @@ export const site = {
     },
     { network: 'facebook', label: 'Facebook', url: 'https://www.facebook.com/amgdecoration' },
     { network: 'pinterest', label: 'Pinterest', url: 'https://www.pinterest.fr/amgaury/' },
+    // Profil relevé sur le site actuel (docs/CONTENU-EXISTANT.md, Identité).
+    // TODO(contenu): confirmer que le profil LinkedIn est toujours actif
+    {
+      network: 'linkedin',
+      label: 'LinkedIn',
+      url: 'https://www.linkedin.com/in/amandine-gaury-97a263193/',
+      owner: 'founder',
+    },
   ],
   mainNav: [
     { label: 'Accueil', href: '/' },
