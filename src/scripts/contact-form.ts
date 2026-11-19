@@ -91,11 +91,21 @@ onPageReady((signal) => {
     submitLabel.textContent = value ? (form.dataset['sending'] ?? idleLabel) : idleLabel;
   };
 
+  // Appui en cours sur le bouton d'envoi : la sortie du champ ne revalide pas. Sinon le message
+  // d'erreur retiré au mousedown ferait remonter le bouton sous le pointeur et le clic serait
+  // perdu (mouseup à côté). `submit` valide de toute façon. pointerdown plutôt que
+  // `relatedTarget` : Safari ne donne pas le focus aux boutons au clic.
+  let pressingSubmit = false;
+  submit.addEventListener('pointerdown', () => (pressingSubmit = true), { signal });
+  document.addEventListener('pointerup', () => (pressingSubmit = false), { signal });
+  document.addEventListener('pointercancel', () => (pressingSubmit = false), { signal });
+
   // Une fois signalé, un champ est revérifié à la sortie : l'erreur disparaît dès qu'il est corrigé.
   form.addEventListener(
     'focusout',
     (event) => {
       const target = event.target as Element;
+      if (pressingSubmit || event.relatedTarget === submit) return;
       if (target.getAttribute('aria-invalid') !== 'true') return;
       renderFieldErrors(form, validateContact(readValues(form)), messages);
     },

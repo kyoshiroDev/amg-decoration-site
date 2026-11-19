@@ -161,6 +161,21 @@ test.describe('Contact : avec JavaScript', () => {
     await expect(name).not.toHaveAttribute('aria-invalid');
   });
 
+  // Régression (Phase 7) : corriger le dernier champ en erreur puis cliquer directement sur le
+  // bouton. La revalidation à la sortie du champ retirait le message d'erreur au mousedown, le
+  // bouton remontait et le clic était perdu.
+  test('après des erreurs, un clic direct sur le bouton envoie bien le formulaire', async ({
+    page,
+  }) => {
+    await page
+      .locator('form[data-contact-form]')
+      .evaluate((form) => form.addEventListener('submit', (event) => event.preventDefault()));
+    await page.getByRole('button', { name: TEXTS.submit }).click();
+    await fillValidForm(page);
+    await page.getByRole('button', { name: TEXTS.submit }).click();
+    await expect(page.getByRole('status')).toContainText(TEXTS.mailtoHint);
+  });
+
   test.describe('service simulé', () => {
     // La CSP de ce build (sans service) n'autorise aucune connexion externe : `connect-src 'self'`
     // bloquerait l'envoi vers le service simulé par `useMockService`. Elle est contournée pour ces
