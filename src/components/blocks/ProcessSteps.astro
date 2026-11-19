@@ -1,7 +1,8 @@
 ---
 /**
  * ProcessSteps — méthode en étapes (liste ordonnée) : numéro en Fraunces italique géante
- * semi-transparente (décor, aria-hidden : l'ordre est porté par <ol>), titre, texte.
+ * semi-transparente au-dessus du titre (décor, aria-hidden : l'ordre est porté par <ol>),
+ * titre, texte.
  * 1 colonne → 2 (≥ 48rem) → 3 (≥ 64rem), colonne centrale décalée vers le bas.
  * `variant="summary"` (accueil) : titres seuls, le détail vit sur /visualisation-3d/ (pas de
  * contenu dupliqué entre les deux pages).
@@ -84,7 +85,11 @@ const { section, steps, id, background = 'sage', variant = 'full' } = Astro.prop
       border-block-start: var(--border-hairline) solid var(--color-border-strong);
     }
 
-    /* Le numéro géant passe derrière le titre, qui le chevauche (aucun décalage de mise en page). */
+    /*
+     * Numéro géant au-dessus du titre, sans chevauchement : un titre qui le recouvrait le
+     * faisait paraître tronqué (le bas des chiffres disparaissait sous la première ligne).
+     * Interligne serré : la boîte épouse les chiffres, l'écart avec le titre vient du `gap`.
+     */
     .process-steps__number {
       font-family: var(--font-display-stack);
       font-size: var(--step-5);
@@ -93,11 +98,6 @@ const { section, steps, id, background = 'sage', variant = 'full' } = Astro.prop
       line-height: var(--leading-tight);
       color: var(--color-accent);
       opacity: var(--opacity-ornament);
-      margin-block-end: calc(var(--space-l) * -1);
-    }
-
-    :global(.process-steps__title) {
-      position: relative;
     }
 
     .process-steps__text {
@@ -106,6 +106,20 @@ const { section, steps, id, background = 'sage', variant = 'full' } = Astro.prop
 
     .process-steps--summary {
       row-gap: var(--space-l);
+    }
+
+    /* Mobile, titres seuls : numéro devant le titre, sur sa ligne de base (sous-grille : les
+       titres s'alignent sur le numéro le plus large), la liste de six reste courte. */
+    @media (width < 48rem) {
+      .process-steps--summary {
+        grid-template-columns: auto 1fr;
+      }
+
+      .process-steps--summary .process-steps__item {
+        grid-column: 1 / -1;
+        grid-template-columns: subgrid;
+        align-items: baseline;
+      }
     }
 
     /* Sans texte, l'élément est à peine plus haut que le décalage complet : la colonne
