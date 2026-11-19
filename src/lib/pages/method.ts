@@ -8,10 +8,19 @@ import { buildMethodModel, type MethodModel } from './method-model';
 import { getPageData } from './page';
 
 export async function getMethodData(): Promise<MethodModel> {
-  const [page, etapes, avantages] = await Promise.all([
+  const [page, etapes, avantages, articles, prestations, projets] = await Promise.all([
     getPageData('visualisation-3d'),
     getCollection('etapes'),
     getCollection('avantages'),
+    getCollection('articles'),
+    getCollection('prestations'),
+    getCollection('projets'),
   ]);
-  return buildMethodModel({ page, etapes, avantages, homeLabel: microcopy.home });
+  return buildMethodModel({
+    page,
+    etapes,
+    avantages,
+    homeLabel: microcopy.home,
+    further: { articles, prestations, projets },
+  });
 }

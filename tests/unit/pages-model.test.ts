@@ -29,9 +29,11 @@ describe('buildMethodModel', () => {
       ],
       avantages: [{ id: 'x', data: { title: 'X', text: 't', order: 1 } }],
       homeLabel: 'Accueil',
+      further: { articles: [], prestations: [], projets: [] },
     });
     expect(model.steps.map((step) => step.id)).toEqual(['a', 'b']);
     expect(model.benefits).toHaveLength(1);
+    expect(model.further).toEqual([]);
     expect(model.breadcrumbs.at(-1)).toEqual({
       label: 'Visualisation 3D',
       href: '/visualisation-3d/',

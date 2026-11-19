@@ -66,6 +66,11 @@ const pageSection = z
     items: z.array(textItem).default([]),
     quote: z.strictObject({ text, author: text }).optional(),
     actions: z.array(action).max(3).default([]),
+    /**
+     * Liens de maillage interne affichés en cartes « Pour aller plus loin » (`label` = surtitre,
+     * `href` = article, prestation ou réalisation ; titre et texte lus dans la collection visée).
+     */
+    links: z.array(action).min(1).max(6).optional(),
   })
   .refine(
     (section) => !section.headingEmphasis || section.heading.includes(section.headingEmphasis),

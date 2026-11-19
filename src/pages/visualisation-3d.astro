@@ -6,6 +6,7 @@ import PageHero from '@/components/blocks/PageHero.astro';
 import MediaText from '@/components/blocks/MediaText.astro';
 import ProcessSteps from '@/components/blocks/ProcessSteps.astro';
 import Benefits3D from '@/components/blocks/Benefits3D.astro';
+import FurtherReading from '@/components/blocks/FurtherReading.astro';
 import CtaBanner from '@/components/blocks/CtaBanner.astro';
 import { media } from '@/config/media';
 import { getMethodData } from '@/lib/pages/method';
@@ -30,5 +31,11 @@ const { sections } = data;
   <MediaText section={sections.promesse} id="promesse-titre" background="cream" reverse />
   <ProcessSteps section={sections.methode} steps={data.steps} id="methode-titre" />
   <Benefits3D section={sections.avantages} benefits={data.benefits} id="avantages-titre" />
+  <FurtherReading
+    heading={sections['plus-loin'].heading}
+    items={data.further}
+    id="plus-loin-titre"
+    background="cream"
+  />
   <CtaBanner section={sections.cta} id="contact-titre" />
 </PageLayout>

@@ -125,3 +125,21 @@ test.describe('Merci', () => {
     expect(sitemap).toContain('/contact/');
   });
 });
+
+test.describe('Visualisation 3D : maillage interne', () => {
+  test('« Pour aller plus loin » : article, réalisation, offres Meuble et Professionnels', async ({
+    page,
+  }) => {
+    await page.goto('/visualisation-3d/');
+    const further = page.locator('#plus-loin-titre').locator('xpath=ancestor::section[1]');
+    const hrefs = await further
+      .locator('a')
+      .evaluateAll((anchors) => anchors.map((a) => a.getAttribute('href')));
+    expect(hrefs).toEqual([
+      '/conseils-deco/plan-3d-avant-renovation/',
+      '/realisations/chalet-suisse/',
+      '/prestations/meuble-sur-mesure/',
+      '/prestations/professionnels/',
+    ]);
+  });
+});

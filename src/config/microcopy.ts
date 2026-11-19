@@ -46,6 +46,12 @@ export const microcopy = {
     indexLabel: 'Prestations',
     /** Invitation des cartes d'offres complémentaires. */
     offerMore: 'Découvrir l’offre',
+    /** « Pour aller plus loin » des fiches prestations (src/lib/pages/services-model.ts). */
+    further: {
+      heading: 'Pour aller plus loin',
+      article: 'À lire',
+      project: 'Une réalisation',
+    },
     offerIncludes: 'Ce qui est inclus',
     /** Carte « En bref » des pages de prestation. */
     facts: {

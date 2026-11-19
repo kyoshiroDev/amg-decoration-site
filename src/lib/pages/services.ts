@@ -6,8 +6,10 @@ import { getImage } from 'astro:assets';
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import { microcopy } from '@/config/microcopy';
 import { site } from '@/config/site';
+import type { FurtherItem } from './articles-model';
 import {
   buildServiceDetailModel,
+  buildServiceFurtherReading,
   buildServicesModel,
   type ServiceDetailModel,
   type ServicesInput,
@@ -52,6 +54,8 @@ export async function getServicesData(origin: URL): Promise<WithJsonLd<ServicesM
 
 export interface ServicePageProps {
   readonly model: ServiceDetailModel;
+  /** « Pour aller plus loin » : 1 article publié et 1 réalisation. */
+  readonly further: readonly FurtherItem[];
   /** Visuel `cover` pour le JSON-LD `Service` (URL relative), absent sans visuel. */
   readonly imageUrl: string | undefined;
   readonly Content: Awaited<ReturnType<typeof render>>['Content'];
@@ -61,7 +65,12 @@ export interface ServicePageProps {
 export async function getServicePaths(): Promise<
   { params: { slug: string }; props: ServicePageProps }[]
 > {
-  const { input, entries } = await readInput();
+  const [{ input, entries }, articles, projets] = await Promise.all([
+    readInput(),
+    getCollection('articles'),
+    getCollection('projets'),
+  ]);
+  const { article, project } = microcopy.services.further;
   return Promise.all(
     entries.map(async (entry) => {
       const cover = entry.data.cover?.image;
@@ -75,7 +84,16 @@ export async function getServicePaths(): Promise<
           }),
       ]);
       const model = buildServiceDetailModel({ ...input, slug: entry.id });
-      return { params: { slug: entry.id }, props: { model, imageUrl: image?.src, Content } };
+      const further = buildServiceFurtherReading({
+        slug: entry.id,
+        articles,
+        projets,
+        labels: { article, project },
+      });
+      return {
+        params: { slug: entry.id },
+        props: { model, further, imageUrl: image?.src, Content },
+      };
     }),
   );
 }

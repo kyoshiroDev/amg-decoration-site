@@ -7,13 +7,15 @@ import type { ImageMetadata } from 'astro';
 import {
   selectFormulas,
   toServiceCard,
+  type ProjectEntryLike,
   type ServiceCardData,
   type ServiceEntryLike,
 } from '../cards';
 import { sortByOrder } from '../content';
 import type { BreadcrumbItem, ServiceInput } from '../jsonld';
 import { resolvePriceDisplay, type PriceDisplay, type PriceDisplayOptions } from '../price';
-import { servicePath } from '../routes';
+import { articlePath, projectPath, servicePath } from '../routes';
+import { selectPublishedArticles, type ArticleEntryLike, type FurtherItem } from './articles-model';
 import { breadcrumbTrail } from './breadcrumb-trail';
 import { readSections } from './sections';
 import type { PageData, PageSection } from './types';
@@ -170,4 +172,65 @@ export function buildServiceDetailModel(
     service: { name: data.title, description: data.summary, path },
     cover: data.cover,
   };
+}
+
+/* ------------------------------------------------------------------ */
+/* « Pour aller plus loin » d'une fiche prestation                     */
+/* ------------------------------------------------------------------ */
+
+/** Réalisation, avec la formule réellement utilisée si elle est renseignée (`service`). */
+export interface ServiceProjectEntryLike extends ProjectEntryLike {
+  readonly data: ProjectEntryLike['data'] & {
+    readonly service?: { readonly id: string } | undefined;
+  };
+}
+
+export interface ServiceFurtherInput {
+  readonly slug: string;
+  /** Tous les articles (brouillons compris : ils sont écartés ici). */
+  readonly articles: readonly ArticleEntryLike[];
+  readonly projets: readonly ServiceProjectEntryLike[];
+  readonly labels: { readonly article: string; readonly project: string };
+}
+
+/**
+ * Maillage d'une fiche prestation : 1 article publié et 1 réalisation (docs/SEO-STRATEGIE.md §5 bis).
+ * - Article : le plus récent qui renvoie vers cette prestation (`relatedService`), sinon le plus
+ *   récent publié. Jamais de brouillon.
+ * - Réalisation : celle dont la formule (`service`) est cette prestation ; sinon celle que l'article
+ *   retenu associe à cette prestation ; sinon la première dans l'ordre éditorial. Le surtitre
+ *   reste neutre (« Une réalisation ») : il n'affirme pas que la formule a été utilisée.
+ */
+export function buildServiceFurtherReading(input: ServiceFurtherInput): FurtherItem[] {
+  const { slug, labels } = input;
+  const published = selectPublishedArticles(input.articles);
+  const article = published.find((entry) => entry.data.relatedService?.id === slug) ?? published[0];
+  const projects = sortByOrder(input.projets);
+  const linkedByArticle =
+    article?.data.relatedService?.id === slug ? article.data.relatedProject?.id : undefined;
+  const project =
+    projects.find((entry) => entry.data.service?.id === slug) ??
+    projects.find((entry) => entry.id === linkedByArticle) ??
+    projects[0];
+
+  const items: FurtherItem[] = [];
+  if (article) {
+    items.push({
+      kind: 'article',
+      eyebrow: labels.article,
+      title: article.data.title,
+      text: article.data.seo.description,
+      href: articlePath(article.id),
+    });
+  }
+  if (project) {
+    items.push({
+      kind: 'project',
+      eyebrow: labels.project,
+      title: project.data.title,
+      text: project.data.summary,
+      href: projectPath(project.id),
+    });
+  }
+  return items;
 }

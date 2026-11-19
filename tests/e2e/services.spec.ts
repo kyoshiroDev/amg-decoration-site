@@ -84,6 +84,22 @@ test.describe('Prestations : pages de détail', () => {
       await expect(h1).toContainText('3D');
       expectNoHeadingJump(await headingLevels(page));
     });
+
+    test(`/prestations/${slug}/ : « Pour aller plus loin » vers 1 article et 1 réalisation`, async ({
+      page,
+    }) => {
+      await page.goto(`/prestations/${slug}/`);
+      const further = page.locator('#plus-loin-titre').locator('xpath=ancestor::section[1]');
+      await expect(further.locator('#plus-loin-titre')).toHaveText(
+        microcopy.services.further.heading,
+      );
+      const hrefs = await further
+        .locator('a')
+        .evaluateAll((anchors) => anchors.map((a) => a.getAttribute('href') ?? ''));
+      expect(hrefs).toHaveLength(2);
+      expect(hrefs[0]).toMatch(/^\/conseils-deco\/[a-z0-9-]+\/$/);
+      expect(hrefs[1]).toMatch(/^\/realisations\/[a-z0-9-]+\/$/);
+    });
   }
 
   test.describe('PageLayout et Breadcrumbs (formule Confort)', () => {

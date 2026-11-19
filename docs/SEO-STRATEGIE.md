@@ -183,6 +183,8 @@ Chaque article : 1 200–2 000 mots, 1 lien vers une prestation, 1 vers une réa
 
 - Toutes les pages (sitemap + `noindex`) sont parcourues : chaque lien interne répond **200** sans redirection, porte le **slash final**, ne pointe vers **aucune ancienne URL** (`resolveRedirect`), et chaque ancre `#id` existe ; aucune page du sitemap n'est orpheline.
 - Articles → 1 prestation + 1 réalisation (bloc « Pour aller plus loin ») : en place.
+- Fiches prestations → 1 article + 1 réalisation (bloc « Pour aller plus loin », `buildServiceFurtherReading` dans `services-model.ts`, testé) : l'article publié le plus récent qui renvoie vers la fiche (`relatedService`), sinon le plus récent ; la réalisation dont `service` est la fiche, sinon celle que cet article associe à la fiche, sinon la première de l'ordre éditorial (surtitre neutre « Une réalisation »). Jamais de brouillon. Le bloc « Les autres formules » est conservé, y compris sur Professionnels.
+- `/visualisation-3d/` → article `plan-3d-avant-renovation`, réalisation `chalet-suisse`, offres Meuble sur mesure et Professionnels : section `plus-loin` (`links`) de `src/content/pages/visualisation-3d.md`.
 - Réalisations → prestation correspondante : **à compléter** via le champ `service` des fiches projet (`src/content/projets/*.md`), à renseigner avec Amandine (formule réellement utilisée ; on n'invente pas). En attendant, chaque projet lie `/prestations/` et `/contact/`.
 
 ## 6. Hors site (checklist pour l'humain)

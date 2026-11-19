@@ -39,6 +39,19 @@ sections:
     heading: 'Huit bonnes raisons de passer par la 3D'
     headingEmphasis: 'la 3D'
     lead: 'C’est l’outil qui transforme une hésitation en décision. Voici, concrètement, ce qu’elle change pour vous.'
+  # Maillage interne (docs/SEO-STRATEGIE.md § 5 bis) : `label` = surtitre de la carte ; titre et
+  # texte viennent de l'article, de la prestation ou de la réalisation visée.
+  plus-loin:
+    heading: 'Pour aller plus loin'
+    links:
+      - label: 'À lire'
+        href: '/conseils-deco/plan-3d-avant-renovation/'
+      - label: 'Une réalisation'
+        href: '/realisations/chalet-suisse/'
+      - label: 'Votre meuble en 3D'
+        href: '/prestations/meuble-sur-mesure/'
+      - label: 'Pour les professionnels'
+        href: '/prestations/professionnels/'
   cta:
     heading: 'Et si vous voyiez votre intérieur avant de le transformer ?'
     headingEmphasis: 'avant de le transformer'
