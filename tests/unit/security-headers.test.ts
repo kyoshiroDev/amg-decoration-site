@@ -71,3 +71,19 @@ describe('vercel.json : en-têtes de sécurité', () => {
     expect(csp).not.toMatch(/(script|style|default)-src/);
   });
 });
+
+describe('vercel.json : cache des fichiers versionnés', () => {
+  const IMMUTABLE = 'public, max-age=31536000, immutable';
+  const cacheControl = (source: string): string | undefined =>
+    vercel.headers
+      .find((entry) => entry.source === source)
+      ?.headers.find(({ key }) => key.toLowerCase() === 'cache-control')?.value;
+
+  it('fichiers de /_astro/ (empreinte dans le nom) : cache immuable d’un an', () => {
+    expect(cacheControl('/_astro/(.*)')).toBe(IMMUTABLE);
+  });
+
+  it('sprite d’icônes versionné (/icons.<version>.svg) : cache immuable d’un an', () => {
+    expect(cacheControl('/icons.(.*).svg')).toBe(IMMUTABLE);
+  });
+});

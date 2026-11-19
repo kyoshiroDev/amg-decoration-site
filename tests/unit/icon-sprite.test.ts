@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { iconNames, iconPaths } from '@/components/ui/icons';
-import { buildIconSprite, ICON_VIEWBOX } from '@/lib/icon-sprite';
+import { ICON_SPRITE_URL, iconNames, iconPaths } from '@/components/ui/icons';
+import { buildIconSprite, ICON_VIEWBOX, iconSpriteVersion } from '@/lib/icon-sprite';
 
 describe('buildIconSprite', () => {
   const sprite = buildIconSprite(iconPaths);
@@ -29,5 +29,23 @@ describe('buildIconSprite', () => {
   it('reprend les tracés tels quels', () => {
     expect(sprite).toContain(`<symbol id="plus" `);
     expect(sprite).toContain(`>${iconPaths.plus}</symbol>`);
+  });
+});
+
+describe('iconSpriteVersion', () => {
+  it('dérive une version courte et stable du contenu', () => {
+    const sprite = buildIconSprite(iconPaths);
+    expect(iconSpriteVersion(sprite)).toMatch(/^[0-9a-f]{10}$/);
+    expect(iconSpriteVersion(sprite)).toBe(iconSpriteVersion(buildIconSprite(iconPaths)));
+  });
+
+  it('change dès qu’un tracé change', () => {
+    const sprite = buildIconSprite(iconPaths);
+    const edited = buildIconSprite({ ...iconPaths, plus: '<path d="M12 4v16"/>' });
+    expect(iconSpriteVersion(edited)).not.toBe(iconSpriteVersion(sprite));
+  });
+
+  it('entre dans l’URL du sprite', () => {
+    expect(ICON_SPRITE_URL).toBe(`/icons.${iconSpriteVersion(buildIconSprite(iconPaths))}.svg`);
   });
 });
