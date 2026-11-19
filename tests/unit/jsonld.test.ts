@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { site } from '@/config/site';
 import {
   buildAboutPage,
+  buildAreaServed,
   buildBlogPosting,
   buildBreadcrumbList,
   buildBusiness,
@@ -143,10 +144,28 @@ describe('buildService', () => {
   it('ne publie aucune offre tarifaire', () => {
     const service = buildService(
       { name: 'Formule Essentiel', description: 'Petits espaces', path: '/prestations/essentiel/' },
+      site.areaServed,
       origin,
     );
     expect(service).not.toHaveProperty('offers');
     expect(service).toMatchObject({ provider: { '@id': entityId(origin, 'entreprise') } });
+  });
+
+  it('reprend la zone desservie de l’entreprise (même source que buildBusiness)', () => {
+    const service = asJson<Record<string, unknown>>(
+      buildService(
+        {
+          name: 'Formule Essentiel',
+          description: 'Petits espaces',
+          path: '/prestations/essentiel/',
+        },
+        site.areaServed,
+        origin,
+      ),
+    );
+    const business = asJson<Record<string, unknown>>(buildBusiness(site, origin));
+    expect(service['areaServed']).toEqual(business['areaServed']);
+    expect(service['areaServed']).toEqual(asJson(buildAreaServed(site.areaServed)));
   });
 });
 

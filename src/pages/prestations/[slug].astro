@@ -8,6 +8,7 @@ import RichText from '@/components/blocks/RichText.astro';
 import ServiceFacts from '@/components/blocks/ServiceFacts.astro';
 import ServicesGrid from '@/components/blocks/ServicesGrid.astro';
 import CtaBanner from '@/components/blocks/CtaBanner.astro';
+import { site } from '@/config/site';
 import { buildService } from '@/lib/jsonld';
 import { getServicePaths, type ServicePageProps } from '@/lib/pages/services';
 
@@ -23,7 +24,7 @@ const origin = Astro.site ?? Astro.url;
   title={model.seo.title}
   description={model.seo.description}
   breadcrumbs={model.breadcrumbs}
-  jsonLd={[buildService(model.service, origin)]}
+  jsonLd={[buildService(model.service, site.areaServed, origin)]}
 >
   <PageHero section={model.hero} id="prestation-titre" />
   <ProseLayout>

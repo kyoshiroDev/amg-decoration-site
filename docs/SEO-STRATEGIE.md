@@ -116,7 +116,7 @@ Chaque URL de page est déclarée **avec et sans slash final** (l'accueil WordPr
 ### Choix assumés
 
 - **Pas d'adresse précise** : ni `streetAddress`, ni `postalCode`, ni `geo` tant que l'adresse n'est pas fournie (`TODO(contenu)` dans `site.ts`). Google n'exige que `name` et `address` (« autant de propriétés que possible ») : un `PostalAddress` région + pays reste valide. Pour une entreprise de zone desservie, la visibilité locale repose surtout sur la fiche Google Business Profile.
-- **`areaServed`** : sous-types de `Place` (`City` Paris, `AdministrativeArea` Île-de-France, `Country` France). À compléter avec la Suisse si Amandine confirme qu'elle y accepte des projets (un projet y est cité).
+- **`areaServed`** : sous-types de `Place` (`City` Paris, `AdministrativeArea` Île-de-France, `Country` France), générés par `buildAreaServed(site.areaServed)` et **partagés** par l'entreprise et chaque `Service` (une seule source). À compléter avec la Suisse si Amandine confirme qu'elle y accepte des projets (un projet y est cité).
 - **Pas de `priceRange`** ni d'`Offer` tant que les tarifs ne sont pas validés (on n'invente rien).
 - **`logo` / `image`** : non émis pour l'instant. `buildBusiness(config, origin, { logoUrl, imageUrls })` les publiera dès que le logo (≥ 112 × 112 px, lisible sur fond blanc) et de vrais rendus 3D seront fournis. L'image OG provisoire n'est pas réutilisée : ce n'est pas un visuel de la marque.
 - **Pas d'`AggregateRating` ni de `review`** auto-attribués (non éligibles, contraires aux consignes). Les avis Google seront affichés comme contenu avec lien vers la fiche.
@@ -130,7 +130,7 @@ Chaque page émet le graphe global (`WebSite`, `ProfessionalService`, `Person`) 
 | ------------------------------------ | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `/`                                  | —                                  | `BaseLayout`                                                                                                                              |
 | `/prestations/`                      | `BreadcrumbList`                   | `PageLayout`                                                                                                                              |
-| `/prestations/<formule>/` (6 fiches) | `Service`, `BreadcrumbList`        | `buildService` (`provider` → `#entreprise`, `areaServed` France, **sans `offers`**)                                                       |
+| `/prestations/<formule>/` (6 fiches) | `Service`, `BreadcrumbList`        | `buildService` (`provider` → `#entreprise`, `areaServed` = celle de l'entreprise, **sans `offers`**)                                      |
 | `/visualisation-3d/`, pages légales  | `BreadcrumbList`                   | `PageLayout`                                                                                                                              |
 | `/realisations/`, `/conseils-deco/`  | `CollectionPage`, `BreadcrumbList` | `buildCollectionPage` : `mainEntity` = `ItemList` des cartes, dans l'ordre affiché                                                        |
 | `/realisations/<projet>/`            | `CreativeWork`, `BreadcrumbList`   | `buildCreativeWork` (`creator` → `#fondatrice`, images ≥ 1200 px en JPEG absolues)                                                        |

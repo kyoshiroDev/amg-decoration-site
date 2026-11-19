@@ -16,12 +16,13 @@ import type {
   ItemList,
   OpeningHoursSpecification,
   Person,
+  Place,
   ProfessionalService,
   Service,
   Thing,
   WebSite,
 } from 'schema-dts';
-import type { InternalPath, OpeningHoursRule, SiteConfig } from '@/config/site';
+import type { AreaServed, InternalPath, OpeningHoursRule, SiteConfig } from '@/config/site';
 import { absoluteUrl } from './url';
 
 export type EntityKey = 'site' | 'entreprise' | 'fondatrice';
@@ -48,6 +49,11 @@ export function buildOpeningHoursSpecification(
     opens: rule.opens,
     closes: rule.closes,
   }));
+}
+
+/** Zone desservie (source : `site.areaServed`), partagée par l'entreprise et ses prestations. */
+export function buildAreaServed(areas: readonly AreaServed[]): Place[] {
+  return areas.map((area) => ({ '@type': area.type, name: area.name }));
 }
 
 export function buildWebSite(config: SiteConfig, origin: URL): WebSite {
@@ -109,7 +115,7 @@ export function buildBusiness(
       addressRegion: config.address.addressRegion,
       addressCountry: config.address.addressCountry,
     },
-    areaServed: config.areaServed.map((area) => ({ '@type': area.type, name: area.name })),
+    areaServed: buildAreaServed(config.areaServed),
     openingHoursSpecification: buildOpeningHoursSpecification(config.openingHours),
     founder: { '@id': entityId(origin, 'fondatrice') },
     sameAs: config.socials.map((social) => social.url),
@@ -137,15 +143,22 @@ export interface ServiceInput {
   readonly path: InternalPath;
 }
 
-/** Prestation : rattachée à l'entreprise, volontairement sans `offers` (tarifs non validés). */
-export function buildService(input: ServiceInput, origin: URL): Service {
+/**
+ * Prestation : rattachée à l'entreprise, même zone desservie qu'elle, volontairement
+ * sans `offers` (tarifs non validés, ADR-0007).
+ */
+export function buildService(
+  input: ServiceInput,
+  areas: readonly AreaServed[],
+  origin: URL,
+): Service {
   return {
     '@type': 'Service',
     name: input.name,
     description: input.description,
     url: absoluteUrl(input.path, origin),
     provider: { '@id': entityId(origin, 'entreprise') },
-    areaServed: { '@type': 'Country', name: 'France' },
+    areaServed: buildAreaServed(areas),
   };
 }
 
