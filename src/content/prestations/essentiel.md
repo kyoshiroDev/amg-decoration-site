@@ -4,10 +4,10 @@
 title: 'Formule Essentiel'
 kind: formule
 tagline: 'Pour les petits espaces'
-heroTitle: 'Décorer un petit espace en 3D, où chaque centimètre compte'
-heroTitleEmphasis: 'chaque centimètre compte'
+heroTitle: 'Décorer une petite pièce en 3D : entrée, salle de bain, dressing'
+heroTitleEmphasis: 'une petite pièce'
 target: 'entrée, WC, buanderie, salle de bain, dressing'
-summary: 'Une petite pièce repensée en 3D : plan d’aménagement, vues 3D et sélection de mobilier et de matériaux, pour tirer le meilleur de chaque mètre carré.'
+summary: 'Une petite pièce repensée en 3D : plan d’aménagement, vues 3D et sélection de mobilier et de matériaux, pour une entrée, une salle de bain ou un dressing beaux et pratiques.'
 # TODO(contenu): nombre de vues 3D et de modifications incluses (à demander à Amandine).
 includes: []
 # TODO(contenu): prix affiché sur le site actuel (18/11/2026) : Amandine doit le confirmer
@@ -17,7 +17,7 @@ price:
   currency: EUR
 order: 1
 seo:
-  title: 'Formule Essentiel : décorer un petit espace en 3D'
+  title: 'Formule Essentiel : décorer une petite pièce en 3D'
   description: 'Formule Essentiel : votre entrée, salle de bain ou dressing imaginés en 3D, avec plan d’aménagement et sélection de mobilier. Demandez votre devis.'
 ---
 

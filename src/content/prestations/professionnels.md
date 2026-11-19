@@ -16,7 +16,7 @@ quote:
   note: 'Tarif dégressif à partir de 3 biens'
 order: 6
 seo:
-  title: 'Visuels 3D pour agents immobiliers et investisseurs'
+  title: 'Home staging virtuel : visuels 3D pour l’immobilier'
   description: 'Agents immobiliers, investisseurs : valorisez vos biens avec des visuels 3D réalistes qui aident les acheteurs à se projeter. Tarif dégressif dès 3 biens.'
 ---
 
