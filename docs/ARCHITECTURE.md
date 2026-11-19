@@ -25,6 +25,14 @@ src/content/** ──(getEntry / getCollection)──> pages/*.astro ──> com
 src/content.config.ts (schémas Zod 4)        src/lib/content.ts (tri, filtres, requireEntry)
 ```
 
+### Fichiers pour les robots (endpoints statiques)
+
+Les fichiers texte destinés aux robots sont des **endpoints statiques** `src/pages/<nom>.txt.ts` (`export const GET: APIRoute`), pré-rendus au build dans `dist/<nom>.txt`. Ils ne contiennent aucune logique : le contenu est produit par les fonctions pures de `src/lib/crawlers.ts` (testées dans `tests/unit/crawlers.test.ts`) ; l'URL absolue vient de `site` (`astro.config.mjs`), dont l'absence fait échouer le build.
+
+| Endpoint                  | Fonction         | Contenu                                         |
+| ------------------------- | ---------------- | ----------------------------------------------- |
+| `src/pages/robots.txt.ts` | `buildRobotsTxt` | Tout autorisé, sans `Disallow`, sitemap absolu. |
+
 ### Configuration (`src/config/`)
 
 | Fichier        | Contenu                                                                                                                        |
