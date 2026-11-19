@@ -17,6 +17,7 @@ import CtaBanner from '@/components/blocks/CtaBanner.astro';
 import { microcopy } from '@/config/microcopy';
 import { projectTransitionName } from '@/lib/cards';
 import { buildCreativeWork } from '@/lib/jsonld';
+import { requireSiteOrigin } from '@/lib/url';
 import type { ProjectPageModel } from '@/lib/pages/projects-model';
 import type { PageSection } from '@/lib/pages/types';
 
@@ -29,7 +30,7 @@ interface Props {
 
 const { project, imageUrls, cta } = Astro.props;
 const labels = microcopy.projects;
-const origin = Astro.site ?? Astro.url;
+const origin = requireSiteOrigin(Astro.site);
 const creativeWork = buildCreativeWork(
   { name: project.title, description: project.seo.description, path: project.href, imageUrls },
   origin,

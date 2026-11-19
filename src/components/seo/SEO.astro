@@ -16,7 +16,7 @@ import {
   buildRobots,
   type OpenGraphArticle,
 } from '@/lib/seo';
-import { absoluteUrl } from '@/lib/url';
+import { absoluteUrl, requireSiteOrigin } from '@/lib/url';
 
 interface Props {
   title: string;
@@ -39,6 +39,7 @@ const {
   article,
 } = Astro.props;
 
+const origin = requireSiteOrigin(Astro.site);
 const fullTitle = buildPageTitle(
   title,
   {
@@ -51,14 +52,14 @@ const fullTitle = buildPageTitle(
 const metaDescription = assertDescriptionLength(description, seoDefaults.descriptionLength);
 const ogType = article ? 'article' : 'website';
 const articleTags = article ? buildArticleMetaTags(article) : [];
-const canonical = noindex ? undefined : buildCanonicalUrl(Astro.url.pathname, Astro.site);
+const canonical = noindex ? undefined : buildCanonicalUrl(Astro.url.pathname, origin);
 const { width, height } = seoDefaults.ogImageSize;
 // sharp n'agrandit jamais : une source plus petite que 1200 × 630 fait échouer le build.
 assertOgImageSource(image, seoDefaults.ogImageSize);
 // Recadrage centré au format 1200 × 630 ; JPEG : format le plus largement accepté par les
 // aperçus de liens (Facebook, LinkedIn, WhatsApp…).
 const ogImage = await getImage({ src: image, width, height, fit: 'cover', format: 'jpg' });
-const ogImageUrl = absoluteUrl(ogImage.src, Astro.site ?? Astro.url);
+const ogImageUrl = absoluteUrl(ogImage.src, origin);
 ---
 
 <title>{fullTitle}</title>

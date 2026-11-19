@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { absoluteUrl, isActivePath, withTrailingSlash } from '@/lib/url';
+import { absoluteUrl, isActivePath, requireSiteOrigin, withTrailingSlash } from '@/lib/url';
 
 describe('withTrailingSlash', () => {
   it('ajoute un slash final à un chemin de page', () => {
@@ -46,5 +46,18 @@ describe('isActivePath', () => {
   it('ne marque l’accueil que sur l’accueil', () => {
     expect(isActivePath('/contact/', '/')).toBe(false);
     expect(isActivePath('/', '/')).toBe('page');
+  });
+});
+
+describe('requireSiteOrigin', () => {
+  it('renvoie l’origine du site quand elle est définie', () => {
+    const site = new URL('https://amgdecorationdinterieur.com');
+    expect(requireSiteOrigin(site)).toBe(site);
+  });
+
+  it('fait échouer le build quand `site` est absent', () => {
+    expect(() => requireSiteOrigin(undefined)).toThrow(
+      '`site` doit être défini dans astro.config.mjs.',
+    );
   });
 });

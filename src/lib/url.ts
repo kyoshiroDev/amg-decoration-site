@@ -32,3 +32,14 @@ export function isActivePath(currentPath: string, href: string): 'page' | 'secti
 export function absoluteUrl(path: string, site: string | URL): string {
   return new URL(withTrailingSlash(path), site).href;
 }
+
+/**
+ * Origine du site (`site` d'astro.config.mjs, exposée par `Astro.site` ou le contexte d'une
+ * route API). Absente, le build échoue : aucune URL absolue ne doit dépendre de l'hôte de rendu.
+ */
+export function requireSiteOrigin(site: URL | undefined): URL {
+  if (!site) {
+    throw new Error('`site` doit être défini dans astro.config.mjs.');
+  }
+  return site;
+}

@@ -6,8 +6,9 @@ import PageHero from '@/components/blocks/PageHero.astro';
 import ProjectCatalog from '@/components/blocks/ProjectCatalog.astro';
 import CtaBanner from '@/components/blocks/CtaBanner.astro';
 import { getProjectsIndexData } from '@/lib/pages/projects';
+import { requireSiteOrigin } from '@/lib/url';
 
-const data = await getProjectsIndexData(Astro.site ?? Astro.url);
+const data = await getProjectsIndexData(requireSiteOrigin(Astro.site));
 ---
 
 <PageLayout

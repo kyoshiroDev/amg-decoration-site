@@ -7,8 +7,9 @@ import ContactLayout from '@/components/blocks/ContactLayout.astro';
 import ContactForm from '@/components/blocks/ContactForm.astro';
 import ContactDetails from '@/components/blocks/ContactDetails.astro';
 import { getContactData } from '@/lib/pages/contact';
+import { requireSiteOrigin } from '@/lib/url';
 
-const data = await getContactData(Astro.site ?? Astro.url);
+const data = await getContactData(requireSiteOrigin(Astro.site));
 const { sections } = data;
 ---
 

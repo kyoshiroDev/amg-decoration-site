@@ -8,8 +8,9 @@ import FeatureList from '@/components/blocks/FeatureList.astro';
 import OfferCards from '@/components/blocks/OfferCards.astro';
 import CtaBanner from '@/components/blocks/CtaBanner.astro';
 import { getServicesData } from '@/lib/pages/services';
+import { requireSiteOrigin } from '@/lib/url';
 
-const data = await getServicesData(Astro.site ?? Astro.url);
+const data = await getServicesData(requireSiteOrigin(Astro.site));
 const { sections } = data;
 ---
 

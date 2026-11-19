@@ -12,8 +12,9 @@ import Testimonials from '@/components/blocks/Testimonials.astro';
 import CtaBanner from '@/components/blocks/CtaBanner.astro';
 import { media } from '@/config/media';
 import { getAboutData } from '@/lib/pages/about';
+import { requireSiteOrigin } from '@/lib/url';
 
-const { model, Content, jsonLd } = await getAboutData(Astro.site ?? Astro.url);
+const { model, Content, jsonLd } = await getAboutData(requireSiteOrigin(Astro.site));
 const { sections } = model;
 ---
 
