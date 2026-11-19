@@ -302,6 +302,15 @@ test.describe('SEO de toutes les pages', { tag: '@desktop' }, () => {
         'content',
         String(posting['dateModified']),
       );
+      const author = nodeOfType(await readGraph(page), 'Person');
+      await expect(page.locator('meta[property="article:author"]')).toHaveAttribute(
+        'content',
+        String(author['url']),
+      );
+      await expect(page.locator('meta[property="article:section"]')).toHaveAttribute(
+        'content',
+        microcopy.articles.indexLabel,
+      );
     }
   });
 

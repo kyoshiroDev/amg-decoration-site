@@ -157,6 +157,22 @@ describe('buildArticleMetaTags', () => {
       { property: 'article:tag', content: 'Rénovation' },
     ]);
   });
+  it('ajoute article:author et article:section entre les dates et les étiquettes', () => {
+    expect(
+      buildArticleMetaTags({
+        publishedTime,
+        tags: ['Plan 3D'],
+        authorUrl: 'https://amgdecorationdinterieur.com/a-propos/',
+        section: 'Conseils déco',
+      }).map((tag) => tag.property),
+    ).toEqual([
+      'article:published_time',
+      'article:modified_time',
+      'article:author',
+      'article:section',
+      'article:tag',
+    ]);
+  });
 });
 
 describe('assertOgImageSource', () => {

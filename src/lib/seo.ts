@@ -103,6 +103,10 @@ export interface OpenGraphArticle {
   readonly publishedTime: Date;
   readonly modifiedTime?: Date | undefined;
   readonly tags?: readonly string[] | undefined;
+  /** URL absolue de la page de l'auteur (même personne que l'`author` du `BlogPosting`). */
+  readonly authorUrl?: string | undefined;
+  /** Rubrique de l'article (« Conseils déco »). */
+  readonly section?: string | undefined;
 }
 
 export interface MetaProperty {
@@ -112,13 +116,16 @@ export interface MetaProperty {
 
 /**
  * Balises `article:*` (dates ISO 8601, mêmes valeurs que le JSON-LD `BlogPosting`) :
- * `modified_time` reprend la date de publication à défaut de mise à jour ; un `article:tag` par mot-clé.
+ * `modified_time` reprend la date de publication à défaut de mise à jour ; `author` (URL de la page
+ * de l'auteur) et `section` si fournis ; un `article:tag` par mot-clé. Ordre du protocole Open Graph.
  */
 export function buildArticleMetaTags(article: OpenGraphArticle): MetaProperty[] {
   const modified = article.modifiedTime ?? article.publishedTime;
   return [
     { property: 'article:published_time', content: article.publishedTime.toISOString() },
     { property: 'article:modified_time', content: modified.toISOString() },
+    ...(article.authorUrl ? [{ property: 'article:author', content: article.authorUrl }] : []),
+    ...(article.section ? [{ property: 'article:section', content: article.section }] : []),
     ...(article.tags ?? []).map((tag) => ({ property: 'article:tag', content: tag })),
   ];
 }

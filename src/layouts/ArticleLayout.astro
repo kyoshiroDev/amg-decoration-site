@@ -14,7 +14,8 @@ import FurtherReading from '@/components/blocks/FurtherReading.astro';
 import CtaBanner from '@/components/blocks/CtaBanner.astro';
 import { microcopy } from '@/config/microcopy';
 import { site } from '@/config/site';
-import { buildBlogPosting } from '@/lib/jsonld';
+import { buildBlogPosting, FOUNDER_PROFILE_PATH } from '@/lib/jsonld';
+import { absoluteUrl } from '@/lib/url';
 import { buildByline, type ArticlePageModel } from '@/lib/pages/articles-model';
 import type { PageSection } from '@/lib/pages/types';
 
@@ -53,6 +54,8 @@ const blogPosting = buildBlogPosting(
     publishedTime: article.publishedAt,
     modifiedTime: article.updatedAt,
     tags: article.tags,
+    authorUrl: absoluteUrl(FOUNDER_PROFILE_PATH, origin),
+    section: labels.indexLabel,
   }}
   breadcrumbs={article.breadcrumbs}
   jsonLd={[blogPosting]}
