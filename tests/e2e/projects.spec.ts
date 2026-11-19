@@ -114,6 +114,13 @@ test.describe('Réalisations : page projet', () => {
   test('navigation vers les autres projets et CTA', async ({ page }) => {
     const pager = page.getByRole('navigation', { name: microcopy.projects.pager.label });
     await expect(pager.getByRole('link')).toHaveCount(2);
+    // Sens et titre séparés (texte du lien « Projet suivant : … », jamais « suivantTitre »).
+    const { previous, next, separator } = microcopy.projects.pager;
+    for (const [index, direction] of [previous, next].entries()) {
+      await expect(pager.getByRole('link').nth(index)).toHaveText(
+        new RegExp(`^\\s*${direction}${separator}\\S`),
+      );
+    }
     await expect(page.locator('main a[href="/contact/"]').first()).toBeVisible();
   });
 

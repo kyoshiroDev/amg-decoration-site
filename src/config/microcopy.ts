@@ -125,6 +125,8 @@ export const microcopy = {
       label: 'Autres réalisations',
       previous: 'Projet précédent',
       next: 'Projet suivant',
+      /** Séparateur masqué entre le sens et le titre (texte du lien : « Projet suivant : … »). */
+      separator: '\u00A0: ',
     },
   },
   articles: {

@@ -17,7 +17,13 @@ interface Link {
 interface Props {
   previous: ProjectCardData | undefined;
   next: ProjectCardData | undefined;
-  labels: { readonly label: string; readonly previous: string; readonly next: string };
+  labels: {
+    readonly label: string;
+    readonly previous: string;
+    readonly next: string;
+    /** Ponctuation masquée entre le sens et le titre (texte du lien lisible par les robots). */
+    readonly separator: string;
+  };
 }
 
 const { previous, next, labels } = Astro.props;
@@ -51,6 +57,7 @@ const links: Link[] = [
             />
             <span class="project-pager__text">
               <span class="project-pager__direction">{link.label}</span>
+              <span class="visually-hidden">{labels.separator}</span>
               <span class="project-pager__title">{link.project.title}</span>
             </span>
           </a>
