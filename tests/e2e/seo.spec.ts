@@ -181,20 +181,6 @@ test.describe('SEO des pages non indexables', () => {
 /** Pages non indexables, absentes du sitemap mais crawlées pour leurs liens. */
 const NOINDEX_PATHS = ['/merci/', '/styleguide/', NOT_FOUND_PATH] as const;
 
-/** Types JSON-LD propres à chaque gabarit de page (en plus de WebSite, ProfessionalService, Person). */
-function expectedPageTypes(path: string): string[] {
-  if (path === '/') return [];
-  const types = ['BreadcrumbList'];
-  if (['/prestations/', '/realisations/', '/conseils-deco/'].includes(path)) {
-    types.push('CollectionPage');
-  } else if (path.startsWith('/realisations/')) types.push('CreativeWork');
-  else if (path.startsWith('/conseils-deco/')) types.push('BlogPosting');
-  else if (path.startsWith('/prestations/') && path !== '/prestations/') types.push('Service');
-  else if (path === '/a-propos/') types.push('AboutPage');
-  else if (path === '/contact/') types.push('ContactPage');
-  return types;
-}
-
 async function sitemapPaths(): Promise<string[]> {
   const xml = await readFile(SITEMAP_FILE, 'utf8');
   return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => new URL(match[1] ?? '').pathname);
@@ -242,7 +228,7 @@ test.describe('SEO de toutes les pages', { tag: '@desktop' }, () => {
     for (const path of NOINDEX_PATHS) expect(paths).not.toContain(path);
   });
 
-  test('title, description et canonical uniques ; un h1 ; JSON-LD du gabarit', async ({ page }) => {
+  test('title, description et canonical uniques ; un h1 ; un seul JSON-LD', async ({ page }) => {
     const titles = new Map<string, string>();
     const descriptions = new Map<string, string>();
     for (const path of await sitemapPaths()) {
@@ -273,12 +259,8 @@ test.describe('SEO de toutes les pages', { tag: '@desktop' }, () => {
       );
       await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
 
-      const graph = await readGraph(page);
-      const types = graph.map((node) => node['@type']);
-      expect(types.slice(0, 3)).toEqual(['WebSite', 'ProfessionalService', 'Person']);
-      expect(types.slice(3).sort(), `${path} : types JSON-LD`).toEqual(
-        expectedPageTypes(path).sort(),
-      );
+      // Types JSON-LD par gabarit : tests/e2e/structured-data.spec.ts.
+      await readGraph(page);
     }
   });
 

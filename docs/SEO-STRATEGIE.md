@@ -124,7 +124,7 @@ Chaque URL de page est déclarée **avec et sans slash final** (l'accueil WordPr
 
 ### Par type de page (implémenté en Phase 4)
 
-Chaque page émet le graphe global (`WebSite`, `ProfessionalService`, `Person`) puis ses nœuds propres. Contrôlé sur toutes les pages du sitemap par `tests/e2e/seo.spec.ts` (« SEO de toutes les pages »).
+Chaque page émet le graphe global (`WebSite`, `ProfessionalService`, `Person`) puis ses nœuds propres. Contrôlé sur toutes les pages du sitemap et `/merci/` par `tests/e2e/structured-data.spec.ts`, qui lit le HTML de `dist/` (contrôles dans `tests/e2e/jsonld-assert.ts`, table unique des types attendus par route `expectedPageTypes`) : un seul script parsable, `@context` schema.org, les 3 entités globales, types du gabarit, chaque référence `@id` résolue dans le graphe de la page, aucun `@id` dupliqué, URL absolues sur l'origine de production, images `/_astro/` présentes dans `dist/`, propriétés requises (`BlogPosting` : `headline` ≤ 110 caractères, `image`, `datePublished`, `author` ; `Service` : `name`, `provider`, `areaServed` ; `CreativeWork` : `image` ; `ItemList` : `numberOfItems` = nombre d'éléments ; positions 1..n des listes et fils d'Ariane).
 
 | Page                                 | Nœuds propres (ordre du `@graph`)  | Source                                                                                                                                                                               |
 | ------------------------------------ | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
