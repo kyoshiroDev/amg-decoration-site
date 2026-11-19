@@ -2,22 +2,13 @@
 import { defineConfig, fontProviders } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readArticleSources } from './src/lib/article-files.ts';
 import { buildLastmodMap } from './src/lib/sitemap-lastmod.ts';
 
 const SITE = 'https://amgdecorationdinterieur.com';
 
 // `lastmod` du sitemap : dates réelles des articles seulement (src/lib/sitemap-lastmod.ts).
-const ARTICLES_DIR = new URL('./src/content/articles/', import.meta.url);
-const lastmod = buildLastmodMap(
-  readdirSync(ARTICLES_DIR)
-    .filter((file) => /\.mdx?$/.test(file))
-    .map((file) => ({
-      slug: file.replace(/\.mdx?$/, ''),
-      source: readFileSync(new URL(file, ARTICLES_DIR), 'utf8'),
-    })),
-  SITE,
-);
+const lastmod = buildLastmodMap(readArticleSources(), SITE);
 
 // Configuration Astro — voir docs/ARCHITECTURE.md (§ Configuration).
 export default defineConfig({

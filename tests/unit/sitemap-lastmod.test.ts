@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { articleLastmod, buildLastmodMap } from '@/lib/sitemap-lastmod';
+import { articleLastmod, buildLastmodMap, isPublishedSource } from '@/lib/sitemap-lastmod';
 
 const ORIGIN = 'https://amgdecorationdinterieur.com';
 const fm = (lines: string): string => `---\n${lines}\n---\n\nCorps de l’article.\n`;
@@ -44,5 +44,13 @@ describe('buildLastmodMap', () => {
 
   it('reste vide sans article publié', () => {
     expect(buildLastmodMap([], ORIGIN).size).toBe(0);
+  });
+});
+
+describe('isPublishedSource', () => {
+  it('considère un article publié sauf draft: true', () => {
+    expect(isPublishedSource(fm('publishedAt: 2026-11-18'))).toBe(true);
+    expect(isPublishedSource(fm('draft: false'))).toBe(true);
+    expect(isPublishedSource(fm('draft: true'))).toBe(false);
   });
 });

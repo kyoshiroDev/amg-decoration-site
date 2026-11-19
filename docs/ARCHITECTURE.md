@@ -132,7 +132,7 @@ Poids total mesuré par page (gzip, fin de Phase 5, hors script inline de 0,15 K
 
 ## Configuration
 
-- `astro.config.mjs` : `site: 'https://amgdecorationdinterieur.com'`, `trailingSlash: 'always'`, `output: 'static'`, intégrations `sitemap` (filtre des pages `noindex`, `lastmod` des articles lu dans leur frontmatter par `src/lib/sitemap-lastmod.ts`, importé sans alias) (+ `mdx`), `prefetch`, Fonts API, `image` (formats/qualités).
+- `astro.config.mjs` : `site: 'https://amgdecorationdinterieur.com'`, `trailingSlash: 'always'`, `output: 'static'`, intégrations `sitemap` (filtre des pages `noindex`, `lastmod` des articles lu dans leur frontmatter par `src/lib/article-files.ts` et `src/lib/sitemap-lastmod.ts`, importés sans alias ; les mêmes fichiers donnent les routes d'articles de `SITE_ROUTES`) (+ `mdx`), `prefetch`, Fonts API, `image` (formats/qualités).
 - `vercel.json` : redirections 301, en-têtes de sécurité (CSP, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`), cache immuable `/_astro/*`.
 - `tsconfig.json` : `astro/tsconfigs/strictest` + alias `@/*`.
 

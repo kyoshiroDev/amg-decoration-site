@@ -12,6 +12,8 @@
  * les anciennes URLs déclarées avec et sans slash : chaque ancienne URL arrive en un saut.
  */
 
+import { publishedArticleRoutes } from './article-files';
+
 export interface VercelRedirect {
   source: string;
   destination: string;
@@ -28,7 +30,10 @@ export const PROJECT_SLUGS = {
 
 const project = (slug: string): string => `/realisations/${slug}/`;
 
-/** Pages du nouveau site (toutes servies en 200, slash final). */
+/**
+ * Pages du nouveau site (toutes servies en 200, slash final), articles publiés compris : ceux-ci
+ * sont lus dans src/content/articles/ (`publishedArticleRoutes`), jamais recopiés à la main.
+ */
 export const SITE_ROUTES: readonly string[] = [
   '/',
   '/prestations/',
@@ -43,6 +48,7 @@ export const SITE_ROUTES: readonly string[] = [
   ...Object.values(PROJECT_SLUGS).map(project),
   '/a-propos/',
   '/conseils-deco/',
+  ...publishedArticleRoutes(),
   '/contact/',
   '/mentions-legales/',
   '/confidentialite/',

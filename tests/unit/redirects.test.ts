@@ -7,6 +7,7 @@ import {
   SITE_ROUTES,
   type VercelRedirect,
 } from '@/lib/redirects';
+import { publishedArticleRoutes } from '@/lib/article-files';
 
 interface VercelConfig {
   trailingSlash?: boolean;
@@ -155,5 +156,18 @@ describe('migration : chaque ancienne URL a une destination (200 ou 301 en un sa
     expect(resolveRedirect('/wp-login.php')).toBeNull();
     expect(resolveRedirect('/wp-admin/')).toBeNull();
     expect(resolveRedirect('/wp-content/uploads/2026/04/chalet2.png')).toBeNull();
+  });
+});
+
+describe('SITE_ROUTES', () => {
+  it('contient les articles publiés, lus dans src/content/articles/, sans brouillon', () => {
+    const articles = SITE_ROUTES.filter((path) => /^\/conseils-deco\/[^/]+\/$/.test(path));
+    expect(articles).toEqual(publishedArticleRoutes());
+    expect(articles.length).toBeGreaterThan(0);
+    expect(articles).not.toContain('/conseils-deco/modele-article/');
+  });
+
+  it('ne contient aucun doublon', () => {
+    expect(new Set(SITE_ROUTES).size).toBe(SITE_ROUTES.length);
   });
 });

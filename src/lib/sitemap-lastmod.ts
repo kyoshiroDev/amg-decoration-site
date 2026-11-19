@@ -17,7 +17,7 @@ export interface ArticleSource {
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Valeur scalaire d'une clé de premier niveau du frontmatter YAML (guillemets retirés). */
-function frontmatterValue(source: string, key: string): string | undefined {
+export function frontmatterValue(source: string, key: string): string | undefined {
   const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---/.exec(source)?.[1] ?? '';
   const line = new RegExp(`^${key}:[ \\t]*(.*)$`, 'm').exec(frontmatter)?.[1];
   const value = line
@@ -27,9 +27,14 @@ function frontmatterValue(source: string, key: string): string | undefined {
   return value === '' ? undefined : value;
 }
 
+/** Un article est publié sauf `draft: true` (même règle que le schéma : `draft` vaut `false` par défaut). */
+export function isPublishedSource(source: string): boolean {
+  return frontmatterValue(source, 'draft') !== 'true';
+}
+
 /** Date de dernière modification d'un article (AAAA-MM-JJ), absente pour un brouillon. */
 export function articleLastmod(source: string): string | undefined {
-  if (frontmatterValue(source, 'draft') === 'true') return undefined;
+  if (!isPublishedSource(source)) return undefined;
   const date = frontmatterValue(source, 'updatedAt') ?? frontmatterValue(source, 'publishedAt');
   return date && ISO_DATE.test(date) ? date : undefined;
 }

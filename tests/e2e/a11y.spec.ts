@@ -1,8 +1,6 @@
-import { readFileSync, readdirSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { microcopy } from '../../src/config/microcopy';
 import { SITE_ROUTES } from '../../src/lib/redirects';
-import { articlePath } from '../../src/lib/routes';
 import {
   NOT_FOUND_PATH,
   expectNoAxeViolations,
@@ -17,25 +15,8 @@ const AUDITED_PAGES = [
   { name: '404', path: NOT_FOUND_PATH },
 ] as const;
 
-const ARTICLES_DIR = new URL('../../src/content/articles/', import.meta.url);
-
-/**
- * Articles publiés, lus depuis les sources (et non depuis dist/ : la collecte des tests précède
- * le build lancé par le webServer). Un brouillon (`draft: true`) n'est pas construit.
- */
-const PUBLISHED_ARTICLES = readdirSync(ARTICLES_DIR)
-  .filter((file) => /\.mdx?$/.test(file))
-  .filter((file) => !/^draft:\s*true\s*$/m.test(readFileSync(new URL(file, ARTICLES_DIR), 'utf8')))
-  .map((file) => articlePath(file.replace(/\.mdx?$/, '')));
-
-/** Toutes les pages construites : routes du plan de site, articles, pages hors sitemap. */
-const ALL_PAGES = [
-  ...SITE_ROUTES,
-  ...PUBLISHED_ARTICLES,
-  '/merci/',
-  '/styleguide/',
-  NOT_FOUND_PATH,
-] as const;
+/** Toutes les pages construites : routes du plan de site (articles publiés compris), pages hors sitemap. */
+const ALL_PAGES = [...SITE_ROUTES, '/merci/', '/styleguide/', NOT_FOUND_PATH] as const;
 
 /** Pages longues ou à formulaire : espacement du texte (1.4.12) et focus non masqué (2.4.11). */
 const LONG_PAGES = [
@@ -146,7 +127,7 @@ test.describe('Débordement horizontal à 320 px (1.4.10)', () => {
   test.use({ viewport: { width: 320, height: 720 } });
 
   test('la liste couvre toutes les pages construites', () => {
-    expect(PUBLISHED_ARTICLES.length).toBeGreaterThan(0);
+    expect(ALL_PAGES.some((path) => /^\/conseils-deco\/[^/]+\/$/.test(path))).toBe(true);
     expect(new Set(ALL_PAGES).size).toBe(ALL_PAGES.length);
   });
 
