@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { cspDirectives, cspHash, formEndpointOrigin, INLINE_SCRIPT_HASHES } from '@/lib/csp';
+import {
+  cspDirectives,
+  cspHash,
+  formEndpointOrigin,
+  INLINE_SCRIPT_HASHES,
+  pruneCspHashes,
+} from '@/lib/csp';
 import { JS_CLASS_SCRIPT } from '@/lib/inline-scripts';
 
 /** Directive par nom (`connect-src` → `connect-src 'self' …`). */
@@ -74,5 +80,51 @@ describe('cspDirectives', () => {
   it('chaque directive n’apparaît qu’une fois', () => {
     const names = cspDirectives(undefined).map((entry) => entry.split(' ')[0]);
     expect(new Set(names).size).toBe(names.length);
+  });
+});
+
+describe('pruneCspHashes', () => {
+  const style = 'p{color:red}';
+  const script = 'var a=1';
+  const unused = cspHash('ailleurs sur le site');
+  const policy = (scripts: string, styles: string): string =>
+    `default-src 'self';img-src 'self' data:; script-src 'self' ${scripts}; style-src 'self' ${styles}; style-src-attr 'unsafe-inline';`;
+  const page = (content: string): string =>
+    `<html><head><meta http-equiv="content-security-policy" content="${content}"><style>${style}</style><script>${script}</script>` +
+    `<script type="module" src="/_astro/a.js"></script><script type="application/ld+json">{}</script></head><body></body></html>`;
+
+  it('ne garde que les empreintes des éléments inline de la page, par type', () => {
+    const html = page(
+      policy(
+        `'${cspHash(script)}' '${unused}' '${cspHash(style)}'`,
+        `'${cspHash(style)}' '${unused}' '${cspHash(script)}'`,
+      ),
+    );
+    expect(pruneCspHashes(html)).toBe(page(policy(`'${cspHash(script)}'`, `'${cspHash(style)}'`)));
+  });
+
+  it('laisse intactes les autres sources et directives', () => {
+    const html = page(policy(`'${unused}'`, `'${unused}'`));
+    const pruned = pruneCspHashes(html);
+    expect(pruned).toContain(
+      "default-src 'self';img-src 'self' data:; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline';",
+    );
+  });
+
+  it('ignore les scripts externes et le JSON-LD', () => {
+    const html = page(policy(`'${cspHash('')}' '${cspHash('{}')}'`, ''));
+    expect(pruneCspHashes(html)).toContain("script-src 'self';");
+  });
+
+  it('décode puis réencode l’attribut (apostrophes en entités)', () => {
+    const html = page(
+      policy(`'${cspHash(script)}' '${unused}'`, `'${cspHash(style)}'`).replaceAll("'", '&#39;'),
+    );
+    expect(pruneCspHashes(html)).toContain(`script-src 'self' '${cspHash(script)}';`);
+  });
+
+  it('page sans balise meta CSP : inchangée', () => {
+    const html = '<html><head><style>p{}</style></head></html>';
+    expect(pruneCspHashes(html)).toBe(html);
   });
 });

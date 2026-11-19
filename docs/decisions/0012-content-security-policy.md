@@ -43,10 +43,28 @@ Le formulaire de contact envoie vers le service de `PUBLIC_FORM_ENDPOINT` (ADR-0
 - **En-tête complémentaire** dans `vercel.json` : `Content-Security-Policy: frame-ancestors 'none'; base-uri 'self'; object-src 'none'`. `frame-ancestors` est ignoré dans une balise meta ; `X-Frame-Options: DENY` reste pour les navigateurs anciens. Cet en-tête ne contient ni `default-src` ni `script-src`/`style-src` : deux politiques se cumulent, une seconde politique figée bloquerait les styles inline.
 - `upgrade-insecure-requests` n'est pas déclaré : toutes les ressources sont relatives au site, servi uniquement en HTTPS (HSTS) ; la directive casserait en outre le serveur de prévisualisation local en HTTP.
 
+### Empreintes limitées à chaque page (amendement, audit performance de fin de Phase 7)
+
+**Constat** (source `astro@7.4.12`, `core/build/plugins/plugin-manifest.js` et `core/csp/common.js`) : la politique est calculée **une fois pour tout le site** et copiée dans chaque page. `trackStyleHashes` parcourt les styles inlinés de toutes les pages (`internals.pagesByViteID`), `trackScriptHashes` ajoute les scripts inlinés et les 5 directives `client:*` même sans île. Résultat : 38 empreintes (8 `script-src`, 30 `style-src`) dans chaque `<meta>`, ~2,3 Ko bruts et ~1,5 Ko gzip incompressibles par document, alors qu'une page n'a que 3 à 4 éléments inline (script de classe `js`, deux `@font-face`, une feuille de page, plus celle du formulaire sur `/contact/`). L'accueil dépassait le budget HTML de 14 Kio gzip (14 901 octets). Aucune option d'Astro ne restreint la liste à la page ; l'API `Astro.csp` ne sait qu'ajouter.
+
+**Options mesurées** (accueil, gzip ; Lighthouse mobile simulé, médiane de 5, A/B/C entrelacés) :
+
+| Option                                  | HTML accueil (gzip) | Feuilles bloquantes accueil | Requêtes accueil | FCP accueil / article |
+| --------------------------------------- | ------------------- | --------------------------- | ---------------- | --------------------- |
+| État initial (`inlineStylesheets` auto) | 14 901 o            | 1                           | 15               | 940 / 907 ms          |
+| **Élagage par page** (retenue)          | **13 458 o**        | 1                           | 15               | 966 / 843 ms          |
+| Élagage + `inlineStylesheets: 'never'`  | 10 089 o            | 12                          | 26               | 1 187 / 1 107 ms      |
+
+`'never'` fait tomber les empreintes de style à 2 mais éclate la CSS en 12 feuilles bloquantes sur l'accueil (+11 requêtes, FCP +200 à +250 ms sur 4 des 5 pages mesurées). `'always'` ajouterait la feuille commune (9,2 Ko gzip) dans chaque document : budget HTML hors de portée.
+
+**Décision** : une intégration `amg:csp-par-page` (`astro.config.mjs`, hook `astro:build:done`) passe chaque fichier HTML produit à `pruneCspHashes` (`src/lib/csp.ts`, fonction pure testée dans `tests/unit/csp.test.ts`), qui retire de `script-src`, `script-src-elem`, `style-src` et `style-src-elem` toute empreinte sans élément `<script>`/`<style>` inline correspondant **dans la page**. Le reste de la politique est intact. La politique est **plus stricte** qu'avant (une empreinte inutile autoriserait ce contenu s'il était injecté) et rien n'est assoupli : ni `'unsafe-inline'` en `script-src`/`style-src`, ni test désactivé. `tests/e2e/csp.spec.ts` vérifie désormais les deux sens : chaque élément inline a son empreinte, et chaque empreinte correspond à un élément de la page.
+
+Gain : −1 430 à −1 445 octets gzip sur chacune des 25 pages, accueil 13 458 octets (marge de 878 octets sous le budget). À surveiller si Astro change la forme de sa balise meta (expression régulière de `pruneCspHashes`) : le test e2e échouerait alors sur les empreintes superflues.
+
 ## Conséquences
 
 - **Toute nouvelle ressource externe** (police, image distante, carte, vidéo, analytics, widget d'avis, iframe) **exige d'amender la politique** dans `src/lib/csp.ts`, avec son test et cette ADR. Sans cela, elle est bloquée en production.
-- Tout nouveau script `is:inline` doit voir son empreinte ajoutée à `INLINE_SCRIPT_HASHES` ; `tests/e2e/csp.spec.ts` échoue sinon (chaque `<script>`/`<style>` inline de chaque page doit avoir son empreinte dans la politique).
+- Tout nouveau script `is:inline` doit voir son empreinte ajoutée à `INLINE_SCRIPT_HASHES` ; `tests/e2e/csp.spec.ts` échoue sinon (chaque `<script>`/`<style>` inline de chaque page doit avoir son empreinte dans la politique, et seulement celles de ses éléments après `pruneCspHashes`).
 - La balise meta est rendue par Astro avec le reste du `<head>`, après le script `is:inline` et les `<style>` de la Fonts API : ceux-ci s'exécutent avant que la politique ne s'applique. Leurs empreintes figurent quand même dans la politique (vérifié par `tests/e2e/csp.spec.ts`), si bien qu'un déplacement de la balise ne casserait rien.
 - Limites d'une balise meta : pas de `frame-ancestors` (porté par l'en-tête), pas de `report-to`/`report-uri` (aucun rapport de violation en production), pas de `sandbox`.
 - `<ClientRouter />` reste exclu (incompatible avec `security.csp`, ADR-0006).

@@ -5,7 +5,9 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import { readArticleSources } from './src/lib/article-files.ts';
 import { buildLastmodMap } from './src/lib/sitemap-lastmod.ts';
-import { cspDirectives, INLINE_SCRIPT_HASHES } from './src/lib/csp.ts';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { cspDirectives, INLINE_SCRIPT_HASHES, pruneCspHashes } from './src/lib/csp.ts';
 
 const SITE = 'https://amgdecorationdinterieur.com';
 
@@ -88,6 +90,22 @@ export default defineConfig({
     },
   ],
   integrations: [
+    // Empreintes CSP réduites, page par page, à celles des éléments inline présents (ADR-0012).
+    {
+      name: 'amg:csp-par-page',
+      hooks: {
+        'astro:build:done': ({ dir }) => {
+          const root = fileURLToPath(dir);
+          for (const file of readdirSync(root, { recursive: true, encoding: 'utf8' })) {
+            if (!file.endsWith('.html')) continue;
+            const path = `${root}/${file}`;
+            const html = readFileSync(path, 'utf8');
+            const pruned = pruneCspHashes(html);
+            if (pruned !== html) writeFileSync(path, pruned);
+          }
+        },
+      },
+    },
     mdx(),
     sitemap({
       // Pages non indexées (noindex) : jamais dans le sitemap (styleguide interne, remerciement du formulaire).

@@ -78,6 +78,12 @@ test.describe('CSP : politique de chaque page', { tag: '@desktop' }, () => {
       for (const [, tag, , content = ''] of inline) {
         expect(allowed.has(sha256(content)), `<${tag}> inline sans empreinte`).toBe(true);
       }
+      // Empreintes limitées à la page (pruneCspHashes) : aucune n'autorise un élément absent.
+      const present = new Set(inline.map(([, , , content = '']) => sha256(content)));
+      const unused = [...allowed].filter(
+        (source) => source.startsWith('sha') && !present.has(source),
+      );
+      expect(unused, 'empreintes sans élément inline sur la page').toEqual([]);
     });
   }
 });
