@@ -135,7 +135,7 @@ Poids total mesuré par page (gzip, fin de Phase 5, hors script inline de 0,15 K
 
 - `astro.config.mjs` : `site: 'https://amgdecorationdinterieur.com'`, `trailingSlash: 'always'`, `output: 'static'`, intégrations `sitemap` (filtre des pages `noindex`, `lastmod` des articles lu dans leur frontmatter par `src/lib/article-files.ts` et `src/lib/sitemap-lastmod.ts`, importés sans alias ; les mêmes fichiers donnent les routes d'articles passées à `siteRoutes()`, assemblées dans `tests/site-routes.ts`) (+ `mdx`), `prefetch`, Fonts API, `image` (formats/qualités).
 - `astro.config.mjs` → `security.csp` : Content-Security-Policy en balise meta, empreintes des scripts et styles calculées au build ; directives et empreintes des scripts `is:inline` fournies par `src/lib/csp.ts`, origine de `PUBLIC_FORM_ENDPOINT` autorisée si elle est définie (ADR-0012).
-- `vercel.json` : redirections 301, en-têtes de sécurité (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, HSTS, `Cross-Origin-Opener-Policy`, `Permissions-Policy`, CSP d'en-tête limitée à `frame-ancestors`/`base-uri`/`object-src`) ; cache immuable `/_astro/*`.
+- `vercel.json` : redirections 301, en-têtes de sécurité (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, HSTS, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `Permissions-Policy`, CSP d'en-tête limitée à `frame-ancestors`/`base-uri`/`object-src`), vérifiés par `tests/unit/security-headers.test.ts` ; cache immuable `/_astro/*`.
 - `tsconfig.json` : `astro/tsconfigs/strictest` + alias `@/*`.
 
 ## Déploiement
