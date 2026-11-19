@@ -122,6 +122,7 @@ describe('table des redirections', () => {
     expect(resolveRedirect('/realisations/chalet-suisse')).toBe('/realisations/chalet-suisse/');
     expect(resolveRedirect('/_astro/index.B1x2.css')).toBeNull();
     expect(resolveRedirect('/robots.txt')).toBeNull();
+    expect(resolveRedirect('/llms.txt')).toBeNull();
     expect(resolveRedirect('/.well-known/acme-challenge/jeton')).toBeNull();
     expect(resolveRedirect('/_vercel/insights/vitals')).toBeNull();
   });

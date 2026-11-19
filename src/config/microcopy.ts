@@ -157,4 +157,16 @@ export const microcopy = {
     /** `{year}` est remplacé par l'année du build. */
     copyright: '© {year} AMG Décoration d’Intérieur — Amandine Gaury',
   },
+  /** Fichier /llms.txt (src/lib/pages/llms-model.ts) : titres de section et paragraphe factuel. */
+  llms: {
+    /** `{founder}`, `{jobTitle}`, `{name}`, `{areas}`, `{email}`, `{phone}` : lus dans src/config/site.ts. */
+    about:
+      'Fondatrice\u00A0: {founder}, {jobTitle}. {name} conçoit et décore des intérieurs avec visualisation 3D. Zone desservie\u00A0: {areas}, avec un accompagnement à distance. Contact\u00A0: {email}, {phone}.',
+    sections: {
+      main: 'Pages principales',
+      services: 'Prestations',
+      projects: 'Réalisations',
+      articles: 'Conseils déco',
+    },
+  },
 } as const;

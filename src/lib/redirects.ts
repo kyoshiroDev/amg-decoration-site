@@ -49,8 +49,8 @@ export const SITE_ROUTES: readonly string[] = [
   '/conditions-generales/',
 ];
 
-/** Fichiers techniques générés au build (sitemap Astro). */
-export const SITE_FILES: readonly string[] = ['/sitemap-index.xml'];
+/** Fichiers techniques générés au build (sitemap Astro, robots.txt, llms.txt). */
+export const SITE_FILES: readonly string[] = ['/sitemap-index.xml', '/robots.txt', '/llms.txt'];
 
 const OLD_PROJECTS_WITHOUT_TEXT = [
   '/projet-1/',
