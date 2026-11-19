@@ -17,6 +17,7 @@ import {
   buildWebSite,
   entityId,
   FOUNDER_PROFILE_PATH,
+  pageNodeId,
   serializeJsonLd,
   webPageInputFrom,
 } from '@/lib/jsonld';
@@ -341,5 +342,83 @@ describe('serializeJsonLd', () => {
     expect(graph['@context']).toBe('https://schema.org');
     expect(graph['@graph']).toHaveLength(3);
     expect(graph).toMatchSnapshot();
+  });
+});
+
+describe('identifiants @id des nœuds de page', () => {
+  const page = 'https://amgdecorationdinterieur.com/prestations/confort/';
+
+  it('pageNodeId : URL canonique à slash final + fragment', () => {
+    expect(pageNodeId('/prestations/confort', origin, 'service')).toBe(`${page}#service`);
+  });
+
+  it('Service : @id #service, image seulement si un visuel est fourni', () => {
+    const input = {
+      name: 'Confort',
+      description: 'Pièces de vie',
+      path: '/prestations/confort/',
+    } as const;
+    const bare = asJson<Record<string, unknown>>(buildService(input, site.areaServed, origin));
+    expect(bare['@id']).toBe(`${page}#service`);
+    expect(bare).not.toHaveProperty('image');
+    expect(
+      buildService({ ...input, imageUrl: '/_astro/confort.jpg' }, site.areaServed, origin),
+    ).toMatchObject({ image: 'https://amgdecorationdinterieur.com/_astro/confort.jpg' });
+  });
+
+  it('CreativeWork : @id #projet et rattachement au site', () => {
+    expect(
+      buildCreativeWork(
+        { name: 'Chalet', description: 'D', path: '/realisations/chalet-suisse/', imageUrls: [] },
+        origin,
+      ),
+    ).toMatchObject({
+      '@id': 'https://amgdecorationdinterieur.com/realisations/chalet-suisse/#projet',
+      isPartOf: { '@id': entityId(origin, 'site') },
+    });
+  });
+
+  it('BlogPosting : @id #article et keywords tirés des étiquettes (omis si aucune)', () => {
+    const input = {
+      headline: 'Titre',
+      description: 'D',
+      path: '/conseils-deco/plan-3d/',
+      datePublished: new Date('2026-11-17T00:00:00Z'),
+      imageUrl: '/_astro/cover.jpg',
+    } as const;
+    expect(
+      buildBlogPosting({ ...input, keywords: ['Plan 3D', 'Rénovation'] }, origin),
+    ).toMatchObject({
+      '@id': 'https://amgdecorationdinterieur.com/conseils-deco/plan-3d/#article',
+      keywords: 'Plan 3D, Rénovation',
+    });
+    expect(buildBlogPosting({ ...input, keywords: [] }, origin)).not.toHaveProperty('keywords');
+  });
+
+  it('BreadcrumbList : @id #fil-ariane sur l’URL de la page courante (dernier élément)', () => {
+    expect(
+      buildBreadcrumbList(
+        [
+          { label: 'Accueil', href: '/' },
+          { label: 'Confort', href: '/prestations/confort/' },
+        ],
+        origin,
+      ),
+    ).toMatchObject({ '@id': `${page}#fil-ariane` });
+  });
+
+  it('pages WebPage : @id #page et breadcrumb relié au fil d’Ariane de la même page', () => {
+    const input = { name: 'Contact', description: 'D', path: '/contact/' } as const;
+    const contact = 'https://amgdecorationdinterieur.com/contact/';
+    for (const node of [
+      buildContactPage(input, origin),
+      buildAboutPage(input, origin),
+      buildCollectionPage({ ...input, items: [] }, origin),
+    ]) {
+      expect(node).toMatchObject({
+        '@id': `${contact}#page`,
+        breadcrumb: { '@id': `${contact}#fil-ariane` },
+      });
+    }
   });
 });

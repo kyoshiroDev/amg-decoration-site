@@ -9,7 +9,7 @@ import OfferCards from '@/components/blocks/OfferCards.astro';
 import CtaBanner from '@/components/blocks/CtaBanner.astro';
 import { getServicesData } from '@/lib/pages/services';
 
-const data = await getServicesData();
+const data = await getServicesData(Astro.site ?? Astro.url);
 const { sections } = data;
 ---
 
@@ -17,6 +17,7 @@ const { sections } = data;
   title={data.seo.title}
   description={data.seo.description}
   breadcrumbs={data.breadcrumbs}
+  jsonLd={data.jsonLd}
 >
   <PageHero section={data.hero} id="prestations-page-titre" />
   <ServicesGrid

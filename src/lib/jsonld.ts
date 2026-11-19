@@ -35,6 +35,14 @@ export interface BreadcrumbItem {
   readonly href: InternalPath;
 }
 
+/** Fragment d'identifiant du nœud principal d'une page (`https://domaine/chemin/#service`). */
+export type PageNodeKey = 'service' | 'projet' | 'article' | 'page' | 'fil-ariane';
+
+/** Identifiant stable d'un nœud propre à une page : URL canonique + fragment. */
+export function pageNodeId(path: InternalPath, origin: URL | string, key: PageNodeKey): string {
+  return `${absoluteUrl(path, origin)}#${key}`;
+}
+
 /** Identifiant stable d'une entité globale : `https://domaine/#entreprise`. */
 export function entityId(origin: URL | string, key: EntityKey): string {
   return `${new URL('/', origin).href}#${key}`;
@@ -126,8 +134,11 @@ export function buildBreadcrumbList(items: readonly BreadcrumbItem[], origin: UR
   if (items.length === 0) {
     throw new Error('Un fil d’Ariane doit contenir au moins un élément.');
   }
+  const current = items.at(-1);
   return {
     '@type': 'BreadcrumbList',
+    // Le dernier élément est la page courante : son URL porte l'identifiant du fil.
+    ...(current ? { '@id': pageNodeId(current.href, origin, 'fil-ariane') } : {}),
     itemListElement: items.map((item, index) => ({
       '@type': 'ListItem',
       position: index + 1,
@@ -141,6 +152,8 @@ export interface ServiceInput {
   readonly name: string;
   readonly description: string;
   readonly path: InternalPath;
+  /** Visuel de la prestation (URL relative ou absolue), émis seulement s'il existe. */
+  readonly imageUrl?: string | undefined;
 }
 
 /**
@@ -154,9 +167,11 @@ export function buildService(
 ): Service {
   return {
     '@type': 'Service',
+    '@id': pageNodeId(input.path, origin, 'service'),
     name: input.name,
     description: input.description,
     url: absoluteUrl(input.path, origin),
+    ...(input.imageUrl ? { image: new URL(input.imageUrl, origin).href } : {}),
     provider: { '@id': entityId(origin, 'entreprise') },
     areaServed: buildAreaServed(areas),
   };
@@ -172,11 +187,14 @@ export interface CreativeWorkInput {
 export function buildCreativeWork(input: CreativeWorkInput, origin: URL): CreativeWork {
   return {
     '@type': 'CreativeWork',
+    '@id': pageNodeId(input.path, origin, 'projet'),
     name: input.name,
     description: input.description,
     url: absoluteUrl(input.path, origin),
     image: input.imageUrls.map((url) => new URL(url, origin).href),
     creator: { '@id': entityId(origin, 'fondatrice') },
+    isPartOf: { '@id': entityId(origin, 'site') },
+    inLanguage: 'fr-FR',
   };
 }
 
@@ -187,11 +205,14 @@ export interface BlogPostingInput {
   readonly datePublished: Date;
   readonly dateModified?: Date | undefined;
   readonly imageUrl: string;
+  /** Étiquettes de l'article (`keywords`), omises si vides. */
+  readonly keywords?: readonly string[] | undefined;
 }
 
 export function buildBlogPosting(input: BlogPostingInput, origin: URL): BlogPosting {
   return {
     '@type': 'BlogPosting',
+    '@id': pageNodeId(input.path, origin, 'article'),
     headline: input.headline,
     description: input.description,
     url: absoluteUrl(input.path, origin),
@@ -203,6 +224,7 @@ export function buildBlogPosting(input: BlogPostingInput, origin: URL): BlogPost
     publisher: { '@id': entityId(origin, 'entreprise') },
     isPartOf: { '@id': entityId(origin, 'site') },
     inLanguage: 'fr-FR',
+    ...(input.keywords && input.keywords.length > 0 ? { keywords: input.keywords.join(', ') } : {}),
   };
 }
 
@@ -248,26 +270,33 @@ export function webPageInputFrom(model: PageModelLike): WebPageInput {
 }
 
 interface WebPageBase {
+  readonly '@id': string;
   readonly name: string;
   readonly description: string;
   readonly url: string;
   readonly isPartOf: { readonly '@id': string };
   readonly inLanguage: 'fr-FR';
+  readonly breadcrumb: { readonly '@id': string };
 }
 
-/** Propriétés communes aux nœuds `WebPage` : rattachement au site par `@id`. */
+/**
+ * Propriétés communes aux nœuds `WebPage` : identifiant `#page`, rattachement au site et
+ * fil d'Ariane (`BreadcrumbList` ajoutée par `PageLayout`) par `@id`.
+ */
 function webPageBase(input: WebPageInput, origin: URL): WebPageBase {
   return {
+    '@id': pageNodeId(input.path, origin, 'page'),
     name: input.name,
     description: input.description,
     url: absoluteUrl(input.path, origin),
     isPartOf: { '@id': entityId(origin, 'site') },
     inLanguage: 'fr-FR',
+    breadcrumb: { '@id': pageNodeId(input.path, origin, 'fil-ariane') },
   };
 }
 
 /**
- * Page d'index (réalisations, articles) : `CollectionPage` dont l'entité principale est la
+ * Page d'index (prestations, réalisations, articles) : `CollectionPage` dont l'entité principale est la
  * liste des pages présentées. Aucun résultat enrichi Google pour ce type de site ; utile pour
  * la compréhension de la structure, sans risque (contenu visible identique).
  */

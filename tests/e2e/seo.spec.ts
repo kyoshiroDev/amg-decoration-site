@@ -185,8 +185,9 @@ const NOINDEX_PATHS = ['/merci/', '/styleguide/', NOT_FOUND_PATH] as const;
 function expectedPageTypes(path: string): string[] {
   if (path === '/') return [];
   const types = ['BreadcrumbList'];
-  if (path === '/realisations/' || path === '/conseils-deco/') types.push('CollectionPage');
-  else if (path.startsWith('/realisations/')) types.push('CreativeWork');
+  if (['/prestations/', '/realisations/', '/conseils-deco/'].includes(path)) {
+    types.push('CollectionPage');
+  } else if (path.startsWith('/realisations/')) types.push('CreativeWork');
   else if (path.startsWith('/conseils-deco/')) types.push('BlogPosting');
   else if (path.startsWith('/prestations/') && path !== '/prestations/') types.push('Service');
   else if (path === '/a-propos/') types.push('AboutPage');
