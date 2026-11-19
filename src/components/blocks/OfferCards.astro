@@ -1,0 +1,67 @@
+---
+/**
+ * OfferCards — offres complémentaires (meuble sur mesure, professionnels) : deux grandes cartes
+ * côte à côte (≥ 64rem). Titre-lien (zone cliquable étendue à la carte), accroche italique,
+ * résumé, ce qui est compris, tarif ou devis, invitation visuelle.
+ */
+import ContentSection from './ContentSection.astro';
+import Icon from '@/components/ui/Icon.astro';
+import { microcopy } from '@/config/microcopy';
+import type { OfferCardData } from '@/lib/pages/services-model';
+import type { PageSection } from '@/lib/pages/types';
+import './offer-cards.css';
+
+interface Props {
+  section: PageSection;
+  offers: readonly OfferCardData[];
+  id: string;
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+}
+
+const { section, offers, id, background = 'blush' } = Astro.props;
+const { services } = microcopy;
+---
+
+<ContentSection section={section} id={id} background={background}>
+  <ul class="offer-cards">
+    {offers.map((offer) => (
+      <li class="offer-cards__item" data-reveal>
+        <article class="offer-card">
+          <span class="offer-card__arch" aria-hidden="true" />
+          <h3 class="offer-card__title">
+            <a class="offer-card__link" href={offer.href}>
+              {offer.title}
+            </a>
+          </h3>
+          <p class="offer-card__tagline">{offer.tagline}</p>
+          <p class="offer-card__summary">{offer.summary}</p>
+          {offer.includes.length > 0 && (
+            <div class="offer-card__includes">
+              <p class="offer-card__label">{services.offerIncludes}</p>
+              <ul class="offer-card__list">
+                {offer.includes.map((item) => (
+                  <li>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div class="offer-card__footer">
+            {offer.price && (
+              <p class="offer-card__price">
+                {offer.price.kind === 'price' && (
+                  <span class="visually-hidden">{services.priceLabel} </span>
+                )}
+                {offer.price.label}
+                {offer.price.note && <small class="offer-card__note">{offer.price.note}</small>}
+              </p>
+            )}
+            <span class="offer-card__more" aria-hidden="true">
+              {services.offerMore}
+              <Icon name="arrow-right" class="offer-card__icon" />
+            </span>
+          </div>
+        </article>
+      </li>
+    ))}
+  </ul>
+</ContentSection>

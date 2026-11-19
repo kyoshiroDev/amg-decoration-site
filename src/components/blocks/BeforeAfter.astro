@@ -1,0 +1,97 @@
+---
+/**
+ * BeforeAfter — « Rendu 3D ↔ Réalisé », signature du site.
+ * Sans JavaScript : les deux images côte à côte (empilées sur mobile), cadrées à l'identique,
+ * nommées par une pastille. Sous `html.js` (posée avant le premier rendu, ADR-0010) : les images
+ * se superposent et un `<input type="range">` natif, invisible mais focalisable, règle la part
+ * visible du rendu 3D (poignée ronde terracotta, `aria-valuetext` « 60 % rendu 3D, 40 % réalisé »).
+ * Clavier natif (flèches, Page précédente/suivante, Début/Fin) ; souris et tactile via
+ * scripts/before-after.ts (`touch-action: pan-y` : le défilement vertical reste libre).
+ * Styles : ./before-after.css.
+ */
+import type { ImageMetadata } from 'astro';
+import Section from '@/components/ui/Section.astro';
+import Container from '@/components/ui/Container.astro';
+import ArchImage from '@/components/ui/ArchImage.astro';
+import Icon from '@/components/ui/Icon.astro';
+import SectionIntro from './SectionIntro.astro';
+import { microcopy } from '@/config/microcopy';
+import { compareValueText } from '@/lib/before-after';
+import './before-after.css';
+
+interface Figure {
+  readonly image: ImageMetadata;
+  readonly alt: string;
+}
+
+interface Props {
+  heading: string;
+  rendering: Figure;
+  result: Figure;
+  labels: { readonly rendering: string; readonly result: string };
+  id: string;
+  /** Chapeau facultatif (styleguide : préciser qu'il s'agit de placeholders). */
+  lead?: string | undefined;
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+}
+
+const { heading, rendering, result, labels, id, lead, background = 'blush' } = Astro.props;
+const copy = microcopy.projects.beforeAfter;
+const START = 50;
+const hintId = `${id}-consigne`;
+const figures = [
+  { ...rendering, label: labels.rendering, kind: 'rendering' },
+  { ...result, label: labels.result, kind: 'result' },
+] as const;
+---
+
+<Section background={background} labelledby={id} class="before-after-section">
+  <Container class="before-after">
+    <SectionIntro id={id} heading={heading} lead={lead} />
+    <div class="before-after__compare" data-before-after>
+      <div class="before-after__stage" data-before-after-stage>
+        {figures.map((figure) => (
+          <figure
+            class={`before-after__figure before-after__figure--${figure.kind}`}
+            data-before-after-kind={figure.kind}
+          >
+            <ArchImage
+              src={figure.image}
+              alt={figure.alt}
+              shape="rounded"
+              ratio="4 / 3"
+              sizes="(min-width: 64rem) 60rem, 92vw"
+            />
+            <figcaption class="before-after__label">{figure.label}</figcaption>
+          </figure>
+        ))}
+        <div class="before-after__divider" aria-hidden="true">
+          <span class="before-after__knob">
+            <Icon name="arrow-left" />
+            <Icon name="arrow-right" />
+          </span>
+        </div>
+        <input
+          class="before-after__range"
+          aria-label={copy.slider}
+          aria-describedby={hintId}
+          type="range"
+          min="0"
+          max="100"
+          step="1"
+          value={START}
+          aria-valuetext={compareValueText(START, copy.valueText)}
+          data-value-text={copy.valueText}
+          data-before-after-range
+        />
+      </div>
+      <p class="before-after__hint" id={hintId}>
+        {copy.hint}
+      </p>
+    </div>
+  </Container>
+</Section>
+
+<script>
+  import '@/scripts/before-after';
+</script>

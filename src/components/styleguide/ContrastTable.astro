@@ -1,0 +1,104 @@
+---
+/**
+ * ContrastTable — ratios WCAG calculés à la compilation depuis tokens.css.
+ * Paires hors tableau : ContrastPairs ; pastille « Aa » : ContrastSample.
+ */
+import ContrastSample from './ContrastSample.astro';
+import ContrastPairs from './ContrastPairs.astro';
+import { contrastCell, verdicts } from './contrast-data';
+
+const foregrounds = ['ink', 'ink-soft', 'terracotta-700', 'terracotta-600', 'terracotta-500'];
+const backgrounds = ['linen', 'cream', 'sand', 'blush', 'sage'];
+---
+
+<div class="contrast">
+  <!--
+    Défilement horizontal de secours (espacement de texte augmenté, WCAG 1.4.12) : le tableau
+    ne fait plus déborder la page. Les navigateurs actuels rendent ce conteneur focalisable au clavier.
+  -->
+  <div class="contrast__scroll">
+    <table>
+      <caption id="contrast-caption">
+        Texte (lignes) sur fond (colonnes) — seuil AA&nbsp;: 4.5:1
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Texte \ Fond</th>
+          {backgrounds.map((bg) => (
+            <th scope="col">{bg}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {foregrounds.map((fg) => (
+          <tr>
+            <th scope="row">{fg}</th>
+            {backgrounds.map((bg) => {
+              const { ratio, level } = contrastCell(fg, bg);
+              return (
+                <td class={`contrast__cell contrast__cell--${level.toLowerCase()}`}>
+                  <ContrastSample fg={fg} bg={bg} hideOnMobile />
+                  {ratio} <small>{verdicts[level]}</small>
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <ContrastPairs />
+</div>
+
+<style>
+  @layer components {
+    .contrast__scroll {
+      overflow-x: auto;
+    }
+
+    table {
+      inline-size: 100%;
+      border-collapse: collapse;
+      font-size: var(--step--1);
+      font-variant-numeric: tabular-nums;
+    }
+
+    caption {
+      margin-block-end: var(--space-s);
+      text-align: start;
+      color: var(--color-text-soft);
+    }
+
+    th,
+    td {
+      padding: var(--space-2xs) var(--space-3xs);
+      text-align: start;
+      border-block-end: var(--border-hairline) solid var(--color-border);
+    }
+
+    th {
+      font-weight: var(--weight-semibold);
+      overflow-wrap: anywhere;
+    }
+
+    td small {
+      display: block;
+    }
+
+    @media (width >= 48rem) {
+      th,
+      td {
+        padding-inline: var(--space-xs);
+      }
+
+      td small {
+        display: inline;
+      }
+    }
+
+    .contrast__cell--fail small,
+    .contrast__cell--aa-large small {
+      color: var(--color-text-soft);
+    }
+  }
+</style>

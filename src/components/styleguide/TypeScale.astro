@@ -1,0 +1,76 @@
+---
+/**
+ * TypeScale — échelle typographique fluide lue dans tokens.css.
+ */
+import tokensCss from '@/styles/tokens.css?raw';
+import { clampBounds, parseCustomProperties } from '@/lib/design-tokens';
+
+const steps = parseCustomProperties(tokensCss, '--step-').reverse();
+const toPx = (rem: string): string => `${Math.round(parseFloat(rem) * 16)} px`;
+---
+
+<ol class="type-scale">
+  {steps.map(({ name, value }) => {
+    const bounds = clampBounds(value);
+    return (
+      <li class="type-scale__row">
+        <p class="type-scale__meta">
+          <code>{name}</code>
+          {bounds && (
+            <span>
+              {toPx(bounds.min)} → {toPx(bounds.max)}
+            </span>
+          )}
+        </p>
+        <p class="type-scale__sample" style={`--sample-size: var(${name})`}>
+          Une maison <em>qui vous ressemble</em>
+        </p>
+      </li>
+    );
+  })}
+</ol>
+
+<style>
+  @layer components {
+    .type-scale {
+      display: grid;
+      gap: var(--space-s);
+    }
+
+    .type-scale__row {
+      display: grid;
+      gap: var(--space-3xs);
+      padding-block-end: var(--space-s);
+      border-block-end: var(--border-hairline) solid var(--color-border);
+    }
+
+    @media (width >= 48rem) {
+      .type-scale__row {
+        grid-template-columns: 11rem 1fr;
+        align-items: baseline;
+        gap: var(--space-m);
+      }
+    }
+
+    .type-scale__meta {
+      display: grid;
+      font-size: var(--step--1);
+      line-height: var(--leading-ui);
+      color: var(--color-text-soft);
+    }
+
+    .type-scale__sample {
+      max-width: none;
+      font-family: var(--font-display-stack);
+      font-size: var(--sample-size);
+      font-weight: var(--weight-light);
+      line-height: var(--leading-tight);
+      letter-spacing: var(--tracking-display);
+      text-wrap: balance;
+
+      & em {
+        color: var(--color-accent-text);
+      }
+    }
+  }
+</style>

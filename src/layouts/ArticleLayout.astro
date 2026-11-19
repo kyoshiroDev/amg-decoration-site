@@ -1,0 +1,91 @@
+---
+/**
+ * ArticleLayout — article « Conseils déco » : fil d'Ariane (PageLayout), en-tête (h1, dates,
+ * temps de lecture, couverture), corps MDX (slot, habillé par RichText sur la mesure de
+ * lecture), « Pour aller plus loin », appel à l'action vers le contact.
+ * SEO : balises Open Graph `article:*` (mêmes dates que le JSON-LD), JSON-LD `BlogPosting` (image absolue générée par getImage).
+ */
+import PageLayout from './PageLayout.astro';
+import Section from '@/components/ui/Section.astro';
+import Container from '@/components/ui/Container.astro';
+import ArticleHeader from '@/components/blocks/ArticleHeader.astro';
+import RichText from '@/components/blocks/RichText.astro';
+import FurtherReading from '@/components/blocks/FurtherReading.astro';
+import CtaBanner from '@/components/blocks/CtaBanner.astro';
+import { microcopy } from '@/config/microcopy';
+import { site } from '@/config/site';
+import { buildBlogPosting, FOUNDER_PROFILE_PATH } from '@/lib/jsonld';
+import { absoluteUrl } from '@/lib/url';
+import { buildByline, type ArticlePageModel } from '@/lib/pages/articles-model';
+import type { PageSection } from '@/lib/pages/types';
+
+interface Props {
+  article: ArticlePageModel;
+  /** Couverture (URL relative au site) pour le JSON-LD. */
+  imageUrl: string;
+  cta: PageSection;
+}
+
+const { article, imageUrl, cta } = Astro.props;
+const labels = microcopy.articles;
+const origin = Astro.site ?? Astro.url;
+// Signature visible : la même personne que l'`author` du BlogPosting (site.founder).
+const byline = buildByline(site.founder, labels.byline);
+const blogPosting = buildBlogPosting(
+  {
+    headline: article.title,
+    description: article.seo.description,
+    path: article.href,
+    datePublished: article.publishedAt,
+    dateModified: article.updatedAt,
+    imageUrl,
+    keywords: article.tags,
+  },
+  origin,
+);
+---
+
+<PageLayout
+  title={article.seo.title}
+  description={article.seo.description}
+  image={article.cover.image}
+  imageAlt={article.cover.alt}
+  article={{
+    publishedTime: article.publishedAt,
+    modifiedTime: article.updatedAt,
+    tags: article.tags,
+    authorUrl: absoluteUrl(FOUNDER_PROFILE_PATH, origin),
+    section: labels.indexLabel,
+  }}
+  breadcrumbs={article.breadcrumbs}
+  jsonLd={[blogPosting]}
+>
+  <article class="article">
+    <ArticleHeader
+      eyebrow={labels.indexLabel}
+      title={article.title}
+      byline={byline}
+      published={article.published}
+      updated={article.updated}
+      readingTime={article.readingTime}
+      tags={article.tags}
+      labels={{ published: labels.published, updated: labels.updated, tags: labels.tagsLabel }}
+      image={article.cover.image}
+      imageAlt={article.cover.alt}
+    />
+    <Section as="div" spacing="compact" class="article__body">
+      <Container width="narrow">
+        <RichText>
+          <slot />
+        </RichText>
+      </Container>
+    </Section>
+  </article>
+  <FurtherReading
+    heading={labels.further.heading}
+    items={article.further}
+    id="plus-loin-titre"
+    background="cream"
+  />
+  <CtaBanner section={cta} id="contact-titre" />
+</PageLayout>

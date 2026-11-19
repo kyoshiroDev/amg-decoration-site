@@ -1,0 +1,78 @@
+---
+/**
+ * ProjectLayout — page d'une réalisation : fil d'Ariane (PageLayout), héros avec couverture,
+ * récit (slot = corps Markdown, habillé par RichText), avant/après statique si `beforeAfter`,
+ * galerie groupée par nature, projet précédent / suivant, appel à l'action.
+ * JSON-LD : `CreativeWork` (images absolues générées par getImage dans lib/pages/projects.ts).
+ */
+import PageLayout from './PageLayout.astro';
+import Section from '@/components/ui/Section.astro';
+import Container from '@/components/ui/Container.astro';
+import ProjectHero from '@/components/blocks/ProjectHero.astro';
+import RichText from '@/components/blocks/RichText.astro';
+import BeforeAfter from '@/components/blocks/BeforeAfter.astro';
+import ProjectGallery from '@/components/blocks/ProjectGallery.astro';
+import ProjectPager from '@/components/blocks/ProjectPager.astro';
+import CtaBanner from '@/components/blocks/CtaBanner.astro';
+import { microcopy } from '@/config/microcopy';
+import { projectTransitionName } from '@/lib/cards';
+import { buildCreativeWork } from '@/lib/jsonld';
+import type { ProjectPageModel } from '@/lib/pages/projects-model';
+import type { PageSection } from '@/lib/pages/types';
+
+interface Props {
+  project: ProjectPageModel;
+  /** Visuels du projet (URL relatives au site) pour le JSON-LD. */
+  imageUrls: readonly string[];
+  cta: PageSection;
+}
+
+const { project, imageUrls, cta } = Astro.props;
+const labels = microcopy.projects;
+const origin = Astro.site ?? Astro.url;
+const creativeWork = buildCreativeWork(
+  { name: project.title, description: project.seo.description, path: project.href, imageUrls },
+  origin,
+);
+---
+
+<PageLayout
+  title={project.seo.title}
+  description={project.seo.description}
+  image={project.cover.image}
+  imageAlt={project.cover.alt}
+  breadcrumbs={project.breadcrumbs}
+  jsonLd={[creativeWork]}
+>
+  <ProjectHero
+    eyebrow={labels.eyebrow}
+    title={project.title}
+    summary={project.summary}
+    facts={project.facts}
+    factsLabel={labels.facts.label}
+    image={project.cover.image}
+    imageAlt={project.cover.alt}
+    transitionName={projectTransitionName(project.slug)}
+  />
+  <Section as="div" spacing="compact" class="project-story">
+    <Container width="narrow">
+      <RichText>
+        <slot />
+      </RichText>
+    </Container>
+  </Section>
+  {project.beforeAfter && (
+    <BeforeAfter
+      heading={labels.beforeAfter.heading}
+      rendering={project.beforeAfter.rendering}
+      result={project.beforeAfter.result}
+      labels={labels.beforeAfter}
+      id="avant-apres-titre"
+    />
+  )}
+  {project.gallery.length > 0 && (
+    <ProjectGallery heading={labels.gallery.heading} groups={project.gallery} id="galerie-titre" />
+  )}
+  <ProjectPager previous={project.previous} next={project.next} labels={labels.pager} />
+  <CtaBanner section={cta} id="contact-titre" />
+</PageLayout>

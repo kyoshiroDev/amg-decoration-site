@@ -1,0 +1,33 @@
+---
+// Prestations : assemblage des blocs. Données : getServicesData() (src/lib/pages/services.ts),
+// textes : src/content/pages/prestations.md et collection `prestations`.
+import PageLayout from '@/layouts/PageLayout.astro';
+import PageHero from '@/components/blocks/PageHero.astro';
+import ServicesGrid from '@/components/blocks/ServicesGrid.astro';
+import FeatureList from '@/components/blocks/FeatureList.astro';
+import OfferCards from '@/components/blocks/OfferCards.astro';
+import CtaBanner from '@/components/blocks/CtaBanner.astro';
+import { getServicesData } from '@/lib/pages/services';
+
+const data = await getServicesData(Astro.site ?? Astro.url);
+const { sections } = data;
+---
+
+<PageLayout
+  title={data.seo.title}
+  description={data.seo.description}
+  breadcrumbs={data.breadcrumbs}
+  jsonLd={data.jsonLd}
+>
+  <PageHero section={data.hero} id="prestations-page-titre" />
+  <ServicesGrid
+    section={sections.formules}
+    services={data.formulas}
+    id="formules-titre"
+    background="sand"
+  />
+  <FeatureList section={sections.inclus} id="inclus-titre" background="cream" />
+  <FeatureList section={sections.options} id="options-titre" variant="pills" background="linen" />
+  <OfferCards section={sections.offres} offers={data.offers} id="offres-titre" />
+  <CtaBanner section={sections.cta} id="contact-titre" />
+</PageLayout>

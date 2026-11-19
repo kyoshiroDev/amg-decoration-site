@@ -1,0 +1,64 @@
+---
+/**
+ * ImageSamples — ArchImage en arche, encadrée, arrondie avec légende.
+ */
+import type { ImageMetadata } from 'astro';
+import Heading from '@/components/ui/Heading.astro';
+import ArchImage from '@/components/ui/ArchImage.astro';
+import Specimen from './Specimen.astro';
+
+interface Props {
+  image: ImageMetadata;
+}
+
+const { image } = Astro.props;
+const sizes = '(min-width: 48rem) 30vw, 90vw';
+---
+
+<div class="sg-images">
+  <Heading level={3} size="sm">
+    Images en arche
+  </Heading>
+  <div class="sg-images__grid">
+    <Specimen label='shape="arch" (défaut)'>
+      <ArchImage src={image} alt="" sizes={sizes} class="sg-images__item" />
+    </Specimen>
+    <Specimen label="framed · survol : zoom lent">
+      <ArchImage src={image} alt="" sizes={sizes} framed class="sg-images__item" />
+    </Specimen>
+    <Specimen label='shape="rounded" · ratio="1 / 1" · caption'>
+      <ArchImage
+        src={image}
+        alt=""
+        sizes={sizes}
+        shape="rounded"
+        ratio="1 / 1"
+        caption="Légende : salon lumineux, illustration provisoire."
+        class="sg-images__item"
+      />
+    </Specimen>
+  </div>
+</div>
+
+<style>
+  @layer components {
+    .sg-images {
+      display: grid;
+      gap: var(--space-m);
+    }
+
+    .sg-images__grid {
+      display: grid;
+      gap: var(--space-xl) var(--space-l);
+
+      @media (width >= 48rem) {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: end;
+      }
+    }
+
+    .sg-images :global(.sg-images__item) {
+      flex: 1 1 100%;
+    }
+  }
+</style>

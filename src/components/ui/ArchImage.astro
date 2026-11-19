@@ -1,0 +1,92 @@
+---
+/**
+ * ArchImage — image en arche (signature visuelle), via <Picture> AVIF + WebP.
+ * `alt` est obligatoire (chaîne vide pour une image décorative).
+ * `priority` : image héro (loading="eager", fetchpriority="high", decoding="sync").
+ * Zoom lent au survol (transform uniquement, désactivé si mouvement réduit).
+ * `transitionName` : `view-transition-name` posé sur le cadre (morphing grille → page projet),
+ * `transitionClass` : `view-transition-class` associée (durée et cadrage du morphing, global.css).
+ * `reveal` : image reveal au scroll (`data-reveal="image"` sur le cadre, scripts/reveal.ts).
+ * Volontairement pas la directive `transition:name` : sans valeur, elle génère quand même un nom
+ * automatique et un bloc de CSS par image (animations du ClientRouter, inutiles ici, ADR-0006).
+ * Styles : ./arch-image.css.
+ */
+import type { ImageMetadata } from 'astro';
+import { Picture } from 'astro:assets';
+import './arch-image.css';
+
+type Shape = 'arch' | 'rounded';
+
+interface Props {
+  src: ImageMetadata;
+  alt: string;
+  /** Largeurs générées (px). */
+  widths?: number[];
+  /** Attribut sizes ; à adapter à la mise en page réelle. */
+  sizes?: string;
+  priority?: boolean;
+  /** Ratio CSS du cadre, ex. « 4 / 5 ». */
+  ratio?: string;
+  shape?: Shape;
+  /** Liseré terracotta décalé derrière l'arche. */
+  framed?: boolean;
+  /** Légende visible (rend un <figure>). */
+  caption?: string | undefined;
+  /** Nom de View Transition du cadre, unique dans la page (identifiant CSS, ADR-0006). */
+  transitionName?: string | undefined;
+  /** Classe de View Transition (cible `::view-transition-group(.classe)`). */
+  transitionClass?: string | undefined;
+  /** Révélation par masque à l'entrée dans l'écran (jamais sur l'image `priority`). */
+  reveal?: boolean;
+  class?: string | undefined;
+}
+
+const {
+  src,
+  alt,
+  widths = [360, 540, 720, 960, 1280],
+  sizes = '(min-width: 64rem) 40vw, 100vw',
+  priority = false,
+  ratio = '4 / 5',
+  shape = 'arch',
+  framed = false,
+  caption,
+  transitionName,
+  transitionClass,
+  reveal = false,
+  class: className,
+} = Astro.props;
+
+const Element = caption ? 'figure' : 'div';
+const transitionStyle = transitionName
+  ? [
+      `view-transition-name: ${transitionName}`,
+      transitionClass && `view-transition-class: ${transitionClass}`,
+    ]
+      .filter(Boolean)
+      .join('; ')
+  : undefined;
+---
+
+<Element
+  class:list={['arch-image', `arch-image--${shape}`, { 'arch-image--framed': framed }, className]}
+  style={`--arch-ratio: ${ratio}`}
+>
+  <div
+    class="arch-image__frame"
+    style={transitionStyle}
+    data-reveal={reveal && !priority ? 'image' : undefined}
+  >
+    <Picture
+      src={src}
+      alt={alt}
+      widths={widths.filter((w) => w <= src.width)}
+      sizes={sizes}
+      formats={['avif', 'webp']}
+      fallbackFormat="jpg"
+      priority={priority}
+      class="arch-image__img"
+    />
+  </div>
+  {caption && <figcaption class="arch-image__caption">{caption}</figcaption>}
+</Element>

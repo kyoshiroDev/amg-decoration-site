@@ -1,0 +1,51 @@
+---
+/**
+ * MobileNav — menu sous 80rem, en Popover API (top layer, Échap, clic extérieur, retour du
+ * focus natifs ; `aria-expanded` exposé par le navigateur). Repli sans support : un lien vers
+ * le plan du site du pied de page (#pied-navigation). Styles du panneau : MobileNavPanel.
+ */
+import Button from '@/components/ui/Button.astro';
+import MobileNavPanel from './MobileNavPanel.astro';
+import { microcopy } from '@/config/microcopy';
+
+interface Props {
+  currentPath: string;
+  /** Id du panneau popover (cible de popovertarget). */
+  id?: string;
+}
+
+const { currentPath, id = 'menu-mobile' } = Astro.props;
+---
+
+<div class="mobile-nav">
+  <Button href="#pied-navigation" variant="ghost" iconStart="menu" class="mobile-nav__fallback">
+    {microcopy.mobileMenu.open}
+  </Button>
+  <Button
+    variant="ghost"
+    iconStart="menu"
+    class="mobile-nav__toggle"
+    attrs={{ popovertarget: id, 'data-mobile-nav-toggle': '' }}
+  >
+    {microcopy.mobileMenu.open}
+  </Button>
+  <MobileNavPanel id={id} currentPath={currentPath} />
+</div>
+
+<style>
+  @layer components {
+    .mobile-nav :global(.mobile-nav__toggle) {
+      display: none;
+    }
+
+    @supports selector(:popover-open) {
+      .mobile-nav :global(.mobile-nav__fallback) {
+        display: none;
+      }
+
+      .mobile-nav :global(.mobile-nav__toggle) {
+        display: inline-flex;
+      }
+    }
+  }
+</style>

@@ -1,0 +1,70 @@
+/*
+ * Apparitions au scroll (docs/DESIGN-SYSTEM.md §5, effets 1 et 2), pilotées par
+ * src/scripts/reveal.ts. Aucun état caché dans le HTML : `data-reveal-state` n'est posé que
+ * par le script, uniquement sur les éléments encore sous la ligne de flottaison, et jamais en
+ * mouvement réduit (le script ne fait alors rien : contenu immédiatement visible).
+ *   pending → état de départ (hors écran) ; in → transition vers l'état normal ; puis retiré.
+ */
+@layer components {
+  /* 1. Reveal : fondu + translateY(--reveal-distance), décalé de --stagger × --reveal-order. */
+  [data-reveal='']:is([data-reveal-state='pending'], [data-reveal-state='in']) {
+    transition:
+      opacity var(--dur-base) var(--ease-out),
+      transform var(--dur-base) var(--ease-out);
+    transition-delay: calc(var(--stagger) * var(--reveal-order, 0));
+  }
+
+  [data-reveal=''][data-reveal-state='pending'] {
+    opacity: 0;
+    transform: translateY(var(--reveal-distance));
+  }
+
+  /*
+   * 2. Image reveal : le masque se lève du bas vers le haut (clip-path inset) pendant que
+   * l'image se dézoome (--reveal-image-scale → 1). clip-path ne touche ni la mise en page ni
+   * le CLS (seule la peinture change) : c'est l'effet 2 du catalogue, joué une seule fois.
+   * Le masque est posé sur l'<img>, pas sur le cadre observé : un élément entièrement masqué
+   * par son propre clip-path ne « croise » jamais l'écran pour IntersectionObserver.
+   * Attribut répété : l'emporte sur la transition de survol d'ArchImage (même couche).
+   */
+  [data-reveal='image'][data-reveal]:is([data-reveal-state='pending'], [data-reveal-state='in'])
+    img {
+    transition:
+      clip-path var(--dur-slow) var(--ease-out),
+      transform var(--dur-slow) var(--ease-out);
+    transition-delay: calc(var(--stagger) * var(--reveal-order, 0));
+  }
+
+  [data-reveal='image'][data-reveal][data-reveal-state='pending'] img {
+    clip-path: inset(100% 0 0);
+    transform: scale(var(--reveal-image-scale));
+  }
+
+  /*
+   * Focus clavier dans un élément encore en attente : visible tout de suite, sans transition
+   * (reveal.ts retire aussitôt l'état ; cette règle couvre la première image).
+   */
+  [data-reveal][data-reveal-state]:focus-within,
+  :focus [data-reveal][data-reveal-state] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  [data-reveal='image'][data-reveal][data-reveal-state]:focus-within img,
+  :focus [data-reveal='image'][data-reveal][data-reveal-state] img {
+    clip-path: none;
+    transform: none;
+    transition: none;
+  }
+
+  /* Impression : tout est visible, quel que soit l'état. */
+  @media print {
+    [data-reveal-state],
+    [data-reveal-state] img {
+      opacity: 1 !important;
+      clip-path: none !important;
+      transform: none !important;
+    }
+  }
+}

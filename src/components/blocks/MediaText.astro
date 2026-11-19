@@ -1,0 +1,156 @@
+---
+/**
+ * MediaText — image en arche et texte côte à côte (5/7, ≥ 64rem), ex. « Qui suis-je ? ».
+ * Sans image (portrait en attente) : composition décorative en arche (aria-hidden).
+ * `items` de la section ⇒ courte liste en deux colonnes ; `actions` ⇒ ghost puis lien.
+ * Slot facultatif (après la liste) : corps Markdown (`RichText`), ex. la biographie d'« À propos ».
+ */
+import type { ImageMetadata } from 'astro';
+import Section from '@/components/ui/Section.astro';
+import Container from '@/components/ui/Container.astro';
+import Heading from '@/components/ui/Heading.astro';
+import ActionGroup from '@/components/ui/ActionGroup.astro';
+import ArchImage from '@/components/ui/ArchImage.astro';
+import SectionIntro from './SectionIntro.astro';
+import type { PageSection } from '@/lib/pages/types';
+
+interface Props {
+  section: PageSection;
+  id: string;
+  image?: ImageMetadata | undefined;
+  imageAlt?: string | undefined;
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  /** Image à droite au lieu de gauche (≥ 64rem). */
+  reverse?: boolean;
+}
+
+const { section, id, image, imageAlt = '', background = 'linen', reverse = false } = Astro.props;
+---
+
+<Section background={background} labelledby={id} class="media-text">
+  <Container class:list={['media-text__grid', { 'media-text__grid--reverse': reverse }]}>
+    <div class="media-text__visual">
+      {image ? (
+        <ArchImage
+          src={image}
+          alt={imageAlt}
+          sizes="(min-width: 64rem) 34vw, (min-width: 40rem) 24rem, 80vw"
+          widths={[360, 540, 720, 960]}
+        />
+      ) : (
+        <div class="media-text__placeholder" aria-hidden="true">
+          <span class="media-text__sun" />
+        </div>
+      )}
+    </div>
+    <div class="media-text__text">
+      <SectionIntro
+        id={id}
+        eyebrow={section.eyebrow}
+        heading={section.heading}
+        emphasis={section.headingEmphasis}
+        lead={section.lead}
+      />
+      {section.items.length > 0 && (
+        <ul class="media-text__items">
+          {section.items.map((item) => (
+            <li class="media-text__item" data-reveal>
+              <Heading level={3} size="sm">
+                {item.title}
+              </Heading>
+              {item.text && <p class="media-text__item-text">{item.text}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+      <slot />
+      <ActionGroup actions={section.actions} tone="quiet" />
+    </div>
+  </Container>
+</Section>
+
+<style>
+  @layer components {
+    :global(.media-text) {
+      overflow-x: clip;
+    }
+
+    :global(.media-text__grid) {
+      display: grid;
+      gap: var(--space-2xl);
+      align-items: center;
+
+      @media (width >= 64rem) {
+        grid-template-columns: 5fr 7fr;
+        gap: var(--space-3xl);
+      }
+    }
+
+    :global(.media-text__grid--reverse > .media-text__visual) {
+      @media (width >= 64rem) {
+        order: 1;
+      }
+    }
+
+    .media-text__visual {
+      position: relative;
+      inline-size: min(100%, var(--media-text-visual-max));
+      justify-self: center;
+    }
+
+    .media-text__placeholder {
+      position: relative;
+      aspect-ratio: 4 / 5;
+      border-radius: var(--radius-arch);
+      background-color: var(--color-blush);
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border: var(--border-hairline) solid var(--color-accent);
+        border-radius: var(--radius-arch);
+        transform: translate(calc(var(--space-s) * -1), calc(var(--space-s) * -1));
+      }
+    }
+
+    .media-text__sun {
+      position: absolute;
+      inset-block-end: 18%;
+      inset-inline-start: 50%;
+      inline-size: 34%;
+      aspect-ratio: 1;
+      border-radius: var(--radius-pill);
+      background-color: var(--color-sage);
+      transform: translateX(-50%);
+    }
+
+    .media-text__text {
+      display: grid;
+      justify-items: start;
+      gap: var(--space-l);
+    }
+
+    .media-text__items {
+      display: grid;
+      gap: var(--space-m) var(--space-l);
+      padding: 0;
+      margin: 0;
+      padding-block-start: var(--space-m);
+      border-block-start: var(--border-hairline) solid var(--color-border);
+
+      @media (width >= 48rem) {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .media-text__item {
+      display: grid;
+      gap: var(--space-2xs);
+    }
+
+    .media-text__item-text {
+      color: var(--color-text-soft);
+    }
+  }
+</style>

@@ -1,0 +1,32 @@
+---
+// Pages légales (mentions légales, confidentialité, conditions générales). Chemins et données :
+// getLegalPaths() (src/lib/pages/legal.ts) ; corps : src/content/pages/<id>.md.
+import PageLayout from '@/layouts/PageLayout.astro';
+import PageHero from '@/components/blocks/PageHero.astro';
+import ProseLayout from '@/components/blocks/ProseLayout.astro';
+import RichText from '@/components/blocks/RichText.astro';
+import TableOfContents from '@/components/blocks/TableOfContents.astro';
+import { microcopy } from '@/config/microcopy';
+import { getLegalPaths, type LegalPageProps } from '@/lib/pages/legal';
+
+export const getStaticPaths = getLegalPaths;
+
+type Props = LegalPageProps;
+
+const { model, Content } = Astro.props;
+---
+
+<PageLayout
+  title={model.seo.title}
+  description={model.seo.description}
+  noindex={model.noindex}
+  breadcrumbs={model.breadcrumbs}
+>
+  <PageHero section={model.hero} id="legal-titre" />
+  <ProseLayout measure="legal">
+    <TableOfContents slot="aside" items={model.toc} label={microcopy.legal.tocLabel} />
+    <RichText>
+      <Content />
+    </RichText>
+  </ProseLayout>
+</PageLayout>

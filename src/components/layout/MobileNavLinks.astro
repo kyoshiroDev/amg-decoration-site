@@ -1,0 +1,84 @@
+---
+/**
+ * MobileNavLinks — navigation principale du menu mobile : grandes lettres Fraunces légères,
+ * numéros décoratifs en CSS (texte alternatif vide : non lus), page courante en italique
+ * terracotta (`aria-current="page"`), section parente en italique.
+ */
+import { site } from '@/config/site';
+import { microcopy } from '@/config/microcopy';
+import { isActivePath } from '@/lib/url';
+
+interface Props {
+  currentPath: string;
+}
+
+const { currentPath } = Astro.props;
+---
+
+<nav class="mobile-links__nav" aria-label={microcopy.nav.main}>
+  <ul class="mobile-links__list">
+    {site.mainNav.map((item) => {
+      const state = isActivePath(currentPath, item.href);
+      return (
+        <li class="mobile-links__item">
+          <a
+            class:list={[
+              'mobile-links__link',
+              { 'mobile-links__link--section': state === 'section' },
+            ]}
+            href={item.href}
+            aria-current={state === 'page' ? 'page' : undefined}
+          >
+            {item.label}
+          </a>
+        </li>
+      );
+    })}
+  </ul>
+</nav>
+
+<style>
+  @layer components {
+    .mobile-links__list {
+      counter-reset: mobile-nav;
+      display: grid;
+      gap: var(--space-2xs);
+    }
+
+    .mobile-links__link {
+      counter-increment: mobile-nav;
+      display: flex;
+      align-items: baseline;
+      gap: var(--space-s);
+      min-block-size: var(--tap-target);
+      font-family: var(--font-display-stack);
+      font-size: var(--step-3);
+      font-weight: var(--weight-light);
+      line-height: var(--leading-heading);
+      letter-spacing: var(--tracking-display);
+      color: var(--color-text);
+      text-decoration: none;
+
+      /* Numéro décoratif : texte alternatif vide, il n'est pas lu. */
+      &::before {
+        content: counter(mobile-nav, decimal-leading-zero) / '';
+        min-inline-size: 2ch;
+        font-family: var(--font-body-stack);
+        font-size: var(--text-eyebrow);
+        font-weight: var(--weight-semibold);
+        letter-spacing: var(--tracking-eyebrow);
+        color: var(--color-accent-text);
+      }
+
+      &:hover,
+      &[aria-current='page'] {
+        color: var(--color-accent-text);
+        font-style: italic;
+      }
+    }
+
+    .mobile-links__link--section {
+      font-style: italic;
+    }
+  }
+</style>

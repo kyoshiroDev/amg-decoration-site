@@ -1,0 +1,34 @@
+---
+/**
+ * SgHeader — en-tête de section du styleguide : numéro + surtitre + titre h2.
+ */
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+
+interface Props {
+  id: string;
+  number: string;
+  eyebrow: string;
+}
+
+const { id, number, eyebrow } = Astro.props;
+---
+
+<header class="sg-header">
+  <Eyebrow>
+    {number} — {eyebrow}
+  </Eyebrow>
+  <Heading level={2} id={id}>
+    <slot />
+  </Heading>
+</header>
+
+<style>
+  @layer components {
+    .sg-header {
+      display: grid;
+      gap: var(--space-xs);
+      margin-block-end: var(--space-l-2xl);
+    }
+  }
+</style>

@@ -1,0 +1,66 @@
+---
+/**
+ * ServicesGrid — section des formules : ouverture, grille de ServiceCard, actions.
+ * 1 colonne → 2 (≥ 48rem) → 4 (≥ 80rem), les cartes paires décalées vers le bas (rythme éditorial).
+ */
+import ContentSection from './ContentSection.astro';
+import ServiceCard from './ServiceCard.astro';
+import type { ServiceCardData } from '@/lib/cards';
+import type { PageSection } from '@/lib/pages/types';
+
+interface Props {
+  section: PageSection;
+  services: readonly ServiceCardData[];
+  id: string;
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+}
+
+const { section, services, id, background = 'sand' } = Astro.props;
+---
+
+<ContentSection section={section} id={id} background={background}>
+  <ul class="services-grid">
+    {services.map((service) => (
+      <li class="services-grid__item" data-reveal>
+        <ServiceCard service={service} />
+      </li>
+    ))}
+  </ul>
+</ContentSection>
+
+<style>
+  @layer components {
+    .services-grid {
+      display: grid;
+      gap: var(--space-m);
+      padding: 0;
+      margin: 0;
+
+      @media (width >= 48rem) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      @media (width >= 80rem) {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      /* Trois cartes (autres formules d'une page de détail) : trois colonnes, sans case vide. */
+      @media (width >= 64rem) {
+        &:has(> :last-child:nth-child(3)) {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+    }
+
+    /* Décalage par marges (pas de transform : réservé aux apparitions de la Phase 5). */
+    @media (width >= 80rem) {
+      .services-grid__item:nth-child(odd) {
+        margin-block-end: var(--grid-stagger);
+      }
+
+      .services-grid__item:nth-child(even) {
+        margin-block-start: var(--grid-stagger);
+      }
+    }
+  }
+</style>

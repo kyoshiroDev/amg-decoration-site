@@ -1,0 +1,114 @@
+/*
+ * Styles du bandeau de mots (blocks/Marquee.astro), sortis du composant pour rester sous
+ * 150 lignes. Classes BEM préfixées « marquee » : aucune collision malgré la portée globale.
+ */
+@layer components {
+  .marquee {
+    position: relative;
+    overflow: hidden;
+    padding-block: var(--space-m);
+    border-block: var(--border-hairline) solid var(--color-border);
+  }
+
+  .marquee__track {
+    display: flex;
+    inline-size: max-content;
+  }
+
+  .marquee__list {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+  }
+
+  .marquee__word {
+    display: flex;
+    align-items: center;
+    font-family: var(--font-display-stack);
+    font-size: var(--step-3);
+    font-style: italic;
+    font-weight: var(--weight-light);
+    line-height: var(--leading-tight);
+    white-space: nowrap;
+
+    /* Petite arche terracotta entre les mots (décor). */
+    &::after {
+      content: '';
+      inline-size: var(--space-s);
+      aspect-ratio: 3 / 4;
+      margin-inline: var(--space-l);
+      border: var(--border-thin) solid var(--color-accent);
+      border-block-end: 0;
+      border-radius: var(--radius-arch);
+    }
+  }
+
+  /* Bouton pause / lecture : rond, crème, posé sur le bord droit du bandeau. */
+  .marquee__toggle {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: var(--gutter);
+    display: none;
+    place-items: center;
+    inline-size: var(--tap-target);
+    block-size: var(--tap-target);
+    padding: 0;
+    border: var(--border-thin) solid var(--color-border-control);
+    border-radius: var(--radius-pill);
+    background-color: var(--color-surface);
+    box-shadow: var(--shadow-soft);
+    color: var(--color-text);
+    cursor: pointer;
+    transform: translateY(-50%);
+
+    &:hover {
+      border-color: var(--color-text);
+    }
+
+    &:focus-visible {
+      border-radius: var(--radius-pill);
+    }
+  }
+
+  .marquee__toggle .marquee__icon {
+    grid-area: 1 / 1;
+  }
+
+  .marquee__toggle .marquee__icon--play,
+  .marquee[data-paused] .marquee__toggle .marquee__icon--pause {
+    visibility: hidden;
+  }
+
+  .marquee[data-paused] .marquee__toggle .marquee__icon--play {
+    visibility: visible;
+  }
+
+  /* Défilement : une copie (100% / copies de la piste) par cycle, en boucle sans couture. */
+  @media (prefers-reduced-motion: no-preference) {
+    .js .marquee__track {
+      animation: marquee-scroll var(--marquee-duration) linear infinite;
+    }
+
+    .js .marquee__toggle {
+      display: grid;
+    }
+
+    .marquee:is(:hover, :focus-within, [data-paused]) .marquee__track {
+      animation-play-state: paused;
+    }
+
+    /* Hors écran : animation retirée (et non en pause), sinon le calque composité reste et en
+       force d'autres par recouvrement. La position repart de zéro, invisible hors écran. */
+    .marquee[data-offscreen] .marquee__track {
+      animation: none;
+    }
+  }
+
+  @keyframes marquee-scroll {
+    to {
+      transform: translateX(calc(-100% / var(--marquee-copies)));
+    }
+  }
+}

@@ -1,0 +1,112 @@
+---
+/**
+ * ProcessSteps — méthode en étapes (liste ordonnée) : numéro en Fraunces italique géante
+ * semi-transparente (décor, aria-hidden : l'ordre est porté par <ol>), titre, texte.
+ * 1 colonne → 2 (≥ 48rem) → 3 (≥ 64rem), colonne centrale décalée vers le bas.
+ * `variant="summary"` (accueil) : titres seuls, le détail vit sur /visualisation-3d/ (pas de
+ * contenu dupliqué entre les deux pages).
+ */
+import ContentSection from './ContentSection.astro';
+import Heading from '@/components/ui/Heading.astro';
+import { formatStepNumber, type TextItemData } from '@/lib/cards';
+import type { PageSection } from '@/lib/pages/types';
+
+interface Props {
+  section: PageSection;
+  steps: readonly TextItemData[];
+  id: string;
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  /** `full` : titre et texte ; `summary` : titres seuls. */
+  variant?: 'full' | 'summary';
+}
+
+const { section, steps, id, background = 'sage', variant = 'full' } = Astro.props;
+---
+
+<ContentSection section={section} id={id} background={background}>
+  <ol class:list={['process-steps', `process-steps--${variant}`]}>
+    {steps.map((step, index) => (
+      <li class="process-steps__item" data-reveal>
+        <span class="process-steps__number" aria-hidden="true">
+          {formatStepNumber(index)}
+        </span>
+        {/* Résumé : intitulés en <p>, pas 6 h3 vides ; la liste ordonnée porte la structure. */}
+        <Heading
+          level={3}
+          size="md"
+          class="process-steps__title"
+          as={variant === 'summary' ? 'p' : undefined}
+        >
+          {step.title}
+        </Heading>
+        {variant === 'full' && <p class="process-steps__text">{step.text}</p>}
+      </li>
+    ))}
+  </ol>
+</ContentSection>
+
+<style>
+  @layer components {
+    .process-steps {
+      display: grid;
+      gap: var(--space-xl) var(--grid-gap);
+      padding: 0;
+      margin: 0;
+
+      @media (width >= 48rem) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      @media (width >= 64rem) {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (width >= 64rem) {
+      .process-steps__item:nth-child(3n + 2) {
+        margin-block-start: var(--grid-stagger);
+      }
+    }
+
+    .process-steps__item {
+      position: relative;
+      display: grid;
+      align-content: start;
+      gap: var(--space-xs);
+      padding-block-start: var(--space-s);
+      border-block-start: var(--border-hairline) solid var(--color-border-strong);
+    }
+
+    /* Le numéro géant passe derrière le titre, qui le chevauche (aucun décalage de mise en page). */
+    .process-steps__number {
+      font-family: var(--font-display-stack);
+      font-size: var(--step-5);
+      font-style: italic;
+      font-weight: var(--weight-light);
+      line-height: var(--leading-tight);
+      color: var(--color-accent);
+      opacity: var(--opacity-ornament);
+      margin-block-end: calc(var(--space-l) * -1);
+    }
+
+    :global(.process-steps__title) {
+      position: relative;
+    }
+
+    .process-steps__text {
+      color: var(--color-text);
+    }
+
+    .process-steps--summary {
+      row-gap: var(--space-l);
+    }
+
+    /* Sans texte, l'élément est à peine plus haut que le décalage complet : la colonne
+       centrale semblerait flotter entre deux rangées. Demi-décalage, le zigzag reste lisible. */
+    @media (width >= 64rem) {
+      .process-steps--summary .process-steps__item:nth-child(3n + 2) {
+        margin-block-start: calc(var(--grid-stagger) / 2);
+      }
+    }
+  }
+</style>

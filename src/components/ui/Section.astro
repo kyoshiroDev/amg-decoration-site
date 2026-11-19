@@ -1,0 +1,76 @@
+---
+/**
+ * Section — bande de page verticale avec fond de la palette.
+ * Règle de composition : un seul pastel par section, deux pastels maximum à l'écran.
+ * Donner `labelledby` (id du titre) pour exposer la section comme région nommée.
+ */
+type Background = 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+
+interface Props {
+  background?: Background;
+  as?: 'section' | 'div' | 'aside' | 'article';
+  labelledby?: string | undefined;
+  /** Espacement vertical : `section` (défaut) ou `compact`. */
+  spacing?: 'section' | 'compact' | 'none';
+  id?: string | undefined;
+  class?: string | undefined;
+}
+
+const {
+  background = 'linen',
+  as: Element = 'section',
+  labelledby,
+  spacing = 'section',
+  id,
+  class: className,
+} = Astro.props;
+---
+
+<Element
+  id={id}
+  class:list={['section', `section--${background}`, `section--space-${spacing}`, className]}
+  aria-labelledby={labelledby}
+>
+  <slot />
+</Element>
+
+<style>
+  @layer components {
+    .section {
+      position: relative;
+      background-color: var(--section-bg);
+    }
+
+    .section--linen {
+      --section-bg: var(--color-linen);
+    }
+
+    .section--cream {
+      --section-bg: var(--color-cream);
+    }
+
+    .section--sand {
+      --section-bg: var(--color-sand);
+    }
+
+    .section--blush {
+      --section-bg: var(--color-blush);
+    }
+
+    .section--sage {
+      --section-bg: var(--color-sage);
+    }
+
+    .section--space-section {
+      padding-block: var(--space-section);
+    }
+
+    .section--space-compact {
+      padding-block: var(--space-xl-3xl);
+    }
+
+    .section--space-none {
+      padding-block: 0;
+    }
+  }
+</style>

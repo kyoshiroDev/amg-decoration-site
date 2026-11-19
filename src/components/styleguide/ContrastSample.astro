@@ -1,0 +1,52 @@
+---
+/**
+ * ContrastSample — pastille « Aa » (texte sur fond) du tableau et des paires de contraste.
+ * Décorative : l'information est portée par le ratio écrit à côté.
+ */
+interface Props {
+  fg: string;
+  bg: string;
+  /** Masquée sous 48rem (le tableau tient alors sans défilement). */
+  hideOnMobile?: boolean;
+}
+
+const { fg, bg, hideOnMobile = false } = Astro.props;
+---
+
+<span
+  class:list={['contrast-sample', { 'contrast-sample--desktop': hideOnMobile }]}
+  style={`--fg: var(--color-${fg}); --bg: var(--color-${bg})`}
+  aria-hidden="true"
+></span>
+
+<style>
+  @layer components {
+    .contrast-sample {
+      display: inline-grid;
+      place-items: center;
+      inline-size: var(--tap-target);
+      block-size: var(--tap-target);
+      margin-inline-end: var(--space-2xs);
+      font-family: var(--font-display-stack);
+      font-size: var(--step-1);
+      color: var(--fg);
+      background-color: var(--bg);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-inset-hairline);
+      vertical-align: middle;
+    }
+
+    /* Échantillon en contenu généré : décoratif, hors du calcul de contraste d'axe, non lu. */
+    .contrast-sample::before {
+      content: 'Aa' / '';
+    }
+
+    .contrast-sample--desktop {
+      display: none;
+
+      @media (width >= 48rem) {
+        display: inline-grid;
+      }
+    }
+  }
+</style>

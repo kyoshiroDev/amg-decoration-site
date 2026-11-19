@@ -1,0 +1,96 @@
+---
+/**
+ * BaseLayout — squelette HTML de TOUTES les pages : <head> (polices, CSS global, SEO, JSON-LD
+ * global relié par @id) et <body> (lien d'évitement, en-tête, <main>, pied de page).
+ * View Transitions : natives, en CSS (`@view-transition`), sans ClientRouter (ADR-0006).
+ * Classe `js` posée sur <html> par un script inline en tête, avant le premier rendu (ADR-0010).
+ * Scripts communs (en-tête, menu mobile, CTA magnétique, apparitions) : un seul module en fin de body.
+ */
+import type { ImageMetadata } from 'astro';
+import type { Thing } from 'schema-dts';
+import type { OpenGraphArticle } from '@/lib/seo';
+import { Font } from 'astro:assets';
+import '@/styles/global.css';
+import SEO from '@/components/seo/SEO.astro';
+import JsonLd from '@/components/seo/JsonLd.astro';
+import SkipLink from '@/components/layout/SkipLink.astro';
+import Header from '@/components/layout/Header.astro';
+import Footer from '@/components/layout/Footer.astro';
+import { site } from '@/config/site';
+import { buildBusiness, buildFounder, buildGraph, buildWebSite } from '@/lib/jsonld';
+import { JS_CLASS_SCRIPT } from '@/lib/inline-scripts';
+
+export interface Props {
+  title: string;
+  description: string;
+  image?: ImageMetadata | undefined;
+  imageAlt?: string | undefined;
+  noindex?: boolean;
+  titleSuffix?: boolean;
+  /** Article de blog : `og:type` article et balises `article:*` (voir SEO.astro). */
+  article?: OpenGraphArticle | undefined;
+  /** Nœuds schema.org propres à la page, ajoutés au graphe global. */
+  jsonLd?: readonly Thing[];
+}
+
+const {
+  title,
+  description,
+  image,
+  imageAlt,
+  noindex = false,
+  titleSuffix = true,
+  article,
+  jsonLd = [],
+} = Astro.props;
+
+const origin = Astro.site ?? Astro.url;
+const graph = buildGraph([
+  buildWebSite(site, origin),
+  buildBusiness(site, origin),
+  buildFounder(site, origin),
+  ...jsonLd,
+]);
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline set:html={JS_CLASS_SCRIPT} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta name="generator" content={Astro.generator} />
+    <Font
+      cssVariable="--font-display"
+      preload={[{ subset: 'latin', style: 'normal', weight: 300 }]}
+    />
+    <Font cssVariable="--font-body" />
+    <SEO
+      title={title}
+      description={description}
+      image={image}
+      imageAlt={imageAlt}
+      noindex={noindex}
+      titleSuffix={titleSuffix}
+      article={article}
+    />
+    <JsonLd graph={graph} />
+  </head>
+  <body>
+    <SkipLink />
+    <Header />
+    <main id="contenu" tabindex="-1">
+      <slot />
+    </main>
+    <Footer />
+    <script>
+      // Scripts communs à toutes les pages, réunis en un seul module (moins de requêtes).
+      import '@/scripts/header';
+      import '@/scripts/mobile-nav';
+      import '@/scripts/magnetic';
+      import '@/scripts/reveal';
+    </script>
+  </body>
+</html>

@@ -1,0 +1,57 @@
+---
+/**
+ * ServiceCard — carte d'une formule : titre-lien (zone cliquable étendue à toute la carte),
+ * accroche en italique, résumé, pièces concernées, tarif (si affiché) et invitation visuelle.
+ * Formule mise en avant : pastille « La plus demandée » et liseré terracotta. Styles : ./service-card.css.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import Tag from '@/components/ui/Tag.astro';
+import { microcopy } from '@/config/microcopy';
+import type { ServiceCardData } from '@/lib/cards';
+import './service-card.css';
+
+interface Props {
+  service: ServiceCardData;
+  headingLevel?: 2 | 3;
+}
+
+const { service, headingLevel = 3 } = Astro.props;
+const Title = `h${headingLevel}` as const;
+---
+
+<article class:list={['service-card', { 'service-card--highlight': service.highlight }]}>
+  <span class="service-card__arch" aria-hidden="true"></span>
+  {service.highlight && (
+    <Tag tone="blush" class="service-card__badge">
+      {microcopy.services.highlight}
+    </Tag>
+  )}
+  <Title class="service-card__title">
+    <a class="service-card__link" href={service.href}>
+      {service.title}
+    </a>
+  </Title>
+  <p class="service-card__tagline">{service.tagline}</p>
+  <p class="service-card__summary">{service.summary}</p>
+  {service.target && (
+    <p class="service-card__target">
+      <span class="visually-hidden">{microcopy.services.targetLabel} </span>
+      {service.target}
+    </p>
+  )}
+  <div class="service-card__footer">
+    {service.price && (
+      <p class="service-card__price">
+        {service.price.kind === 'price' && (
+          <span class="visually-hidden">{microcopy.services.priceLabel} </span>
+        )}
+        {service.price.label}
+        {service.price.note && <small class="service-card__note">{service.price.note}</small>}
+      </p>
+    )}
+    <span class="service-card__more" aria-hidden="true">
+      {microcopy.services.more}
+      <Icon name="arrow-right" class="service-card__icon" />
+    </span>
+  </div>
+</article>

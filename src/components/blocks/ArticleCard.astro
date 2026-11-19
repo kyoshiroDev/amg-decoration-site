@@ -1,0 +1,138 @@
+---
+/**
+ * ArticleCard — carte d'un article « Conseils déco » : couverture arrondie, date et temps de
+ * lecture, titre-lien (zone cliquable étendue à toute la carte), extrait, thèmes en pastilles.
+ * L'invitation « Lire l'article » est décorative (`aria-hidden`) : le titre porte le lien.
+ */
+import ArchImage from '@/components/ui/ArchImage.astro';
+import Tag from '@/components/ui/Tag.astro';
+import ArticleMeta from './ArticleMeta.astro';
+import { microcopy } from '@/config/microcopy';
+import type { ArticleCardData } from '@/lib/pages/articles-model';
+
+interface Props {
+  article: ArticleCardData;
+  sizes: string;
+  headingLevel?: 2 | 3;
+  /** Première carte au-dessus de la ligne de flottaison : image chargée en priorité (élément LCP). */
+  priority?: boolean;
+}
+
+const { article, sizes, headingLevel = 2, priority = false } = Astro.props;
+const Title = `h${headingLevel}` as const;
+---
+
+<article class="article-card">
+  <ArchImage
+    src={article.cover.image}
+    alt={article.cover.alt}
+    sizes={sizes}
+    priority={priority}
+    shape="rounded"
+    ratio="3 / 2"
+    class="article-card__media"
+  />
+  <div class="article-card__body">
+    <ArticleMeta published={article.published} readingTime={article.readingTime} />
+    <Title class="article-card__title">
+      <a class="article-card__link" href={article.href}>
+        {article.title}
+      </a>
+    </Title>
+    <p class="article-card__excerpt">{article.excerpt}</p>
+    {article.tags.length > 0 && (
+      <ul class="article-card__tags" aria-label={microcopy.articles.tagsLabel}>
+        {article.tags.map((tag) => (
+          <li>
+            <Tag tone="blush">{tag}</Tag>
+          </li>
+        ))}
+      </ul>
+    )}
+    <span class="article-card__more link-draw" aria-hidden="true">
+      {microcopy.articles.more}
+    </span>
+  </div>
+</article>
+
+<style>
+  @layer components {
+    .article-card {
+      position: relative;
+      display: grid;
+      gap: var(--space-m);
+
+      &:has(.article-card__link:focus-visible) {
+        outline: var(--focus-ring);
+        outline-offset: var(--focus-ring-offset);
+        border-radius: var(--radius-md);
+      }
+    }
+
+    .article-card__body {
+      display: grid;
+      justify-items: start;
+      gap: var(--space-xs);
+    }
+
+    .article-card__title {
+      font-size: var(--step-3);
+      font-weight: var(--weight-light);
+      line-height: var(--leading-heading);
+      text-wrap: balance;
+    }
+
+    .article-card__link {
+      color: var(--color-text);
+      text-decoration: none;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+      }
+
+      /* Anneau reporté sur la carte entière (:has) ; sans :has, le lien garde le sien. */
+      @supports selector(:has(*)) {
+        &:focus-visible {
+          outline: none;
+        }
+      }
+    }
+
+    .article-card__excerpt {
+      max-inline-size: var(--measure);
+      color: var(--color-text-soft);
+    }
+
+    .article-card__tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2xs);
+    }
+
+    .article-card__more {
+      margin-block-start: var(--space-2xs);
+      font-size: var(--step--1);
+      font-weight: var(--weight-semibold);
+      color: var(--color-accent-text);
+    }
+
+    /* Survol ou focus clavier de la carte : invitation dessinée et zoom lent du visuel. */
+    .article-card:is(:hover, :has(.article-card__link:focus-visible)) {
+      & .article-card__more::after {
+        transform: scaleX(1);
+      }
+
+      & :global(.arch-image__img) {
+        transform: scale(var(--hover-zoom));
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .article-card:is(:hover, :has(.article-card__link:focus-visible)) :global(.arch-image__img) {
+        transform: none;
+      }
+    }
+  }
+</style>

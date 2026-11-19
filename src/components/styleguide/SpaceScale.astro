@@ -1,0 +1,68 @@
+---
+/**
+ * SpaceScale — espacements Utopia lus dans tokens.css, visualisés en barres.
+ */
+import tokensCss from '@/styles/tokens.css?raw';
+import { clampBounds, parseCustomProperties } from '@/lib/design-tokens';
+
+const spaces = parseCustomProperties(tokensCss, '--space-');
+const toPx = (rem: string): string => `${Math.round(parseFloat(rem) * 16)}`;
+---
+
+<ul class="space-scale">
+  {spaces.map(({ name, value }) => {
+    const bounds = clampBounds(value);
+    return (
+      <li class="space-scale__row">
+        <code>{name}</code>
+        <span class="space-scale__bar" style={`--bar: var(${name})`} />
+        {bounds && (
+          <span class="space-scale__value">
+            {toPx(bounds.min)}–{toPx(bounds.max)} px
+          </span>
+        )}
+      </li>
+    );
+  })}
+</ul>
+
+<style>
+  @layer components {
+    .space-scale {
+      display: grid;
+      gap: var(--space-2xs);
+      font-size: var(--step--1);
+    }
+
+    .space-scale__row {
+      display: grid;
+      grid-template-columns: 8.5rem 1fr;
+      grid-template-areas: 'name value' 'bar bar';
+      align-items: center;
+      gap: var(--space-3xs) var(--space-s);
+
+      & code {
+        grid-area: name;
+      }
+
+      @media (width >= 48rem) {
+        grid-template-columns: 9rem auto 1fr;
+        grid-template-areas: 'name bar value';
+      }
+    }
+
+    .space-scale__bar {
+      grid-area: bar;
+      inline-size: var(--bar);
+      block-size: var(--space-2xs);
+      background-color: var(--color-accent);
+      border-radius: var(--radius-pill);
+    }
+
+    .space-scale__value {
+      grid-area: value;
+      color: var(--color-text-soft);
+      font-variant-numeric: tabular-nums;
+    }
+  }
+</style>

@@ -1,0 +1,146 @@
+---
+/**
+ * ProjectPager — navigation vers le projet précédent et le suivant (en boucle), en fin de page
+ * projet. Chaque lien réunit une vignette en arche (décorative : le nom vient du texte), le sens
+ * (« Projet suivant ») et le titre. La vignette porte le nom de View Transition du projet visé.
+ */
+import ArchImage from '@/components/ui/ArchImage.astro';
+import Container from '@/components/ui/Container.astro';
+import { PROJECT_TRANSITION_CLASS, projectTransitionName, type ProjectCardData } from '@/lib/cards';
+
+interface Link {
+  readonly project: ProjectCardData;
+  readonly label: string;
+  readonly direction: 'previous' | 'next';
+}
+
+interface Props {
+  previous: ProjectCardData | undefined;
+  next: ProjectCardData | undefined;
+  labels: {
+    readonly label: string;
+    readonly previous: string;
+    readonly next: string;
+    /** Ponctuation masquée entre le sens et le titre (texte du lien lisible par les robots). */
+    readonly separator: string;
+  };
+}
+
+const { previous, next, labels } = Astro.props;
+const links: Link[] = [
+  ...(previous
+    ? [{ project: previous, label: labels.previous, direction: 'previous' } as const]
+    : []),
+  ...(next ? [{ project: next, label: labels.next, direction: 'next' } as const] : []),
+];
+---
+
+{links.length > 0 && (
+  <nav class="project-pager" aria-label={labels.label}>
+    <Container as="ul" class="project-pager__list">
+      {links.map((link) => (
+        <li class:list={['project-pager__item', `project-pager__item--${link.direction}`]}>
+          <a
+            class="project-pager__link"
+            href={link.project.href}
+            rel={link.direction === 'next' ? 'next' : 'prev'}
+          >
+            <ArchImage
+              src={link.project.image}
+              alt=""
+              sizes="7rem"
+              widths={[180, 360]}
+              ratio="4 / 5"
+              transitionName={projectTransitionName(link.project.slug)}
+              transitionClass={PROJECT_TRANSITION_CLASS}
+              class="project-pager__image"
+            />
+            <span class="project-pager__text">
+              <span class="project-pager__direction">{link.label}</span>
+              <span class="visually-hidden">{labels.separator}</span>
+              <span class="project-pager__title">{link.project.title}</span>
+            </span>
+          </a>
+        </li>
+      ))}
+    </Container>
+  </nav>
+)}
+
+<style>
+  @layer components {
+    .project-pager {
+      padding-block: var(--space-xl-3xl);
+      border-block-start: var(--border-hairline) solid var(--color-border);
+    }
+
+    :global(.project-pager__list) {
+      display: grid;
+      gap: var(--space-l);
+
+      @media (width >= 48rem) {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--grid-gap);
+      }
+    }
+
+    .project-pager__item--next {
+      @media (width >= 48rem) {
+        grid-column: 2;
+        text-align: end;
+      }
+    }
+
+    .project-pager__link {
+      display: flex;
+      align-items: center;
+      gap: var(--space-m);
+      color: var(--color-text);
+      text-decoration: none;
+
+      &:focus-visible {
+        border-radius: var(--radius-md);
+      }
+    }
+
+    .project-pager__item--next .project-pager__link {
+      @media (width >= 48rem) {
+        flex-direction: row-reverse;
+      }
+    }
+
+    :global(.project-pager__image) {
+      flex: none;
+      inline-size: var(--space-3xl);
+    }
+
+    .project-pager__text {
+      display: grid;
+      gap: var(--space-2xs);
+    }
+
+    .project-pager__direction {
+      font-size: var(--text-eyebrow);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-eyebrow);
+      text-transform: uppercase;
+      color: var(--color-accent-text);
+    }
+
+    .project-pager__title {
+      font-family: var(--font-display-stack);
+      font-size: var(--step-1);
+      font-weight: var(--weight-light);
+      line-height: var(--leading-heading);
+      text-wrap: balance;
+
+      @media (width >= 48rem) {
+        font-size: var(--step-2);
+      }
+    }
+
+    .project-pager__link:hover .project-pager__title {
+      color: var(--color-accent-text);
+    }
+  }
+</style>

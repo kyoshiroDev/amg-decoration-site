@@ -1,0 +1,141 @@
+---
+/**
+ * MobileNavPanel — contenu du popover du menu mobile : fermeture, navigation principale en
+ * grandes lettres (MobileNavLinks), appel direct et WhatsApp.
+ * Panneau latéral à droite (plein écran sur mobile), entrée en fondu + glissé de 20 px.
+ */
+import Button from '@/components/ui/Button.astro';
+import SiteLogo from '@/components/ui/SiteLogo.astro';
+import MobileNavLinks from './MobileNavLinks.astro';
+import { site } from '@/config/site';
+import { microcopy } from '@/config/microcopy';
+import { formatPhoneHref } from '@/lib/format';
+
+interface Props {
+  id: string;
+  currentPath: string;
+}
+
+const { id, currentPath } = Astro.props;
+---
+
+<div id={id} popover="auto" class="mobile-panel" data-mobile-nav>
+  <div class="mobile-panel__top">
+    <SiteLogo as="span" />
+    <Button
+      variant="ghost"
+      iconOnly
+      icon="close"
+      label={microcopy.mobileMenu.close}
+      attrs={{ popovertarget: id, popovertargetaction: 'hide' }}
+    />
+  </div>
+
+  <MobileNavLinks currentPath={currentPath} />
+
+  <div class="mobile-panel__contact">
+    <Button href={site.headerCta.href} icon="arrow-right">
+      {site.headerCta.label}
+    </Button>
+    <Button href={formatPhoneHref(site.phone.e164)} variant="ghost" iconStart="phone">
+      {site.phone.display}
+    </Button>
+    <Button href={site.whatsapp.url} variant="ghost" iconStart="whatsapp">
+      {microcopy.footer.whatsapp}
+    </Button>
+  </div>
+</div>
+
+<style>
+  @layer components {
+    .mobile-panel {
+      display: none;
+    }
+
+    @supports selector(:popover-open) {
+      .mobile-panel {
+        position: fixed;
+        inset: 0 0 0 auto;
+        inline-size: min(100%, var(--mobile-nav-width));
+        max-inline-size: none;
+        block-size: 100dvh;
+        max-block-size: none;
+        margin: 0;
+        padding: var(--space-s) var(--gutter) var(--space-l);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        flex-direction: column;
+        gap: var(--space-l);
+        border: 0;
+        color: var(--color-text);
+        background-color: var(--color-bg);
+        box-shadow: var(--shadow-lifted);
+        opacity: 0;
+        transform: translateX(var(--reveal-distance));
+        transition:
+          opacity var(--dur-base) var(--ease-out),
+          transform var(--dur-base) var(--ease-out),
+          overlay var(--dur-base) allow-discrete,
+          display var(--dur-base) allow-discrete;
+      }
+
+      /* Grain de papier (même matière que la page, le panneau étant dans le top layer). */
+      .mobile-panel::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background-image: var(--grain-image);
+        background-size: var(--grain-size);
+      }
+
+      .mobile-panel:popover-open {
+        display: flex;
+        opacity: 1;
+        transform: none;
+      }
+
+      @starting-style {
+        .mobile-panel:popover-open {
+          opacity: 0;
+          transform: translateX(var(--reveal-distance));
+        }
+      }
+
+      .mobile-panel::backdrop {
+        background-color: var(--color-backdrop);
+        opacity: 0;
+        transition:
+          opacity var(--dur-base) var(--ease-out),
+          overlay var(--dur-base) allow-discrete,
+          display var(--dur-base) allow-discrete;
+      }
+
+      .mobile-panel:popover-open::backdrop {
+        opacity: 1;
+      }
+
+      @starting-style {
+        .mobile-panel:popover-open::backdrop {
+          opacity: 0;
+        }
+      }
+    }
+
+    .mobile-panel__top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-block-end: var(--space-s);
+      border-block-end: var(--border-hairline) solid var(--color-border);
+    }
+
+    .mobile-panel__contact {
+      display: grid;
+      gap: var(--space-xs);
+      margin-block-start: auto;
+      padding-block-start: var(--space-m);
+      border-block-start: var(--border-hairline) solid var(--color-border);
+    }
+  }
+</style>

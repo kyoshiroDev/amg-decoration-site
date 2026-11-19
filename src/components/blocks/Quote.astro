@@ -1,0 +1,95 @@
+---
+/**
+ * Quote — citation mise en exergue : petit titre de section (h2 discret), guillemets
+ * terracotta géants (décor), citation en Fraunces italique, auteur.
+ */
+import Section from '@/components/ui/Section.astro';
+import Container from '@/components/ui/Container.astro';
+import Heading from '@/components/ui/Heading.astro';
+import Divider from '@/components/ui/Divider.astro';
+import type { QuoteData } from '@/lib/pages/types';
+
+interface Props {
+  heading: string;
+  quote: QuoteData;
+  id: string;
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+}
+
+const { heading, quote, id, background = 'linen' } = Astro.props;
+---
+
+<Section background={background} labelledby={id} spacing="compact">
+  <Container width="narrow" class="quote">
+    <Heading level={2} size="xs" id={id} align="center" class="quote__heading">
+      {heading}
+    </Heading>
+    <figure class="quote__figure" data-reveal>
+      <span class="quote__mark" aria-hidden="true"></span>
+      <blockquote class="quote__text">
+        <p>{quote.text}</p>
+      </blockquote>
+      <figcaption class="quote__author">{quote.author}</figcaption>
+    </figure>
+    <Divider ornament width="short" />
+  </Container>
+</Section>
+
+<style>
+  @layer components {
+    :global(.quote) {
+      display: grid;
+      justify-items: center;
+      gap: var(--space-m);
+      text-align: center;
+    }
+
+    :global(.quote__heading) {
+      font-size: var(--text-eyebrow);
+      letter-spacing: var(--tracking-eyebrow);
+      text-transform: uppercase;
+      color: var(--color-accent-text);
+    }
+
+    .quote__figure {
+      display: grid;
+      justify-items: center;
+      margin: 0;
+    }
+
+    /* Guillemet ornemental en CSS (texte de remplacement vide : jamais lu). */
+    .quote__mark::before {
+      content: '«' / '';
+      font-family: var(--font-display-stack);
+      font-size: var(--step-5);
+      font-weight: var(--weight-light);
+      line-height: var(--leading-tight);
+      color: var(--color-accent);
+    }
+
+    .quote__text {
+      margin: 0;
+      font-family: var(--font-display-stack);
+      font-size: var(--step-4);
+      font-style: italic;
+      font-weight: var(--weight-light);
+      line-height: var(--leading-tight);
+      letter-spacing: var(--tracking-display);
+      text-wrap: balance;
+
+      & p {
+        max-inline-size: none;
+        text-wrap: balance;
+      }
+    }
+
+    .quote__author {
+      margin-block-start: var(--space-m);
+      font-size: var(--step--1);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-eyebrow);
+      text-transform: uppercase;
+      color: var(--color-text-soft);
+    }
+  }
+</style>

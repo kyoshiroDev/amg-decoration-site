@@ -1,0 +1,24 @@
+---
+// Réalisations : assemblage. Données : getProjectsIndexData() (src/lib/pages/projects.ts),
+// textes : src/content/pages/realisations.md.
+import PageLayout from '@/layouts/PageLayout.astro';
+import PageHero from '@/components/blocks/PageHero.astro';
+import ProjectCatalog from '@/components/blocks/ProjectCatalog.astro';
+import CtaBanner from '@/components/blocks/CtaBanner.astro';
+import { getProjectsIndexData } from '@/lib/pages/projects';
+
+const data = await getProjectsIndexData(Astro.site ?? Astro.url);
+---
+
+<PageLayout
+  title={data.seo.title}
+  description={data.seo.description}
+  image={data.ogImage?.image}
+  imageAlt={data.ogImage?.alt}
+  breadcrumbs={data.breadcrumbs}
+  jsonLd={data.jsonLd}
+>
+  <PageHero section={data.hero} id="realisations-titre" />
+  <ProjectCatalog projects={data.projects} filters={data.filters} />
+  <CtaBanner section={data.cta} id="contact-titre" />
+</PageLayout>

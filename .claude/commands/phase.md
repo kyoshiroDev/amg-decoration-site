@@ -1,6 +1,6 @@
 ---
 description: Exécute une seule phase de la roadmap, de la planification à la PR.
-argument-hint: "<numéro de phase>"
+argument-hint: '<numéro de phase>'
 ---
 
 Exécute uniquement la **phase $ARGUMENTS** de `docs/ROADMAP.md`, en suivant à la lettre le cycle de `CLAUDE.md` §8 (planifier → implémenter → verify → audits → docs → reviewer → push dev + PR).

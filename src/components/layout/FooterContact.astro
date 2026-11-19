@@ -1,0 +1,80 @@
+---
+/**
+ * FooterContact — colonnes « Me contacter » (téléphone, e-mail, WhatsApp), horaires et zone
+ * d'intervention. Données : config/site.ts ; libellés : config/microcopy.ts.
+ */
+import Link from '@/components/ui/Link.astro';
+import FooterColumn from './FooterColumn.astro';
+import { site } from '@/config/site';
+import { microcopy } from '@/config/microcopy';
+import { formatOpeningHours, formatPhoneHref } from '@/lib/format';
+
+const { footer } = microcopy;
+const hours = formatOpeningHours(site.openingHours);
+---
+
+<FooterColumn title={footer.contactTitle}>
+  <dl class="footer-contact">
+    <div class="footer-contact__row">
+      <dt class="footer-contact__term">{footer.phoneLabel}</dt>
+      <dd>
+        <Link variant="draw" href={formatPhoneHref(site.phone.e164)} iconStart="phone">
+          {site.phone.display}
+        </Link>
+      </dd>
+    </div>
+    <div class="footer-contact__row">
+      <dt class="footer-contact__term">{footer.emailLabel}</dt>
+      <dd>
+        <Link variant="draw" href={`mailto:${site.email}`} iconStart="mail">
+          {site.email}
+        </Link>
+      </dd>
+    </div>
+  </dl>
+  <Link variant="draw" href={site.whatsapp.url} iconStart="whatsapp">
+    {footer.whatsapp}
+  </Link>
+</FooterColumn>
+
+<div class="footer-contact__stack">
+  <FooterColumn title={footer.hoursTitle}>
+    {hours.map((line) => (
+      <p>{line}</p>
+    ))}
+  </FooterColumn>
+  <FooterColumn title={footer.areaTitle}>
+    <p>{footer.area}</p>
+  </FooterColumn>
+</div>
+
+<style>
+  @layer components {
+    .footer-contact {
+      display: grid;
+      gap: var(--space-xs);
+    }
+
+    .footer-contact__row {
+      display: grid;
+      gap: var(--space-3xs);
+    }
+
+    .footer-contact__term {
+      font-size: var(--step--1);
+      line-height: var(--leading-ui);
+      color: var(--color-text-soft);
+    }
+
+    .footer-contact__stack {
+      display: grid;
+      align-content: start;
+      gap: var(--space-l);
+    }
+
+    dd {
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+  }
+</style>

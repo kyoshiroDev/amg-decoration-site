@@ -1,0 +1,83 @@
+---
+/**
+ * Button — action principale ou secondaire.
+ * Rend un <a> si `href` est fourni, sinon un <button>. Cible tactile ≥ 44 px.
+ * Un lien ne peut pas être désactivé : avec `disabled`, le composant rend toujours un
+ * <button disabled> (non focalisable, annoncé « indisponible »), même si `href` est fourni.
+ * Bouton icône seule : `iconOnly` impose `icon` ET `label` (nom accessible) au niveau du type,
+ * le cas « icône sans nom » est donc impossible. Styles : ./button.css (découpage < 150 lignes).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from './Icon.astro';
+import type { IconName } from './icons';
+import './button.css';
+
+type Variant = 'primary' | 'secondary' | 'ghost' | 'link';
+
+interface BaseProps {
+  variant?: Variant;
+  href?: string | undefined;
+  type?: 'button' | 'submit' | 'reset';
+  /** Icône avant le libellé (téléphone, WhatsApp…). */
+  iconStart?: IconName | undefined;
+  disabled?: boolean;
+  class?: string | undefined;
+  /** Attributs complémentaires (aria-*, data-*, target, rel, popovertarget…). */
+  attrs?: HTMLAttributes<'a'> & HTMLAttributes<'button'>;
+}
+
+/** Libellé visible fourni par le slot. */
+interface LabelledProps extends BaseProps {
+  iconOnly?: false;
+  /** Icône après le libellé (par défaut aucune). */
+  icon?: IconName | undefined;
+  label?: never;
+}
+
+/** Icône seule : le nom accessible est obligatoire (texte masqué visuellement). */
+interface IconOnlyProps extends BaseProps {
+  iconOnly: true;
+  icon: IconName;
+  label: string;
+}
+
+type Props = LabelledProps | IconOnlyProps;
+
+const {
+  variant = 'primary',
+  href,
+  type = 'button',
+  icon,
+  iconStart,
+  iconOnly = false,
+  label,
+  disabled = false,
+  class: className,
+  attrs = {},
+} = Astro.props;
+
+const isLink = href !== undefined && !disabled;
+const Tag = isLink ? 'a' : 'button';
+const tagAttrs = isLink ? { href } : { type, disabled };
+---
+
+<Tag
+  class:list={['button', `button--${variant}`, { 'button--icon-only': iconOnly }, className]}
+  {...tagAttrs}
+  {...attrs}
+>
+  {iconOnly && icon ? (
+    <>
+      <Icon name={icon} size="1.25em" />
+      <span class="visually-hidden">{label}</span>
+    </>
+  ) : (
+    <>
+      {iconStart && <Icon name={iconStart} />}
+      <span class="button__label">
+        <slot />
+      </span>
+      {icon && <Icon name={icon} class="button__icon" />}
+    </>
+  )}
+</Tag>

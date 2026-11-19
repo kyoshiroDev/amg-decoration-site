@@ -1,0 +1,19 @@
+---
+/**
+ * Container — centre le contenu avec les gouttières fluides.
+ * `normal` : 1320 px max ; `narrow` : 760 px (lecture longue).
+ */
+import type { HTMLTag } from 'astro/types';
+
+interface Props {
+  width?: 'normal' | 'narrow';
+  as?: HTMLTag;
+  class?: string | undefined;
+}
+
+const { width = 'normal', as: Element = 'div', class: className } = Astro.props;
+---
+
+<Element class:list={['container', { 'container--narrow': width === 'narrow' }, className]}>
+  <slot />
+</Element>

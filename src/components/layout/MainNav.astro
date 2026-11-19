@@ -1,0 +1,72 @@
+---
+/**
+ * MainNav — navigation principale desktop (affichée par Header à partir de 80rem).
+ * `aria-current="page"` sur la page courante (soulignement terracotta plein) ; page enfant
+ * d'une rubrique : trait court permanent, sans aria-current. Cible tactile 44 px.
+ */
+import { site } from '@/config/site';
+import { microcopy } from '@/config/microcopy';
+import { isActivePath } from '@/lib/url';
+
+interface Props {
+  currentPath: string;
+  class?: string | undefined;
+}
+
+const { currentPath, class: className } = Astro.props;
+---
+
+<nav class:list={['main-nav', className]} aria-label={microcopy.nav.main}>
+  <ul class="main-nav__list">
+    {site.mainNav.map((item) => {
+      const state = isActivePath(currentPath, item.href);
+      return (
+        <li>
+          <a
+            class:list={[
+              'main-nav__link link-draw',
+              { 'main-nav__link--section': state === 'section' },
+            ]}
+            href={item.href}
+            aria-current={state === 'page' ? 'page' : undefined}
+          >
+            {item.label}
+          </a>
+        </li>
+      );
+    })}
+  </ul>
+</nav>
+
+<style>
+  @layer components {
+    .main-nav__list {
+      display: flex;
+      gap: var(--space-m);
+    }
+
+    .main-nav__link {
+      font-size: var(--step--1);
+      white-space: nowrap;
+      color: var(--color-text);
+
+      &:hover,
+      &[aria-current='page'] {
+        color: var(--color-accent-text);
+      }
+
+      /* Cible tactile 44 px (::after porte le soulignement dessiné). */
+      &::before {
+        content: '';
+        position: absolute;
+        inset-block: calc((var(--tap-target) - 100%) / -2);
+        inset-inline: calc(var(--space-2xs) * -1);
+      }
+    }
+
+    /* Page enfant d'une rubrique : trait court permanent, sans aria-current. */
+    .main-nav__link--section::after {
+      transform: scaleX(var(--nav-section-mark));
+    }
+  }
+</style>

@@ -1,0 +1,12 @@
+# Questions fréquentes. Le site actuel n'a pas de FAQ : n'ajouter que des réponses tirées
+# du discours d'Amandine (docs/contenu-source/) ou validées par elle. Rien d'inventé.
+# Format d'une entrée (la clé est l'identifiant, en kebab-case) :
+#
+# delai-de-livraison:
+#   question: '…'
+#   answer: '…'
+#   pages: [prestations, visualisation-3d]
+#   order: 1
+#
+# TODO(contenu): questions fréquentes à recueillir auprès d'Amandine.
+{}

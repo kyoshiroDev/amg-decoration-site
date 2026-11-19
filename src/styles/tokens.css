@@ -1,0 +1,211 @@
+/*
+ * Design tokens — « Atelier lumineux »
+ * SEUL fichier autorisé à contenir des valeurs de couleur littérales (CLAUDE.md §4, ADR-0002).
+ * Référence et justification de chaque valeur : docs/DESIGN-SYSTEM.md.
+ * Échelles fluides calculées entre 360 px (22.5rem) et 1440 px (90rem) de large.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* ---------- Couleurs : palette ---------- */
+  --color-linen: #f8f3ec;
+  --color-cream: #fffcf7;
+  --color-sand: #efe3d3;
+  --color-blush: #f2dcd3;
+  --color-sage: #dde3d3;
+  --color-terracotta-500: #c66b4e;
+  --color-terracotta-600: #b05a3d;
+  --color-terracotta-700: #9a4a30;
+  --color-ink: #2f2622;
+  --color-ink-soft: #5e514a;
+  --color-taupe: #857870; /* filets de contrôle : ≥ 3:1 sur tous les fonds clairs (WCAG 1.4.11) */
+
+  /* ---------- Couleurs : rôles (à préférer dans les composants) ---------- */
+  --color-bg: var(--color-linen);
+  --color-surface: var(--color-cream);
+  --color-text: var(--color-ink);
+  --color-text-soft: var(--color-ink-soft);
+  --color-accent: var(--color-terracotta-500); /* décoratif uniquement : traits, icônes, formes */
+  --color-accent-text: var(--color-terracotta-700); /* texte d'accent et liens sur fonds clairs */
+  --color-action: var(--color-terracotta-600); /* fond des boutons primaires */
+  --color-action-hover: var(--color-terracotta-700);
+  --color-on-action: var(--color-cream);
+  --color-border: rgb(47 38 34 / 14%); /* encre à 14 % : bordures fines neutres */
+  --color-border-strong: rgb(47 38 34 / 32%);
+  --color-border-control: var(--color-taupe); /* contour des boutons ghost */
+  --color-scrim: rgb(248 243 236 / 90%); /* lin à 90 % : accent-text ≥ 4.5:1 sur tout fond */
+  --color-backdrop: rgb(47 38 34 / 28%); /* voile derrière le menu mobile */
+  --color-lightbox-bg: rgb(248 243 236 / 97%); /* lin quasi opaque : visionneuse plein écran */
+
+  /* ---------- Typographie ---------- */
+
+  /* --font-display et --font-body sont injectées par la Fonts API d'Astro (astro.config.mjs). */
+  --font-display-stack: var(--font-display, georgia, serif);
+  --font-body-stack: var(--font-body, system-ui, sans-serif);
+  --step--1: clamp(0.875rem, 0.85rem + 0.1111vw, 0.95rem);
+  --step-0: clamp(1rem, 0.9583rem + 0.1852vw, 1.125rem);
+  --step-1: clamp(1.25rem, 1.1667rem + 0.3704vw, 1.5rem);
+  --step-2: clamp(1.5625rem, 1.4167rem + 0.6481vw, 2rem);
+  --step-3: clamp(1.95rem, 1.6667rem + 1.2593vw, 2.8rem);
+  --step-4: clamp(2.44rem, 1.92rem + 2.3111vw, 4rem);
+  --step-5: clamp(3rem, 2rem + 4.4444vw, 6rem);
+  --text-eyebrow: 0.8rem;
+  --leading-tight: 1.05;
+  --leading-heading: 1.15;
+  --leading-body: 1.65;
+  --tracking-eyebrow: 0.14em;
+  --tracking-display: -0.015em;
+  --tracking-ui: 0.02em;
+  --leading-ui: 1.2;
+  --weight-light: 300;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --measure: 66ch;
+  --measure-intro: 46rem; /* ouverture de section : titre + chapeau */
+  --measure-title: 20ch; /* titre long du héros (phrase complète) */
+
+  /* ---------- Espacements (Utopia) ---------- */
+  --space-3xs: clamp(0.25rem, 0.2292rem + 0.0926vw, 0.3125rem);
+  --space-2xs: clamp(0.5rem, 0.4792rem + 0.0926vw, 0.5625rem);
+  --space-xs: clamp(0.75rem, 0.7083rem + 0.1852vw, 0.875rem);
+  --space-s: clamp(1rem, 0.9583rem + 0.1852vw, 1.125rem);
+  --space-m: clamp(1.5rem, 1.4375rem + 0.2778vw, 1.6875rem);
+  --space-l: clamp(2rem, 1.9167rem + 0.3704vw, 2.25rem);
+  --space-xl: clamp(3rem, 2.875rem + 0.5556vw, 3.375rem);
+  --space-2xl: clamp(4rem, 3.8333rem + 0.7407vw, 4.5rem);
+  --space-3xl: clamp(6rem, 5.75rem + 1.1111vw, 6.75rem);
+
+  /* Paires fluides (sautent d'un cran à l'autre entre mobile et desktop) */
+  --space-s-l: clamp(1rem, 0.5833rem + 1.8519vw, 2.25rem);
+  --space-m-xl: clamp(1.5rem, 0.875rem + 2.7778vw, 3.375rem);
+  --space-l-2xl: clamp(2rem, 1.1667rem + 3.7037vw, 4.5rem);
+  --space-xl-3xl: clamp(3rem, 1.75rem + 5.5556vw, 6.75rem);
+  --space-section: clamp(4rem, 2.3333rem + 7.4074vw, 9rem);
+
+  /* ---------- Mise en page ---------- */
+  --container-max: 1320px;
+  --container-narrow: 760px;
+  --gutter: clamp(1.25rem, 0.6667rem + 2.5926vw, 3rem);
+  --grid-columns: 12;
+  --grid-gap: var(--space-m-xl);
+  --tap-target: 44px;
+  --grid-stagger: var(--space-2xl); /* décalage vertical des cartes en grille éditoriale */
+
+  /* Blocs : largeur maximale des visuels (les grilles 7/5 et 5/7 les contiennent déjà). */
+  --hero-visual-max: 30rem;
+  --page-hero-visual-max: 26rem;
+  --page-hero-arch-size: 14rem;
+  --media-text-visual-max: 28rem;
+
+  /* Pages de contenu (lot 2A) : colonne latérale (sommaire, « En bref », coordonnées). */
+  --aside-width: 22rem;
+  --measure-legal: 68ch; /* lecture longue des pages légales (60 à 72 caractères) */
+  --measure-card: 34ch; /* texte court sous un pilier ou une carte étroite */
+
+  /* Formulaires */
+  --field-min-height: 3.25rem; /* ≥ --tap-target, confortable au pouce */
+  --field-textarea-rows: 7;
+  --field-bg: var(--color-cream);
+  --field-border: var(--color-taupe); /* contour ≥ 3:1 sur lin et crème (WCAG 1.4.11) */
+  --field-border-hover: var(--color-ink-soft);
+  --color-error: var(--color-terracotta-700); /* texte et liseré d'erreur, ≥ 4.5:1 sur crème */
+
+  /* Chevron des listes déroulantes (trait ink-soft #5e514a, encodé pour une URL de données). */
+  --field-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235e514a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+
+  /* En-tête : hauteur de mise en page FIXE (aucun décalage au scroll), compactage visuel en transform. */
+  --header-height: 5.5rem;
+  --header-height-compact: 4rem;
+  --header-compact-threshold: 80px; /* distance de scroll avant compactage (repère observé) */
+  --header-blur: 14px;
+  --header-logo-compact-scale: 0.92;
+  --nav-section-mark: 0.35; /* longueur relative du trait « rubrique parente » */
+  --mobile-nav-width: 30rem;
+  --footer-arch-size: clamp(7rem, 14vw, 11rem); /* arche filaire en filigrane du pied de page */
+
+  /* Comparateur « Rendu 3D ↔ Réalisé » (BeforeAfter). */
+  --compare-handle-size: 3rem; /* poignée ronde ≥ --tap-target */
+  --compare-start: 50%; /* position initiale du curseur (avant interaction) */
+  --compare-max: 60rem; /* largeur maximale du comparateur interactif */
+
+  /*
+   * Points de rupture (documentaires : les custom properties ne sont pas utilisables
+   * dans @media). Utiliser ces valeurs littérales en min-width, mobile first :
+   *   --bp-sm: 40rem  (640 px)   grands mobiles, petites tablettes
+   *   --bp-md: 48rem  (768 px)   tablettes portrait
+   *   --bp-lg: 64rem  (1024 px)  tablettes paysage, petits portables
+   *   --bp-xl: 80rem  (1280 px)  bureau
+   *   --bp-2xl: 100rem (1600 px) grands écrans
+   * Préférer les container queries pour les composants.
+   */
+  --bp-sm: 40rem;
+  --bp-md: 48rem;
+  --bp-lg: 64rem;
+  --bp-xl: 80rem;
+  --bp-2xl: 100rem;
+
+  /* ---------- Formes ---------- */
+  --radius-sm: 6px;
+  --radius-md: 14px;
+  --radius-lg: 28px;
+  --radius-pill: 999px;
+  --radius-arch: 999px 999px 0 0;
+  --border-hairline: 1px;
+  --border-thin: 1.5px;
+
+  /* ---------- Ombres (chaudes, diffuses) ---------- */
+  --shadow-soft: 0 20px 50px -20px rgb(47 38 34 / 18%);
+  --shadow-lifted: 0 30px 70px -28px rgb(47 38 34 / 26%);
+  --shadow-inset-hairline: inset 0 0 0 1px rgb(47 38 34 / 8%);
+
+  /* ---------- Matière ---------- */
+
+  /*
+   * Grain de papier : tuile WebP sans perte de 96 px (2,1 Ko, inlinée en data-URI par Vite),
+   * pré-rendue depuis l'ancien bruit SVG feTurbulence (fractalNoise .85, 3 octaves, teinte encre)
+   * avec l'opacité 0.035 intégrée à l'alpha. Un SVG à filtre instancie un document SVG au calcul
+   * de style puis rasterise le filtre : ~25 ms de style + ~6 ms de peinture mesurés (CPU ×4).
+   */
+  --grain-image: url('../assets/brand/grain.webp');
+  --grain-size: 96px;
+
+  /* ---------- Motion ---------- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 180ms;
+  --dur-base: 450ms;
+  --dur-slow: 800ms;
+  --dur-reduced: 150ms;
+  --stagger: 70ms;
+  --reveal-distance: 20px;
+  --hover-zoom: 1.04;
+  --dur-morph: 600ms; /* morphing d'un visuel de projet entre deux pages (View Transition) */
+  --reveal-image-scale: 1.08; /* image reveal : léger dézoom pendant la levée du masque */
+  --magnetic-max: 6px; /* CTA magnétique : déplacement maximal vers le pointeur */
+  --marquee-duration: 48s; /* une copie du bandeau défile en 48 s (défilement continu, lent) */
+  --opacity-disabled: 0.55;
+  --opacity-ornament: 0.4; /* numéros d'étapes géants (décor) */
+
+  /* ---------- Focus ---------- */
+  --focus-ring-color: var(--color-terracotta-700);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 3px;
+  --focus-ring: var(--focus-ring-width) solid var(--focus-ring-color);
+
+  /* ---------- Couches ---------- */
+  --z-base: 0;
+  --z-raised: 10;
+  --z-header: 100;
+
+  /* Lien d'évitement : au-dessus du header et du grain. */
+  --z-skip: 600;
+
+  /* Grain de papier : au-dessus du contenu et du header (matière continue), sous les surcouches. */
+  --z-grain: 500;
+
+  /* Lightbox, menus : les popovers natifs passent de toute façon dans le top layer. */
+  --z-overlay: 1000;
+}

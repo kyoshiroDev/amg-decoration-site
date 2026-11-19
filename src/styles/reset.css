@@ -1,0 +1,84 @@
+/* Reset moderne et minimal — couche « reset » (la plus faible). */
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  * {
+    margin: 0;
+  }
+
+  html {
+    text-size-adjust: none;
+  }
+
+  html:focus-within {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-height: 100svh;
+  }
+
+  img,
+  picture,
+  svg,
+  video,
+  canvas {
+    display: block;
+    max-width: 100%;
+  }
+
+  img,
+  video {
+    height: auto;
+  }
+
+  input,
+  button,
+  textarea,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+
+  button {
+    cursor: pointer;
+    background: none;
+    border: 0;
+    padding: 0;
+  }
+
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    overflow-wrap: break-word;
+  }
+
+  /*
+   * Une liste qui reçoit une classe est une liste de composant : sans puces.
+   * `list-style-type: ""` (chaîne vide) plutôt que `none` : WebKit retire la sémantique de
+   * liste (VoiceOver n'annonce plus « liste, n éléments ») avec `none`, pas avec une chaîne.
+   * Alternative à `role="list"`, refusé par la règle astro/jsx-a11y/no-redundant-roles.
+   */
+  :where(ul, ol)[class] {
+    list-style-type: '';
+    padding: 0;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html:focus-within {
+      scroll-behavior: auto;
+    }
+  }
+}

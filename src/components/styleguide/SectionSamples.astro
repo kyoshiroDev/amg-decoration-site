@@ -1,0 +1,59 @@
+---
+/**
+ * SectionSamples — les cinq fonds de Section, empilés en bandes compactes.
+ * Exception assumée du styleguide : plusieurs pastels visibles à la fois.
+ */
+import Section from '@/components/ui/Section.astro';
+import Container from '@/components/ui/Container.astro';
+import Heading from '@/components/ui/Heading.astro';
+
+const backgrounds = ['linen', 'cream', 'sand', 'blush', 'sage'] as const;
+---
+
+<Section spacing="none" labelledby="sg-fonds">
+  <Container>
+    <Heading level={3} size="sm" id="sg-fonds" class="sg-bands__title">
+      Section&nbsp;: variantes de fond
+    </Heading>
+  </Container>
+  {backgrounds.map((background) => (
+    <Section background={background} spacing="none" as="div">
+      <Container class="sg-bands__inner">
+        <code>background="{background}"</code>
+        <span class="sg-bands__note">Container width="normal" · 1320 px</span>
+      </Container>
+    </Section>
+  ))}
+  <Section background="cream" spacing="none" as="div">
+    <Container width="narrow" class="sg-bands__inner sg-bands__inner--narrow">
+      <code>Container width="narrow"</code>
+      <span class="sg-bands__note">760 px · lecture</span>
+    </Container>
+  </Section>
+</Section>
+
+<style>
+  @layer components {
+    :global(.sg-bands__title) {
+      margin-block-end: var(--space-m);
+    }
+
+    :global(.sg-bands__inner) {
+      display: flex;
+      padding-block: var(--space-m);
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: var(--space-2xs) var(--space-m);
+      font-size: var(--step--1);
+    }
+
+    :global(.sg-bands__inner--narrow) {
+      outline: var(--border-hairline) dashed var(--color-border-strong);
+      outline-offset: var(--space-xs);
+    }
+
+    .sg-bands__note {
+      color: var(--color-text-soft);
+    }
+  }
+</style>

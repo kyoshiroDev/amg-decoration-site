@@ -1,0 +1,255 @@
+/*
+ * Feuille globale — point d'entrée unique des styles (importée par les layouts).
+ * Ordre des couches explicite : les styles scopés des composants s'écrivent dans
+ * « @layer components », les utilitaires gagnent toujours.
+ */
+@layer reset, base, components, utilities;
+
+@import url('./tokens.css');
+@import url('./font-fallbacks.css');
+@import url('./reset.css');
+@import url('./utilities.css');
+@import url('./motion.css');
+
+@layer base {
+  html {
+    color-scheme: light;
+    background-color: var(--color-bg);
+    hanging-punctuation: first last;
+  }
+
+  /*
+   * L'en-tête collant ne masque jamais une ancre ni un élément focalisé (WCAG 2.4.11).
+   * scroll-margin sur le contenu, et non scroll-padding sur html : avec scroll-padding, tout
+   * focus clavier DANS l'en-tête collant (Maj+Tab, bouton Menu) faisait remonter la page en haut.
+   */
+  :where(main, footer),
+  :where(main, footer) :where(*) {
+    scroll-margin-block-start: calc(var(--header-height) + var(--space-s));
+  }
+
+  /* Menu mobile ouvert : la page dessous ne défile plus (sans décalage de barre de défilement). */
+  html:has([data-mobile-nav]:popover-open) {
+    overflow: hidden;
+    scrollbar-gutter: stable;
+  }
+
+  /* Cible du lien d'évitement : focalisable par programme, sans anneau sur toute la page. */
+  main:focus {
+    outline: none;
+  }
+
+  body {
+    position: relative;
+    font-family: var(--font-body-stack);
+    font-size: var(--step-0);
+    font-weight: var(--weight-regular);
+    line-height: var(--leading-body);
+    color: var(--color-text);
+    background-color: var(--color-bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizelegibility;
+  }
+
+  /*
+   * Grain de papier : pseudo-élément statique (position absolue, pas fixe, jamais animé),
+   * peint une fois avec la page ; aucun coût au scroll. Au-dessus des aplats de section
+   * pour une matière continue, transparent aux clics.
+   */
+  body::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: var(--z-grain);
+    pointer-events: none;
+    background-image: var(--grain-image);
+    background-size: var(--grain-size);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display-stack);
+    font-weight: var(--weight-regular);
+    font-optical-sizing: auto;
+    line-height: var(--leading-heading);
+    letter-spacing: var(--tracking-display);
+    text-wrap: balance;
+    color: var(--color-text);
+  }
+
+  h1 {
+    font-size: var(--step-5);
+    font-weight: var(--weight-light);
+    line-height: var(--leading-tight);
+  }
+
+  h2 {
+    font-size: var(--step-4);
+    font-weight: var(--weight-light);
+    line-height: var(--leading-tight);
+  }
+
+  h3 {
+    font-size: var(--step-2);
+  }
+
+  h4 {
+    font-size: var(--step-1);
+  }
+
+  h5,
+  h6 {
+    font-size: var(--step-0);
+    font-family: var(--font-body-stack);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0;
+  }
+
+  /* L'italique de la serif porte les mots émotionnels. */
+  :is(h1, h2, h3, h4) :is(em, i) {
+    font-style: italic;
+    font-weight: var(--weight-light);
+    color: var(--color-accent-text);
+  }
+
+  p,
+  li,
+  figcaption,
+  blockquote {
+    text-wrap: pretty;
+  }
+
+  /* Longueur de ligne de lecture ; les listes de composants (avec classe) gèrent leur largeur. */
+  p,
+  li:not([class]) {
+    max-width: var(--measure);
+  }
+
+  small {
+    font-size: var(--step--1);
+  }
+
+  strong,
+  b {
+    font-weight: var(--weight-semibold);
+  }
+
+  /* Liens de texte : soulignés en permanence (le lien ne repose pas sur la seule couleur). */
+  a {
+    color: var(--color-accent-text);
+    text-decoration-line: underline;
+    text-decoration-thickness: var(--border-hairline);
+    text-decoration-color: currentcolor;
+    text-underline-offset: 0.22em;
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+
+  a:hover {
+    color: var(--color-text);
+  }
+
+  /*
+   * Lien autonome au soulignement qui se dessine (navigation, liens d'action) :
+   * le trait est un pseudo-élément animé en transform uniquement.
+   */
+  .link-draw {
+    position: relative;
+    display: inline-block;
+    text-decoration: none;
+  }
+
+  .link-draw::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: -0.12em;
+    block-size: var(--border-hairline);
+    background-color: currentcolor;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+
+  .link-draw:hover::after,
+  .link-draw:focus-visible::after,
+  .link-draw[aria-current='page']::after {
+    transform: scaleX(1);
+  }
+
+  :focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
+    border-radius: var(--radius-sm);
+  }
+
+  ::selection {
+    background-color: var(--color-blush);
+    color: var(--color-ink);
+  }
+
+  hr {
+    border: 0;
+    border-block-start: var(--border-hairline) solid var(--color-border);
+  }
+
+  /* ::backdrop n'hérite de rien et n'est pas couvert par `*` : il faut le cibler (menu mobile). */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after,
+    ::backdrop {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/*
+ * View Transitions natives entre documents (ADR-0006) : fondu croisé doux, uniquement si
+ * l'utilisateur n'a pas demandé de mouvement réduit. L'en-tête reste en place (nom dédié).
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+
+  ::view-transition-group(root) {
+    animation-duration: var(--dur-base);
+    animation-timing-function: var(--ease-out);
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: var(--dur-base);
+    animation-timing-function: var(--ease-out);
+  }
+
+  /*
+   * Morphing du visuel d'un projet (carte → couverture, `view-transition-class: projet`,
+   * posé par ArchImage) : le cadre glisse et change de forme ; les deux instantanés couvrent
+   * le cadre (object-fit: cover) au lieu de se déformer quand les ratios diffèrent (5/4 → 4/5).
+   */
+  ::view-transition-group(.projet) {
+    animation-duration: var(--dur-morph);
+    animation-timing-function: var(--ease-in-out);
+  }
+
+  ::view-transition-image-pair(.projet) {
+    overflow: clip;
+  }
+
+  ::view-transition-old(.projet),
+  ::view-transition-new(.projet) {
+    block-size: 100%;
+    object-fit: cover;
+    animation-duration: var(--dur-morph);
+    animation-timing-function: var(--ease-in-out);
+  }
+}

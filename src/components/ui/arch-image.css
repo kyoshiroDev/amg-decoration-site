@@ -1,0 +1,74 @@
+/*
+ * Styles d'ArchImage (ui/ArchImage.astro), sortis du composant pour rester sous 150 lignes.
+ * Classes BEM préfixées « arch-image » : aucune collision malgré la portée globale.
+ */
+@layer components {
+  .arch-image {
+    position: relative;
+    margin: 0;
+  }
+
+  .arch-image__frame {
+    position: relative;
+    aspect-ratio: var(--arch-ratio);
+    overflow: hidden;
+    background-color: var(--color-sand);
+    isolation: isolate;
+  }
+
+  .arch-image--arch .arch-image__frame {
+    border-radius: var(--radius-arch);
+  }
+
+  .arch-image--rounded .arch-image__frame {
+    border-radius: var(--radius-lg);
+  }
+
+  /* Le liseré déborde en haut à droite : on lui réserve la place (pas de chevauchement). */
+  .arch-image--framed {
+    margin-block-start: var(--space-s);
+    margin-inline-end: var(--space-s);
+  }
+
+  .arch-image--framed::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    aspect-ratio: var(--arch-ratio);
+    border: var(--border-hairline) solid var(--color-accent);
+    border-radius: var(--radius-arch);
+    transform: translate(var(--space-s), calc(var(--space-s) * -1));
+    pointer-events: none;
+  }
+
+  .arch-image--framed.arch-image--rounded::before {
+    border-radius: var(--radius-lg);
+  }
+
+  .arch-image__frame picture,
+  .arch-image__frame img {
+    inline-size: 100%;
+    block-size: 100%;
+  }
+
+  .arch-image__frame img {
+    object-fit: cover;
+    transition: transform var(--dur-slow) var(--ease-out);
+  }
+
+  .arch-image:hover .arch-image__frame img {
+    transform: scale(var(--hover-zoom));
+  }
+
+  .arch-image__caption {
+    margin-block-start: var(--space-xs);
+    font-size: var(--step--1);
+    color: var(--color-text-soft);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .arch-image:hover .arch-image__frame img {
+      transform: none;
+    }
+  }
+}

@@ -1,0 +1,71 @@
+---
+/**
+ * SectionIntro — ouverture d'une section : surtitre, titre avec fragment en italique, chapeau.
+ * Ne crée pas de région : le parent pointe `aria-labelledby` vers `id`.
+ */
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import Emphasis from '@/components/ui/Emphasis.astro';
+
+interface Props {
+  eyebrow?: string | undefined;
+  heading: string;
+  /** Fragment de `heading` en italique Fraunces terracotta. */
+  emphasis?: string | undefined;
+  lead?: string | undefined;
+  /** Identifiant du titre (cible d'`aria-labelledby`). */
+  id: string;
+  level?: 1 | 2 | 3;
+  size?: 'display' | 'xl' | 'lg' | 'md';
+  align?: 'start' | 'center';
+  class?: string | undefined;
+}
+
+const {
+  eyebrow,
+  heading,
+  emphasis,
+  lead,
+  id,
+  level = 2,
+  size = 'xl',
+  align = 'start',
+  class: className,
+} = Astro.props;
+---
+
+<div class:list={['section-intro', `section-intro--${align}`, className]} data-reveal>
+  {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
+  <Heading level={level} size={size} id={id} align={align}>
+    <Emphasis text={heading} emphasis={emphasis} />
+  </Heading>
+  {lead && <p class="section-intro__lead">{lead}</p>}
+</div>
+
+<style>
+  @layer components {
+    .section-intro {
+      display: grid;
+      justify-items: start;
+      gap: var(--space-s);
+      max-inline-size: var(--measure-intro);
+    }
+
+    .section-intro--center {
+      justify-items: center;
+      margin-inline: auto;
+      text-align: center;
+    }
+
+    .section-intro__lead {
+      margin-block-start: var(--space-2xs);
+      font-size: var(--step-1);
+      line-height: var(--leading-body);
+      color: var(--color-text-soft);
+    }
+
+    .section-intro--center .section-intro__lead {
+      margin-inline: auto;
+    }
+  }
+</style>

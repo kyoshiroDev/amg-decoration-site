@@ -1,0 +1,17 @@
+---
+// Page d'une réalisation : assemblage. Données : getProjectPaths() (src/lib/pages/projects.ts),
+// récit : corps Markdown de src/content/projets/<slug>.md.
+import ProjectLayout from '@/layouts/ProjectLayout.astro';
+import { getProjectPaths, type ProjectPageProps } from '@/lib/pages/projects';
+
+export function getStaticPaths() {
+  return getProjectPaths();
+}
+
+type Props = ProjectPageProps;
+const { project, imageUrls, cta, Content } = Astro.props;
+---
+
+<ProjectLayout project={project} imageUrls={imageUrls} cta={cta}>
+  <Content />
+</ProjectLayout>

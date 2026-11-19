@@ -1,0 +1,138 @@
+---
+/**
+ * Testimonials — avis clients, texte EXACT, auteur, type de projet et lien vers l'avis
+ * d'origine (`url`). Aucune note, aucune étoile, aucune date (rien de tel n'est connu).
+ * 1 colonne → 2 (≥ 48rem) → 3 (≥ 64rem), carte centrale décalée vers le bas.
+ */
+import ContentSection from './ContentSection.astro';
+import Link from '@/components/ui/Link.astro';
+import { microcopy } from '@/config/microcopy';
+import type { TestimonialData } from '@/lib/cards';
+import type { PageSection } from '@/lib/pages/types';
+
+interface Props {
+  section: PageSection;
+  testimonials: readonly TestimonialData[];
+  id: string;
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+}
+
+const { section, testimonials, id, background = 'linen' } = Astro.props;
+
+/** Jeton facultatif de la microcopie : sans lui, l'intitulé reste identique pour chaque avis. */
+const AUTHOR_TOKEN = '{author}';
+const sourceLabel = (author: string): string =>
+  microcopy.testimonials.googleLink.replaceAll(AUTHOR_TOKEN, author);
+---
+
+<ContentSection section={section} id={id} background={background}>
+  <ul class="testimonials">
+    {testimonials.map((testimonial) => (
+      <li class="testimonials__item" data-reveal>
+        <figure class="testimonials__card">
+          <span class="testimonials__mark" aria-hidden="true" />
+          <blockquote class="testimonials__text">
+            <p>{testimonial.text}</p>
+          </blockquote>
+          <figcaption class="testimonials__caption">
+            <span class="testimonials__author">{testimonial.author}</span>
+            {testimonial.projectType && (
+              <span class="testimonials__project">
+                {microcopy.testimonials.projectLabel} {testimonial.projectType}
+              </span>
+            )}
+            {testimonial.url && (
+              <Link href={testimonial.url} variant="draw" external class="testimonials__source">
+                {sourceLabel(testimonial.author)}
+              </Link>
+            )}
+          </figcaption>
+        </figure>
+      </li>
+    ))}
+  </ul>
+</ContentSection>
+
+<style>
+  @layer components {
+    .testimonials {
+      display: grid;
+      gap: var(--space-m);
+      padding: 0;
+      margin: 0;
+
+      @media (width >= 48rem) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      @media (width >= 64rem) {
+        grid-template-columns: repeat(3, 1fr);
+        align-items: start;
+      }
+    }
+
+    /* Un seul avis (page À propos) : une carte en mesure de lecture, alignée sur le titre. */
+    .testimonials:has(> :only-child) {
+      grid-template-columns: minmax(0, var(--measure));
+    }
+
+    @media (width >= 64rem) {
+      .testimonials__item:nth-child(3n + 2) {
+        margin-block-start: var(--grid-stagger);
+      }
+    }
+
+    .testimonials__card {
+      display: grid;
+      gap: var(--space-s);
+      block-size: 100%;
+      padding: var(--space-l) var(--space-m) var(--space-m);
+      margin: 0;
+      border-radius: var(--radius-lg);
+      background-color: var(--color-surface);
+      box-shadow: var(--shadow-inset-hairline);
+    }
+
+    .testimonials__mark::before {
+      content: '«' / '';
+      display: block;
+      font-family: var(--font-display-stack);
+      font-size: var(--step-4);
+      font-weight: var(--weight-light);
+      line-height: var(--leading-tight);
+      color: var(--color-accent);
+    }
+
+    .testimonials__text {
+      margin: 0;
+
+      & p {
+        font-family: var(--font-display-stack);
+        font-size: var(--step-1);
+        font-weight: var(--weight-light);
+        line-height: var(--leading-body);
+      }
+    }
+
+    .testimonials__caption {
+      display: grid;
+      justify-items: start;
+      gap: var(--space-3xs);
+      padding-block-start: var(--space-s);
+      border-block-start: var(--border-hairline) solid var(--color-border);
+      font-size: var(--step--1);
+    }
+
+    .testimonials__author {
+      font-weight: var(--weight-semibold);
+    }
+
+    .testimonials__project {
+      color: var(--color-text-soft);
+    }
+
+    :global(.testimonials__source) {
+      margin-block-start: var(--space-2xs);
+    }
+  }
+</style>

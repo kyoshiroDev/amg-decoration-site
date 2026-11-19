@@ -1,0 +1,115 @@
+---
+/**
+ * ContactDetails — « Me joindre directement », à côté du formulaire : téléphone, email,
+ * WhatsApp, horaires et zone d'intervention. Valeurs : config/site.ts ; libellés :
+ * config/microcopy.ts ; ouverture : section `coordonnees` de contact.md.
+ */
+import Link from '@/components/ui/Link.astro';
+import SectionIntro from './SectionIntro.astro';
+import { microcopy } from '@/config/microcopy';
+import { site } from '@/config/site';
+import { formatOpeningHours, formatPhoneHref } from '@/lib/format';
+import type { PageSection } from '@/lib/pages/types';
+
+interface Props {
+  section: PageSection;
+  id: string;
+}
+
+const { section, id } = Astro.props;
+const { footer, contact } = microcopy;
+const hours = formatOpeningHours(site.openingHours);
+---
+
+<section class="contact-details" aria-labelledby={id}>
+  <span class="contact-details__arch" aria-hidden="true"></span>
+  <SectionIntro
+    id={id}
+    size="md"
+    heading={section.heading}
+    emphasis={section.headingEmphasis}
+    lead={section.lead}
+  />
+  <dl class="contact-details__list">
+    <div class="contact-details__row">
+      <dt>{footer.phoneLabel}</dt>
+      <dd>
+        <Link variant="draw" href={formatPhoneHref(site.phone.e164)} iconStart="phone">
+          {site.phone.display}
+        </Link>
+      </dd>
+    </div>
+    <div class="contact-details__row">
+      <dt>{footer.emailLabel}</dt>
+      <dd>
+        <Link variant="draw" href={`mailto:${site.email}`} iconStart="mail">
+          {site.email}
+        </Link>
+      </dd>
+    </div>
+    <div class="contact-details__row">
+      <dt>{contact.whatsappLabel}</dt>
+      <dd>
+        <Link variant="draw" href={site.whatsapp.url} iconStart="whatsapp">
+          {footer.whatsapp}
+        </Link>
+      </dd>
+    </div>
+    <div class="contact-details__row">
+      <dt>{footer.hoursTitle}</dt>
+      {hours.map((line) => (
+        <dd>{line}</dd>
+      ))}
+    </div>
+    <div class="contact-details__row">
+      <dt>{footer.areaTitle}</dt>
+      <dd>{footer.area}</dd>
+    </div>
+  </dl>
+</section>
+
+<style>
+  @layer components {
+    .contact-details {
+      display: grid;
+      gap: var(--space-m);
+      padding: var(--space-l) var(--space-m);
+      border-radius: var(--radius-lg);
+      background-color: var(--color-blush);
+    }
+
+    /* Arche dans le flux (jamais par-dessus le titre, quelle que soit sa longueur). */
+    .contact-details__arch {
+      inline-size: var(--space-l);
+      aspect-ratio: 3 / 4;
+      border: var(--border-hairline) solid var(--color-accent);
+      border-block-end: 0;
+      border-radius: var(--radius-arch);
+    }
+
+    .contact-details__list {
+      display: grid;
+      margin: 0;
+    }
+
+    .contact-details__row {
+      display: grid;
+      gap: var(--space-3xs);
+      padding-block: var(--space-s);
+      border-block-start: var(--border-hairline) solid var(--color-border-strong);
+
+      & dt {
+        font-size: var(--text-eyebrow);
+        font-weight: var(--weight-semibold);
+        letter-spacing: var(--tracking-eyebrow);
+        text-transform: uppercase;
+        color: var(--color-accent-text);
+      }
+
+      & dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+    }
+  }
+</style>

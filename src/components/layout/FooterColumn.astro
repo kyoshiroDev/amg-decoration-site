@@ -1,0 +1,47 @@
+---
+/**
+ * FooterColumn — colonne du pied de page : petit titre h2 en capitales espacées + contenu.
+ */
+interface Props {
+  title: string;
+  class?: string | undefined;
+}
+
+const { title, class: className } = Astro.props;
+---
+
+<div class:list={['footer-col', className]}>
+  <h2 class="footer-col__title">{title}</h2>
+  <slot />
+</div>
+
+<style>
+  @layer components {
+    .footer-col {
+      display: grid;
+      align-content: start;
+      gap: var(--space-s);
+    }
+
+    .footer-col__title {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      font-family: var(--font-body-stack);
+      font-size: var(--text-eyebrow);
+      font-weight: var(--weight-semibold);
+      line-height: var(--leading-ui);
+      letter-spacing: var(--tracking-eyebrow);
+      text-transform: uppercase;
+      color: var(--color-accent-text);
+
+      &::after {
+        content: '';
+        flex: 1;
+        max-inline-size: var(--space-l);
+        block-size: var(--border-hairline);
+        background-color: var(--color-accent);
+      }
+    }
+  }
+</style>

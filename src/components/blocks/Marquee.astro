@@ -1,0 +1,60 @@
+---
+/**
+ * Marquee — bandeau de mots-clés en Fraunces italique, séparés par de petites arches.
+ * Défilement lent et continu (transform) seulement sous `html.js` et sans mouvement réduit ;
+ * sinon : statique. Pause au survol, au focus, et par un bouton (WCAG 2.2.2, scripts/marquee.ts),
+ * affiché dans les mêmes conditions que le défilement.
+ * Accessibilité : la première liste est lue une fois ; les copies (nécessaires à la boucle, 3 au
+ * total pour couvrir les grands écrans) sont `aria-hidden`. Styles : ./marquee.css.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import { microcopy } from '@/config/microcopy';
+import './marquee.css';
+
+interface Props {
+  words: readonly string[];
+  /** Nom accessible de la liste lue. */
+  label: string;
+  /** Nombre total de copies de la liste (la boucle avance d'une copie : `100% / copies`). */
+  copies?: number;
+}
+
+const { words, label, copies = 3 } = Astro.props;
+const total = Math.max(2, copies);
+const duplicates = Array.from({ length: total - 1 }, (_, index) => index);
+const labels = microcopy.marquee;
+---
+
+<div class="marquee" data-marquee style={`--marquee-copies: ${total}`}>
+  <div class="marquee__track">
+    <ul class="marquee__list" aria-label={label}>
+      {words.map((word) => (
+        <li class="marquee__word">{word}</li>
+      ))}
+    </ul>
+    {duplicates.map(() => (
+      <ul class="marquee__list" aria-hidden="true">
+        {words.map((word) => (
+          <li class="marquee__word">{word}</li>
+        ))}
+      </ul>
+    ))}
+  </div>
+  <button
+    type="button"
+    class="marquee__toggle"
+    data-marquee-toggle
+    data-label-pause={labels.pause}
+    data-label-play={labels.play}
+  >
+    <Icon name="pause" class="marquee__icon marquee__icon--pause" />
+    <Icon name="play" class="marquee__icon marquee__icon--play" />
+    <span class="visually-hidden" data-marquee-label>
+      {labels.pause}
+    </span>
+  </button>
+</div>
+
+<script>
+  import '@/scripts/marquee';
+</script>

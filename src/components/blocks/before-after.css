@@ -1,0 +1,172 @@
+/*
+ * Styles du comparateur « Rendu 3D ↔ Réalisé » (blocks/BeforeAfter.astro).
+ * Par défaut (sans JS) : deux images côte à côte. Sous `html.js` : images superposées, la part
+ * visible du rendu 3D suit `--compare-pos` (posée par scripts/before-after.ts) ; clip-path pour
+ * le masque, transform pour la poignée : aucune propriété de mise en page n'est modifiée.
+ */
+@layer components {
+  /* Le calque de la poignée (pleine largeur, translaté) dépasse à droite : jamais de défilement. */
+  .before-after-section {
+    overflow-x: clip;
+  }
+
+  .before-after {
+    display: grid;
+    gap: var(--space-l-2xl);
+  }
+
+  .before-after__stage {
+    display: grid;
+    gap: var(--space-m);
+
+    @media (width >= 48rem) {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--grid-gap);
+    }
+  }
+
+  .before-after__figure {
+    position: relative;
+    margin: 0;
+  }
+
+  /* Pastille posée sur l'image, en haut à gauche (texte encre sur crème : contraste AA). */
+  .before-after__label {
+    position: absolute;
+    inset-block-start: var(--space-s);
+    inset-inline-start: var(--space-s);
+    padding-block: var(--space-3xs);
+    padding-inline: var(--space-xs);
+    border-radius: var(--radius-pill);
+    background-color: var(--color-surface);
+    box-shadow: var(--shadow-soft);
+    font-size: var(--text-eyebrow);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--color-text);
+  }
+
+  .before-after__divider,
+  .before-after__range,
+  .before-after__hint {
+    display: none;
+  }
+
+  /* ---------- Comparateur interactif (JS) ---------- */
+  .js .before-after__compare {
+    --compare-pos: var(--compare-start);
+
+    display: grid;
+    gap: var(--space-s);
+    justify-items: center;
+    inline-size: min(100%, var(--compare-max));
+    margin-inline: auto;
+  }
+
+  .js .before-after__stage {
+    position: relative;
+    grid-template-columns: 1fr;
+    gap: 0;
+    inline-size: 100%;
+    touch-action: pan-y;
+    user-select: none;
+    cursor: ew-resize;
+
+    & > * {
+      grid-area: 1 / 1;
+    }
+  }
+
+  .js .before-after__figure--rendering {
+    z-index: var(--z-raised);
+    clip-path: inset(0 calc(100% - var(--compare-pos)) 0 0);
+  }
+
+  .js .before-after__figure--result .before-after__label {
+    inset-inline: auto var(--space-s);
+  }
+
+  /* Trait vertical + poignée ronde : un calque pleine largeur translaté de --compare-pos. */
+  .js .before-after__divider {
+    position: relative;
+    z-index: var(--z-raised);
+    display: block;
+    pointer-events: none;
+    transform: translateX(var(--compare-pos));
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset-block: 0;
+      inset-inline-start: 0;
+      inline-size: var(--border-thin);
+      background-color: var(--color-surface);
+      box-shadow: var(--shadow-soft);
+      translate: -50% 0;
+    }
+  }
+
+  .before-after__knob {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: var(--compare-handle-size);
+    block-size: var(--compare-handle-size);
+    border: var(--border-thin) solid var(--color-surface);
+    border-radius: var(--radius-pill);
+    background-color: var(--color-action);
+    box-shadow: var(--shadow-lifted);
+    color: var(--color-on-action);
+    translate: -50% -50%;
+  }
+
+  /* Transition courte au clavier et au clic ; aucune pendant un glisser (suivi direct). */
+  .js .before-after__compare:not([data-dragging]) {
+    & .before-after__figure--rendering {
+      transition: clip-path var(--dur-fast) var(--ease-out);
+    }
+
+    & .before-after__divider {
+      transition: transform var(--dur-fast) var(--ease-out);
+    }
+  }
+
+  /* Curseur natif : couvre la scène, invisible ; le pointeur est géré par la scène. */
+  .js .before-after__range {
+    z-index: var(--z-raised);
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+    appearance: none;
+  }
+
+  /* Focus clavier reporté sur la poignée : anneau terracotta séparé de l'image par du crème. */
+  .before-after__stage:has(.before-after__range:focus-visible) .before-after__knob {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
+    box-shadow:
+      0 0 0 var(--focus-ring-offset) var(--color-surface),
+      var(--shadow-lifted);
+  }
+
+  .js .before-after__hint {
+    display: block;
+    font-size: var(--step--1);
+    color: var(--color-text-soft);
+    text-align: center;
+  }
+
+  /* Couleurs forcées : la poignée garde un contour visible. */
+  @media (forced-colors: active) {
+    .before-after__knob {
+      border-color: CanvasText;
+    }
+  }
+}

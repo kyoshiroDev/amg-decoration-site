@@ -1,0 +1,16 @@
+---
+/**
+ * JsonLd — unique script de données structurées d'une page.
+ * La sérialisation passe obligatoirement par `serializeJsonLd` (échappe `<`) car `set:html` n'échappe rien.
+ */
+import type { Graph } from 'schema-dts';
+import { serializeJsonLd } from '@/lib/jsonld';
+
+interface Props {
+  graph: Graph;
+}
+
+const { graph } = Astro.props;
+---
+
+<script type="application/ld+json" set:html={serializeJsonLd(graph)} />

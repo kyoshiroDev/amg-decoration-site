@@ -1,0 +1,122 @@
+---
+/**
+ * FeatureList — courte liste de prestations (`items` d'une section, titres seuls) :
+ * - `checklist` : mise en page `split`, 2 colonnes filetées, chaque ligne ouverte par une
+ *   petite arche terracotta (« ce qui est inclus ») ;
+ * - `pills` : ouverture centrée et pastilles « + » en ligne (options à ajouter).
+ */
+import ContentSection from './ContentSection.astro';
+import Icon from '@/components/ui/Icon.astro';
+import type { PageSection } from '@/lib/pages/types';
+
+interface Props {
+  section: PageSection;
+  id: string;
+  variant?: 'checklist' | 'pills';
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+}
+
+const { section, id, variant = 'checklist', background = 'cream' } = Astro.props;
+const isPills = variant === 'pills';
+---
+
+<ContentSection
+  section={section}
+  id={id}
+  background={background}
+  layout={isPills ? 'stacked' : 'split'}
+  align={isPills ? 'center' : 'start'}
+>
+  <ul class:list={['feature-list', `feature-list--${variant}`]} data-reveal>
+    {section.items.map((item) => (
+      <li class="feature-list__item">
+        {isPills ? (
+          <Icon name="plus" class="feature-list__icon" />
+        ) : (
+          <span class="feature-list__arch" aria-hidden="true" />
+        )}
+        <span>
+          <span class="feature-list__title">{item.title}</span>
+          {item.text && <span class="feature-list__text">{item.text}</span>}
+        </span>
+      </li>
+    ))}
+  </ul>
+</ContentSection>
+
+<style>
+  @layer components {
+    .feature-list {
+      padding: 0;
+      margin: 0;
+    }
+
+    .feature-list--checklist {
+      display: grid;
+      column-gap: var(--space-l);
+
+      @media (width >= 48rem) {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      & .feature-list__item {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: var(--space-s);
+        align-items: baseline;
+        padding-block: var(--space-s);
+        border-block-start: var(--border-hairline) solid var(--color-border);
+      }
+
+      & .feature-list__title {
+        font-family: var(--font-display-stack);
+        font-size: var(--step-1);
+        font-weight: var(--weight-light);
+        line-height: var(--leading-heading);
+      }
+    }
+
+    .feature-list__arch {
+      inline-size: var(--space-xs);
+      aspect-ratio: 3 / 4;
+      border: var(--border-thin) solid var(--color-accent);
+      border-block-end: 0;
+      border-radius: var(--radius-arch);
+    }
+
+    /* Mobile : pastilles empilées et centrées (une par ligne, sans retour dans une pastille) ; ≥ 48rem : en ligne. */
+    .feature-list--pills {
+      display: grid;
+      justify-items: center;
+      gap: var(--space-xs);
+
+      @media (width >= 48rem) {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      & .feature-list__item {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        padding-block: var(--space-xs);
+        padding-inline: var(--space-s) var(--space-m);
+        border: var(--border-hairline) solid var(--color-border-strong);
+        border-radius: var(--radius-pill);
+        background-color: var(--color-surface);
+        font-size: var(--step--1);
+        font-weight: var(--weight-medium);
+      }
+    }
+
+    :global(.feature-list__icon) {
+      color: var(--color-accent);
+    }
+
+    .feature-list__text {
+      display: block;
+      color: var(--color-text-soft);
+    }
+  }
+</style>

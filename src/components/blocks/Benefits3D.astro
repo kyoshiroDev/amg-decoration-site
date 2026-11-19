@@ -1,0 +1,91 @@
+---
+/**
+ * Benefits3D — les bénéfices de la 3D : ouverture collante à gauche (mise en page `split`),
+ * grille de 2 colonnes à droite, chaque bénéfice coiffé d'une petite arche filaire (décor).
+ * `variant="summary"` (accueil) : titres seuls, le détail vit sur /visualisation-3d/.
+ */
+import ContentSection from './ContentSection.astro';
+import Heading from '@/components/ui/Heading.astro';
+import type { TextItemData } from '@/lib/cards';
+import type { PageSection } from '@/lib/pages/types';
+
+interface Props {
+  section: PageSection;
+  benefits: readonly TextItemData[];
+  id: string;
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  /** `full` : titre et texte ; `summary` : titres seuls. */
+  variant?: 'full' | 'summary';
+}
+
+const { section, benefits, id, background = 'blush', variant = 'full' } = Astro.props;
+---
+
+<ContentSection section={section} id={id} background={background} layout="split">
+  <ul class:list={['benefits', `benefits--${variant}`]}>
+    {benefits.map((benefit) => (
+      <li class="benefits__item" data-reveal>
+        <span class="benefits__arch" aria-hidden="true" />
+        {/* Résumé : intitulés en <p>, pas 8 h3 vides. */}
+        <Heading level={3} size="sm" as={variant === 'summary' ? 'p' : undefined}>
+          {benefit.title}
+        </Heading>
+        {variant === 'full' && <p class="benefits__text">{benefit.text}</p>}
+      </li>
+    ))}
+  </ul>
+</ContentSection>
+
+<style>
+  @layer components {
+    .benefits {
+      display: grid;
+      gap: var(--space-l) var(--grid-gap);
+      padding: 0;
+      margin: 0;
+
+      @media (width >= 40rem) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .benefits__item {
+      display: grid;
+      align-content: start;
+      gap: var(--space-2xs);
+      padding-block-start: var(--space-m);
+      border-block-start: var(--border-hairline) solid var(--color-border-strong);
+    }
+
+    .benefits__arch {
+      inline-size: var(--space-m);
+      aspect-ratio: 3 / 4;
+      margin-block-end: var(--space-2xs);
+      border: var(--border-thin) solid var(--color-accent);
+      border-block-end: 0;
+      border-radius: var(--radius-arch);
+    }
+
+    .benefits__text {
+      color: var(--color-text-soft);
+    }
+
+    .benefits--summary {
+      row-gap: var(--space-m);
+    }
+
+    /* Mobile, titres seuls : l'arche passe en pictogramme devant le titre, la liste de huit
+       bénéfices garde sa lecture rapide sans s'étirer sur plusieurs écrans. */
+    @media (width < 40rem) {
+      .benefits--summary .benefits__item {
+        grid-template-columns: auto 1fr;
+        align-items: end;
+        column-gap: var(--space-s);
+      }
+
+      .benefits--summary .benefits__arch {
+        margin-block-end: 0;
+      }
+    }
+  }
+</style>

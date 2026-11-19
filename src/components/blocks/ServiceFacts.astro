@@ -1,0 +1,171 @@
+---
+/**
+ * ServiceFacts — carte « En bref » d'une prestation : public visé, ce qui est compris, options,
+ * tarif (si affiché) et action vers le contact. Liste de définitions dans une région nommée.
+ */
+import Button from '@/components/ui/Button.astro';
+import { microcopy } from '@/config/microcopy';
+import type { ServiceFacts } from '@/lib/pages/services-model';
+import type { PageAction } from '@/lib/pages/types';
+
+interface Props {
+  facts: ServiceFacts;
+  action?: PageAction | undefined;
+  id?: string;
+}
+
+const { facts, action, id = 'en-bref-titre' } = Astro.props;
+const labels = microcopy.services.facts;
+---
+
+<aside class="service-facts" aria-labelledby={id}>
+  <span class="service-facts__arch" aria-hidden="true"></span>
+  <h2 class="service-facts__title" id={id}>
+    {labels.label}
+  </h2>
+  <dl class="service-facts__list">
+    {facts.target && (
+      <div class="service-facts__row">
+        <dt>{labels.target}</dt>
+        <dd>{facts.target}</dd>
+      </div>
+    )}
+    {facts.includes.length > 0 && (
+      <div class="service-facts__row">
+        <dt>{labels.includes}</dt>
+        <dd>
+          <ul class="service-facts__items">
+            {facts.includes.map((item) => (
+              <li>{item}</li>
+            ))}
+          </ul>
+        </dd>
+      </div>
+    )}
+    {facts.options.length > 0 && (
+      <div class="service-facts__row">
+        <dt>{labels.options}</dt>
+        <dd>
+          <ul class="service-facts__items">
+            {facts.options.map((item) => (
+              <li>{item}</li>
+            ))}
+          </ul>
+        </dd>
+      </div>
+    )}
+    {facts.price && (
+      <div class="service-facts__row">
+        <dt>{labels.price}</dt>
+        <dd class:list={['service-facts__price', `service-facts__price--${facts.price.kind}`]}>
+          {facts.price.label}
+          {facts.price.note && <small class="service-facts__note">{facts.price.note}</small>}
+        </dd>
+      </div>
+    )}
+  </dl>
+  {action && (
+    <Button href={action.href} icon="arrow-right" class="service-facts__action">
+      {action.label}
+    </Button>
+  )}
+</aside>
+
+<style>
+  @layer components {
+    .service-facts {
+      position: relative;
+      display: grid;
+      gap: var(--space-m);
+      padding: var(--space-l) var(--space-m) var(--space-m);
+      border-radius: var(--radius-lg);
+      background-color: var(--color-surface);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .service-facts__arch {
+      inline-size: var(--space-l);
+      aspect-ratio: 3 / 4;
+      border: var(--border-hairline) solid var(--color-accent);
+      border-block-end: 0;
+      border-radius: var(--radius-arch);
+    }
+
+    .service-facts__title {
+      font-size: var(--step-2);
+      font-style: italic;
+      font-weight: var(--weight-light);
+    }
+
+    .service-facts__list {
+      display: grid;
+      margin: 0;
+    }
+
+    .service-facts__row {
+      display: grid;
+      gap: var(--space-3xs);
+      padding-block: var(--space-s);
+      border-block-start: var(--border-hairline) solid var(--color-border);
+
+      & dt {
+        font-size: var(--text-eyebrow);
+        font-weight: var(--weight-semibold);
+        letter-spacing: var(--tracking-eyebrow);
+        text-transform: uppercase;
+        color: var(--color-accent-text);
+      }
+
+      & dd {
+        margin: 0;
+        color: var(--color-text-soft);
+      }
+    }
+
+    .service-facts__items {
+      display: grid;
+      gap: var(--space-3xs);
+      padding: 0;
+      margin: 0;
+
+      & li {
+        display: grid;
+        grid-template-columns: auto 1fr;
+      }
+
+      & li::before {
+        content: '—\00a0' / '';
+        color: var(--color-accent);
+      }
+    }
+
+    .service-facts__price {
+      display: grid;
+      gap: var(--space-3xs);
+      font-family: var(--font-display-stack);
+      font-size: var(--step-3);
+      font-weight: var(--weight-light);
+      line-height: var(--leading-tight);
+    }
+
+    /* Un devis est un libellé, pas un montant : taille réduite. */
+    .service-facts__price--quote {
+      font-size: var(--step-2);
+    }
+
+    .service-facts__row > dd.service-facts__price {
+      color: var(--color-text);
+    }
+
+    .service-facts__note {
+      font-family: var(--font-body-stack);
+      font-size: var(--step--1);
+      line-height: var(--leading-body);
+      color: var(--color-text-soft);
+    }
+
+    :global(.service-facts__action) {
+      justify-self: start;
+    }
+  }
+</style>

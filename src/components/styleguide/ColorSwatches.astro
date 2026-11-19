@@ -1,0 +1,79 @@
+---
+/**
+ * ColorSwatches — nuancier lu directement dans tokens.css (aucune valeur dupliquée).
+ */
+import tokensCss from '@/styles/tokens.css?raw';
+import { parseColorTokens } from '@/lib/color-contrast';
+
+const usages: Record<string, string> = {
+  linen: 'Fond principal',
+  cream: 'Cartes, surfaces, texte sur terracotta',
+  sand: 'Sections alternées, bordures douces',
+  blush: 'Aplat pastel rose poudré',
+  sage: 'Aplat pastel sauge',
+  'terracotta-500': 'Décor\u00A0: traits, icônes, formes (jamais de texte)',
+  'terracotta-600': 'Fond des boutons primaires',
+  'terracotta-700': 'Liens, texte d’accent, survols',
+  ink: 'Texte principal',
+  'ink-soft': 'Texte secondaire, légendes',
+  taupe: 'Contour des boutons ghost (≥ 3:1, jamais de texte)',
+};
+
+const tokens = parseColorTokens(tokensCss);
+---
+
+<ul class="swatches">
+  {tokens.map(({ name, hex }) => (
+    <li class="swatch">
+      <span class="swatch__chip" style={`--swatch: var(--color-${name})`} />
+      <code class="swatch__name">--color-{name}</code>
+      <span class="swatch__hex">{hex.toUpperCase()}</span>
+      <span class="swatch__usage">{usages[name] ?? ''}</span>
+    </li>
+  ))}
+</ul>
+
+<style>
+  @layer components {
+    .swatches {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-l) var(--space-s);
+
+      @media (width >= 48rem) {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      @media (width >= 64rem) {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: var(--space-xl) var(--space-m);
+      }
+    }
+
+    .swatch {
+      display: grid;
+      align-content: start;
+      gap: var(--space-3xs);
+      font-size: var(--step--1);
+      line-height: var(--leading-ui);
+    }
+
+    .swatch__chip {
+      aspect-ratio: 5 / 4;
+      margin-block-end: var(--space-2xs);
+      background-color: var(--swatch);
+      border-radius: var(--radius-arch);
+      box-shadow: var(--shadow-inset-hairline);
+    }
+
+    .swatch__name {
+      font-weight: var(--weight-semibold);
+      overflow-wrap: anywhere;
+    }
+
+    .swatch__hex,
+    .swatch__usage {
+      color: var(--color-text-soft);
+    }
+  }
+</style>

@@ -1,5 +1,6 @@
-# build
+# build (dist-service/ : build des tests e2e en mode service)
 dist/
+dist-service/
 .astro/
 .vercel/
 
@@ -27,3 +28,6 @@ coverage/
 Thumbs.db
 .idea/
 *.log
+
+# Captures du MCP Playwright (vérifications visuelles locales)
+.playwright-mcp/

@@ -1,0 +1,98 @@
+---
+/**
+ * TableOfContents — sommaire d'une page longue (pages légales) : liens d'ancre vers les h2 du
+ * corps Markdown. Région de navigation nommée par son titre. Numéros en CSS (décor, non lus).
+ */
+import type { TocItem } from '@/lib/pages/legal-model';
+
+interface Props {
+  items: readonly TocItem[];
+  label: string;
+  id?: string;
+}
+
+const { items, label, id = 'sommaire-titre' } = Astro.props;
+---
+
+{items.length > 0 && (
+  <nav class="toc" aria-labelledby={id}>
+    <p class="toc__title" id={id}>
+      {label}
+    </p>
+    <ol class="toc__list">
+      {items.map((item) => (
+        <li class="toc__item">
+          <a class="toc__link" href={item.href}>
+            {item.label}
+          </a>
+        </li>
+      ))}
+    </ol>
+  </nav>
+)}
+
+<style>
+  @layer components {
+    .toc {
+      display: grid;
+      gap: var(--space-s);
+      padding: var(--space-m);
+      border-radius: var(--radius-lg);
+      background-color: var(--color-linen);
+      box-shadow: var(--shadow-inset-hairline);
+    }
+
+    .toc__title {
+      font-size: var(--text-eyebrow);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-eyebrow);
+      text-transform: uppercase;
+      color: var(--color-accent-text);
+    }
+
+    .toc__list {
+      display: grid;
+      padding: 0;
+      margin: 0;
+      counter-reset: toc;
+    }
+
+    .toc__item {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: var(--space-2xs);
+      align-items: baseline;
+      border-block-start: var(--border-hairline) solid var(--color-border);
+      counter-increment: toc;
+
+      &::before {
+        content: counter(toc, decimal-leading-zero) / '';
+        font-family: var(--font-display-stack);
+        font-variant-numeric: tabular-nums;
+        font-size: var(--step--1);
+        font-style: italic;
+        font-weight: var(--weight-light);
+        color: var(--color-accent-text);
+      }
+    }
+
+    .toc__link {
+      display: block;
+      padding-block: var(--space-2xs);
+      min-block-size: var(--tap-target);
+      font-size: var(--step--1);
+      line-height: var(--leading-ui);
+      color: var(--color-text);
+      text-decoration: none;
+      box-sizing: border-box;
+      align-content: center;
+
+      &:hover {
+        color: var(--color-accent-text);
+        text-decoration: underline;
+        text-decoration-thickness: var(--border-hairline);
+        text-underline-offset: 0.2em;
+      }
+    }
+  }
+</style>

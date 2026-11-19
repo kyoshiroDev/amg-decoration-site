@@ -1,0 +1,107 @@
+---
+/**
+ * ProjectGallery — images d'un projet regroupées par nature (Avant · Rendu 3D · Réalisé).
+ * ≥ 64rem : libellé du groupe (h3 Fraunces italique) collant à gauche (3/12), images à droite
+ * (9/12) ; la première image d'un groupe impair occupe toute la largeur.
+ * Chaque vignette est un lien vers l'image grand format (WebP, ≤ 1600 px) : sans JavaScript, il
+ * l'ouvre ; avec, il ouvre la visionneuse (Lightbox), qui charge l'image à la demande.
+ * Styles : ./project-gallery.css.
+ */
+import { getImage } from 'astro:assets';
+import Section from '@/components/ui/Section.astro';
+import Container from '@/components/ui/Container.astro';
+import ArchImage from '@/components/ui/ArchImage.astro';
+import Icon from '@/components/ui/Icon.astro';
+import SectionIntro from './SectionIntro.astro';
+import Lightbox from './Lightbox.astro';
+import { microcopy } from '@/config/microcopy';
+import './project-gallery.css';
+import type { GalleryGroup } from '@/lib/pages/projects-model';
+
+interface Props {
+  heading: string;
+  groups: readonly GalleryGroup[];
+  id: string;
+  /** Chapeau facultatif (styleguide : préciser qu'il s'agit de placeholders). */
+  lead?: string | undefined;
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+}
+
+const { heading, groups, id, lead, background = 'cream' } = Astro.props;
+/** Largeurs du grand format (bornées à la largeur source). */
+const LARGE_WIDTHS = [640, 960, 1280, 1600, 2400];
+/**
+ * `sizes` de l'image en visionneuse : elle tient dans la largeur (moins les marges du dialogue,
+ * 2,75rem) ET dans la hauteur (moins le cadre, légende et compteur, 8,5rem) : en portrait c'est
+ * la hauteur qui borne, `100vw` ferait charger une image bien trop large sur ordinateur.
+ */
+const lightboxSizes = (width: number, height: number): string =>
+  `min(calc(100vw - 2.75rem), calc((100vh - 8.5rem) * ${(width / height).toFixed(3)}))`;
+
+const views = await Promise.all(
+  groups.map(async (group) => ({
+    ...group,
+    items: await Promise.all(
+      group.items.map(async (item) => {
+        const widths = LARGE_WIDTHS.filter((width) => width <= item.image.width);
+        const large = await getImage({
+          src: item.image,
+          width: Math.min(1600, item.image.width),
+          widths: widths.length > 0 ? widths : [item.image.width],
+          format: 'webp',
+        });
+        return { ...item, large };
+      }),
+    ),
+  })),
+);
+---
+
+<Section background={background} labelledby={id}>
+  <Container>
+    <div class="project-gallery" data-lightbox-gallery>
+      <SectionIntro id={id} heading={heading} lead={lead} />
+      {views.map((group) => (
+        <div class="project-gallery__group">
+          <h3 class="project-gallery__label">{group.label}</h3>
+          <ul class="project-gallery__list">
+            {group.items.map((item) => (
+              <li class="project-gallery__item">
+                <figure class="project-gallery__figure">
+                  <a
+                    class="project-gallery__zoom"
+                    href={item.large.src}
+                    data-lightbox-item
+                    data-srcset={item.large.srcSet.attribute}
+                    data-width={item.image.width}
+                    data-height={item.image.height}
+                    data-sizes={lightboxSizes(item.image.width, item.image.height)}
+                    data-alt={item.alt}
+                    data-caption={item.caption}
+                  >
+                    <span class="visually-hidden">{microcopy.lightbox.open} </span>
+                    <ArchImage
+                      src={item.image}
+                      alt={item.alt}
+                      shape="rounded"
+                      ratio="3 / 2"
+                      sizes="(min-width: 64rem) 60vw, 90vw"
+                      reveal
+                    />
+                    <span class="project-gallery__badge" aria-hidden="true">
+                      <Icon name="plus" />
+                    </span>
+                  </a>
+                  {item.caption && (
+                    <figcaption class="project-gallery__caption">{item.caption}</figcaption>
+                  )}
+                </figure>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      <Lightbox />
+    </div>
+  </Container>
+</Section>

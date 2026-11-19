@@ -1,0 +1,85 @@
+---
+/**
+ * Breadcrumbs — fil d'Ariane visible (le BreadcrumbList JSON-LD est produit par PageLayout).
+ * Le dernier élément est la page courante : texte avec aria-current, sans lien.
+ * Séparateurs dessinés en CSS (non lus par les lecteurs d'écran).
+ */
+import type { BreadcrumbItem } from '@/lib/jsonld';
+import { microcopy } from '@/config/microcopy';
+
+interface Props {
+  items: readonly BreadcrumbItem[];
+}
+
+const { items } = Astro.props;
+const lastIndex = items.length - 1;
+---
+
+<nav class="breadcrumbs container" aria-label={microcopy.nav.breadcrumb}>
+  <ol class="breadcrumbs__list">
+    {items.map((item, index) => (
+      <li class="breadcrumbs__item">
+        {index === lastIndex ? (
+          <span aria-current="page">{item.label}</span>
+        ) : (
+          <a class="breadcrumbs__link link-draw" href={item.href}>
+            {item.label}
+          </a>
+        )}
+      </li>
+    ))}
+  </ol>
+</nav>
+
+<style>
+  @layer components {
+    .breadcrumbs {
+      padding-block: var(--space-s);
+      font-size: var(--step--1);
+      color: var(--color-text-soft);
+    }
+
+    .breadcrumbs__list {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-3xs) var(--space-2xs);
+    }
+
+    .breadcrumbs__item {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2xs);
+    }
+
+    /* Petite arche filaire terracotta entre deux niveaux (décor). */
+    .breadcrumbs__item + .breadcrumbs__item::before {
+      content: '';
+      inline-size: var(--space-2xs);
+      block-size: var(--space-xs);
+      border: var(--border-hairline) solid var(--color-accent);
+      border-block-end: 0;
+      border-radius: var(--radius-arch);
+    }
+
+    .breadcrumbs__link {
+      color: var(--color-text-soft);
+      font-weight: var(--weight-medium);
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset-block: calc((var(--tap-target) - 100%) / -2);
+        inset-inline: 0;
+      }
+
+      &:hover {
+        color: var(--color-accent-text);
+      }
+    }
+
+    [aria-current='page'] {
+      color: var(--color-text);
+    }
+  }
+</style>

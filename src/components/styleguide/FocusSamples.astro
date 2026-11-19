@@ -1,0 +1,60 @@
+---
+/**
+ * FocusSamples — anneau de focus (rendu statique forcé) et survols à tester au clavier.
+ */
+import Button from '@/components/ui/Button.astro';
+import Link from '@/components/ui/Link.astro';
+import Tag from '@/components/ui/Tag.astro';
+import Specimen from './Specimen.astro';
+---
+
+<div class="sg-focus">
+  <Specimen label="Rendu de l’anneau --focus-ring (statique)" surface="cream">
+    <span class="sg-focus__forced sg-focus__forced--pill">Bouton focalisé</span>
+    <span class="sg-focus__forced">Lien focalisé</span>
+  </Specimen>
+  <Specimen label="À tester : Tab pour le focus, souris pour le survol" surface="linen">
+    <Button href="#sg-motion">Primaire</Button>
+    <Button href="#sg-motion" variant="secondary">
+      Secondaire
+    </Button>
+    <Link variant="draw" href="#sg-motion">
+      Lien dessiné
+    </Link>
+    <Tag href="#sg-motion" tone="sand">
+      Pastille
+    </Tag>
+  </Specimen>
+</div>
+
+<style>
+  @layer components {
+    .sg-focus {
+      display: grid;
+      gap: var(--space-l);
+
+      @media (width >= 48rem) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .sg-focus__forced {
+      display: inline-flex;
+      align-items: center;
+      min-block-size: var(--tap-target);
+      padding-inline: var(--space-s);
+      font-size: var(--step--1);
+      font-weight: var(--weight-semibold);
+      color: var(--color-accent-text);
+      outline: var(--focus-ring);
+      outline-offset: var(--focus-ring-offset);
+      border-radius: var(--radius-sm);
+    }
+
+    .sg-focus__forced--pill {
+      color: var(--color-on-action);
+      background-color: var(--color-action);
+      border-radius: var(--radius-pill);
+    }
+  }
+</style>

@@ -1,0 +1,88 @@
+---
+/**
+ * SEO — balises <head> d'une page : titre, description, robots, canonical, Open Graph, Twitter.
+ * Les règles de longueur (CLAUDE.md §5) sont vérifiées au build : une violation fait échouer `astro build`.
+ */
+import type { ImageMetadata } from 'astro';
+import { getImage } from 'astro:assets';
+import { seoDefaults } from '@/config/seo';
+import { site } from '@/config/site';
+import {
+  assertDescriptionLength,
+  assertOgImageSource,
+  buildArticleMetaTags,
+  buildCanonicalUrl,
+  buildPageTitle,
+  buildRobots,
+  type OpenGraphArticle,
+} from '@/lib/seo';
+import { absoluteUrl } from '@/lib/url';
+
+interface Props {
+  title: string;
+  description: string;
+  image?: ImageMetadata | undefined;
+  imageAlt?: string | undefined;
+  noindex?: boolean;
+  titleSuffix?: boolean;
+  /** Article de blog : `og:type` passe à `article` et ajoute les balises `article:*`. */
+  article?: OpenGraphArticle | undefined;
+}
+
+const {
+  title,
+  description,
+  image = seoDefaults.ogImage,
+  imageAlt = seoDefaults.ogImageAlt,
+  noindex = false,
+  titleSuffix = true,
+  article,
+} = Astro.props;
+
+const fullTitle = buildPageTitle(
+  title,
+  {
+    suffix: seoDefaults.titleSuffix,
+    separator: seoDefaults.titleSeparator,
+    maxLength: seoDefaults.titleMaxLength,
+  },
+  titleSuffix,
+);
+const metaDescription = assertDescriptionLength(description, seoDefaults.descriptionLength);
+const ogType = article ? 'article' : 'website';
+const articleTags = article ? buildArticleMetaTags(article) : [];
+const canonical = noindex ? undefined : buildCanonicalUrl(Astro.url.pathname, Astro.site);
+const { width, height } = seoDefaults.ogImageSize;
+// sharp n'agrandit jamais : une source plus petite que 1200 × 630 fait échouer le build.
+assertOgImageSource(image, seoDefaults.ogImageSize);
+// Recadrage centré au format 1200 × 630 ; JPEG : format le plus largement accepté par les
+// aperçus de liens (Facebook, LinkedIn, WhatsApp…).
+const ogImage = await getImage({ src: image, width, height, fit: 'cover', format: 'jpg' });
+const ogImageUrl = absoluteUrl(ogImage.src, Astro.site ?? Astro.url);
+---
+
+<title>{fullTitle}</title>
+<meta name="description" content={metaDescription} />
+<meta name="robots" content={buildRobots(noindex)} />
+{canonical && <link rel="canonical" href={canonical} />}
+
+<meta property="og:type" content={ogType} />
+<meta property="og:site_name" content={site.name} />
+<meta property="og:locale" content={seoDefaults.locale} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={metaDescription} />
+{canonical && <meta property="og:url" content={canonical} />}
+<meta property="og:image" content={ogImageUrl} />
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:image:width" content={String(width)} />
+<meta property="og:image:height" content={String(height)} />
+<meta property="og:image:alt" content={imageAlt} />
+{articleTags.map((tag) => (
+  <meta property={tag.property} content={tag.content} />
+))}
+
+<meta name="twitter:card" content={seoDefaults.twitterCard} />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={metaDescription} />
+<meta name="twitter:image" content={ogImageUrl} />
+<meta name="twitter:image:alt" content={imageAlt} />

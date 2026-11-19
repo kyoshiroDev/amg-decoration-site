@@ -1,0 +1,13 @@
+---
+// Remerciement après un envoi du formulaire sans JavaScript (noindex, exclue du sitemap).
+// Textes : src/content/pages/merci.md.
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PageHero from '@/components/blocks/PageHero.astro';
+import { getThanksData } from '@/lib/pages/contact';
+
+const { seo, noindex, hero } = await getThanksData();
+---
+
+<BaseLayout title={seo.title} description={seo.description} noindex={noindex}>
+  <PageHero section={hero} id="merci-titre" />
+</BaseLayout>

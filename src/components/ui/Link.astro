@@ -1,0 +1,102 @@
+---
+/**
+ * Link — lien de texte.
+ * `variant` est obligatoire pour forcer un choix conscient (WCAG 1.4.1) :
+ * - `draw` : lien AUTONOME (navigation, liste de liens), soulignement dessiné au survol.
+ *   Jamais dans un paragraphe : sans soulignement au repos, il n'y serait pas distinguable.
+ * - `inline` : lien dans un paragraphe, souligné en permanence (styles de base).
+ * Les liens externes reçoivent rel="noopener noreferrer", une flèche oblique visible
+ * (décorative) et la mention « (nouvel onglet) » pour les lecteurs d'écran.
+ * Zone de clic : les liens `draw` atteignent 44 px de haut via un pseudo-élément.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from './Icon.astro';
+import type { IconName } from './icons';
+import { microcopy } from '@/config/microcopy';
+
+interface Props {
+  href: string;
+  variant: 'draw' | 'inline';
+  /** Ouvre dans un nouvel onglet (signalé visuellement et aux lecteurs d'écran). */
+  external?: boolean;
+  /** Icône après le libellé. */
+  icon?: IconName | undefined;
+  /** Icône avant le libellé (réseau social, téléphone…). */
+  iconStart?: IconName | undefined;
+  /** Marque le lien de la page courante. */
+  current?: boolean;
+  class?: string | undefined;
+  attrs?: HTMLAttributes<'a'>;
+}
+
+const {
+  href,
+  variant,
+  external = false,
+  icon,
+  iconStart,
+  current = false,
+  class: className,
+  attrs = {},
+} = Astro.props;
+
+const externalAttrs = external ? { target: '_blank', rel: 'noopener noreferrer' } : {};
+---
+
+<a
+  class:list={['link', { 'link-draw link--tap': variant === 'draw' }, className]}
+  href={href}
+  aria-current={current ? 'page' : undefined}
+  {...externalAttrs}
+  {...attrs}
+>
+  {iconStart && <Icon name={iconStart} class="link__icon-start" />}
+  <slot />
+  {external && <span class="visually-hidden">{microcopy.newTab}</span>}
+  {external && <Icon name="external" class="link__external" />}
+  {icon && <Icon name={icon} class="link__icon" />}
+</a>
+
+<style>
+  @layer components {
+    .link-draw {
+      color: var(--color-accent-text);
+      font-weight: var(--weight-medium);
+    }
+
+    /* Cible tactile ≥ 44 px sans changer la mise en page (::after porte le soulignement). */
+    .link--tap::before {
+      content: '';
+      position: absolute;
+      inset-block: calc((var(--tap-target) - 100%) / -2);
+      inset-inline: calc(var(--space-3xs) * -1);
+    }
+
+    .link :global(:is(.link__icon, .link__icon-start, .link__external)) {
+      display: inline-block;
+      vertical-align: -0.125em;
+    }
+
+    .link :global(.link__icon-start) {
+      margin-inline-end: var(--space-2xs);
+    }
+
+    .link :global(.link__external) {
+      margin-inline-start: var(--space-3xs);
+      transition: transform var(--dur-base) var(--ease-out);
+    }
+
+    .link :global(.link__icon) {
+      margin-inline-start: var(--space-3xs);
+      transition: transform var(--dur-base) var(--ease-out);
+    }
+
+    .link:hover :global(.link__icon) {
+      transform: translateX(var(--space-3xs));
+    }
+
+    .link:hover :global(.link__external) {
+      transform: translate(var(--border-thin), calc(var(--border-thin) * -1));
+    }
+  }
+</style>

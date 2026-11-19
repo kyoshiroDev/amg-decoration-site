@@ -1,13 +1,15 @@
 name: CI
 
+# Un seul déclencheur par push : la PR dev → main (CLAUDE.md §8). Déclencher aussi sur `push: dev`
+# lançait deux runs identiques par commit (dont deux fois Lighthouse sur 25 pages).
+# `workflow_dispatch` permet de relancer à la main, par exemple sans PR ouverte.
 on:
-  push:
-    branches: [dev]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -15,14 +17,14 @@ jobs:
     name: Vérifications (types, lint, tests, build)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - run: npm run verify
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist
@@ -33,16 +35,20 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      # Formulaire en mode service (build dist-service/ avec un PUBLIC_FORM_ENDPOINT factice) :
+      # lancé même si la suite principale échoue, pour un diagnostic complet.
+      - if: success() || failure()
+        run: npm run test:e2e:service
       - if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: playwright-report
@@ -53,11 +59,23 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npm run build
+      # Audite exactement le build vérifié par le job `verify` (pas de second build).
+      - uses: actions/download-artifact@v7
+        with:
+          name: dist
+          path: dist
       - run: npm run lhci
+      # Rapports Lighthouse conservés pour diagnostiquer un échec (pages, métriques, traces).
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci
+          retention-days: 7
+          include-hidden-files: true

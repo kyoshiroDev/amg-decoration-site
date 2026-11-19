@@ -1,0 +1,84 @@
+---
+/**
+ * Pillars — trois à quatre piliers (valeurs) : ouverture centrée, puis une arche crème par
+ * pilier, titre Fraunces italique posé au pied de l'arche, texte dessous. 1 → 3 colonnes,
+ * colonne centrale décalée vers le bas (rythme éditorial, par marges).
+ */
+import ContentSection from './ContentSection.astro';
+import Heading from '@/components/ui/Heading.astro';
+import type { PageSection } from '@/lib/pages/types';
+
+interface Props {
+  section: PageSection;
+  id: string;
+  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+}
+
+const { section, id, background = 'sage' } = Astro.props;
+---
+
+<ContentSection section={section} id={id} background={background} align="center">
+  <ul class="pillars">
+    {section.items.map((item) => (
+      <li class="pillars__item" data-reveal>
+        <div class="pillars__arch">
+          <Heading level={3} size="lg" class="pillars__title">
+            {item.title}
+          </Heading>
+        </div>
+        {item.text && <p class="pillars__text">{item.text}</p>}
+      </li>
+    ))}
+  </ul>
+</ContentSection>
+
+<style>
+  @layer components {
+    .pillars {
+      display: grid;
+      gap: var(--space-xl) var(--space-l);
+      padding: 0;
+      margin: 0;
+
+      @media (width >= 48rem) {
+        grid-template-columns: repeat(3, 1fr);
+        align-items: start;
+      }
+    }
+
+    @media (width >= 48rem) {
+      .pillars__item:nth-child(3n + 2) {
+        margin-block-start: var(--grid-stagger);
+      }
+    }
+
+    .pillars__item {
+      display: grid;
+      justify-items: center;
+      gap: var(--space-m);
+      text-align: center;
+    }
+
+    .pillars__arch {
+      display: grid;
+      align-content: end;
+      justify-items: center;
+      inline-size: min(100%, var(--page-hero-arch-size));
+      aspect-ratio: 4 / 5;
+      padding: var(--space-m) var(--space-s) var(--space-l);
+      border-radius: var(--radius-arch);
+      background-color: var(--color-surface);
+      box-shadow: inset 0 0 0 var(--border-hairline) var(--color-accent);
+    }
+
+    :global(.pillars__title) {
+      font-style: italic;
+      font-weight: var(--weight-light);
+    }
+
+    .pillars__text {
+      max-inline-size: var(--measure-card);
+      color: var(--color-text-soft);
+    }
+  }
+</style>

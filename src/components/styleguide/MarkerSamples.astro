@@ -1,0 +1,99 @@
+---
+/**
+ * MarkerSamples — pastilles, surtitres, icônes et séparateurs.
+ */
+import Heading from '@/components/ui/Heading.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Tag from '@/components/ui/Tag.astro';
+import Icon from '@/components/ui/Icon.astro';
+import { iconNames } from '@/components/ui/icons';
+import Divider from '@/components/ui/Divider.astro';
+import Specimen from './Specimen.astro';
+---
+
+<div class="sg-markers">
+  <Heading level={3} size="sm">
+    Pastilles, surtitres et icônes
+  </Heading>
+  <div class="sg-markers__grid">
+    <Specimen label='Tag tone="sand" · blush · sage · outline · href'>
+      <Tag>Salon</Tag>
+      <Tag tone="blush">Chambre</Tag>
+      <Tag tone="sage">Cuisine</Tag>
+      <Tag tone="outline">Studio</Tag>
+      <Tag tone="outline" href="#sg-composants">
+        Filtre (lien)
+      </Tag>
+    </Specimen>
+    <Specimen label="Eyebrow · decorated={false}">
+      <Eyebrow>Visualisation 3D</Eyebrow>
+      <Eyebrow decorated={false}>Sans trait</Eyebrow>
+    </Specimen>
+    <Specimen label="Icon (aria-hidden par défaut)" class="sg-markers__icons">
+      <ul class="sg-icons">
+        {iconNames.map((name) => (
+          <li class="sg-icons__item">
+            <Icon name={name} size="var(--step-2)" />
+            <code>{name}</code>
+          </li>
+        ))}
+      </ul>
+    </Specimen>
+    <Specimen label="Divider · short · ornament" class="sg-markers__dividers">
+      <div class="sg-dividers">
+        <Divider />
+        <Divider width="short" />
+        <Divider ornament />
+        <Divider width="short" ornament />
+      </div>
+    </Specimen>
+  </div>
+</div>
+
+<style>
+  @layer components {
+    .sg-markers {
+      display: grid;
+      gap: var(--space-m);
+      margin-block-end: var(--space-xl);
+    }
+
+    .sg-markers__grid {
+      display: grid;
+      gap: var(--space-l);
+
+      @media (width >= 48rem) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .sg-icons {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+      gap: var(--space-s);
+      inline-size: 100%;
+    }
+
+    .sg-icons__item {
+      display: grid;
+      justify-items: center;
+      gap: var(--space-2xs);
+      padding: var(--space-xs) var(--space-3xs);
+      font-size: var(--step--1);
+      text-align: center;
+      color: var(--color-accent-text);
+      background-color: var(--color-cream);
+      border-radius: var(--radius-md);
+
+      & code {
+        color: var(--color-text-soft);
+      }
+    }
+
+    .sg-dividers {
+      display: grid;
+      gap: var(--space-l);
+      inline-size: 100%;
+    }
+  }
+</style>

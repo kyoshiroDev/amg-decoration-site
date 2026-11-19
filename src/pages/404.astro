@@ -1,0 +1,13 @@
+---
+// Page 404 (non indexée) : sorties vers l'accueil, les réalisations et le contact.
+// Textes : src/content/pages/404.md.
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import NotFoundHero from '@/components/blocks/NotFoundHero.astro';
+import { getPageData } from '@/lib/pages/page';
+
+const { seo, noindex, hero } = await getPageData('404');
+---
+
+<BaseLayout title={seo.title} description={seo.description} noindex={noindex}>
+  <NotFoundHero heading={hero.heading} lead={hero.lead} actions={hero.actions} />
+</BaseLayout>

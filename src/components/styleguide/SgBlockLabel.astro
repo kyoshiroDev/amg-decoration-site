@@ -1,0 +1,42 @@
+---
+/**
+ * SgBlockLabel — cartouche qui nomme le bloc présenté juste en dessous (styleguide uniquement).
+ */
+import Container from '@/components/ui/Container.astro';
+
+interface Props {
+  name: string;
+  note: string;
+}
+
+const { name, note } = Astro.props;
+---
+
+<div class="sg-block-label">
+  <Container class="sg-block-label__inner">
+    <code>{name}</code>
+    <span class="sg-block-label__note">{note}</span>
+  </Container>
+</div>
+
+<style>
+  @layer components {
+    .sg-block-label {
+      padding-block: var(--space-xs);
+      border-block: var(--border-hairline) dashed var(--color-border-strong);
+      background-color: var(--color-surface);
+    }
+
+    :global(.sg-block-label__inner) {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2xs) var(--space-m);
+      align-items: baseline;
+      font-size: var(--step--1);
+    }
+
+    .sg-block-label__note {
+      color: var(--color-text-soft);
+    }
+  }
+</style>
