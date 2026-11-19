@@ -58,7 +58,7 @@ Slug = sujet du projet (pièce, lieu ou style), jamais le prénom du client : c'
 
 ## 3. Redirections 301 (`vercel.json`)
 
-Base : inventaire exhaustif du 18/11/2026 (`docs/CONTENU-EXISTANT.md` §1). **Source de vérité : `src/lib/redirects.ts`** ; `vercel.json` → `redirects` doit lui être strictement égal (test `tests/unit/redirects.test.ts`, qui vérifie aussi : aucun doublon, aucune chaîne, aucune page du nouveau site redirigée (`SITE_ROUTES`, articles publiés compris, lus dans `src/content/articles/` par `publishedArticleRoutes`, `src/lib/article-files.ts`), chaque ancienne URL — avec et sans slash final — aboutit en **un seul saut** à une page servie en 200). Pour ajouter une redirection : modifier `redirects.ts`, puis recopier `buildVercelRedirects()` dans `vercel.json`.
+Base : inventaire exhaustif du 18/11/2026 (`docs/CONTENU-EXISTANT.md` §1). **Source de vérité : `src/lib/redirects.ts`** ; `vercel.json` → `redirects` doit lui être strictement égal (test `tests/unit/redirects.test.ts`, qui vérifie aussi : aucun doublon, aucune chaîne, aucune page du nouveau site redirigée (`siteRoutes()`, articles publiés compris, lus dans `src/content/articles/` par `publishedArticleRoutes`, `src/lib/article-files.ts`, assemblés dans `tests/site-routes.ts` ; un test e2e vérifie que le sitemap liste exactement ces pages), chaque ancienne URL — avec et sans slash final — aboutit en **un seul saut** à une page servie en 200). Pour ajouter une redirection : modifier `redirects.ts`, puis recopier `buildVercelRedirects()` dans `vercel.json`.
 
 ### Tableau final
 

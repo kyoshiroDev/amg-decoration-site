@@ -92,3 +92,8 @@ export function splitEmphasis(heading: string, emphasis: string | undefined): Em
     after: heading.slice(index + emphasis.length),
   };
 }
+
+/** Première lettre en minuscule (un intitulé de métier repris au milieu d'une phrase). */
+export function lowerFirst(text: string): string {
+  return text.charAt(0).toLocaleLowerCase('fr-FR') + text.slice(1);
+}

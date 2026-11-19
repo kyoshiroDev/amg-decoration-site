@@ -12,8 +12,6 @@
  * les anciennes URLs déclarées avec et sans slash : chaque ancienne URL arrive en un saut.
  */
 
-import { publishedArticleRoutes } from './article-files';
-
 export interface VercelRedirect {
   source: string;
   destination: string;
@@ -31,29 +29,33 @@ export const PROJECT_SLUGS = {
 const project = (slug: string): string => `/realisations/${slug}/`;
 
 /**
- * Pages du nouveau site (toutes servies en 200, slash final), articles publiés compris : ceux-ci
- * sont lus dans src/content/articles/ (`publishedArticleRoutes`), jamais recopiés à la main.
+ * Pages du nouveau site (toutes servies en 200, slash final). Fonction PURE : les routes des
+ * articles publiés sont fournies par l'appelant (`publishedArticleRoutes()` de
+ * `article-files.ts`, qui lit src/content/articles/ ; voir tests/site-routes.ts), jamais
+ * recopiées à la main.
  */
-export const SITE_ROUTES: readonly string[] = [
-  '/',
-  '/prestations/',
-  '/prestations/essentiel/',
-  '/prestations/confort/',
-  '/prestations/signature/',
-  '/prestations/studio/',
-  '/prestations/meuble-sur-mesure/',
-  '/prestations/professionnels/',
-  '/visualisation-3d/',
-  '/realisations/',
-  ...Object.values(PROJECT_SLUGS).map(project),
-  '/a-propos/',
-  '/conseils-deco/',
-  ...publishedArticleRoutes(),
-  '/contact/',
-  '/mentions-legales/',
-  '/confidentialite/',
-  '/conditions-generales/',
-];
+export function siteRoutes(articleRoutes: readonly string[]): readonly string[] {
+  return [
+    '/',
+    '/prestations/',
+    '/prestations/essentiel/',
+    '/prestations/confort/',
+    '/prestations/signature/',
+    '/prestations/studio/',
+    '/prestations/meuble-sur-mesure/',
+    '/prestations/professionnels/',
+    '/visualisation-3d/',
+    '/realisations/',
+    ...Object.values(PROJECT_SLUGS).map(project),
+    '/a-propos/',
+    '/conseils-deco/',
+    ...articleRoutes,
+    '/contact/',
+    '/mentions-legales/',
+    '/confidentialite/',
+    '/conditions-generales/',
+  ];
+}
 
 /** Fichiers techniques générés au build (sitemap Astro, robots.txt, llms.txt). */
 export const SITE_FILES: readonly string[] = ['/sitemap-index.xml', '/robots.txt', '/llms.txt'];

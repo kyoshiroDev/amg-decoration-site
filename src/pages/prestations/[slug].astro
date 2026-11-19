@@ -18,7 +18,7 @@ export const getStaticPaths = getServicePaths;
 
 type Props = ServicePageProps;
 
-const { model, further, imageUrl, Content } = Astro.props;
+const { model, further, service, Content } = Astro.props;
 const origin = Astro.site ?? Astro.url;
 ---
 
@@ -28,7 +28,7 @@ const origin = Astro.site ?? Astro.url;
   image={model.cover?.image}
   imageAlt={model.cover?.alt}
   breadcrumbs={model.breadcrumbs}
-  jsonLd={[buildService({ ...model.service, imageUrl }, site.areaServed, origin)]}
+  jsonLd={[buildService(service, site.areaServed, origin)]}
 >
   <PageHero section={model.hero} id="prestation-titre" />
   <ProseLayout>

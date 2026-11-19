@@ -6,7 +6,7 @@
 
 1. **Statique d'abord** : tout est pré-rendu au build. Zéro serveur, zéro base de données.
 2. **Contenu séparé du code** : les textes vivent dans `src/content/` (Markdown/YAML validés par Zod) ; les infos de l'entreprise dans `src/config/site.ts`.
-3. **Couches** : `pages` (routes) → `layouts` (squelette + SEO) → `blocks` (sections) → `ui` (atomes). `lib/` est transverse et pur.
+3. **Couches** : `pages` (routes) → `layouts` (squelette + SEO) → `blocks` (sections) → `ui` (atomes). `lib/` est transverse et pur, à deux exceptions documentées : les lecteurs de collections `lib/pages/*.ts` (`getCollection`) et `lib/article-files.ts` (lecture du disque pour `astro.config.mjs` et les tests).
 4. **Progressive enhancement** : le HTML/CSS fonctionne seul ; le JS (`src/scripts/`) n'ajoute que de l'agrément.
 
 ## Styleguide interne
@@ -132,7 +132,7 @@ Poids total mesuré par page (gzip, fin de Phase 5, hors script inline de 0,15 K
 
 ## Configuration
 
-- `astro.config.mjs` : `site: 'https://amgdecorationdinterieur.com'`, `trailingSlash: 'always'`, `output: 'static'`, intégrations `sitemap` (filtre des pages `noindex`, `lastmod` des articles lu dans leur frontmatter par `src/lib/article-files.ts` et `src/lib/sitemap-lastmod.ts`, importés sans alias ; les mêmes fichiers donnent les routes d'articles de `SITE_ROUTES`) (+ `mdx`), `prefetch`, Fonts API, `image` (formats/qualités).
+- `astro.config.mjs` : `site: 'https://amgdecorationdinterieur.com'`, `trailingSlash: 'always'`, `output: 'static'`, intégrations `sitemap` (filtre des pages `noindex`, `lastmod` des articles lu dans leur frontmatter par `src/lib/article-files.ts` et `src/lib/sitemap-lastmod.ts`, importés sans alias ; les mêmes fichiers donnent les routes d'articles passées à `siteRoutes()`, assemblées dans `tests/site-routes.ts`) (+ `mdx`), `prefetch`, Fonts API, `image` (formats/qualités).
 - `vercel.json` : redirections 301, en-têtes de sécurité (CSP, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`), cache immuable `/_astro/*`.
 - `tsconfig.json` : `astro/tsconfigs/strictest` + alias `@/*`.
 

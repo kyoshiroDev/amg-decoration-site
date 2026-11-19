@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { microcopy } from '../../src/config/microcopy';
-import { SITE_ROUTES } from '../../src/lib/redirects';
+import { SITE_ROUTES } from '../site-routes';
 import { expectNoAxeViolations } from './helpers';
 
 // Pages du lot 2A : Visualisation 3D, À propos, Contact, Merci et pages légales.

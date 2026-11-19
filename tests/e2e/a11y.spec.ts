@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { microcopy } from '../../src/config/microcopy';
-import { SITE_ROUTES } from '../../src/lib/redirects';
+import { SITE_ROUTES } from '../site-routes';
 import {
   NOT_FOUND_PATH,
   expectNoAxeViolations,

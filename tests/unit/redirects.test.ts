@@ -4,9 +4,9 @@ import {
   buildVercelRedirects,
   resolveRedirect,
   SITE_FILES,
-  SITE_ROUTES,
   type VercelRedirect,
 } from '@/lib/redirects';
+import { SITE_ROUTES } from '../site-routes';
 import { publishedArticleRoutes } from '@/lib/article-files';
 
 interface VercelConfig {

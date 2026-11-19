@@ -15,7 +15,7 @@ import {
   type ServicesInput,
   type ServicesModel,
 } from './services-model';
-import { buildCollectionPage, webPageInputFrom } from '../jsonld';
+import { buildCollectionPage, webPageInputFrom, type ServiceInput } from '../jsonld';
 import { getPageData } from './page';
 import type { WithJsonLd } from './types';
 
@@ -56,8 +56,8 @@ export interface ServicePageProps {
   readonly model: ServiceDetailModel;
   /** « Pour aller plus loin » : 1 article publié et 1 réalisation. */
   readonly further: readonly FurtherItem[];
-  /** Visuel `cover` pour le JSON-LD `Service` (URL relative), absent sans visuel. */
-  readonly imageUrl: string | undefined;
+  /** Entrée du JSON-LD `Service`, visuel `cover` compris (URL relative) s'il existe. */
+  readonly service: ServiceInput;
   readonly Content: Awaited<ReturnType<typeof render>>['Content'];
 }
 
@@ -92,7 +92,7 @@ export async function getServicePaths(): Promise<
       });
       return {
         params: { slug: entry.id },
-        props: { model, further, imageUrl: image?.src, Content },
+        props: { model, further, service: { ...model.service, imageUrl: image?.src }, Content },
       };
     }),
   );
