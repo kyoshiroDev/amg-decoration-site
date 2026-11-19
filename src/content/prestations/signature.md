@@ -2,6 +2,8 @@
 title: 'Formule Signature'
 kind: formule
 tagline: 'Pour les espaces ouverts'
+heroTitle: 'Décoration d’espace ouvert en 3D : salon et cuisine en harmonie'
+heroTitleEmphasis: 'en harmonie'
 target: 'salon + cuisine ouverte, salon + séjour, suite parentale, terrasse, balcon'
 summary: 'Pour les espaces ouverts : salon et cuisine, salon et séjour, suite parentale, terrasse ou balcon, imaginés en 3D comme un tout harmonieux.'
 # TODO(contenu): nombre de vues 3D et de modifications incluses (à demander à Amandine).

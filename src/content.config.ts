@@ -157,8 +157,12 @@ const prestations = defineCollection({
       .strictObject({
         title: text,
         kind: z.enum(['formule', 'offre']),
-        /** Accroche courte (« pour les petits espaces »). */
+        /** Accroche courte (« pour les petits espaces »), sur les cartes. */
         tagline: text,
+        /** h1 de la fiche, orienté mot-clé ; le nom (`title`) reste affiché en surtitre. */
+        heroTitle: text,
+        /** Fragment exact de `heroTitle` mis en italique terracotta. */
+        heroTitleEmphasis: text.optional(),
         /** Pièces ou public ciblés, texte libre. */
         target: text.optional(),
         summary: text,
@@ -184,7 +188,19 @@ const prestations = defineCollection({
       .refine((entry) => !(entry.price && entry.quote), {
         message: 'Une prestation a un prix OU un devis, pas les deux.',
         path: ['quote'],
-      }),
+      })
+      .refine((entry) => entry.heroTitle !== entry.title, {
+        message:
+          'Le h1 (`heroTitle`) doit porter le mot-clé, pas seulement le nom de la prestation.',
+        path: ['heroTitle'],
+      })
+      .refine(
+        (entry) => !entry.heroTitleEmphasis || entry.heroTitle.includes(entry.heroTitleEmphasis),
+        {
+          message: '`heroTitleEmphasis` doit être un fragment exact de `heroTitle`.',
+          path: ['heroTitleEmphasis'],
+        },
+      ),
 });
 
 const roomType = z.enum([

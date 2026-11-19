@@ -2,6 +2,8 @@
 title: 'Formule Confort'
 kind: formule
 tagline: 'Pour les espaces de vie'
+heroTitle: 'La décoration de votre pièce de vie, imaginée en 3D avec vous'
+heroTitleEmphasis: 'imaginée en 3D'
 target: 'salon, salle à manger, cuisine, chambre, bureau'
 summary: 'Ma formule la plus demandée : salon, salle à manger, cuisine, chambre ou bureau imaginés en 3D, avec plan d’aménagement et sélection de mobilier.'
 # TODO(contenu): nombre de vues 3D et de modifications incluses (à demander à Amandine).

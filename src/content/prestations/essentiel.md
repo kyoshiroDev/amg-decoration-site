@@ -4,6 +4,8 @@
 title: 'Formule Essentiel'
 kind: formule
 tagline: 'Pour les petits espaces'
+heroTitle: 'Décorer un petit espace en 3D, où chaque centimètre compte'
+heroTitleEmphasis: 'chaque centimètre compte'
 target: 'entrée, WC, buanderie, salle de bain, dressing'
 summary: 'Une petite pièce repensée en 3D : plan d’aménagement, vues 3D et sélection de mobilier et de matériaux, pour tirer le meilleur de chaque mètre carré.'
 # TODO(contenu): nombre de vues 3D et de modifications incluses (à demander à Amandine).

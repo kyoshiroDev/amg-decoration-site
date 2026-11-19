@@ -3,6 +3,8 @@
 title: 'Offre Professionnels'
 kind: offre
 tagline: 'Pour les investisseurs et les agents immobiliers'
+heroTitle: 'Home staging virtuel : des visuels 3D pour valoriser vos biens'
+heroTitleEmphasis: 'valoriser vos biens'
 summary: 'Des visuels 3D réalistes pour aider vos acheteurs à se projeter, valoriser vos biens et accélérer vos ventes.'
 includes:
   - '1 rendez-vous à distance pour analyser vos besoins'

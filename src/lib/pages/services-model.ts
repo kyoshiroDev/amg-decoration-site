@@ -44,6 +44,9 @@ export interface ServiceDetailEntryLike extends ServiceEntryLike {
     readonly options: readonly string[];
     readonly seo: { readonly title: string; readonly description: string };
     readonly cover?: Figure | undefined;
+    /** h1 orienté mot-clé (le nom de la prestation passe en surtitre). */
+    readonly heroTitle: string;
+    readonly heroTitleEmphasis?: string | undefined;
   };
 }
 
@@ -144,8 +147,9 @@ export function buildServiceDetailModel(
       { label: data.title, href: path },
     ),
     hero: {
-      eyebrow: data.tagline,
-      heading: data.title,
+      eyebrow: data.title,
+      heading: data.heroTitle,
+      headingEmphasis: data.heroTitleEmphasis,
       lead: data.summary,
       items: [],
       // L'action « Demander un devis » est portée par la carte « En bref », juste dessous.

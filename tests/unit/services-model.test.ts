@@ -24,6 +24,8 @@ function entry(
       title: `Formule ${id}`,
       kind: 'formule',
       tagline: 'pour tous',
+      heroTitle: `Décoration ${id} en 3D`,
+      heroTitleEmphasis: 'en 3D',
       summary: `Résumé ${id}`,
       highlight: false,
       includes: [],
@@ -88,7 +90,12 @@ describe('buildServicesModel', () => {
 describe('buildServiceDetailModel', () => {
   it('construit héros, fil d’Ariane, faits et JSON-LD', () => {
     const model = buildServiceDetailModel({ ...input(), slug: 'confort' });
-    expect(model.hero).toMatchObject({ heading: 'Formule confort', eyebrow: 'pour tous' });
+    // h1 orienté mot-clé ; le nom de la formule passe en surtitre (fil d'Ariane et JSON-LD inchangés).
+    expect(model.hero).toMatchObject({
+      heading: 'Décoration confort en 3D',
+      headingEmphasis: 'en 3D',
+      eyebrow: 'Formule confort',
+    });
     expect(model.hero.actions).toEqual([]);
     expect(model.factsAction).toEqual({ label: 'Devis', href: '/contact/' });
     expect(model.breadcrumbs.at(-1)).toEqual({

@@ -3,6 +3,8 @@
 title: 'Meuble sur mesure 3D'
 kind: offre
 tagline: 'Un meuble unique pour votre intérieur'
+heroTitle: 'Votre meuble sur mesure en 3D, avant sa fabrication'
+heroTitleEmphasis: 'avant sa fabrication'
 target: 'bibliothèque, meuble TV, bureau, banquette…'
 summary: 'Vous ne trouvez pas le meuble idéal dans le commerce ? Je le conçois pour vous, sur mesure, et vous le découvrez en 3D avant sa fabrication.'
 includes:

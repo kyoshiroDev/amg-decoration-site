@@ -2,6 +2,8 @@
 title: 'Formule Studio'
 kind: formule
 tagline: 'Pour un studio ou un petit appartement'
+heroTitle: 'Aménagement de studio en 3D : optimiser chaque mètre carré'
+heroTitleEmphasis: 'chaque mètre carré'
 target: 'studio, petit appartement jusqu’à 26 m²'
 summary: 'Tout votre studio ou petit appartement, jusqu’à 26 m², pensé en 3D pour optimiser chaque mètre carré sans renoncer au confort.'
 # TODO(contenu): nombre de vues 3D et de modifications incluses (à demander à Amandine).

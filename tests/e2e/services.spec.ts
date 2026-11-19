@@ -77,7 +77,11 @@ test.describe('Prestations : pages de détail', () => {
     test(`/prestations/${slug}/ répond 200 avec un seul h1`, async ({ page }) => {
       const response = await page.goto(`/prestations/${slug}/`);
       expect(response?.status()).toBe(200);
-      await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+      const h1 = page.getByRole('heading', { level: 1 });
+      await expect(h1).toHaveCount(1);
+      // h1 orienté mot-clé (`heroTitle`) : jamais le seul nom de la prestation.
+      await expect(h1).not.toHaveText(/^(Formule \S+|Meuble sur mesure 3D|Offre Professionnels)$/);
+      await expect(h1).toContainText('3D');
       expectNoHeadingJump(await headingLevels(page));
     });
   }
