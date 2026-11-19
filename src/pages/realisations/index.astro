@@ -13,6 +13,8 @@ const data = await getProjectsIndexData(Astro.site ?? Astro.url);
 <PageLayout
   title={data.seo.title}
   description={data.seo.description}
+  image={data.ogImage?.image}
+  imageAlt={data.ogImage?.alt}
   breadcrumbs={data.breadcrumbs}
   jsonLd={data.jsonLd}
 >

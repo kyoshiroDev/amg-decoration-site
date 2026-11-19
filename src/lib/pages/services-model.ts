@@ -3,6 +3,7 @@
  * partir des entrées BRUTES des collections (fonctions pures, tests/unit/services-model.test.ts).
  * L'accès aux collections est dans ./services.ts.
  */
+import type { ImageMetadata } from 'astro';
 import {
   selectFormulas,
   toServiceCard,
@@ -16,6 +17,11 @@ import { servicePath } from '../routes';
 import { breadcrumbTrail } from './breadcrumb-trail';
 import { readSections } from './sections';
 import type { PageData, PageSection } from './types';
+
+interface Figure {
+  readonly image: ImageMetadata;
+  readonly alt: string;
+}
 
 /** Sections attendues dans src/content/pages/prestations.md. */
 export const SERVICES_SECTION_KEYS = [
@@ -37,6 +43,7 @@ export interface ServiceDetailEntryLike extends ServiceEntryLike {
     readonly includes: readonly string[];
     readonly options: readonly string[];
     readonly seo: { readonly title: string; readonly description: string };
+    readonly cover?: Figure | undefined;
   };
 }
 
@@ -112,6 +119,8 @@ export interface ServiceDetailModel {
   readonly othersSection: PageSection;
   readonly cta: PageSection;
   readonly service: ServiceInput;
+  /** Visuel de la prestation (`cover`, facultatif) : image Open Graph et `image` du JSON-LD. */
+  readonly cover: Figure | undefined;
 }
 
 export function buildServiceDetailModel(
@@ -155,5 +164,6 @@ export function buildServiceDetailModel(
     othersSection: sections.autres,
     cta: sections.cta,
     service: { name: data.title, description: data.summary, path },
+    cover: data.cover,
   };
 }

@@ -2,10 +2,11 @@ import { readFile } from 'node:fs/promises';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { microcopy } from '../../src/config/microcopy';
 import { resolveRedirect } from '../../src/lib/redirects';
-import { NOT_FOUND_PATH } from './helpers';
+import { NOT_FOUND_PATH, readJpegSize } from './helpers';
 
 const SITE_ORIGIN = 'https://amgdecorationdinterieur.com';
-const SITEMAP_FILE = new URL('../../dist/sitemap-0.xml', import.meta.url);
+const DIST = new URL('../../dist/', import.meta.url);
+const SITEMAP_FILE = new URL('sitemap-0.xml', DIST);
 
 interface GraphNode {
   '@type': string;
@@ -277,6 +278,24 @@ test.describe('SEO de toutes les pages', { tag: '@desktop' }, () => {
       expect(types.slice(3).sort(), `${path} : types JSON-LD`).toEqual(
         expectedPageTypes(path).sort(),
       );
+    }
+  });
+
+  test('og:image de chaque page : JPEG 1200 × 630 présent dans dist, absolu, avec texte alternatif', async () => {
+    for (const path of await sitemapPaths()) {
+      const html = await readFile(new URL(`.${path}index.html`, DIST), 'utf8');
+      const meta = (property: string): string =>
+        new RegExp(`<meta property="${property}" content="([^"]*)"`).exec(html)?.[1] ?? '';
+      const ogImage = meta('og:image');
+      expect(ogImage.startsWith(`${SITE_ORIGIN}/_astro/`), `${path} : og:image absolue`).toBe(true);
+      expect(meta('og:image:width'), `${path} : og:image:width`).toBe('1200');
+      expect(meta('og:image:height'), `${path} : og:image:height`).toBe('630');
+      expect(meta('og:image:alt'), `${path} : og:image:alt`).toMatch(/\S/);
+      const file = await readFile(new URL(`.${new URL(ogImage).pathname}`, DIST));
+      expect(readJpegSize(file), `${path} : dimensions réelles de ${ogImage}`).toEqual({
+        width: 1200,
+        height: 630,
+      });
     }
   });
 

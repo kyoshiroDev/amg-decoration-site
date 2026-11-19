@@ -109,16 +109,20 @@ export interface ArticlesIndexModel {
   readonly cta: PageSection;
   readonly articles: readonly ArticleCardData[];
   readonly breadcrumbs: readonly BreadcrumbItem[];
+  /** Image Open Graph : couverture de la première carte affichée (image par défaut si aucune). */
+  readonly ogImage?: Figure | undefined;
 }
 
 export function buildArticlesIndexModel(input: ArticlesIndexInput): ArticlesIndexModel {
+  const articles = selectPublishedArticles(input.articles).map((entry) =>
+    toArticleCard(entry, input.readingTemplate),
+  );
   return {
     seo: input.page.seo,
     hero: input.page.hero,
     cta: requireSection(input.page.sections, 'cta', 'conseils-deco'),
-    articles: selectPublishedArticles(input.articles).map((entry) =>
-      toArticleCard(entry, input.readingTemplate),
-    ),
+    articles,
+    ogImage: articles[0]?.cover,
     breadcrumbs: [
       { label: input.labels.home, href: '/' },
       { label: input.labels.indexLabel, href: '/conseils-deco/' },

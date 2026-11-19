@@ -114,6 +114,30 @@ describe('buildProjectsIndexModel', () => {
     expect(model.breadcrumbs.at(-1)).toEqual({ label: 'Réalisations', href: '/realisations/' });
   });
 
+  it('prend la couverture de la première carte comme image Open Graph', () => {
+    const second = { src: '/y.jpg', width: 1600, height: 1200, format: 'jpg' } as ImageMetadata;
+    const model = buildProjectsIndexModel({
+      page,
+      projets: [
+        project('b', 2, { cover: { image: second, alt: 'Cuisine' } }),
+        project('a', 1, { cover: { image, alt: 'Salon lumineux' } }),
+      ],
+      roomTypeLabels: roomTypes,
+      labels: { home: 'Accueil', indexLabel: 'Réalisations' },
+    });
+    expect(model.ogImage).toEqual({ image, alt: 'Salon lumineux' });
+  });
+
+  it('n’a pas d’image Open Graph propre sans réalisation (image par défaut)', () => {
+    const model = buildProjectsIndexModel({
+      page,
+      projets: [],
+      roomTypeLabels: roomTypes,
+      labels: { home: 'Accueil', indexLabel: 'Réalisations' },
+    });
+    expect(model.ogImage).toBeUndefined();
+  });
+
   it('échoue si la section cta manque', () => {
     expect(() =>
       buildProjectsIndexModel({

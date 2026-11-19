@@ -73,6 +73,8 @@ export interface ProjectsIndexModel {
   /** Types de pièce présents, dans l'ordre des libellés ; vide s'il n'y a rien à filtrer. */
   readonly filters: readonly FilterOption[];
   readonly breadcrumbs: readonly BreadcrumbItem[];
+  /** Image Open Graph : couverture de la première carte affichée (image par défaut si aucune). */
+  readonly ogImage?: Figure | undefined;
 }
 
 const INDEX_PAGE_ID = 'realisations';
@@ -109,6 +111,7 @@ export function buildProjectsIndexModel(input: ProjectsIndexInput): ProjectsInde
       { label: input.labels.home, href: '/' },
       { label: input.labels.indexLabel, href: '/realisations/' },
     ],
+    ogImage: projects[0] && { image: projects[0].image, alt: projects[0].alt },
   };
 }
 

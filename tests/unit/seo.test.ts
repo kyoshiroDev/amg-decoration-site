@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   SeoValidationError,
   assertDescriptionLength,
+  assertOgImageSource,
   buildArticleMetaTags,
   buildCanonicalUrl,
   buildPageTitle,
@@ -155,5 +156,23 @@ describe('buildArticleMetaTags', () => {
       { property: 'article:tag', content: 'Plan 3D' },
       { property: 'article:tag', content: 'Rénovation' },
     ]);
+  });
+});
+
+describe('assertOgImageSource', () => {
+  const target = { width: 1200, height: 630 } as const;
+
+  it('accepte une source au moins aussi grande que l’image OG, dans les deux dimensions', () => {
+    expect(() => assertOgImageSource({ width: 1200, height: 630 }, target)).not.toThrow();
+    expect(() => assertOgImageSource({ width: 1600, height: 2000 }, target)).not.toThrow();
+  });
+
+  it('refuse une source trop étroite ou trop basse (sharp ne l’agrandirait pas)', () => {
+    expect(() => assertOgImageSource({ width: 1199, height: 2000 }, target)).toThrow(
+      SeoValidationError,
+    );
+    expect(() => assertOgImageSource({ width: 2000, height: 629 }, target)).toThrow(
+      SeoValidationError,
+    );
   });
 });

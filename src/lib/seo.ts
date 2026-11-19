@@ -122,3 +122,21 @@ export function buildArticleMetaTags(article: OpenGraphArticle): MetaProperty[] 
     ...(article.tags ?? []).map((tag) => ({ property: 'article:tag', content: tag })),
   ];
 }
+
+export interface ImageSize {
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * Vérifie qu'une image source peut produire l'image Open Graph sans être agrandie : le service
+ * sharp d'Astro redimensionne avec `withoutEnlargement`, une source plus petite donnerait une
+ * image OG plus petite que les dimensions annoncées dans `og:image:width` / `og:image:height`.
+ */
+export function assertOgImageSource(source: ImageSize, target: ImageSize): void {
+  if (source.width < target.width || source.height < target.height) {
+    throw new SeoValidationError(
+      `Image Open Graph trop petite (${source.width} × ${source.height} px, minimum ${target.width} × ${target.height} px)\u00A0: fournir une source plus grande.`,
+    );
+  }
+}

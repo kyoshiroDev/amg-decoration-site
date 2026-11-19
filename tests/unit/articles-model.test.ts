@@ -127,6 +127,33 @@ describe('buildArticlesIndexModel', () => {
     expect(model.articles.map((card) => card.slug)).toEqual(['a']);
     expect(model.breadcrumbs.at(-1)?.href).toBe('/conseils-deco/');
   });
+
+  it('prend la couverture du premier article publié comme image Open Graph', () => {
+    const recent = { src: '/r.jpg', width: 1600, height: 1200, format: 'jpg' } as ImageMetadata;
+    const page = {
+      seo: { title: 'Conseils', description: 'Description' },
+      hero: section('Conseils déco'),
+      sections: { cta: section('Envie d’aller plus loin ?') },
+    };
+    const model = buildArticlesIndexModel({
+      page,
+      articles: [
+        article('ancien', '2026-01-10'),
+        article('recent', '2026-11-18', { cover: { image: recent, alt: 'Studio en 3D' } }),
+        article('brouillon', '2026-12-01', { draft: true }),
+      ],
+      readingTemplate: READING,
+      labels: { home: 'Accueil', indexLabel: 'Conseils déco' },
+    });
+    expect(model.ogImage).toEqual({ image: recent, alt: 'Studio en 3D' });
+    const empty = buildArticlesIndexModel({
+      page,
+      articles: [],
+      readingTemplate: READING,
+      labels: { home: 'Accueil', indexLabel: 'Conseils déco' },
+    });
+    expect(empty.ogImage).toBeUndefined();
+  });
 });
 
 describe('buildFurtherReading', () => {

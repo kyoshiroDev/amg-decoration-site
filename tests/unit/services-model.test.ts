@@ -1,3 +1,4 @@
+import type { ImageMetadata } from 'astro';
 import { describe, expect, it } from 'vitest';
 import { ContentError } from '@/lib/content';
 import {
@@ -108,6 +109,16 @@ describe('buildServiceDetailModel', () => {
     const offer = buildServiceDetailModel({ ...input(), slug: 'pro' });
     expect(offer.others.map((card) => card.slug)).toEqual(['essentiel', 'confort', 'studio']);
     expect(offer.facts.includes).toEqual(['1 visuel 4K']);
+  });
+
+  it('expose le visuel de la prestation s’il existe (image Open Graph), sinon rien', () => {
+    const image = { src: '/c.jpg', width: 1600, height: 1200, format: 'jpg' } as ImageMetadata;
+    const cover = { image, alt: 'Salon en rendu 3D' };
+    const withCover = input({
+      prestations: [entry('confort', 2, { cover }), entry('essentiel', 1)],
+    });
+    expect(buildServiceDetailModel({ ...withCover, slug: 'confort' }).cover).toEqual(cover);
+    expect(buildServiceDetailModel({ ...withCover, slug: 'essentiel' }).cover).toBeUndefined();
   });
 
   it('échoue sur un slug inconnu', () => {

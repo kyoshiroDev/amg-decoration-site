@@ -107,3 +107,32 @@ export async function menuToggleExpanded(page: Page): Promise<boolean | undefine
     await session.detach();
   }
 }
+
+/** Marqueurs JPEG « Start Of Frame » (SOF0 à SOF15, hors DHT C4, JPG C8 et DAC CC). */
+const JPEG_SOF_MARKERS = new Set([
+  0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf,
+]);
+
+/**
+ * Dimensions d'un JPEG lues dans son en-tête (segment SOF), sans dépendance : parcourt les
+ * segments à partir du marqueur SOI jusqu'au premier SOF (baseline ou progressif).
+ */
+export function readJpegSize(bytes: Uint8Array): { width: number; height: number } {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (view.getUint16(0) !== 0xffd8) throw new Error('Fichier non JPEG (marqueur SOI absent)');
+  let offset = 2;
+  while (offset + 4 <= view.byteLength) {
+    if (view.getUint8(offset) !== 0xff) throw new Error(`JPEG invalide à l'octet ${offset}`);
+    const marker = view.getUint8(offset + 1);
+    if (marker === 0xff) {
+      offset += 1; // octet de remplissage
+      continue;
+    }
+    const length = view.getUint16(offset + 2);
+    if (JPEG_SOF_MARKERS.has(marker)) {
+      return { height: view.getUint16(offset + 5), width: view.getUint16(offset + 7) };
+    }
+    offset += 2 + length;
+  }
+  throw new Error('Segment SOF introuvable dans le JPEG');
+}

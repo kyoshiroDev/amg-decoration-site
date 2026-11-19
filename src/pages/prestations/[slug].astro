@@ -23,6 +23,8 @@ const origin = Astro.site ?? Astro.url;
 <PageLayout
   title={model.seo.title}
   description={model.seo.description}
+  image={model.cover?.image}
+  imageAlt={model.cover?.alt}
   breadcrumbs={model.breadcrumbs}
   jsonLd={[buildService(model.service, site.areaServed, origin)]}
 >
