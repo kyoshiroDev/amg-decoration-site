@@ -2,7 +2,8 @@
 /**
  * Heading — titre sémantique.
  * `level` fixe la balise (h1–h6, hiérarchie sans saut) ; `size` fixe la taille visuelle,
- * indépendamment. Mettre en <em> les mots émotionnels : ils passent en italique terracotta.
+ * indépendamment. `as="p"` : même apparence sans balise de titre (intitulé sans contenu
+ * dessous, qui encombrerait la navigation par titres). Mettre en <em> les mots émotionnels : ils passent en italique terracotta.
  */
 type Level = 1 | 2 | 3 | 4 | 5 | 6;
 type Size = 'display' | 'xl' | 'lg' | 'md' | 'sm' | 'xs';
@@ -14,6 +15,8 @@ interface Props {
   id?: string | undefined;
   align?: 'start' | 'center';
   class?: string | undefined;
+  /** Rendu en <p> (apparence de titre, sans sémantique de titre). */
+  as?: 'p' | undefined;
 }
 
 const defaultSize: Record<Level, Size> = {
@@ -25,8 +28,8 @@ const defaultSize: Record<Level, Size> = {
   6: 'xs',
 };
 
-const { level, size, id, align = 'start', class: className } = Astro.props;
-const Tag = `h${level}` as const;
+const { level, size, id, align = 'start', class: className, as } = Astro.props;
+const Tag = as ?? (`h${level}` as const);
 const visualSize = size ?? defaultSize[level];
 ---
 

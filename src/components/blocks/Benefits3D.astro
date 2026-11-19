@@ -26,7 +26,8 @@ const { section, benefits, id, background = 'blush', variant = 'full' } = Astro.
     {benefits.map((benefit) => (
       <li class="benefits__item" data-reveal>
         <span class="benefits__arch" aria-hidden="true" />
-        <Heading level={3} size="sm">
+        {/* Résumé : intitulés en <p>, pas 8 h3 vides. */}
+        <Heading level={3} size="sm" as={variant === 'summary' ? 'p' : undefined}>
           {benefit.title}
         </Heading>
         {variant === 'full' && <p class="benefits__text">{benefit.text}</p>}

@@ -30,7 +30,13 @@ const { section, steps, id, background = 'sage', variant = 'full' } = Astro.prop
         <span class="process-steps__number" aria-hidden="true">
           {formatStepNumber(index)}
         </span>
-        <Heading level={3} size="md" class="process-steps__title">
+        {/* Résumé : intitulés en <p>, pas 6 h3 vides ; la liste ordonnée porte la structure. */}
+        <Heading
+          level={3}
+          size="md"
+          class="process-steps__title"
+          as={variant === 'summary' ? 'p' : undefined}
+        >
           {step.title}
         </Heading>
         {variant === 'full' && <p class="process-steps__text">{step.text}</p>}
