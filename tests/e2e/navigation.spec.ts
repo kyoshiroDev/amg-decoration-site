@@ -329,3 +329,14 @@ test.describe('Pied de page', () => {
     ).toHaveAttribute('id', 'pied-navigation');
   });
 });
+
+test.describe('Page 404', () => {
+  test('sorties vers les réalisations, les prestations et le contact', async ({ page }) => {
+    const response = await page.goto(NOT_FOUND_PATH);
+    expect(response?.status()).toBe(404);
+    const hrefs = await page
+      .locator('main a')
+      .evaluateAll((anchors) => anchors.map((a) => a.getAttribute('href')));
+    expect(hrefs).toEqual(expect.arrayContaining(['/realisations/', '/prestations/', '/contact/']));
+  });
+});
