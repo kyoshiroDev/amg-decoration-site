@@ -6,7 +6,7 @@
 
 1. **Statique d'abord** : tout est pré-rendu au build. Zéro serveur, zéro base de données.
 2. **Contenu séparé du code** : les textes vivent dans `src/content/` (Markdown/YAML validés par Zod) ; les infos de l'entreprise dans `src/config/site.ts`.
-3. **Couches** : `pages` (routes) → `layouts` (squelette + SEO) → `blocks` (sections) → `ui` (atomes). `lib/` est transverse et pur, à deux exceptions documentées : les lecteurs de collections `lib/pages/*.ts` (`getCollection`) et `lib/article-files.ts` (lecture du disque pour `astro.config.mjs` et les tests).
+3. **Couches** : `pages` (routes) → `layouts` (squelette + SEO) → `blocks` (sections) → `ui` (atomes). `lib/` est transverse et pur, à deux exceptions documentées : les lecteurs de collections `lib/pages/<page>.ts` (I/O Astro, ADR-0014) et `lib/article-files.ts` (lecture du disque pour `astro.config.mjs` et les tests).
 4. **Progressive enhancement** : le HTML/CSS fonctionne seul ; le JS (`src/scripts/`) n'ajoute que de l'agrément.
 
 ## Styleguide interne
@@ -16,18 +16,50 @@
 ## Flux de données
 
 ```
-src/config/site.ts ──────┐
-src/config/microcopy.ts ─┼──> layouts/BaseLayout.astro ──> components/seo/SEO.astro + JsonLd.astro
-src/lib/jsonld.ts ───────┘                │            └─> components/layout/* (SkipLink, Header, Footer)
-                                      ▼
-src/content/** ──(getEntry / getCollection)──> pages/*.astro ──> components/blocks/* ──> components/ui/*
-       ▲                                            │
-src/content.config.ts (schémas Zod 4)        src/lib/content.ts (tri, filtres, requireEntry)
+src/content/**  (validé par src/content.config.ts, schémas Zod 4)
+      │  getEntry / getCollection / render / getImage
+      ▼
+src/lib/pages/<page>.ts ──────── LECTEUR (I/O Astro) : lit les collections, src/config/site.ts
+      │                          et microcopy.ts, reçoit l'origine du site, assemble le JSON-LD
+      │  entrées brutes + libellés
+      ▼
+src/lib/pages/<page>-model.ts ── MODÈLE PUR : tri, filtres, sections obligatoires, cartes,
+      │                          fil d'Ariane (testé dans tests/unit/*-model.test.ts)
+      │  { ...modèle, jsonLd }
+      ▼
+src/pages/<route>.astro ──────── assemblage : requireSiteOrigin(Astro.site) → getXxxData(origin)
+      │                          ou getStaticPaths = getXxxPaths
+      ▼
+src/layouts/*Layout.astro ────── BaseLayout : SEO.astro + JsonLd.astro (@graph global + jsonLd de la page)
+      │                          PageLayout : fil d'Ariane + BreadcrumbList
+      ▼
+src/components/blocks/* ──> src/components/ui/*
 ```
+
+`src/config/site.ts` (NAP, navigation) et `src/config/media.ts` (visuels de mise en page) sont lus directement par les layouts, `layout/*` et les pages ; `src/lib/jsonld.ts`, `seo.ts`, `url.ts` sont des fonctions pures appelées par les lecteurs et les layouts. L'origine du site vient toujours de `site` (`astro.config.mjs`) par `requireSiteOrigin` (`src/lib/url.ts`) : `Astro.site` dans un composant, `site` dans le contexte d'un endpoint, `import.meta.env.SITE` dans un `getStaticPaths` (où `Astro.site` n'existe pas). Son absence fait échouer le build ; aucun repli sur `Astro.url`.
+
+### Données des pages : lecteur / modèle
+
+Chaque page a deux fichiers dans `src/lib/pages/` (ADR-0014) :
+
+| Fichier           | Rôle                                                                                                                                                                                                                                                                | Testé                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `<page>.ts`       | **Lecteur** : seul point d'accès aux collections pour la page (`getEntry`, `getCollection`, `render`, `getImage`). Passe les entrées brutes et les libellés au modèle, puis ajoute le JSON-LD (`WithJsonLd<Model>`) ou fournit `getStaticPaths` (`get<Page>Paths`). | non (I/O Astro, couvert par l'e2e)      |
+| `<page>-model.ts` | **Modèle** : fonction pure `build<Page>Model(input)`, sans import Astro à l'exécution (types seulement). Lit les sections obligatoires, trie, filtre, construit les cartes et le fil d'Ariane.                                                                      | oui (`tests/unit/<page>-model.test.ts`) |
+
+Briques partagées :
+
+- `types.ts` : types de données de page (`PageData`, `PageSection`, `PageAction`, `QuoteData`) et `WithJsonLd<T>` (modèle + nœuds schema.org passés à la prop `jsonLd` des layouts). Import de type uniquement.
+- `sections.ts` : `readSections(sections, KEYS, pageId)` lit d'un coup les sections obligatoires déclarées par un tableau `<PAGE>_SECTION_KEYS` et renvoie un objet typé par ces clés.
+- `breadcrumb-trail.ts` : `breadcrumbTrail(homeLabel, ...items)`, fil d'Ariane depuis l'accueil (même tableau pour le composant `Breadcrumbs` et le `BreadcrumbList`).
+- `page.ts` : `getPageData(id)`, lecteur générique d'une entrée `pages` (404, styleguide, pages simples).
+- `ContentError` (`src/lib/content.ts`) : erreur levée par `requireEntry`, `requireSection` et les modèles quand un contenu attendu manque ; elle fait échouer le build avec le fichier et la clé en cause.
+
+Une page ne fait donc qu'un appel (`getXxxData(origin)` ou `getStaticPaths = getXxxPaths`) et passe le résultat aux blocs. Ajouter une page : déclarer ses sections dans `src/content/pages/<page>.md`, écrire `<page>-model.ts` et son test, puis le lecteur `<page>.ts`.
 
 ### Fichiers pour les robots (endpoints statiques)
 
-Les fichiers texte destinés aux robots sont des **endpoints statiques** `src/pages/<nom>.txt.ts` (`export const GET: APIRoute`), pré-rendus au build dans `dist/<nom>.txt`. Ils ne contiennent aucune logique : le contenu est produit par les fonctions pures de `src/lib/crawlers.ts` (testées dans `tests/unit/crawlers.test.ts`) ; l'URL absolue vient de `site` (`astro.config.mjs`), dont l'absence fait échouer le build. Décisions : ADR-0011.
+Les fichiers texte destinés aux robots sont des **endpoints statiques** `src/pages/<nom>.txt.ts` (`export const GET: APIRoute`), pré-rendus au build dans `dist/<nom>.txt`. Ils ne contiennent aucune logique : le contenu est produit par les fonctions pures de `src/lib/crawlers.ts` (testées dans `tests/unit/crawlers.test.ts`) ; l'URL absolue vient de `site` (`astro.config.mjs`) par `requireSiteOrigin`, dont l'échec fait échouer le build. Décisions : ADR-0011.
 
 | Endpoint                  | Fonction                                                 | Contenu                                                                                      |
 | ------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
@@ -38,11 +70,12 @@ Même mécanisme pour le **sprite d'icônes** `src/pages/icons.[version].svg.ts`
 
 ### Configuration (`src/config/`)
 
-| Fichier        | Contenu                                                                                                                        |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `site.ts`      | Source de vérité unique : nom, NAP, horaires, zone, réseaux, `mainNav`, `headerCta`, `legalNav`, `pricing.showPrices`.         |
-| `microcopy.ts` | Tous les libellés d'interface : lien d'évitement, `aria-label` des navigations, menu mobile, titres et textes du pied de page. |
-| `seo.ts`       | Valeurs SEO par défaut et image OG (réservé aux composants : importe une image).                                               |
+| Fichier        | Contenu                                                                                                                                     |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `site.ts`      | Source de vérité unique : nom, NAP, horaires, zone, réseaux, `mainNav`, `headerCta`, `legalNav`, `pricing.showPrices`.                      |
+| `microcopy.ts` | Tous les libellés d'interface : lien d'évitement, `aria-label` des navigations, menu mobile, titres et textes du pied de page.              |
+| `seo.ts`       | Valeurs SEO par défaut et image OG (réservé aux composants : importe une image).                                                            |
+| `media.ts`     | Visuels de mise en page hors contenu : héros de l'accueil et de « Visualisation 3D », portrait (importe des images : jamais lu par `lib/`). |
 
 Aucun composant n'écrit de texte en dur : il lit l'un de ces modules ou reçoit le texte en prop. Les textes éditoriaux (y compris ceux des pages techniques : 404, styleguide) vivent dans `src/content/` (§ Collections).
 
@@ -74,7 +107,7 @@ Schémas dans `src/content.config.ts` (Content Layer API d'Astro 7, `z` importé
 - **Pages où afficher** (`pages[]` des témoignages et de la FAQ) : `accueil`, `prestations`, `visualisation-3d`, `realisations`, `a-propos`, `contact`.
 - **Section de page** : `eyebrow?`, `heading`, `headingEmphasis?` (fragment exact de `heading`, mis en italique), `lead?`, `items[{title, text?}]`, `quote?{text, author}`, `actions[]` (3 au plus), `links?[]` (1 à 6 liens de maillage `{label, href}` rendus en cartes « Pour aller plus loin » par `resolveFurtherLinks`, `src/lib/pages/further-links.ts` : `label` = surtitre, titre et texte lus dans l'article publié, la prestation ou la réalisation visée ; une cible inconnue ou un brouillon fait échouer le build). La route lit chaque section par sa clé avec `requireSection` : une section manquante fait échouer le build au lieu de publier une page amputée.
 - **Prix** : stockés quand ils sont publics, affichés seulement si `site.pricing.showPrices` vaut `true`, **jamais** en JSON-LD (`Offer`) tant qu'Amandine ne les a pas confirmés (ADR-0007).
-- **Lecture dans une route** : `requireEntry(await getEntry('pages', 'accueil'), 'pages', 'accueil')` (pas de `!`), puis `sortByOrder`, `filterPublished` (articles) et `filterByPage` (témoignages, FAQ) de `src/lib/content.ts`.
+- **Lecture des collections** : jamais dans une route. Le lecteur `src/lib/pages/<page>.ts` appelle `requireEntry(await getEntry('pages', id), 'pages', id)` (pas de `!`) ou `getPageData(id)` ; le modèle pur applique `sortByOrder`, `filterPublished` (articles) et `filterByPage` (témoignages, FAQ) de `src/lib/content.ts` et lit les sections avec `readSections` (§ Données des pages).
 
 ### Nommage des fichiers
 
@@ -122,7 +155,7 @@ JavaScript vanilla, chargé par un `<script>` Astro dans le composant qui en a b
 | `contact-form.ts`   | `ContactForm` (`/contact/`)     | Validation et envoi `fetch`, repli HTML sans JS                                                                                                                                                       | 1,4 Ko       |
 | _prefetch d'Astro_  | toutes                          | Préchargement au survol                                                                                                                                                                               | 1,1 Ko       |
 
-Poids total mesuré par page (gzip, fin de Phase 5, hors script inline de 0,15 Ko) : 2,7 Ko sur la plupart des pages, 3,0 Ko sur l'accueil, 3,1 Ko sur `/realisations/`, 3,6 Ko sur les pages projet, 4,0 Ko sur `/contact/`, 4,8 Ko sur `/styleguide/` (tous les scripts). Budget : 30 Ko.
+Poids total mesuré par page (gzip, audit performance de la Phase 7, hors script inline de 153 octets) : 2,8 Ko sur les pages simples, 3,2 Ko sur l'accueil, 3,9 Ko sur les fiches projet, 4,2 Ko sur `/contact/`, 5,1 Ko sur `/styleguide/` (tous les scripts). Budget : 30 Ko.
 
 - Interdits : `console.*`, écouteur `scroll` (préférer IntersectionObserver), état d'animation présent dans le HTML initial (il est posé par le script, ou par du CSS sous `.js`).
 
