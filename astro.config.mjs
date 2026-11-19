@@ -1,14 +1,23 @@
 // @ts-check
 import { defineConfig, fontProviders } from 'astro/config';
+import { loadEnv } from 'vite';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import { readArticleSources } from './src/lib/article-files.ts';
 import { buildLastmodMap } from './src/lib/sitemap-lastmod.ts';
+import { cspDirectives, INLINE_SCRIPT_HASHES } from './src/lib/csp.ts';
 
 const SITE = 'https://amgdecorationdinterieur.com';
 
 // `lastmod` du sitemap : dates réelles des articles seulement (src/lib/sitemap-lastmod.ts).
 const lastmod = buildLastmodMap(readArticleSources(), SITE);
+
+// Service de formulaire (ADR-0003) : lu comme Vite le lira (`process.env`, puis fichiers `.env`),
+// pour autoriser son origine dans la CSP.
+const { PUBLIC_FORM_ENDPOINT } = {
+  ...loadEnv(process.env['NODE_ENV'] ?? 'production', process.cwd(), 'PUBLIC_'),
+  ...process.env,
+};
 
 // Configuration Astro — voir docs/ARCHITECTURE.md (§ Configuration).
 export default defineConfig({
@@ -17,6 +26,21 @@ export default defineConfig({
   trailingSlash: 'always',
   build: {
     format: 'directory',
+  },
+  // Content-Security-Policy en balise meta, empreintes calculées au build (ADR-0012).
+  security: {
+    csp: {
+      algorithm: 'SHA-256',
+      directives: cspDirectives(PUBLIC_FORM_ENDPOINT),
+      scriptDirective: {
+        // Scripts `is:inline` : Astro ne les hache pas (ADR-0010).
+        hashes: [...INLINE_SCRIPT_HASHES],
+      },
+      styleDirective: {
+        // Attributs `style` (variables CSS posées par les composants) : voir ADR-0012.
+        resources: ["'self'", { resource: "'unsafe-inline'", kind: 'attribute' }],
+      },
+    },
   },
   prefetch: {
     prefetchAll: false,

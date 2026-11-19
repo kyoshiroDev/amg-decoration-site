@@ -42,9 +42,9 @@ Claude enchaîne les 9 phases de `docs/ROADMAP.md`. À chaque phase : il code, f
 
 ## Variables d’environnement
 
-| Variable               | Obligatoire | Rôle                                                                                                                                                                                       |
-| ---------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `PUBLIC_FORM_ENDPOINT` | non         | URL **https** du service de formulaire (ADR-0003, Formspark recommandé). Lue au build. Absente : le formulaire de contact se replie sur un `mailto:` vers l’email de `src/config/site.ts`. |
+| Variable               | Obligatoire | Rôle                                                                                                                                                                                                                                                                                                                    |
+| ---------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PUBLIC_FORM_ENDPOINT` | non         | URL **https** du service de formulaire (ADR-0003, Formspark recommandé). Lue au build. Absente : le formulaire de contact se replie sur un `mailto:` vers l’email de `src/config/site.ts`. Son origine est autorisée dans la CSP (`connect-src`, `form-action`, ADR-0012) : changer de service impose un nouveau build. |
 
 À définir dans Vercel (_Settings → Environment Variables_) pour Production et Preview. En local, un fichier `.env` (ignoré par git) suffit : `PUBLIC_FORM_ENDPOINT=https://…`.
 

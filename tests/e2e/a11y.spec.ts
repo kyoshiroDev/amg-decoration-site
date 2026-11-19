@@ -145,7 +145,20 @@ test.describe('Espacement du texte (1.4.12)', () => {
   for (const path of LONG_PAGES) {
     test(`${path} : aucun débordement avec les espacements WCAG`, async ({ page }) => {
       await page.goto(path);
-      await page.addStyleTag({ content: TEXT_SPACING_CSS });
+      // Feuille construite (CSSOM) plutôt qu'une balise <style> : la CSP bloque tout <style>
+      // sans empreinte, comme elle le ferait pour un script injecté (ADR-0012).
+      await page.evaluate((css) => {
+        const sheet = new CSSStyleSheet();
+        sheet.replaceSync(css);
+        document.adoptedStyleSheets.push(sheet);
+      }, TEXT_SPACING_CSS);
+      // Espacements bien appliqués (0,12 em d'espacement des lettres sur le h1).
+      const h1 = page.getByRole('heading', { level: 1 });
+      const [letterSpacing, fontSize] = await h1.evaluate((el) => {
+        const style = getComputedStyle(el);
+        return [parseFloat(style.letterSpacing), parseFloat(style.fontSize)];
+      });
+      expect(letterSpacing).toBeCloseTo(fontSize * 0.12, 1);
       expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
     });
   }

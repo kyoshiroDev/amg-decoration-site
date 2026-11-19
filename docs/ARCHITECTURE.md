@@ -128,12 +128,14 @@ Poids total mesuré par page (gzip, fin de Phase 5, hors script inline de 0,15 K
 
 - `tests/unit/` (Vitest, `npm run test`) : fonctions pures de `src/lib/`.
 - `tests/e2e/` (Playwright + axe, `npm run test:e2e`, `playwright.config.ts`) : build de production `dist/` servi sur le port 4321, projets mobile (Pixel 7) et desktop. Ce build n'a pas de `PUBLIC_FORM_ENDPOINT` : le formulaire de contact y est en repli `mailto:`.
+- CSP (ADR-0012) : `tests/e2e/csp.spec.ts` vérifie la politique et les empreintes de chaque page et l'absence de violation, au chargement et pendant les interactions ; aucun test n'injecte de balise `<style>` ou `<script>` (CSSOM `adoptedStyleSheets` à la place).
 - `tests/e2e-service/` (`npm run test:e2e:service`, `playwright.service.config.ts`) : formulaire de contact **en mode service** (ADR-0003). Build distinct dans `dist-service/` (ignoré par git, ESLint, Prettier et TypeScript) avec `PUBLIC_FORM_ENDPOINT=https://formulaire.test/envoi` passé par `webServer.env`, servi sur le port 4322, projet desktop seul. Vérifie la destination, la mention d'information du service et le champ piège (`_honeypot` : `tabindex="-1"`, `autocomplete="off"`, conteneur `aria-hidden`, hors tabulation, envoyé vide avec et sans JS). L'endpoint est intercepté, aucune requête externe ne part. En CI, lancé dans le job `e2e` après la suite principale ; rapport HTML dans `playwright-report/service/`.
 
 ## Configuration
 
 - `astro.config.mjs` : `site: 'https://amgdecorationdinterieur.com'`, `trailingSlash: 'always'`, `output: 'static'`, intégrations `sitemap` (filtre des pages `noindex`, `lastmod` des articles lu dans leur frontmatter par `src/lib/article-files.ts` et `src/lib/sitemap-lastmod.ts`, importés sans alias ; les mêmes fichiers donnent les routes d'articles passées à `siteRoutes()`, assemblées dans `tests/site-routes.ts`) (+ `mdx`), `prefetch`, Fonts API, `image` (formats/qualités).
-- `vercel.json` : redirections 301, en-têtes de sécurité (CSP, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`), cache immuable `/_astro/*`.
+- `astro.config.mjs` → `security.csp` : Content-Security-Policy en balise meta, empreintes des scripts et styles calculées au build ; directives et empreintes des scripts `is:inline` fournies par `src/lib/csp.ts`, origine de `PUBLIC_FORM_ENDPOINT` autorisée si elle est définie (ADR-0012).
+- `vercel.json` : redirections 301, en-têtes de sécurité (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, HSTS, `Cross-Origin-Opener-Policy`, `Permissions-Policy`, CSP d'en-tête limitée à `frame-ancestors`/`base-uri`/`object-src`) ; cache immuable `/_astro/*`.
 - `tsconfig.json` : `astro/tsconfigs/strictest` + alias `@/*`.
 
 ## Déploiement

@@ -36,11 +36,11 @@ addEventListener(
 
 ## CSP (Phase 7)
 
-Le script est inline : la future `Content-Security-Policy` devra l'autoriser par son empreinte, jamais par `'unsafe-inline'`.
+Le script est inline : la `Content-Security-Policy` (ADR-0012) l'autorise par son empreinte, jamais par `'unsafe-inline'`.
 
-- Empreinte actuelle : `sha256-oO9dQz2/+Q17QWsmmtXJ9ZNoha86yQvUljQCBOLLu2E=` (170 octets).
-- À déclarer dans `security.csp.scriptDirective.hashes` (configuration Astro) ou dans l'en-tête CSP de `vercel.json`. La documentation d'Astro ne garantit pas que les scripts `is:inline` soient hachés automatiquement : à vérifier sur le build en Phase 7.
-- `tests/unit/inline-scripts.test.ts` vérifie la taille (< 200 octets) et l'empreinte : toute modification du script fait échouer le test, ce qui oblige à mettre à jour cette ADR et la CSP.
+- Empreinte : `sha256-oO9dQz2/+Q17QWsmmtXJ9ZNoha86yQvUljQCBOLLu2E=` (170 octets).
+- Vérifié sur le build (`astro@7.4.12`) : Astro **ne hache pas** les scripts `is:inline`. L'empreinte est calculée par `src/lib/csp.ts` (`INLINE_SCRIPT_HASHES`, à partir de `JS_CLASS_SCRIPT`) et déclarée dans `security.csp.scriptDirective.hashes` (`astro.config.mjs`).
+- `tests/unit/inline-scripts.test.ts` vérifie la taille (< 200 octets) et l'empreinte documentée ici ; `tests/e2e/csp.spec.ts` vérifie que chaque script inline de chaque page a son empreinte dans la politique. Toute modification du script met donc à jour l'empreinte de la CSP automatiquement, et oblige à mettre à jour cette ADR.
 
 ## Alternatives écartées
 
