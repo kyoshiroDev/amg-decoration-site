@@ -2,7 +2,7 @@
  * Apparitions au scroll (docs/DESIGN-SYSTEM.md §5, effets 1 et 2 ; ADR-0013) sur `[data-reveal]`.
  * - Rien en mouvement réduit : le contenu reste tel quel.
  * - Seuls les blocs encore SOUS la ligne de flottaison sont préparés : rien de ce qui est déjà
- *   à l'écran ne disparaît (aucun clignotement, LCP intact).
+ *   à l'écran ne disparaît (aucun clignotement, LCP intact), ni le bloc visé par l'ancre.
  * - Navigateurs qui gèrent `animation-timeline: view()` : état `scroll`, l'apparition suit le
  *   défilement, entièrement en CSS et sur le compositeur (src/styles/motion.css). Aucun
  *   observateur, aucun changement d'état ensuite : c'est ce qui la rend presque gratuite.
@@ -26,10 +26,17 @@ onPageReady((signal) => {
   const observable = 'IntersectionObserver' in window;
 
   const fold = window.innerHeight;
+  // Ancre de l'URL (#avantages-titre) : le navigateur y défile souvent APRÈS ce script. Son
+  // bloc ne doit pas être décalé (translateY) à ce moment-là, sinon le défilement vise la
+  // position décalée et le surtitre finit sous l'en-tête collant.
+  const anchor = window.location.hash
+    ? document.getElementById(decodeURIComponent(window.location.hash.slice(1)))
+    : null;
   const targets = [...document.querySelectorAll<HTMLElement>('[data-reveal]')].filter(
     (element) =>
       !element.dataset['revealState'] &&
       element.getBoundingClientRect().top > fold &&
+      !(anchor && (element.contains(anchor) || anchor.contains(element))) &&
       ((scrollDriven && element.dataset['reveal'] !== 'image') || observable),
   );
   if (targets.length === 0) return;

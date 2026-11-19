@@ -189,3 +189,21 @@ test.describe('Focus non masqué par l’en-tête collant (2.4.11)', () => {
     });
   }
 });
+
+// Mouvement actif : le bloc visé ne doit pas être décalé par une apparition au moment où le
+// navigateur défile vers l'ancre (sinon le défilement vise la position décalée de 20 px).
+test.describe('Ancre d’un titre à surtitre (2.4.11)', () => {
+  test('/visualisation-3d/#avantages-titre : le surtitre reste sous l’en-tête', async ({
+    page,
+  }) => {
+    await page.goto('/visualisation-3d/#avantages-titre');
+    const eyebrow = page.locator('#avantages-titre').locator('xpath=preceding-sibling::p[1]');
+    await expect(eyebrow).toHaveClass(/\beyebrow\b/);
+    // Le défilement vers l'ancre peut survenir après le chargement des polices.
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+    await waitForAnimationsToSettle(page);
+    const header = await page.locator('header').first().boundingBox();
+    const box = await eyebrow.boundingBox();
+    expect(box?.y ?? 0).toBeGreaterThanOrEqual((header?.y ?? 0) + (header?.height ?? 0));
+  });
+});

@@ -28,6 +28,18 @@
     scroll-margin-block-start: calc(var(--header-height) + var(--space-s));
   }
 
+  /*
+   * Titre précédé d'un surtitre (SectionIntro : Eyebrow, gap --space-s, titre) : l'ancre
+   * `#…-titre` vise le titre, la marge réserve aussi la ligne du surtitre, sans quoi il passe
+   * sous l'en-tête collant (ex. /visualisation-3d/#avantages-titre).
+   */
+  :where(main) :where(.eyebrow + *) {
+    scroll-margin-block-start: calc(
+      var(--header-height) + var(--space-s) + var(--text-eyebrow) * var(--leading-ui) +
+        var(--space-s)
+    );
+  }
+
   /* Menu mobile ouvert : la page dessous ne défile plus (sans décalage de barre de défilement). */
   html:has([data-mobile-nav]:popover-open) {
     overflow: hidden;
