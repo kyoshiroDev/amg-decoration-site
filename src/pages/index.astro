@@ -48,9 +48,19 @@ const { sections } = home;
     id="projets-titre"
     background="cream"
   />
-  <ProcessSteps section={sections.methode} steps={home.steps} id="methode-titre" />
+  <ProcessSteps
+    section={sections.methode}
+    steps={home.steps}
+    id="methode-titre"
+    variant="summary"
+  />
   <Quote heading={sections.citation.heading} quote={home.quote} id="citation-titre" />
-  <Benefits3D section={sections.avantages} benefits={home.benefits} id="avantages-titre" />
+  <Benefits3D
+    section={sections.avantages}
+    benefits={home.benefits}
+    id="avantages-titre"
+    variant="summary"
+  />
   <Testimonials
     section={sections.temoignages}
     testimonials={home.testimonials}

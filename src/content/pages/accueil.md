@@ -63,7 +63,7 @@ sections:
     eyebrow: 'Ma méthode'
     heading: 'Votre projet 3D, étape par étape'
     headingEmphasis: 'étape par étape'
-    lead: 'Un déroulé clair, en six étapes, pour avancer en toute sérénité. Je vous accompagne du premier échange à la version finale, par email ou WhatsApp.'
+    lead: 'Six étapes claires, du premier échange à la version finale, par email ou WhatsApp. En voici les grandes lignes.'
     actions:
       - label: 'Découvrir ma méthode 3D'
         href: '/visualisation-3d/'
@@ -76,8 +76,10 @@ sections:
     eyebrow: 'Les avantages de la 3D'
     heading: 'Pourquoi passer par la 3D avant de vous lancer ?'
     headingEmphasis: 'la 3D'
-    lead: 'Volumes, couleurs, ambiance : vous voyez tout avant de vous engager. Vous évitez les erreurs coûteuses et chaque décision devient plus simple.'
+    lead: 'Volumes, couleurs, ambiance : vous voyez tout avant de vous engager. Voici les huit avantages, en un coup d’œil.'
     actions:
+      - label: 'Voir les huit avantages en détail'
+        href: '/visualisation-3d/#avantages-titre'
       - label: 'Lancer mon projet'
         href: '/contact/'
   temoignages:

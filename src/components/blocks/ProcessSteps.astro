@@ -3,6 +3,8 @@
  * ProcessSteps — méthode en étapes (liste ordonnée) : numéro en Fraunces italique géante
  * semi-transparente (décor, aria-hidden : l'ordre est porté par <ol>), titre, texte.
  * 1 colonne → 2 (≥ 48rem) → 3 (≥ 64rem), colonne centrale décalée vers le bas.
+ * `variant="summary"` (accueil) : titres seuls, le détail vit sur /visualisation-3d/ (pas de
+ * contenu dupliqué entre les deux pages).
  */
 import ContentSection from './ContentSection.astro';
 import Heading from '@/components/ui/Heading.astro';
@@ -14,13 +16,15 @@ interface Props {
   steps: readonly TextItemData[];
   id: string;
   background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  /** `full` : titre et texte ; `summary` : titres seuls. */
+  variant?: 'full' | 'summary';
 }
 
-const { section, steps, id, background = 'sage' } = Astro.props;
+const { section, steps, id, background = 'sage', variant = 'full' } = Astro.props;
 ---
 
 <ContentSection section={section} id={id} background={background}>
-  <ol class="process-steps">
+  <ol class:list={['process-steps', `process-steps--${variant}`]}>
     {steps.map((step, index) => (
       <li class="process-steps__item" data-reveal>
         <span class="process-steps__number" aria-hidden="true">
@@ -29,7 +33,7 @@ const { section, steps, id, background = 'sage' } = Astro.props;
         <Heading level={3} size="md" class="process-steps__title">
           {step.title}
         </Heading>
-        <p class="process-steps__text">{step.text}</p>
+        {variant === 'full' && <p class="process-steps__text">{step.text}</p>}
       </li>
     ))}
   </ol>
@@ -85,6 +89,10 @@ const { section, steps, id, background = 'sage' } = Astro.props;
 
     .process-steps__text {
       color: var(--color-text);
+    }
+
+    .process-steps--summary {
+      row-gap: var(--space-l);
     }
   }
 </style>

@@ -2,6 +2,7 @@
 /**
  * Benefits3D — les bénéfices de la 3D : ouverture collante à gauche (mise en page `split`),
  * grille de 2 colonnes à droite, chaque bénéfice coiffé d'une petite arche filaire (décor).
+ * `variant="summary"` (accueil) : titres seuls, le détail vit sur /visualisation-3d/.
  */
 import ContentSection from './ContentSection.astro';
 import Heading from '@/components/ui/Heading.astro';
@@ -13,20 +14,22 @@ interface Props {
   benefits: readonly TextItemData[];
   id: string;
   background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  /** `full` : titre et texte ; `summary` : titres seuls. */
+  variant?: 'full' | 'summary';
 }
 
-const { section, benefits, id, background = 'blush' } = Astro.props;
+const { section, benefits, id, background = 'blush', variant = 'full' } = Astro.props;
 ---
 
 <ContentSection section={section} id={id} background={background} layout="split">
-  <ul class="benefits">
+  <ul class:list={['benefits', `benefits--${variant}`]}>
     {benefits.map((benefit) => (
       <li class="benefits__item" data-reveal>
         <span class="benefits__arch" aria-hidden="true" />
         <Heading level={3} size="sm">
           {benefit.title}
         </Heading>
-        <p class="benefits__text">{benefit.text}</p>
+        {variant === 'full' && <p class="benefits__text">{benefit.text}</p>}
       </li>
     ))}
   </ul>
@@ -64,6 +67,10 @@ const { section, benefits, id, background = 'blush' } = Astro.props;
 
     .benefits__text {
       color: var(--color-text-soft);
+    }
+
+    .benefits--summary {
+      row-gap: var(--space-m);
     }
   }
 </style>

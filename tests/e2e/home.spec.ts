@@ -76,3 +76,23 @@ test.describe('Accueil : contenu', () => {
     );
   });
 });
+
+// Phase 6 : la méthode et les avantages sont détaillés sur /visualisation-3d/ seulement ;
+// l'accueil n'en garde que les titres et renvoie vers la page détaillée (pas de contenu dupliqué).
+test.describe('Accueil : pas de contenu dupliqué avec /visualisation-3d/', () => {
+  test('textes des étapes et des avantages absents de l’accueil, liens vers le détail', async ({
+    page,
+  }) => {
+    await page.goto('/visualisation-3d/');
+    const details = await page.locator('.process-steps__text, .benefits__text').allTextContents();
+    expect(details).toHaveLength(14);
+
+    await page.goto('/');
+    const main = (await page.locator('main').textContent()) ?? '';
+    for (const text of details) expect(main).not.toContain(text.trim());
+    for (const id of ['methode-titre', 'avantages-titre']) {
+      const section = page.locator(`section[aria-labelledby="${id}"]`);
+      await expect(section.locator('a[href^="/visualisation-3d/"]')).toHaveCount(1);
+    }
+  });
+});
