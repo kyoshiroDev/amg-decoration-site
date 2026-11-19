@@ -130,6 +130,7 @@
   --compare-handle-size: 3rem; /* poignée ronde ≥ --tap-target */
   --compare-start: 50%; /* position initiale du curseur (avant interaction) */
   --compare-max: 60rem; /* largeur maximale du comparateur interactif */
+  --compare-divider-width: 2px; /* trait crème du comparateur, bordé de taupe (lisible sur image claire) */
 
   /*
    * Points de rupture (documentaires : les custom properties ne sont pas utilisables

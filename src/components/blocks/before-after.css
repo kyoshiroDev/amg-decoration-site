@@ -95,14 +95,20 @@
     pointer-events: none;
     transform: translateX(var(--compare-pos));
 
+    /*
+     * Trait crème bordé d'un filet taupe de chaque côté (--color-border-control, ≥ 3:1 sur
+     * les fonds clairs) : le crème se lit sur une image sombre, le filet sur une image claire.
+     */
     &::before {
       content: '';
       position: absolute;
       inset-block: 0;
       inset-inline-start: 0;
-      inline-size: var(--border-thin);
+      inline-size: var(--compare-divider-width);
       background-color: var(--color-surface);
-      box-shadow: var(--shadow-soft);
+      box-shadow:
+        0 0 0 var(--border-hairline) var(--color-border-control),
+        var(--shadow-soft);
       translate: -50% 0;
     }
   }
