@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { site } from '@/config/site';
+import { site, type SocialLink } from '@/config/site';
 import {
   buildAboutPage,
   buildAreaServed,
@@ -24,6 +24,8 @@ import {
 } from '@/lib/jsonld';
 
 const origin = new URL('https://amgdecorationdinterieur.com');
+/** Vue élargie (`owner` facultatif) de la configuration littérale. */
+const socials: readonly SocialLink[] = site.socials;
 
 /** Vue « objet JSON » d'un nœud schema-dts, pour inspecter ses propriétés dans les tests. */
 const asJson = <T>(value: unknown): T => JSON.parse(JSON.stringify(value)) as T;
@@ -89,7 +91,7 @@ describe('buildBusiness', () => {
 
   it('reprend les réseaux de l’entreprise dans sameAs, sans les profils personnels', () => {
     expect(business['sameAs']).toEqual(
-      site.socials.filter((s) => s.owner !== 'founder').map((s) => s.url),
+      socials.filter((s) => s.owner !== 'founder').map((s) => s.url),
     );
     expect(business['sameAs']).not.toContain(
       'https://www.linkedin.com/in/amandine-gaury-97a263193/',
