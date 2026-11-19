@@ -97,3 +97,28 @@ export type RobotsDirective = 'index, follow' | 'noindex, nofollow';
 export function buildRobots(noindex: boolean): RobotsDirective {
   return noindex ? 'noindex, nofollow' : 'index, follow';
 }
+
+/** Métadonnées Open Graph d'un article (protocole ogp.me, type `article`). */
+export interface OpenGraphArticle {
+  readonly publishedTime: Date;
+  readonly modifiedTime?: Date | undefined;
+  readonly tags?: readonly string[] | undefined;
+}
+
+export interface MetaProperty {
+  readonly property: string;
+  readonly content: string;
+}
+
+/**
+ * Balises `article:*` (dates ISO 8601, mêmes valeurs que le JSON-LD `BlogPosting`) :
+ * `modified_time` reprend la date de publication à défaut de mise à jour ; un `article:tag` par mot-clé.
+ */
+export function buildArticleMetaTags(article: OpenGraphArticle): MetaProperty[] {
+  const modified = article.modifiedTime ?? article.publishedTime;
+  return [
+    { property: 'article:published_time', content: article.publishedTime.toISOString() },
+    { property: 'article:modified_time', content: modified.toISOString() },
+    ...(article.tags ?? []).map((tag) => ({ property: 'article:tag', content: tag })),
+  ];
+}

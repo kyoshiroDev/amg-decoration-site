@@ -3,7 +3,7 @@
  * ArticleLayout — article « Conseils déco » : fil d'Ariane (PageLayout), en-tête (h1, dates,
  * temps de lecture, couverture), corps MDX (slot, habillé par RichText sur la mesure de
  * lecture), « Pour aller plus loin », appel à l'action vers le contact.
- * SEO : `ogType: 'article'`, JSON-LD `BlogPosting` (image absolue générée par getImage).
+ * SEO : balises Open Graph `article:*` (mêmes dates que le JSON-LD), JSON-LD `BlogPosting` (image absolue générée par getImage).
  */
 import PageLayout from './PageLayout.astro';
 import Section from '@/components/ui/Section.astro';
@@ -45,7 +45,11 @@ const blogPosting = buildBlogPosting(
   description={article.seo.description}
   image={article.cover.image}
   imageAlt={article.cover.alt}
-  ogType="article"
+  article={{
+    publishedTime: article.publishedAt,
+    modifiedTime: article.updatedAt,
+    tags: article.tags,
+  }}
   breadcrumbs={article.breadcrumbs}
   jsonLd={[blogPosting]}
 >

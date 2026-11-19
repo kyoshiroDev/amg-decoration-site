@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   SeoValidationError,
   assertDescriptionLength,
+  buildArticleMetaTags,
   buildCanonicalUrl,
   buildPageTitle,
   buildRobots,
@@ -128,5 +129,31 @@ describe('isDescriptionLengthValid', () => {
 
   it('ignore les espaces de bord', () => {
     expect(isDescriptionLengthValid(`  ${'a'.repeat(139)}  `, range)).toBe(false);
+  });
+});
+
+describe('buildArticleMetaTags', () => {
+  const publishedTime = new Date('2026-11-17T00:00:00Z');
+
+  it('publie les dates en ISO 8601 et reprend la publication à défaut de mise à jour', () => {
+    expect(buildArticleMetaTags({ publishedTime })).toEqual([
+      { property: 'article:published_time', content: '2026-11-17T00:00:00.000Z' },
+      { property: 'article:modified_time', content: '2026-11-17T00:00:00.000Z' },
+    ]);
+  });
+
+  it('publie la date de mise à jour et un article:tag par mot-clé, dans l’ordre', () => {
+    expect(
+      buildArticleMetaTags({
+        publishedTime,
+        modifiedTime: new Date('2026-11-20T00:00:00Z'),
+        tags: ['Plan 3D', 'Rénovation'],
+      }),
+    ).toEqual([
+      { property: 'article:published_time', content: '2026-11-17T00:00:00.000Z' },
+      { property: 'article:modified_time', content: '2026-11-20T00:00:00.000Z' },
+      { property: 'article:tag', content: 'Plan 3D' },
+      { property: 'article:tag', content: 'Rénovation' },
+    ]);
   });
 });

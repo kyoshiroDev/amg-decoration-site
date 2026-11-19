@@ -280,6 +280,29 @@ test.describe('SEO de toutes les pages', { tag: '@desktop' }, () => {
     }
   });
 
+  test('balises article:* sur les articles seulement, aux dates du JSON-LD BlogPosting', async ({
+    page,
+  }) => {
+    for (const path of await sitemapPaths()) {
+      await page.goto(path, { waitUntil: 'domcontentloaded' });
+      const articleMeta = page.locator('meta[property^="article:"]');
+      const isArticle = path.startsWith('/conseils-deco/') && path !== '/conseils-deco/';
+      if (!isArticle) {
+        await expect(articleMeta, `${path} : aucune balise article:*`).toHaveCount(0);
+        continue;
+      }
+      const posting = nodeOfType(await readGraph(page), 'BlogPosting');
+      await expect(page.locator('meta[property="article:published_time"]')).toHaveAttribute(
+        'content',
+        String(posting['datePublished']),
+      );
+      await expect(page.locator('meta[property="article:modified_time"]')).toHaveAttribute(
+        'content',
+        String(posting['dateModified']),
+      );
+    }
+  });
+
   test('BreadcrumbList identique au fil d’Ariane visible sur chaque page interne', async ({
     page,
   }) => {
