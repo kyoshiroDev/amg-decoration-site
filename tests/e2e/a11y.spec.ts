@@ -207,3 +207,48 @@ test.describe('Ancre d’un titre à surtitre (2.4.11)', () => {
     expect(box?.y ?? 0).toBeGreaterThanOrEqual((header?.y ?? 0) + (header?.height ?? 0));
   });
 });
+
+const ASIDE = '.prose-layout__aside, .contact-layout__aside';
+
+// Colonne latérale collante plus haute que la fenêtre (sommaire des CGS, « En bref » d'une
+// prestation, coordonnées de la page Contact) : sur un écran bas ou zoomé, sa fin restait hors écran pendant toute la lecture
+// et un lien focalisé au clavier y était invisible. Elle défile désormais en elle-même.
+test.describe(
+  'Colonne latérale collante sur écran bas (2.4.7, 2.4.11)',
+  { tag: '@desktop' },
+  () => {
+    test.use({ reducedMotion: 'reduce', viewport: { width: 1280, height: 600 } });
+
+    for (const path of ['/conditions-generales/', '/prestations/meuble-sur-mesure/', '/contact/']) {
+      test(`${path} : chaque lien de la colonne reste visible au clavier`, async ({ page }) => {
+        await page.goto(path);
+        const aside = page.locator(ASIDE);
+        const links = aside.locator('a[href], button');
+        const count = await links.count();
+        expect(count).toBeGreaterThan(0);
+        await page.locator('main a').first().focus();
+        const header = page.locator('header').first();
+        let seen = 0;
+        for (let i = 0; i < 40 && seen < count; i += 1) {
+          await page.keyboard.press('Tab');
+          const box = await page.evaluate((selector) => {
+            const el = document.activeElement;
+            if (!el?.closest(selector)) return null;
+            const { top, bottom } = el.getBoundingClientRect();
+            return { top, bottom, label: el.textContent?.trim().slice(0, 40) ?? '' };
+          }, ASIDE);
+          if (!box) continue;
+          seen += 1;
+          const headerBox = await header.boundingBox();
+          const viewport = page.viewportSize();
+          expect(box.top, box.label).toBeGreaterThanOrEqual(
+            (headerBox?.y ?? 0) + (headerBox?.height ?? 0),
+          );
+          // Tolérance d'un pixel : le navigateur aligne parfois le lien au bord à une fraction près.
+          expect(box.bottom, box.label).toBeLessThanOrEqual((viewport?.height ?? 0) + 1);
+        }
+        expect(seen).toBe(count);
+      });
+    }
+  },
+);

@@ -43,10 +43,21 @@ import Container from '@/components/ui/Container.astro';
       }
     }
 
+    /*
+     * Coordonnées plus hautes que la fenêtre (cas courant sous 1000 px de haut) : la colonne
+     * défile en elle-même, sinon ses derniers liens restaient hors écran pendant la lecture et
+     * invisibles une fois focalisés (WCAG 2.4.7, 2.4.11). Même principe que ProseLayout : la
+     * marge négative compense le retrait, l'anneau de focus n'est pas rogné.
+     */
     .contact-layout__aside {
       @media (width >= 64rem) {
         position: sticky;
-        inset-block-start: calc(var(--header-height-compact) + var(--space-m));
+        inset-block-start: var(--header-height-compact);
+        max-block-size: calc(100dvh - var(--header-height-compact));
+        padding: var(--space-m);
+        margin: calc(var(--space-m) * -1);
+        overflow-y: auto;
+        scroll-padding-block: var(--space-m);
       }
     }
   }

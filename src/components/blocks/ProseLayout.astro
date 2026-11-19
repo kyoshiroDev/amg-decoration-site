@@ -57,11 +57,23 @@ const hasAside = Astro.slots.has('aside');
         gap: var(--space-3xl);
       }
 
+      /*
+       * Colonne plus haute que la fenêtre (sommaire des CGS, « En bref » d'une prestation sur
+       * un écran bas ou zoomé) : elle défile en elle-même, sinon sa fin resterait hors écran
+       * pendant toute la lecture et un lien focalisé au clavier y serait invisible (WCAG 2.4.7,
+       * 2.4.11). Marge négative compensée par un retrait : position du contenu inchangée,
+       * l'ombre portée et l'anneau de focus ne sont pas rognés par le défilement.
+       */
       :global(.prose-layout__grid--aside) > .prose-layout__aside {
         position: sticky;
-        inset-block-start: calc(var(--header-height-compact) + var(--space-m));
+        inset-block-start: var(--header-height-compact);
         grid-column: 2;
         grid-row: 1;
+        max-block-size: calc(100dvh - var(--header-height-compact));
+        padding: var(--space-m);
+        margin: calc(var(--space-m) * -1);
+        overflow-y: auto;
+        scroll-padding-block: var(--space-m);
       }
 
       :global(.prose-layout__grid--aside) > .prose-layout__body {
