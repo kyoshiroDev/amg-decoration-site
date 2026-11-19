@@ -27,11 +27,11 @@ const SIZES = {
 ---
 
 <ContentSection section={section} id={id} background={background}>
-  <ul class="project-grid">
+  <ul class="project-grid" data-reveal="list">
     {projects.map((project, index) => {
       const shape = isWide(index) ? 'wide' : 'arch';
       return (
-        <li class="project-grid__item" data-reveal>
+        <li class="project-grid__item">
           <ProjectCard project={project} shape={shape} sizes={SIZES[shape]} />
         </li>
       );

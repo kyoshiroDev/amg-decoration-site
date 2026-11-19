@@ -19,9 +19,9 @@ const { section, services, id, background = 'sand' } = Astro.props;
 ---
 
 <ContentSection section={section} id={id} background={background}>
-  <ul class="services-grid">
+  <ul class="services-grid" data-reveal="list">
     {services.map((service) => (
-      <li class="services-grid__item" data-reveal>
+      <li class="services-grid__item">
         <ServiceCard service={service} />
       </li>
     ))}

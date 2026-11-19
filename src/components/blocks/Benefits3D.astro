@@ -22,9 +22,9 @@ const { section, benefits, id, background = 'blush', variant = 'full' } = Astro.
 ---
 
 <ContentSection section={section} id={id} background={background} layout="split">
-  <ul class:list={['benefits', `benefits--${variant}`]}>
+  <ul class:list={['benefits', `benefits--${variant}`]} data-reveal="list">
     {benefits.map((benefit) => (
-      <li class="benefits__item" data-reveal>
+      <li class="benefits__item">
         <span class="benefits__arch" aria-hidden="true" />
         {/* Résumé : intitulés en <p>, pas 8 h3 vides. */}
         <Heading level={3} size="sm" as={variant === 'summary' ? 'p' : undefined}>

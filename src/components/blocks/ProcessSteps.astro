@@ -24,9 +24,9 @@ const { section, steps, id, background = 'sage', variant = 'full' } = Astro.prop
 ---
 
 <ContentSection section={section} id={id} background={background}>
-  <ol class:list={['process-steps', `process-steps--${variant}`]}>
+  <ol class:list={['process-steps', `process-steps--${variant}`]} data-reveal="list">
     {steps.map((step, index) => (
-      <li class="process-steps__item" data-reveal>
+      <li class="process-steps__item">
         <span class="process-steps__number" aria-hidden="true">
           {formatStepNumber(index)}
         </span>

@@ -37,28 +37,158 @@ test.describe('Apparitions au scroll', () => {
     expect(hiddenAboveFold).toBe(0);
   });
 
-  test('un bloc sous la ligne de flottaison apparaît une fois atteint', async ({ page }) => {
+  test('un bloc sous la ligne de flottaison se dévoile en entrant, lié au défilement', async ({
+    page,
+  }) => {
     await page.goto('/');
-    const target = page.locator('.project-grid [data-reveal]').first();
-    await expect(target).toHaveAttribute('data-reveal-state', 'pending');
+    const target = page.locator('.section-intro[data-reveal]').last();
+    // ADR-0013 : Chromium gère `animation-timeline: view()`, état `scroll`.
+    await expect(target).toHaveAttribute('data-reveal-state', 'scroll');
     await expect(target).toHaveCSS('opacity', '0');
-    await target.scrollIntoViewIfNeeded();
-    await expect(target).not.toHaveAttribute('data-reveal-state', /.*/);
+    expect(await target.evaluate((el) => el.getAnimations()[0]?.timeline?.constructor.name)).toBe(
+      'ViewTimeline',
+    );
+    await target.evaluate((el) => el.scrollIntoView({ block: 'center' }));
     await expect(target).toHaveCSS('opacity', '1');
-    await expect(target).toHaveCSS('transform', 'none');
+    // Fin de l'entrée : l'animation (remplissage `both`) tient l'état final, matrice identité.
+    await expect(target).toHaveCSS('transform', /^(none|matrix\(1, 0, 0, 1, 0, 0\))$/);
   });
+
+  test('une liste est un seul bloc préparé, chaque carte suit le défilement', async ({ page }) => {
+    await page.goto('/');
+    const list = page.locator('.project-grid[data-reveal="list"]');
+    const cards = list.locator(':scope > li');
+    await expect(list).toHaveAttribute('data-reveal-state', 'scroll');
+    await expect(list.locator('[data-reveal]')).toHaveCount(0);
+    await expect(cards.first()).toHaveCSS('opacity', '0');
+    const timelines = await cards.evaluateAll((items) =>
+      items.map((item) => item.getAnimations()[0]?.timeline?.constructor.name),
+    );
+    expect(timelines.every((name) => name === 'ViewTimeline')).toBe(true);
+    await list.evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    await expect(cards.first()).toHaveCSS('opacity', '1');
+  });
+
+  test(
+    'rangée de cartes : chaque colonne démarre un peu plus tard',
+    { tag: '@desktop' },
+    async ({ page }) => {
+      await page.goto('/');
+      const offsets = await page
+        .locator('.services-grid[data-reveal="list"] > li')
+        .evaluateAll((items) =>
+          items
+            .slice(0, 3)
+            .map((item) => getComputedStyle(item).getPropertyValue('--reveal-offset').trim()),
+        );
+      expect(offsets[0]).toBe('');
+      expect(offsets[1]).not.toBe('');
+      expect(offsets[2]).not.toBe(offsets[1]);
+    },
+  );
 
   test('un élément en attente qui reçoit le focus clavier apparaît aussitôt', async ({ page }) => {
     await page.goto('/');
-    const card = page.locator('.project-grid [data-reveal]').first();
-    await expect(card).toHaveAttribute('data-reveal-state', 'pending');
-    // Focus sans défilement préalable : l'état doit tomber sans attendre IntersectionObserver.
-    const opacity = await card.evaluate((element) => {
-      element.querySelector<HTMLElement>('a')?.focus();
-      return getComputedStyle(element).opacity;
+    const list = page.locator('.project-grid[data-reveal="list"]');
+    await expect(list).toHaveAttribute('data-reveal-state', /.+/);
+    // Focus sans défilement préalable : visible tout de suite, l'état tombe.
+    const opacity = await list.evaluate((element) => {
+      const card = element.querySelector<HTMLElement>(':scope > li');
+      card?.querySelector<HTMLElement>('a')?.focus();
+      return card ? getComputedStyle(card).opacity : '';
     });
     expect(opacity).toBe('1');
-    await expect(card).not.toHaveAttribute('data-reveal-state', /.*/);
+    await expect(list).not.toHaveAttribute('data-reveal-state', /.*/);
+  });
+
+  // Navigateurs sans `animation-timeline` (Firefox à ce jour) : IntersectionObserver, puis
+  // animation temporelle. Simulé ici en faisant répondre `false` à CSS.supports.
+  test.describe('repli temporel sans animation-timeline', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.addInitScript(() => {
+        const supports = CSS.supports.bind(CSS) as (a: string, b?: string) => boolean;
+        CSS.supports = ((condition: string, value?: string) =>
+          `${condition}${value ?? ''}`.includes('animation-timeline')
+            ? false
+            : supports(condition, value)) as typeof CSS.supports;
+      });
+    });
+
+    test('un bloc sous la ligne de flottaison apparaît une fois atteint', async ({ page }) => {
+      await page.goto('/');
+      const target = page.locator('.section-intro[data-reveal]').last();
+      await expect(target).toHaveAttribute('data-reveal-state', 'pending');
+      await expect(target).toHaveCSS('opacity', '0');
+      await target.scrollIntoViewIfNeeded();
+      await expect(target).not.toHaveAttribute('data-reveal-state', /.*/);
+      await expect(target).toHaveCSS('opacity', '1');
+      await expect(target).toHaveCSS('transform', 'none');
+    });
+
+    test('une liste apparaît en cascade, sans délai par carte', async ({ page }) => {
+      // Démarrages d'animation des cartes de la grille de projets, relevés au moment même.
+      await page.addInitScript(() => {
+        const store = window as unknown as {
+          __starts: { name: string; delay: string; duration: string }[];
+        };
+        store.__starts = [];
+        document.addEventListener('animationstart', (event) => {
+          const target = event.target as HTMLElement;
+          if (!target.matches('.project-grid > li')) return;
+          const style = getComputedStyle(target);
+          store.__starts.push({
+            name: event.animationName,
+            delay: style.animationDelay,
+            duration: style.animationDuration,
+          });
+        });
+      });
+      await page.goto('/');
+      const list = page.locator('.project-grid[data-reveal="list"]');
+      const cards = list.locator(':scope > li');
+      await expect(list).toHaveAttribute('data-reveal-state', 'pending');
+      await expect(cards.first()).toHaveCSS('opacity', '0');
+      await list.scrollIntoViewIfNeeded();
+      await expect(list).not.toHaveAttribute('data-reveal-state', /.*/);
+      // Chaque carte a ses @keyframes de rang, toutes ont la même durée et démarrent ensemble
+      // (une seule mise à jour de style au lieu d'une par carte).
+      const starts = await page.evaluate(
+        () =>
+          (
+            window as unknown as {
+              __starts: { name: string; delay: string; duration: string }[];
+            }
+          ).__starts,
+      );
+      expect(starts).toHaveLength(await cards.count());
+      // 6 rangs au plus (les cartes suivantes partagent le dernier).
+      expect(new Set(starts.map((start) => start.name)).size).toBe(Math.min(starts.length, 6));
+      for (const start of starts) {
+        expect(start.delay).toBe('0s');
+        expect(start.duration).toBe(starts[0]?.duration);
+      }
+      await expect(cards.last()).toHaveCSS('opacity', '1');
+      await expect(cards.last()).toHaveCSS('transform', 'none');
+    });
+
+    test('focus clavier : visible aussitôt', async ({ page }) => {
+      await page.goto('/');
+      const list = page.locator('.project-grid[data-reveal="list"]');
+      await expect(list).toHaveAttribute('data-reveal-state', 'pending');
+      const opacity = await list.evaluate((element) => {
+        const card = element.querySelector<HTMLElement>(':scope > li');
+        card?.querySelector<HTMLElement>('a')?.focus();
+        return card ? getComputedStyle(card).opacity : '';
+      });
+      expect(opacity).toBe('1');
+      await expect(list).not.toHaveAttribute('data-reveal-state', /.*/);
+    });
+
+    test('après un défilement complet, plus aucun élément transparent', async ({ page }) => {
+      await page.goto('/');
+      await scrollThroughPage(page);
+      await expect.poll(() => countTransparentElements(page), { timeout: 10_000 }).toBe(0);
+    });
   });
 
   test('après un défilement complet, plus aucun élément transparent', async ({ page }) => {

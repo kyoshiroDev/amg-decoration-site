@@ -52,9 +52,9 @@ const { section, id, image, imageAlt = '', background = 'linen', reverse = false
         lead={section.lead}
       />
       {section.items.length > 0 && (
-        <ul class="media-text__items">
+        <ul class="media-text__items" data-reveal="list">
           {section.items.map((item) => (
-            <li class="media-text__item" data-reveal>
+            <li class="media-text__item">
               <Heading level={3} size="sm">
                 {item.title}
               </Heading>

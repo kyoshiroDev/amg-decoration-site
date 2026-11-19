@@ -32,7 +32,7 @@ addEventListener(
 - Chaîne exacte (minifiée) : `JS_CLASS_SCRIPT` dans `src/lib/inline-scripts.ts`, rendue par `<script is:inline set:html={JS_CLASS_SCRIPT} />` (170 octets).
 - **Filet de sécurité** (audit accessibilité de la Phase 5) : si un module ne se charge pas ou lève une exception, le script retire la classe `js`. Le site revient alors à sa version sans JS, complète, au lieu d'afficher des filtres ou un comparateur inertes accompagnés d'une consigne fausse. Les erreurs d'images ne déclenchent pas ce retour (cible `<img>`). Vérifié par `tests/e2e/js-fallback.spec.ts`.
 - Les styles dépendants du JS s'écrivent `.js .composant { … }` (ou `:global(.js) .composant` dans un style scopé) ; par défaut, le composant est dans son état sans JS.
-- Les **états d'animation** (apparitions au scroll) ne dépendent pas de cette classe : ils restent posés élément par élément par `scripts/reveal.ts`, uniquement hors écran, pour ne jamais cacher le contenu visible au chargement.
+- Les **états d'animation** (apparitions au scroll) ne dépendent pas de cette classe : ils restent posés bloc par bloc (une liste = un bloc, ADR-0013) par `scripts/reveal.ts`, uniquement hors écran, pour ne jamais cacher le contenu visible au chargement.
 
 ## CSP (Phase 7)
 

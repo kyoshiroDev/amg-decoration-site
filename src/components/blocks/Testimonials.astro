@@ -26,9 +26,9 @@ const sourceLabel = (author: string): string =>
 ---
 
 <ContentSection section={section} id={id} background={background}>
-  <ul class="testimonials">
+  <ul class="testimonials" data-reveal="list">
     {testimonials.map((testimonial) => (
-      <li class="testimonials__item" data-reveal>
+      <li class="testimonials__item">
         <figure class="testimonials__card">
           <span class="testimonials__mark" aria-hidden="true" />
           <blockquote class="testimonials__text">

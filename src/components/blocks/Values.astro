@@ -18,9 +18,9 @@ const { section, id, background = 'cream' } = Astro.props;
 ---
 
 <ContentSection section={section} id={id} background={background} layout="split">
-  <ul class="values">
+  <ul class="values" data-reveal="list">
     {section.items.map((item, index) => (
-      <li class="values__item" data-reveal>
+      <li class="values__item">
         <span class="values__number" aria-hidden="true">
           {formatStepNumber(index)}
         </span>

@@ -180,6 +180,21 @@
   --dur-slow: 800ms;
   --dur-reduced: 150ms;
   --stagger: 70ms;
+
+  /*
+   * Cascade d'une liste révélée (ADR-0013) : 6 rangs au plus sur une même durée partagée
+   * (apparition + 5 décalages). Les pourcentages des @keyframes reveal-cascade-* de motion.css
+   * en dérivent : tests/unit/reveal-keyframes.test.ts échoue s'ils ne suivent plus ces tokens.
+   */
+  --reveal-cascade-duration: calc(var(--dur-base) + 5 * var(--stagger));
+
+  /*
+   * Apparition pilotée par le défilement (ADR-0013) : parcours de l'entrée du bloc par le bas
+   * de la fenêtre pendant lequel il se dévoile (bande basse courte : jamais de texte voilé dans
+   * la zone de lecture), et décalage par colonne d'une même rangée de cartes.
+   */
+  --reveal-scroll-length: 18vh;
+  --reveal-scroll-stagger: 3vh;
   --reveal-distance: 20px;
   --hover-zoom: 1.04;
   --dur-morph: 600ms; /* morphing d'un visuel de projet entre deux pages (View Transition) */

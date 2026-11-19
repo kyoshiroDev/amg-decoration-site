@@ -18,9 +18,9 @@ const { section, id, background = 'sage' } = Astro.props;
 ---
 
 <ContentSection section={section} id={id} background={background} align="center">
-  <ul class="pillars">
+  <ul class="pillars" data-reveal="list">
     {section.items.map((item) => (
-      <li class="pillars__item" data-reveal>
+      <li class="pillars__item">
         <div class="pillars__arch">
           <Heading level={3} size="lg" class="pillars__title">
             {item.title}

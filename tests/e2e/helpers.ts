@@ -57,13 +57,19 @@ export async function openMenuWithKeyboard(page: Page): Promise<void> {
 
 /**
  * Attend la fin de toutes les animations et transitions CSS en cours, hors animations infinies
- * (défilement continu du bandeau de mots, qui ne s'arrête jamais par définition).
+ * (défilement continu du bandeau de mots, qui ne s'arrête jamais par définition) et hors
+ * animations liées au défilement (apparitions `animation-timeline: view()`, ADR-0013) : elles
+ * n'avancent pas avec le temps, seulement avec la position de la page.
  */
 export async function waitForAnimationsToSettle(page: Page): Promise<void> {
   await page.waitForFunction(() =>
     document
       .getAnimations()
-      .every((animation) => animation.effect?.getComputedTiming().endTime === Infinity),
+      .every(
+        (animation) =>
+          !(animation.timeline instanceof DocumentTimeline) ||
+          animation.effect?.getComputedTiming().endTime === Infinity,
+      ),
   );
 }
 

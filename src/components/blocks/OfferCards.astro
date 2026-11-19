@@ -23,9 +23,9 @@ const { services } = microcopy;
 ---
 
 <ContentSection section={section} id={id} background={background}>
-  <ul class="offer-cards">
+  <ul class="offer-cards" data-reveal="list">
     {offers.map((offer) => (
-      <li class="offer-cards__item" data-reveal>
+      <li class="offer-cards__item">
         <article class="offer-card">
           <span class="offer-card__arch" aria-hidden="true" />
           <h3 class="offer-card__title">
