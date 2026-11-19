@@ -5,6 +5,7 @@ import { ContentError } from '@/lib/content';
 import {
   buildArticlePageModel,
   buildArticlesIndexModel,
+  buildByline,
   buildFurtherReading,
   formatArticleDate,
   selectPublishedArticles,
@@ -214,5 +215,18 @@ describe('buildArticlePageModel', () => {
         labels,
       }),
     ).toThrow(ContentError);
+  });
+});
+
+describe('buildByline', () => {
+  it('signe avec le nom et le métier de la fondatrice, liés à sa page de présentation', () => {
+    expect(
+      buildByline({ name: 'Amandine Gaury', jobTitle: 'Designer d’intérieur' }, 'Par'),
+    ).toEqual({
+      prefix: 'Par',
+      name: 'Amandine Gaury',
+      role: 'designer d’intérieur',
+      href: '/a-propos/',
+    });
   });
 });

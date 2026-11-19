@@ -13,8 +13,9 @@ import RichText from '@/components/blocks/RichText.astro';
 import FurtherReading from '@/components/blocks/FurtherReading.astro';
 import CtaBanner from '@/components/blocks/CtaBanner.astro';
 import { microcopy } from '@/config/microcopy';
+import { site } from '@/config/site';
 import { buildBlogPosting } from '@/lib/jsonld';
-import type { ArticlePageModel } from '@/lib/pages/articles-model';
+import { buildByline, type ArticlePageModel } from '@/lib/pages/articles-model';
 import type { PageSection } from '@/lib/pages/types';
 
 interface Props {
@@ -27,6 +28,8 @@ interface Props {
 const { article, imageUrl, cta } = Astro.props;
 const labels = microcopy.articles;
 const origin = Astro.site ?? Astro.url;
+// Signature visible : la même personne que l'`author` du BlogPosting (site.founder).
+const byline = buildByline(site.founder, labels.byline);
 const blogPosting = buildBlogPosting(
   {
     headline: article.title,
@@ -58,6 +61,7 @@ const blogPosting = buildBlogPosting(
     <ArticleHeader
       eyebrow={labels.indexLabel}
       title={article.title}
+      byline={byline}
       published={article.published}
       updated={article.updated}
       readingTime={article.readingTime}

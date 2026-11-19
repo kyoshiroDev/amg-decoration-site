@@ -5,6 +5,7 @@
 import { access, readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import {
+  checkAuthorVisible,
   checkGraphStructure,
   checkRequiredProperties,
   collectAssetPaths,
@@ -19,15 +20,18 @@ async function sitemapPaths(): Promise<string[]> {
   return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => new URL(match[1] ?? '').pathname);
 }
 
-async function readPages(): Promise<{ pages: PageGraph[]; problems: string[] }> {
+async function readPages(): Promise<{
+  pages: (PageGraph & { html: string })[];
+  problems: string[];
+}> {
   const paths = [...(await sitemapPaths()), '/merci/'];
   const problems: string[] = [];
-  const pages: PageGraph[] = [];
+  const pages: (PageGraph & { html: string })[] = [];
   for (const path of paths) {
     const html = await readFile(new URL(`.${path}index.html`, DIST), 'utf8');
     const parsed = parseGraph(path, html);
     problems.push(...parsed.problems);
-    if (parsed.problems.length === 0) pages.push({ path, graph: parsed.graph });
+    if (parsed.problems.length === 0) pages.push({ path, graph: parsed.graph, html });
   }
   return { pages, problems };
 }
@@ -58,5 +62,14 @@ test.describe('Données structurées (JSON-LD)', { tag: '@desktop' }, () => {
       }
     }
     expect(missing).toEqual([]);
+  });
+
+  test('auteur des articles visible dans le <main>, lié à sa page de présentation', async () => {
+    const { pages } = await readPages();
+    const articles = pages.filter(({ graph }) =>
+      graph.some((node) => node['@type'] === 'BlogPosting'),
+    );
+    expect(articles.length).toBeGreaterThan(0);
+    expect(articles.flatMap((page) => checkAuthorVisible(page, page.html))).toEqual([]);
   });
 });

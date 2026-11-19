@@ -207,3 +207,43 @@ export function checkRequiredProperties({ path, graph }: PageGraph): string[] {
   });
   return problems;
 }
+
+/** Texte visible approximatif du `<main>` (balises retirées, entités courantes décodées). */
+export function mainText(html: string): string {
+  const main = /<main\b[\s\S]*?<\/main>/.exec(html)?.[0] ?? '';
+  return main
+    .replace(/<(script|style)\b[\s\S]*?<\/\1>/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;|&#160;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ');
+}
+
+/**
+ * Auteur d'un `BlogPosting` visible sur la page (consigne Google : les données structurées
+ * décrivent le contenu affiché) : nom de la `Person` référencée dans le `<main>`, avec un lien
+ * vers son `url`.
+ */
+export function checkAuthorVisible({ path, graph }: PageGraph, html: string): string[] {
+  const problems: string[] = [];
+  const text = mainText(html);
+  const main = /<main\b[\s\S]*?<\/main>/.exec(html)?.[0] ?? '';
+  for (const node of graph) {
+    if (node['@type'] !== 'BlogPosting') continue;
+    const ref = node['author'];
+    const authorId = isObject(ref) ? ref['@id'] : undefined;
+    const person = graph.find((candidate) => candidate['@id'] === authorId);
+    const name = person?.['name'];
+    const url = person?.['url'];
+    if (typeof name !== 'string' || typeof url !== 'string') {
+      problems.push(`${path} : auteur du BlogPosting non résolu`);
+      continue;
+    }
+    if (!text.includes(name)) problems.push(`${path} : « ${name} » absent du <main>`);
+    const href = new URL(url).pathname;
+    if (!main.includes(`href="${href}"`)) {
+      problems.push(`${path} : aucun lien vers ${href} dans le <main>`);
+    }
+  }
+  return problems;
+}

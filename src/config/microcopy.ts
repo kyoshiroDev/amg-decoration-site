@@ -129,6 +129,8 @@ export const microcopy = {
     readingTime: '{minutes}\u00A0min de lecture',
     published: 'Publié le',
     updated: 'Mis à jour le',
+    /** Signature visible : « Par Amandine Gaury, designer d’intérieur » (nom et métier : site.founder). */
+    byline: 'Par',
     tagsLabel: 'Thèmes de l’article',
     further: {
       heading: 'Pour aller plus loin',
