@@ -124,6 +124,12 @@ Poids total mesuré par page (gzip, fin de Phase 5, hors script inline de 0,15 K
 
 - Interdits : `console.*`, écouteur `scroll` (préférer IntersectionObserver), état d'animation présent dans le HTML initial (il est posé par le script, ou par du CSS sous `.js`).
 
+## Tests
+
+- `tests/unit/` (Vitest, `npm run test`) : fonctions pures de `src/lib/`.
+- `tests/e2e/` (Playwright + axe, `npm run test:e2e`, `playwright.config.ts`) : build de production `dist/` servi sur le port 4321, projets mobile (Pixel 7) et desktop. Ce build n'a pas de `PUBLIC_FORM_ENDPOINT` : le formulaire de contact y est en repli `mailto:`.
+- `tests/e2e-service/` (`npm run test:e2e:service`, `playwright.service.config.ts`) : formulaire de contact **en mode service** (ADR-0003). Build distinct dans `dist-service/` (ignoré par git, ESLint, Prettier et TypeScript) avec `PUBLIC_FORM_ENDPOINT=https://formulaire.test/envoi` passé par `webServer.env`, servi sur le port 4322, projet desktop seul. Vérifie la destination, la mention d'information du service et le champ piège (`_honeypot` : `tabindex="-1"`, `autocomplete="off"`, conteneur `aria-hidden`, hors tabulation, envoyé vide avec et sans JS). L'endpoint est intercepté, aucune requête externe ne part. En CI, lancé dans le job `e2e` après la suite principale ; rapport HTML dans `playwright-report/service/`.
+
 ## Configuration
 
 - `astro.config.mjs` : `site: 'https://amgdecorationdinterieur.com'`, `trailingSlash: 'always'`, `output: 'static'`, intégrations `sitemap` (+ `mdx`), `prefetch`, Fonts API, `image` (formats/qualités).

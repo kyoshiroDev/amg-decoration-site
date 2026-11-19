@@ -9,6 +9,7 @@ import globals from 'globals';
 export default defineConfig(
   globalIgnores([
     'dist/',
+    'dist-service/',
     '.astro/',
     '.vercel/',
     'node_modules/',

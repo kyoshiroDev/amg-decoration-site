@@ -43,6 +43,10 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      # Formulaire en mode service (build dist-service/ avec un PUBLIC_FORM_ENDPOINT factice) :
+      # lancé même si la suite principale échoue, pour un diagnostic complet.
+      - if: success() || failure()
+        run: npm run test:e2e:service
       - if: failure()
         uses: actions/upload-artifact@v7
         with:

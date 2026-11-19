@@ -21,6 +21,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:e2e:service": "playwright test -c playwright.service.config.ts",
     "lhci": "lhci autorun",
     "verify": "npm run check && npm run lint && npm run test && npm run build"
   },

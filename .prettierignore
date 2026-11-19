@@ -1,4 +1,5 @@
 dist/
+dist-service/
 .astro/
 .vercel/
 node_modules/
