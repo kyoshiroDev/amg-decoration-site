@@ -9,16 +9,16 @@
  */
 import {
   CONTACT_FIELDS,
+  isFormMessages,
   validateContact,
-  type ContactErrorKey,
   type ContactErrors,
   type ContactFieldKey,
   type ContactValues,
+  type FormMessages,
 } from '@/lib/contact-form';
 import { onPageReady } from './lifecycle';
 
 type Control = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
-type Messages = Readonly<Record<ContactErrorKey, string>>;
 
 const FIELD_KEYS = Object.keys(CONTACT_FIELDS) as ContactFieldKey[];
 
@@ -32,7 +32,7 @@ function readValues(form: HTMLFormElement): ContactValues {
 }
 
 /** Affiche (ou efface) l'erreur de chaque champ ; renvoie les champs en erreur, dans l'ordre. */
-function renderFieldErrors(form: HTMLFormElement, errors: ContactErrors, messages: Messages) {
+function renderFieldErrors(form: HTMLFormElement, errors: ContactErrors, messages: FormMessages) {
   return FIELD_KEYS.flatMap((key) => {
     const field = control(form, key);
     const slot = form.querySelector(`[data-field-error="${CONTACT_FIELDS[key]}"]`);
@@ -80,7 +80,9 @@ onPageReady((signal) => {
   const submitLabel = submit?.querySelector('.button__label');
   if (!form || !root || !summary || !status || !submit || !submitLabel) return;
 
-  const messages = JSON.parse(form.dataset['messages'] ?? '{}') as Messages;
+  // Microcopies absentes ou incomplètes : pas d'amélioration, l'envoi HTML natif reste possible.
+  const messages: unknown = JSON.parse(form.dataset['messages'] ?? '{}');
+  if (!isFormMessages(messages)) return;
   const idleLabel = submitLabel.textContent ?? '';
   let sending = false;
   form.noValidate = true;
