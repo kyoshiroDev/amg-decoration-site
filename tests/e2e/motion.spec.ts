@@ -264,6 +264,21 @@ test.describe('Bandeau de mots', () => {
     await expect.poll(playState).toBe('running');
   });
 
+  test('en pause tant que le focus clavier est dans le bandeau', async ({ page }) => {
+    await page.goto('/');
+    const track = page.locator('.marquee__track');
+    await page.locator('[data-marquee]').scrollIntoViewIfNeeded();
+    await page.mouse.move(0, 0);
+    const playState = (): Promise<string | undefined> =>
+      track.evaluate((el) => el.getAnimations()[0]?.playState);
+    await expect.poll(playState).toBe('running');
+    // Focus sur le bouton pause, sans l'activer : `:focus-within` suffit à arrêter le défilement.
+    await page.getByRole('button', { name: labels.pause }).focus();
+    await expect.poll(playState).toBe('paused');
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await expect.poll(playState).toBe('running');
+  });
+
   test('en pause au survol', { tag: '@desktop' }, async ({ page }) => {
     await page.goto('/');
     const track = page.locator('.marquee__track');
