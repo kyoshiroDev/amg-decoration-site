@@ -25,8 +25,8 @@
   /*
    * Le bloc se dévoile pendant les --reveal-scroll-length de son entrée par le bas de la
    * fenêtre (fondu + translateY(--reveal-distance), --ease-out), puis reste à l'état normal :
-   * rien n'est voilé dans la zone de lecture. Dans une rangée de cartes (≥ 48rem), chaque
-   * colonne commence --reveal-scroll-stagger plus tard : la cascade est spatiale.
+   * rien n'est voilé dans la zone de lecture. Dans une rangée de cartes, chaque colonne
+   * commence --reveal-scroll-stagger plus tard : la cascade est spatiale.
    */
   @media (prefers-reduced-motion: no-preference) {
     @supports (animation-timeline: view()) {
@@ -39,13 +39,41 @@
           calc(var(--reveal-offset, 0%) + var(--reveal-scroll-length));
       }
 
-      @media (width >= 48rem) {
+      /*
+       * Rang de colonne d'un enfant : chaque bloc de liste déclare son nombre de colonnes
+       * (--reveal-columns, aux mêmes points de rupture que sa grille) ; une requête de style
+       * sur le parent en déduit la colonne de chaque enfant. Sans déclaration : une colonne,
+       * aucun décalage. Un enfant abaissé par une marge éditoriale (zigzag) déclare cette marge
+       * dans --reveal-shift : elle est retranchée, sinon il entrerait après la colonne suivante.
+       * Ordre d'apparition = ordre de lecture, quel que soit le nombre de colonnes.
+       */
+      @container style(--reveal-columns: 2) {
+        [data-reveal='list'][data-reveal-state='scroll'] > :nth-child(2n) {
+          --reveal-offset: calc(var(--reveal-scroll-stagger) - var(--reveal-shift));
+        }
+      }
+
+      @container style(--reveal-columns: 3) {
         [data-reveal='list'][data-reveal-state='scroll'] > :nth-child(3n + 2) {
-          --reveal-offset: var(--reveal-scroll-stagger);
+          --reveal-offset: calc(var(--reveal-scroll-stagger) - var(--reveal-shift));
         }
 
         [data-reveal='list'][data-reveal-state='scroll'] > :nth-child(3n) {
-          --reveal-offset: calc(2 * var(--reveal-scroll-stagger));
+          --reveal-offset: calc(2 * var(--reveal-scroll-stagger) - var(--reveal-shift));
+        }
+      }
+
+      @container style(--reveal-columns: 4) {
+        [data-reveal='list'][data-reveal-state='scroll'] > :nth-child(4n + 2) {
+          --reveal-offset: calc(var(--reveal-scroll-stagger) - var(--reveal-shift));
+        }
+
+        [data-reveal='list'][data-reveal-state='scroll'] > :nth-child(4n + 3) {
+          --reveal-offset: calc(2 * var(--reveal-scroll-stagger) - var(--reveal-shift));
+        }
+
+        [data-reveal='list'][data-reveal-state='scroll'] > :nth-child(4n) {
+          --reveal-offset: calc(3 * var(--reveal-scroll-stagger) - var(--reveal-shift));
         }
       }
     }
@@ -140,6 +168,22 @@
       animation: none !important;
     }
   }
+}
+
+/*
+ * Paramètres de la cascade par colonne, non hérités : une liste imbriquée dans une carte ne
+ * reprend ni le nombre de colonnes de la grille parente ni la marge de la carte.
+ */
+@property --reveal-columns {
+  syntax: '<integer>';
+  inherits: false;
+  initial-value: 1;
+}
+
+@property --reveal-shift {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0;
 }
 
 @keyframes reveal-in {

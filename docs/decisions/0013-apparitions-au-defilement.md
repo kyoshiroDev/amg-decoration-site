@@ -58,3 +58,7 @@ Soit, en défilement continu sur l'accueil : **−75 % de recalculs de style à 
 - Changer `--dur-base` ou `--stagger` impose de recalculer les pourcentages des `@keyframes reveal-cascade-*` (le test échoue sinon).
 - Sur mobile, dans le repli, les cartes d'une longue liste déjà sous l'écran quand la liste apparaît ont fini leur animation avant d'être vues : elles sont simplement en place.
 - Les tests e2e couvrent les deux chemins : Chromium natif (`ViewTimeline`) et repli simulé (`CSS.supports` forcé à `false`).
+
+## Révision du 2026-11-20 (audit global)
+
+- **Cascade par colonne dans l’ordre de lecture.** Le décalage supposait trois colonnes (`:nth-child(3n + 2)` / `(3n)` dès 48rem) : faux pour `ServicesGrid` (4 colonnes) et pour les grilles à 2 colonnes (projets, avantages), où des cartes apparaissaient dans le désordre. Chaque bloc de liste déclare désormais son nombre de colonnes (`--reveal-columns`, aux points de rupture de sa grille) ; une requête de style `@container style(--reveal-columns: n)` en déduit la colonne de chaque enfant. Un enfant abaissé par une marge éditoriale (zigzag) déclare cette marge dans `--reveal-shift`, retranchée de son décalage : sans cela, une carte basse de la 2ᵉ colonne entrait après la 3ᵉ. Propriétés enregistrées (`@property`, non héritées). Les requêtes de style sur propriété personnalisée sont gérées partout où `view()` l’est (Chromium 111+, Safari 18+) ; le repli temporel garde sa cascade par rang, déjà dans l’ordre de lecture.

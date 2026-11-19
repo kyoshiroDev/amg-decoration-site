@@ -61,24 +61,33 @@ const sourceLabel = (author: string): string =>
       padding: 0;
       margin: 0;
 
+      /* --reveal-columns / --reveal-shift : cascade d'apparition par colonne (motion.css). */
       @media (width >= 48rem) {
         grid-template-columns: repeat(2, 1fr);
+
+        --reveal-columns: 2;
       }
 
       @media (width >= 64rem) {
         grid-template-columns: repeat(3, 1fr);
         align-items: start;
+
+        --reveal-columns: 3;
       }
     }
 
     /* Un seul avis (page À propos) : une carte en mesure de lecture, alignée sur le titre. */
     .testimonials:has(> :only-child) {
       grid-template-columns: minmax(0, var(--measure));
+
+      --reveal-columns: 1;
     }
 
     @media (width >= 64rem) {
       .testimonials__item:nth-child(3n + 2) {
         margin-block-start: var(--grid-stagger);
+
+        --reveal-shift: var(--grid-stagger);
       }
     }
 

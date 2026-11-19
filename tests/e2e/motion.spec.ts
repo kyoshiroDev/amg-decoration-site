@@ -70,20 +70,31 @@ test.describe('Apparitions au scroll', () => {
   });
 
   test(
-    'rangée de cartes : chaque colonne démarre un peu plus tard',
+    'rangée de cartes : chaque colonne démarre un peu plus tard, dans l’ordre de lecture',
     { tag: '@desktop' },
     async ({ page }) => {
       await page.goto('/');
-      const offsets = await page
-        .locator('.services-grid[data-reveal="list"] > li')
-        .evaluateAll((items) =>
-          items
-            .slice(0, 3)
-            .map((item) => getComputedStyle(item).getPropertyValue('--reveal-offset').trim()),
-        );
-      expect(offsets[0]).toBe('');
-      expect(offsets[1]).not.toBe('');
-      expect(offsets[2]).not.toBe(offsets[1]);
+      // Grilles à 4 (prestations), 2 (projets) et 3 colonnes à zigzag (étapes) : position de
+      // départ réelle de chaque carte = haut de la carte + début de sa plage d'animation.
+      for (const selector of ['.services-grid', '.project-grid', '.process-steps']) {
+        const starts = await page
+          .locator(`${selector}[data-reveal="list"] > li`)
+          .evaluateAll((items) =>
+            items.map((item) => {
+              const range = (item.getAnimations()[0] as CSSAnimation | undefined)?.rangeStart as
+                { offset?: CSSUnitValue } | undefined;
+              const offset = range?.offset;
+              const shift = offset?.unit === 'px' ? offset.value : 0;
+              return item.getBoundingClientRect().top + window.scrollY + shift;
+            }),
+          );
+        expect(starts.length, selector).toBeGreaterThan(1);
+        // Première rangée : ordre strictement croissant.
+        const firstRow = selector === '.services-grid' ? 4 : selector === '.project-grid' ? 2 : 3;
+        for (let i = 1; i < firstRow; i += 1) {
+          expect(starts[i], `${selector} carte ${i + 1}`).toBeGreaterThan(starts[i - 1] ?? 0);
+        }
+      }
     },
   );
 

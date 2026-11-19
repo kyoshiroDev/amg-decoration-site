@@ -46,6 +46,8 @@ const { section, benefits, id, background = 'blush', variant = 'full' } = Astro.
 
       @media (width >= 40rem) {
         grid-template-columns: repeat(2, 1fr);
+
+        --reveal-columns: 2; /* cascade d'apparition par colonne (motion.css) */
       }
     }
 

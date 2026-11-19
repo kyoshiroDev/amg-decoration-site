@@ -53,18 +53,25 @@ const { section, steps, id, background = 'sage', variant = 'full' } = Astro.prop
       padding: 0;
       margin: 0;
 
+      /* --reveal-columns / --reveal-shift : cascade d'apparition par colonne (motion.css). */
       @media (width >= 48rem) {
         grid-template-columns: repeat(2, 1fr);
+
+        --reveal-columns: 2;
       }
 
       @media (width >= 64rem) {
         grid-template-columns: repeat(3, 1fr);
+
+        --reveal-columns: 3;
       }
     }
 
     @media (width >= 64rem) {
       .process-steps__item:nth-child(3n + 2) {
         margin-block-start: var(--grid-stagger);
+
+        --reveal-shift: var(--grid-stagger);
       }
     }
 
@@ -106,6 +113,8 @@ const { section, steps, id, background = 'sage', variant = 'full' } = Astro.prop
     @media (width >= 64rem) {
       .process-steps--summary .process-steps__item:nth-child(3n + 2) {
         margin-block-start: calc(var(--grid-stagger) / 2);
+
+        --reveal-shift: calc(var(--grid-stagger) / 2);
       }
     }
   }
