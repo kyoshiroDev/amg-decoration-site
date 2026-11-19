@@ -3,7 +3,7 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 import { microcopy } from '../../src/config/microcopy';
 import { resolveRedirect } from '../../src/lib/redirects';
 import { SITE_ROUTES } from '../site-routes';
-import { NOT_FOUND_PATH, readJpegSize } from './helpers';
+import { NOINDEX_PATHS, NOT_FOUND_PATH, readJpegSize } from './helpers';
 
 const SITE_ORIGIN = 'https://amgdecorationdinterieur.com';
 const DIST = new URL('../../dist/', import.meta.url);
@@ -189,8 +189,6 @@ test.describe('SEO des pages non indexables', () => {
 // ---------------------------------------------------------------------------------------------
 
 /** Pages non indexables, absentes du sitemap mais crawlées pour leurs liens. */
-const NOINDEX_PATHS = ['/merci/', '/styleguide/', NOT_FOUND_PATH] as const;
-
 async function sitemapPaths(): Promise<string[]> {
   const xml = await readFile(SITEMAP_FILE, 'utf8');
   return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => new URL(match[1] ?? '').pathname);
