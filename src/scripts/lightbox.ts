@@ -4,7 +4,8 @@
  * Avec JS : clic ⇒ `<dialog>` en `showModal()` (focus piégé et Échap natifs), image chargée à
  * la demande (srcset WebP), légende, précédent / suivant (boutons et flèches ← →), annonce
  * « Image n sur N : légende » (une seule région aria-live), fermeture
- * au clic sur le fond ; le focus revient à la vignette d'origine.
+ * au clic sur le fond ; le focus revient à la vignette d'origine. Ouverture et fermeture sont
+ * reportées après le rendu qui suit l'action (inertie du document coûteuse, INP).
  */
 import { onPageReady } from './lifecycle';
 import { counterText, statusText, wrapIndex } from '@/lib/lightbox';
@@ -53,6 +54,25 @@ function enhance(root: HTMLElement, signal: AbortSignal): void {
       : '';
   };
 
+  // Fermer rend la page de nouveau active (fin de l'inertie, défilement rétabli) : même recalcul
+  // de style coûteux qu'à l'ouverture. Le fondu de sortie démarre aussitôt (opacité seule, peinte
+  // dans l'image qui suit l'action), la fermeture native vient après ce rendu (INP).
+  let closeTimer = 0;
+  const closeAfterPaint = (): void => {
+    clearTimeout(closeTimer);
+    requestAnimationFrame(() =>
+      setTimeout(() => {
+        dialog.removeAttribute('data-closing');
+        if (dialog.open) dialog.close();
+      }, 0),
+    );
+  };
+  const startClosing = (): boolean => {
+    if (!dialog.open || dialog.hasAttribute('data-closing')) return false;
+    dialog.setAttribute('data-closing', '');
+    return true;
+  };
+
   root.addEventListener(
     'click',
     (event) => {
@@ -83,7 +103,7 @@ function enhance(root: HTMLElement, signal: AbortSignal): void {
       // peine ouverte : il ne doit pas la refermer (les clics rapides sur ← → restent comptés).
       const onBackdrop = target === dialog || target === figure;
       if ((onBackdrop && event.detail < 2) || target?.closest('[data-lightbox-close]')) {
-        dialog.close();
+        if (startClosing()) closeAfterPaint();
         return;
       }
       const step = target?.closest<HTMLElement>('[data-lightbox-step]')?.dataset['lightboxStep'];
@@ -92,9 +112,26 @@ function enhance(root: HTMLElement, signal: AbortSignal): void {
     { signal },
   );
 
+  // Échap : fermeture native interceptée. Le fondu part à l'appui ; la fermeture attend le
+  // relâchement, sinon elle retarderait le rendu du `keyup`, compté dans la même interaction.
+  // Filet si le `keyup` n'arrive jamais (fenêtre quittée touche enfoncée). Les autres demandes
+  // de fermeture (`cancel`, retour Android) restent natives.
+  dialog.addEventListener(
+    'keyup',
+    (event) => {
+      if (event.key === 'Escape' && dialog.hasAttribute('data-closing')) closeAfterPaint();
+    },
+    { signal },
+  );
+
   dialog.addEventListener(
     'keydown',
     (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        if (startClosing()) closeTimer = window.setTimeout(closeAfterPaint, 500);
+        return;
+      }
       if (items.length < 2) return;
       if (event.key === 'ArrowRight') show(current + 1);
       else if (event.key === 'ArrowLeft') show(current - 1);
@@ -102,7 +139,16 @@ function enhance(root: HTMLElement, signal: AbortSignal): void {
     { signal },
   );
 
-  dialog.addEventListener('close', () => origin?.focus(), { signal });
+  dialog.addEventListener(
+    'close',
+    () => {
+      // Fermeture native (retour Android) pendant un fondu : rien ne doit rester en suspens.
+      clearTimeout(closeTimer);
+      dialog.removeAttribute('data-closing');
+      origin?.focus();
+    },
+    { signal },
+  );
   signal.addEventListener('abort', () => dialog.close(), { once: true });
 }
 

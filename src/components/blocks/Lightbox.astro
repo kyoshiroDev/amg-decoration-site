@@ -85,6 +85,11 @@ const labels = microcopy.lightbox;
         }
       }
 
+      /* Fermeture demandée (scripts/lightbox.ts) : le fondu part avant la fermeture native. */
+      &[open][data-closing] {
+        opacity: 0;
+      }
+
       &::backdrop {
         background-color: transparent;
       }

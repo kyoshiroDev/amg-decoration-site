@@ -59,6 +59,39 @@ test.describe('Visionneuse : styleguide', () => {
     await expect(first).toBeFocused();
   });
 
+  test('fermeture reportée après le rendu : fondu immédiat, rien en suspens à la réouverture', async ({
+    page,
+  }) => {
+    const dialog = page.getByRole('dialog', { name: labels.label });
+    const first = thumbnails(page).first();
+    await first.click();
+    await expect(dialog).toBeVisible();
+
+    // Échap enfoncée : le fondu part (opacité visée 0), la fermeture attend le relâchement.
+    await page.keyboard.down('Escape');
+    await expect(dialog).toHaveAttribute('data-closing', '');
+    await expect(dialog).toHaveJSProperty('open', true);
+    await page.keyboard.up('Escape');
+    await expect(dialog).toHaveJSProperty('open', false);
+    await expect(dialog).not.toHaveAttribute('data-closing');
+    await expect(first).toBeFocused();
+
+    // Filet : sans relâchement (fenêtre quittée touche enfoncée), fermeture quand même.
+    await first.click();
+    await expect(dialog).toBeVisible();
+    await dialog.dispatchEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    await expect(dialog).toHaveJSProperty('open', false);
+
+    // Bouton de fermeture : même report, et la visionneuse rouverte est pleinement visible.
+    await first.click();
+    await dialog.getByRole('button', { name: labels.close }).click();
+    await expect(dialog).toBeHidden();
+    await first.click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog).not.toHaveAttribute('data-closing');
+    await expect(dialog).toHaveCSS('opacity', '1');
+  });
+
   test('annonce « Image n sur N : légende » dans une seule région live', async ({ page }) => {
     const links = gallery(page).locator('a[data-lightbox-item]');
     const legends = await links.evaluateAll((items) =>
