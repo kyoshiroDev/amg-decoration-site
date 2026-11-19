@@ -10,4 +10,5 @@ coverage/
 .lighthouseci/
 .claude/state/
 .claude/reports/
+.claude/worktrees/
 .playwright-mcp/

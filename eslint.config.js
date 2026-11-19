@@ -18,6 +18,7 @@ export default defineConfig(
     'coverage/',
     '.lighthouseci/',
     '.playwright-mcp/',
+    '.claude/worktrees/',
   ]),
   js.configs.recommended,
   tseslint.configs.strict,
