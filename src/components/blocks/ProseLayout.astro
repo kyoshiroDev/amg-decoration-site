@@ -2,8 +2,8 @@
 /**
  * ProseLayout — corps de page long (Markdown) accompagné d'une colonne latérale : sommaire des
  * pages légales, carte « En bref » d'une prestation. Mobile : la colonne précède le texte ;
- * ≥ 64rem : texte à gauche, colonne collante à droite (sous l'en-tête). Aucun titre propre :
- * le corps Markdown porte ses h2.
+ * ≥ 64rem : texte à gauche, colonne à droite, collante sous l'en-tête si l'écran est assez
+ * haut. Aucun titre propre : le corps Markdown porte ses h2.
  */
 import Section from '@/components/ui/Section.astro';
 import Container from '@/components/ui/Container.astro';
@@ -57,23 +57,30 @@ const hasAside = Astro.slots.has('aside');
         gap: var(--space-3xl);
       }
 
-      /*
-       * Colonne plus haute que la fenêtre (sommaire des CGS, « En bref » d'une prestation sur
-       * un écran bas ou zoomé) : elle défile en elle-même, sinon sa fin resterait hors écran
-       * pendant toute la lecture et un lien focalisé au clavier y serait invisible (WCAG 2.4.7,
-       * 2.4.11). Marge négative compensée par un retrait : position du contenu inchangée,
-       * l'ombre portée et l'anneau de focus ne sont pas rognés par le défilement.
-       */
       :global(.prose-layout__grid--aside) > .prose-layout__aside {
-        position: sticky;
-        inset-block-start: var(--header-height-compact);
         grid-column: 2;
         grid-row: 1;
-        max-block-size: calc(100dvh - var(--header-height-compact));
-        padding: var(--space-m);
-        margin: calc(var(--space-m) * -1);
-        overflow-y: auto;
-        scroll-padding-block: var(--space-m);
+      }
+
+      /*
+       * Collante seulement sur un écran assez haut (≥ 50rem) : plus bas (portable 1280 × 800,
+       * zoom), la colonne reste dans le flux plutôt que de devenir une petite boîte défilante.
+       * Au-dessus, défilement interne en dernier recours, pour un contenu de longueur non
+       * bornée (sommaire des CGS) : sans lui, sa fin resterait hors écran pendant toute la
+       * lecture et un lien focalisé au clavier y serait invisible (WCAG 2.4.7, 2.4.11). Marge
+       * négative compensée par un retrait : position du contenu inchangée, l'ombre portée et
+       * l'anneau de focus ne sont pas rognés par le défilement.
+       */
+      @media (height >= 50rem) {
+        :global(.prose-layout__grid--aside) > .prose-layout__aside {
+          position: sticky;
+          inset-block-start: var(--header-height-compact);
+          max-block-size: calc(100dvh - var(--header-height-compact));
+          padding: var(--space-m);
+          margin: calc(var(--space-m) * -1);
+          overflow-y: auto;
+          scroll-padding-block: var(--space-m);
+        }
       }
 
       :global(.prose-layout__grid--aside) > .prose-layout__body {

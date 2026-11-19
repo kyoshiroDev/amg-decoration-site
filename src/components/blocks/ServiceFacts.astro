@@ -81,6 +81,11 @@ const labels = microcopy.services.facts;
       border-radius: var(--radius-lg);
       background-color: var(--color-surface);
       box-shadow: var(--shadow-soft);
+
+      /* Colonne collante de ProseLayout : carte resserrée pour tenir à l'écran (1440 × 900). */
+      @media (width >= 64rem) {
+        gap: var(--space-s);
+      }
     }
 
     .service-facts__arch {
@@ -107,6 +112,10 @@ const labels = microcopy.services.facts;
       gap: var(--space-3xs);
       padding-block: var(--space-s);
       border-block-start: var(--border-hairline) solid var(--color-border);
+
+      @media (width >= 64rem) {
+        padding-block: var(--space-xs);
+      }
 
       & dt {
         font-size: var(--text-eyebrow);

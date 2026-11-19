@@ -211,8 +211,10 @@ test.describe('Ancre d’un titre à surtitre (2.4.11)', () => {
 const ASIDE = '.prose-layout__aside, .contact-layout__aside';
 
 // Colonne latérale collante plus haute que la fenêtre (sommaire des CGS, « En bref » d'une
-// prestation, coordonnées de la page Contact) : sur un écran bas ou zoomé, sa fin restait hors écran pendant toute la lecture
-// et un lien focalisé au clavier y était invisible. Elle défile désormais en elle-même.
+// prestation, coordonnées de la page Contact) : sur un écran bas ou zoomé, sa fin restait hors
+// écran pendant toute la lecture et un lien focalisé au clavier y était invisible. Elle n'est
+// désormais collante que si la fenêtre est assez haute (sinon dans le flux), avec défilement
+// interne en dernier recours pour le sommaire de longueur non bornée.
 test.describe(
   'Colonne latérale collante sur écran bas (2.4.7, 2.4.11)',
   { tag: '@desktop' },
