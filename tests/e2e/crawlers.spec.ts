@@ -50,4 +50,24 @@ test.describe('llms.txt', { tag: '@desktop' }, () => {
     expect(details.length).toBeGreaterThan(0);
     for (const url of details) expect(links, `${url} : absent de llms.txt`).toContain(url);
   });
+
+  test('sitemap : lastmod seulement sur le blog, égal à la date de l’article', async ({
+    request,
+  }) => {
+    const sitemap = await (await request.get('/sitemap-0.xml')).text();
+    const dated = [...sitemap.matchAll(/<loc>([^<]+)<\/loc><lastmod>([^<]+)<\/lastmod>/g)].map(
+      (match) => ({ url: match[1] ?? '', lastmod: match[2] ?? '' }),
+    );
+    expect(dated.length).toBeGreaterThan(0);
+    for (const { url, lastmod } of dated) {
+      expect(url, 'lastmod hors du blog').toMatch(/^https:\/\/[^/]+\/conseils-deco\//);
+      const path = new URL(url).pathname;
+      if (path === '/conseils-deco/') continue;
+      const html = await (await request.get(path)).text();
+      const modified = /property="article:modified_time" content="([^"]+)"/.exec(html)?.[1];
+      expect(modified?.slice(0, 10), `${path} : lastmod ≠ article:modified_time`).toBe(
+        lastmod.slice(0, 10),
+      );
+    }
+  });
 });

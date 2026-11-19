@@ -2,10 +2,26 @@
 import { defineConfig, fontProviders } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
+import { readdirSync, readFileSync } from 'node:fs';
+import { buildLastmodMap } from './src/lib/sitemap-lastmod.ts';
+
+const SITE = 'https://amgdecorationdinterieur.com';
+
+// `lastmod` du sitemap : dates réelles des articles seulement (src/lib/sitemap-lastmod.ts).
+const ARTICLES_DIR = new URL('./src/content/articles/', import.meta.url);
+const lastmod = buildLastmodMap(
+  readdirSync(ARTICLES_DIR)
+    .filter((file) => /\.mdx?$/.test(file))
+    .map((file) => ({
+      slug: file.replace(/\.mdx?$/, ''),
+      source: readFileSync(new URL(file, ARTICLES_DIR), 'utf8'),
+    })),
+  SITE,
+);
 
 // Configuration Astro — voir docs/ARCHITECTURE.md (§ Configuration).
 export default defineConfig({
-  site: 'https://amgdecorationdinterieur.com',
+  site: SITE,
   output: 'static',
   trailingSlash: 'always',
   build: {
@@ -61,6 +77,10 @@ export default defineConfig({
     sitemap({
       // Pages non indexées (noindex) : jamais dans le sitemap (styleguide interne, remerciement du formulaire).
       filter: (page) => !page.includes('/styleguide/') && !page.includes('/merci/'),
+      serialize: (item) => {
+        const date = lastmod.get(item.url);
+        return date ? { ...item, lastmod: date } : item;
+      },
     }),
   ],
 });
