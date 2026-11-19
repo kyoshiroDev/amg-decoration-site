@@ -22,6 +22,9 @@ export const iconNames = [
 
 export type IconName = (typeof iconNames)[number];
 
+/** Sprite généré au build par src/pages/icons.svg.ts ; une icône = `${ICON_SPRITE_URL}#nom`. */
+export const ICON_SPRITE_URL = '/icons.svg';
+
 // Chemins dessinés sur une grille 24×24 ; formes simplifiées des marques sociales.
 export const iconPaths: Record<IconName, string> = {
   'arrow-right': '<path d="M4 12h15"/><path d="m13 6 6 6-6 6"/>',

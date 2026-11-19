@@ -1,46 +1,42 @@
 ---
 /**
- * Icon — pictogramme SVG inline (trait 1.5, hérite de currentColor).
+ * Icon — pictogramme SVG (trait 1.5, hérite de currentColor), tiré du sprite `/icons.svg`
+ * par `<use>` (src/lib/icon-sprite.ts) : le tracé n'est pas répété dans chaque page.
  * Décoratif par défaut (aria-hidden) ; passer `label` s'il porte seul une information.
+ * Style global (classe propre au composant) : un style scopé ajouterait data-astro-cid-* sur
+ * chaque <svg> et chaque <use>, soit ~1,7 Ko de HTML brut sur l'accueil (35 icônes).
  */
-import { iconPaths, type IconName } from './icons';
+import { ICON_SPRITE_URL, type IconName } from './icons';
 
 interface Props {
   name: IconName;
   /** Nom accessible ; si absent, l'icône est masquée aux technologies d'assistance. */
   label?: string | undefined;
-  /** Taille CSS (token conseillé), par défaut 1em. */
-  size?: string;
+  /** Taille CSS (token conseillé) ; par défaut 1em (règle .icon, sans style en ligne). */
+  size?: string | undefined;
   class?: string | undefined;
 }
 
-const { name, label, size = '1em', class: className } = Astro.props;
+const { name, label, size, class: className } = Astro.props;
 ---
 
 <svg
   class:list={['icon', className]}
-  xmlns="http://www.w3.org/2000/svg"
-  viewBox="0 0 24 24"
   width="24"
   height="24"
-  fill="none"
-  stroke="currentColor"
-  stroke-width="1.5"
-  stroke-linecap="round"
-  stroke-linejoin="round"
-  style={`--icon-size: ${size}`}
+  style={size ? `--icon-size: ${size}` : undefined}
   aria-hidden={label ? undefined : 'true'}
   role={label ? 'img' : undefined}
   aria-label={label}
-  focusable="false"
-  set:html={iconPaths[name]}
-/>
+>
+  <use href={`${ICON_SPRITE_URL}#${name}`}></use>
+</svg>
 
-<style>
+<style is:global>
   @layer components {
     .icon {
-      inline-size: var(--icon-size);
-      block-size: var(--icon-size);
+      inline-size: var(--icon-size, 1em);
+      block-size: var(--icon-size, 1em);
       flex-shrink: 0;
     }
   }

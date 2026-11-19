@@ -34,6 +34,8 @@ Les fichiers texte destinés aux robots sont des **endpoints statiques** `src/pa
 | `src/pages/robots.txt.ts` | `buildRobotsTxt`                                         | Tout autorisé, sans `Disallow`, sitemap absolu.                                              |
 | `src/pages/llms.txt.ts`   | `buildLlmsTxt` (+ `lib/pages/llms.ts` / `llms-model.ts`) | Résumé Markdown llmstxt.org : pages, prestations, réalisations, articles publiés, sans prix. |
 
+Même mécanisme pour le **sprite d'icônes** `src/pages/icons.svg.ts` → `dist/icons.svg` : `buildIconSprite` (`src/lib/icon-sprite.ts`, testé dans `tests/unit/icon-sprite.test.ts`) assemble un `<symbol>` par tracé de `src/components/ui/icons.ts` ; `Icon.astro` le référence par `<use href="/icons.svg#nom">`. Les pages n'embarquent plus les tracés : l'accueil tient sous 14 Kio gzip (fenêtre TCP initiale), contrôlé par `tests/e2e/html-budget.spec.ts`.
+
 ### Configuration (`src/config/`)
 
 | Fichier        | Contenu                                                                                                                        |
