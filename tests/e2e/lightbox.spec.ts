@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { microcopy } from '../../src/config/microcopy';
-import { counterText } from '../../src/lib/lightbox';
+import { counterText, statusText } from '../../src/lib/lightbox';
 import { expectNoAxeViolations } from './helpers';
 
 // Visionneuse des galeries : styleguide (3 placeholders, navigation) et page projet (1 image).
@@ -59,6 +59,24 @@ test.describe('Visionneuse : styleguide', () => {
     await expect(first).toBeFocused();
   });
 
+  test('annonce « Image n sur N : légende » dans une seule région live', async ({ page }) => {
+    const links = gallery(page).locator('a[data-lightbox-item]');
+    const legends = await links.evaluateAll((items) =>
+      items.map((link) => link.getAttribute('data-caption') || link.getAttribute('data-alt')),
+    );
+    await thumbnails(page).first().click();
+    const dialog = page.getByRole('dialog', { name: labels.label });
+    await expect(dialog).toBeVisible();
+    // Une seule région live ; le compteur visuel « 1 / 3 » est masqué aux lecteurs d'écran.
+    await expect(dialog.locator('[aria-live]')).toHaveCount(1);
+    await expect(dialog.locator('[data-lightbox-counter]')).toHaveAttribute('aria-hidden', 'true');
+    const status = dialog.locator('[aria-live="polite"]');
+    await expect(status).toHaveText(statusText(0, 3, labels.status, legends[0] ?? ''));
+    await page.keyboard.press('ArrowRight');
+    await expect(status).toHaveText(statusText(1, 3, labels.status, legends[1] ?? ''));
+    await expect(status).toContainText(/^Image 2 sur 3/);
+  });
+
   test('ouverte au clavier, focus piégé dans la visionneuse', async ({ page }) => {
     const second = thumbnails(page).nth(1);
     await second.focus();
@@ -96,6 +114,7 @@ test.describe('Visionneuse : page projet', () => {
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('button', { name: labels.next })).toBeHidden();
     await expect(dialog.locator('[data-lightbox-counter]')).toHaveText('');
+    await expect(dialog.locator('[data-lightbox-status]')).toHaveText('');
     await dialog.getByRole('button', { name: labels.close }).click();
     await expect(dialog).toBeHidden();
   });

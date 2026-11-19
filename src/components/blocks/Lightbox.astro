@@ -11,9 +11,17 @@ import { microcopy } from '@/config/microcopy';
 const labels = microcopy.lightbox;
 ---
 
-<dialog class="lightbox" aria-label={labels.label} data-lightbox data-counter={labels.counter}>
+<dialog
+  class="lightbox"
+  aria-label={labels.label}
+  data-lightbox
+  data-counter={labels.counter}
+  data-status={labels.status}
+>
   <div class="lightbox__bar">
-    <p class="lightbox__counter" data-lightbox-counter aria-live="polite"></p>
+    {/* Compteur visuel « 2 / 5 » ; l'annonce complète passe par la région suivante, seule. */}
+    <p class="lightbox__counter" data-lightbox-counter aria-hidden="true"></p>
+    <p class="visually-hidden" data-lightbox-status aria-live="polite"></p>
     <Button
       variant="ghost"
       iconOnly

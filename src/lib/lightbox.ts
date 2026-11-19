@@ -14,3 +14,19 @@ export function counterText(index: number, length: number, template: string): st
     .replace('{current}', String(wrapIndex(index, length) + 1))
     .replace('{total}', String(length));
 }
+
+/**
+ * Annonce de la région `aria-live` : « Image 2 sur 5 : légende » (`{current}` et `{total}`
+ * remplacés, légende ajoutée si elle existe). Une seule annonce par changement d'image : le
+ * compteur visible « 2 / 5 » est masqué aux technologies d'assistance.
+ */
+export function statusText(
+  index: number,
+  length: number,
+  template: string,
+  caption: string,
+): string {
+  const position = counterText(index, length, template);
+  const text = caption.trim();
+  return text ? `${position}\u00A0: ${text}` : position;
+}

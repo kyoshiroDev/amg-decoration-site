@@ -2,20 +2,22 @@
  * Visionneuse des galeries (blocks/Lightbox.astro + ProjectGallery.astro).
  * Les vignettes sont des liens vers l'image grand format : sans JS, elles l'ouvrent simplement.
  * Avec JS : clic ⇒ `<dialog>` en `showModal()` (focus piégé et Échap natifs), image chargée à
- * la demande (srcset WebP), légende, précédent / suivant (boutons et flèches ← →), fermeture
+ * la demande (srcset WebP), légende, précédent / suivant (boutons et flèches ← →), annonce
+ * « Image n sur N : légende » (une seule région aria-live), fermeture
  * au clic sur le fond ; le focus revient à la vignette d'origine.
  */
 import { onPageReady } from './lifecycle';
-import { counterText, wrapIndex } from '@/lib/lightbox';
+import { counterText, statusText, wrapIndex } from '@/lib/lightbox';
 
 function enhance(root: HTMLElement, signal: AbortSignal): void {
   const dialog = root.querySelector<HTMLDialogElement>('[data-lightbox]');
   const figure = dialog?.querySelector<HTMLElement>('[data-lightbox-figure]');
   const caption = dialog?.querySelector<HTMLElement>('[data-lightbox-caption]');
   const counter = dialog?.querySelector<HTMLElement>('[data-lightbox-counter]');
+  const status = dialog?.querySelector<HTMLElement>('[data-lightbox-status]');
   const nav = dialog?.querySelector<HTMLElement>('[data-lightbox-nav]');
   const items = [...root.querySelectorAll<HTMLAnchorElement>('a[data-lightbox-item]')];
-  if (!dialog || !figure || !caption || !counter || !nav || items.length === 0) return;
+  if (!dialog || !figure || !caption || !counter || !status || !nav || items.length === 0) return;
   if (typeof dialog.showModal !== 'function') return;
 
   // Créée à la première ouverture seulement : rien n'est téléchargé avant.
@@ -39,9 +41,16 @@ function enhance(root: HTMLElement, signal: AbortSignal): void {
     image.srcset = srcset;
     image.src = item.href;
     if (!image.isConnected) figure.prepend(image);
-    caption.textContent = item.dataset['caption'] ?? '';
-    counter.textContent =
-      items.length > 1 ? counterText(current, items.length, dialog.dataset['counter'] ?? '') : '';
+    const legend = item.dataset['caption'] ?? '';
+    caption.textContent = legend;
+    const several = items.length > 1;
+    counter.textContent = several
+      ? counterText(current, items.length, dialog.dataset['counter'] ?? '')
+      : '';
+    // Annonce unique « Image n sur N : légende » (le compteur visuel est aria-hidden).
+    status.textContent = several
+      ? statusText(current, items.length, dialog.dataset['status'] ?? '', legend || alt)
+      : '';
   };
 
   root.addEventListener(

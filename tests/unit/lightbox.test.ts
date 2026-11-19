@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { counterText, wrapIndex } from '@/lib/lightbox';
+import { counterText, statusText, wrapIndex } from '@/lib/lightbox';
 import { microcopy } from '@/config/microcopy';
 
 describe('wrapIndex', () => {
@@ -11,6 +11,22 @@ describe('wrapIndex', () => {
 
   it('liste vide : 0', () => {
     expect(wrapIndex(2, 0)).toBe(0);
+  });
+});
+
+describe('statusText', () => {
+  it('annonce le rang, le total et la légende', () => {
+    expect(statusText(1, 5, microcopy.lightbox.status, 'Salon, rendu 3D')).toBe(
+      'Image 2 sur 5 : Salon, rendu 3D',
+    );
+  });
+
+  it('sans légende : le rang seul, sans deux-points orphelin', () => {
+    expect(statusText(0, 3, microcopy.lightbox.status, '  ')).toBe('Image 1 sur 3');
+  });
+
+  it('boucle comme le compteur', () => {
+    expect(statusText(-1, 3, microcopy.lightbox.status, 'Cuisine')).toBe('Image 3 sur 3 : Cuisine');
   });
 });
 
