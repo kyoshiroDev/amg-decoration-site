@@ -152,7 +152,7 @@ export const microcopy = {
     areaTitle: 'Zone d’intervention',
     socialTitle: 'Me suivre',
     sitemapTitle: 'Plan du site',
-    area: 'Basée en région parisienne, je vous accompagne à Paris, et à distance partout en France.',
+    area: 'Basée en région parisienne, je vous accompagne à Paris et en Île-de-France, et à distance partout en France.',
     whatsapp: 'M’écrire sur WhatsApp',
     phoneLabel: 'Téléphone',
     emailLabel: 'Email',
