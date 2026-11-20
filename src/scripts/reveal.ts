@@ -13,7 +13,7 @@
  * - Focus clavier (WCAG 2.4.7, 2.4.11) : un bloc préparé qui reçoit le focus (lui ou un
  *   descendant) est révélé immédiatement, sans animation ; motion.css le rend visible dès la
  *   première image via `:focus-within`.
- * transform, opacity et clip-path uniquement : aucun décalage (CLS).
+ * transform et opacity uniquement : aucun décalage (CLS).
  */
 import { onPageReady } from './lifecycle';
 
