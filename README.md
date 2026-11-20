@@ -38,7 +38,7 @@ Claude enchaîne les 9 phases de `docs/ROADMAP.md`. À chaque phase : il code, f
 1. Sur vercel.com : **Add New → Project**, importer le dépôt GitHub `kyoshiroDev/amg-decoration-site`.
 2. Framework : Astro (détecté automatiquement). Branche de production : `main`.
 3. Chaque push sur `dev` produit une **preview** ; chaque merge dans `main` met en **production**.
-4. Le jour J : ajouter le domaine `amgdecorationdinterieur.com` dans Vercel et modifier les DNS chez le registrar actuel.
+4. Le jour J : lancer `npm run check:prod` (pages légales complètes, ADR-0015), puis ajouter le domaine `amgdecorationdinterieur.com` dans Vercel et modifier les DNS chez le registrar actuel.
 
 ## Variables d’environnement
 
@@ -76,6 +76,7 @@ Claude enchaîne les 9 phases de `docs/ROADMAP.md`. À chaque phase : il code, f
 
 - `.claude/hooks/guard-git.mjs` bloque : push sans approbation du reviewer, push sur `main`, push forcé, merge de PR, commit sur `main`, ajout de `.env`.
 - La CI GitHub (`.github/workflows/ci.yml`) rejoue types, lint, tests, build, e2e + axe et Lighthouse sur chaque PR.
+- Le build de **production** Vercel échoue tant qu'un `TODO(contenu)` reste dans les pages légales (ADR-0015) ; `npm run check:prod` donne la même liste en local.
 
 ## Documentation
 

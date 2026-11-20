@@ -6,7 +6,7 @@
 
 1. **Statique d'abord** : tout est pré-rendu au build. Zéro serveur, zéro base de données.
 2. **Contenu séparé du code** : les textes vivent dans `src/content/` (Markdown/YAML validés par Zod) ; les infos de l'entreprise dans `src/config/site.ts`.
-3. **Couches** : `pages` (routes) → `layouts` (squelette + SEO) → `blocks` (sections) → `ui` (atomes). `lib/` est transverse et pur, à deux exceptions documentées : les lecteurs de collections `lib/pages/<page>.ts` (I/O Astro, ADR-0014) et `lib/article-files.ts` (lecture du disque pour `astro.config.mjs` et les tests).
+3. **Couches** : `pages` (routes) → `layouts` (squelette + SEO) → `blocks` (sections) → `ui` (atomes). `lib/` est transverse et pur, à trois exceptions documentées : les lecteurs de collections `lib/pages/<page>.ts` (I/O Astro, ADR-0014), `lib/article-files.ts` (lecture du disque pour `astro.config.mjs` et les tests) et `lib/release-guard-files.ts` (lecture des pages légales pour le garde-fou de mise en production, ADR-0015).
 4. **Progressive enhancement** : le HTML/CSS fonctionne seul ; le JS (`src/scripts/`) n'ajoute que de l'agrément.
 
 ## Styleguide interne
@@ -124,7 +124,7 @@ Le corps des fichiers `.md` (pas des `.mdx`) passe par le plugin Sätteri `conte
 - Un fichier = une entrée ; **le nom du fichier est le slug de l'URL** : minuscules, sans accents, mots séparés par des tirets (`chalet-suisse.md`, `bien-choisir-sa-peinture.mdx`). Le renommer change l'URL : prévoir une redirection 301 dans `vercel.json`.
 - Dans les fichiers YAML, la clé de chaque entrée suit la même règle (`sebastien-t`).
 - Images d'un projet : `src/assets/projets/<slug>/` (`01-avant.jpg`, `02-3d-salon.jpg`, `03-apres.jpg`…) ; images d'un article : `src/assets/articles/<slug>/`. En attendant les originaux : `src/assets/placeholders/` (listés dans son `README.md`).
-- Aucun texte de la forme `TODO(contenu): …` ne doit rester dans une page publiée.
+- Aucun texte de la forme `TODO(contenu): …` ne doit rester dans une page publiée. Dans les trois pages légales, le moindre `TODO(contenu)` (même en commentaire YAML) fait échouer le build de production Vercel (§ Déploiement, ADR-0015).
 
 ### Ajouter une réalisation (pas à pas)
 
@@ -171,7 +171,7 @@ Poids total mesuré par page (gzip, audit performance de la Phase 7, hors script
 
 ## Tests
 
-- `tests/unit/` (Vitest, `npm run test`) : fonctions pures de `src/lib/` (dont `content-template.test.ts`, qui rend aussi du Markdown par Sätteri avec le plugin).
+- `tests/unit/` (Vitest, `npm run test`) : fonctions pures de `src/lib/` (dont `content-template.test.ts`, qui rend aussi du Markdown par Sätteri avec le plugin, et `release-guard.test.ts`).
 - Gabarit Markdown (ADR-0016) : `tests/e2e/pages.spec.ts` vérifie les coordonnées de `site.ts` dans les pages légales, le texte du repli `mailto:` de `/confidentialite/` et l'absence de tout jeton ou marqueur dans les HTML de `dist/` ; `tests/e2e-service/privacy.spec.ts` vérifie le texte du mode service.
 - `tests/e2e/` (Playwright + axe, `npm run test:e2e`, `playwright.config.ts`) : build de production `dist/` servi sur le port 4321, projets mobile (Pixel 7) et desktop. Ce build n'a pas de `PUBLIC_FORM_ENDPOINT` : le formulaire de contact y est en repli `mailto:`.
 - CSP (ADR-0012) : `tests/e2e/csp.spec.ts` vérifie la politique et les empreintes de chaque page et l'absence de violation, au chargement et pendant les interactions ; aucun test n'injecte de balise `<style>` ou `<script>` (CSSOM `adoptedStyleSheets` à la place). `tests/e2e/smoke.spec.ts` : aucune erreur console sur toutes les pages, fichiers `/_astro/` cités présents, liens externes en https avec `rel="noopener noreferrer"`.
@@ -184,8 +184,12 @@ Poids total mesuré par page (gzip, audit performance de la Phase 7, hors script
 - `astro.config.mjs` → `security.csp` : Content-Security-Policy en balise meta, empreintes des scripts et styles calculées au build ; directives et empreintes des scripts `is:inline` fournies par `src/lib/csp.ts`, origine de `PUBLIC_FORM_ENDPOINT` autorisée si elle est définie ; intégration `amg:csp-par-page` (hook `astro:build:done`) qui réduit les empreintes de chaque page à celles de ses éléments inline (`pruneCspHashes`, ADR-0012).
 - `vercel.json` : redirections 301, en-têtes de sécurité (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, HSTS, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `Permissions-Policy`, CSP d'en-tête limitée à `frame-ancestors`/`base-uri`/`object-src`), vérifiés par `tests/unit/security-headers.test.ts` ; cache immuable `/_astro/*` et `/icons.<version>.svg` (URLs versionnées par empreinte, vérifié par le même test).
 - `astro.config.mjs` → `markdown.processor` : Sätteri (processeur par défaut d'Astro 7) avec le plugin `contentTemplatePlugin` (§ Gabarit des corps Markdown, ADR-0016).
+- `astro.config.mjs` → intégration `amg:garde-fou-production` (hook `astro:build:start`) : si `VERCEL_ENV` vaut `production`, échec du build tant qu'un `TODO(contenu)` reste dans les pages légales (ADR-0015).
+- `scripts/check-prod.ts` (`npm run check:prod`, exécuté directement par Node) : le même contrôle en local, quel que soit l'environnement. Ne pas confondre avec `src/scripts/` (JS client).
 - `tsconfig.json` : `astro/tsconfigs/strictest` + alias `@/*`.
 
 ## Déploiement
 
 GitHub → Vercel : chaque push sur `dev` = preview ; merge dans `main` (humain) = production. La CI GitHub Actions (`.github/workflows/ci.yml`) doit être verte avant tout merge.
+
+**Garde-fou de mise en production** (ADR-0015) : le build de production Vercel (`VERCEL_ENV=production`) échoue tant qu'un `TODO(contenu)` reste dans `mentions-legales.md`, `conditions-generales.md` ou `confidentialite.md` ; le message liste chaque TODO en `fichier:ligne`, et la production précédente reste en ligne. Builds locaux, CI et previews ne sont pas concernés. Avant de rattacher le domaine : `npm run check:prod` (même liste, code de sortie 1 s'il en reste) et vérifier dans Vercel que les variables système sont exposées.

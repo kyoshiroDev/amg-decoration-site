@@ -7,12 +7,12 @@
 # Paragraphes propres au mode du formulaire : blocs `{formulaire:service}` (PUBLIC_FORM_ENDPOINT défini) et `{formulaire:mailto}` (repli mailto:),
 # fermés par `{/formulaire}` ; seul le bloc du mode du build est publié (ADR-0016).
 #
-# TODO(contenu): nommer le prestataire du formulaire (ADR-0003), son pays d’établissement, son pays d’hébergement et la garantie de transfert éventuelle, dans les blocs `{formulaire:service}` des sections « Qui reçoit vos données » et « Transferts ».
+# TODO(contenu): si le formulaire passe par un service (ADR-0003) : nommer le prestataire, son pays d’établissement, son pays d’hébergement et la garantie de transfert éventuelle, dans les blocs `{formulaire:service}` des sections « Qui reçoit vos données » et « Transferts ». Si le site est mis en ligne avec le repli mailto:, ce point est sans objet : supprimer ce TODO.
 # TODO(contenu): durée de conservation des demandes sans suite : 3 ans maximum après le dernier échange (repère du référentiel CNIL « gestion commerciale ») ; Amandine peut choisir plus court.
 # TODO(contenu): Amandine confirme-t-elle ne faire aucune prospection (newsletter, relances commerciales) avec les coordonnées reçues ? Sinon, prévoir une case à cocher distincte et adapter cette page.
 # TODO(contenu): messagerie Gmail grand public (am.gaury@gmail.com) : envisager une messagerie professionnelle couverte par un contrat de sous-traitance (Google Workspace ou fournisseur européen) ; adapter la section « Qui reçoit vos données ».
 # TODO(contenu): date de mise à jour à ajuster le jour de la mise en ligne.
-# TODO(contenu): si un fil Instagram, une carte ou une vidéo intégrée est ajouté un jour, mettre à jour la section « Cookies » et charger l’intégration au clic.
+# Rappel (maintenance, non bloquant) : si un fil Instagram, une carte ou une vidéo intégrée est ajouté un jour, mettre à jour la section « Cookies » et charger l’intégration au clic.
 seo:
   title: 'Politique de confidentialité'
   description: 'Comment AMG Décoration d’Intérieur traite vos données personnelles : formulaire de contact, hébergement, durées de conservation, vos droits et la CNIL.'

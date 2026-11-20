@@ -13,6 +13,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
+    "check:prod": "node scripts/check-prod.ts",
     "lint": "npm run lint:js && npm run lint:css && npm run lint:format",
     "lint:js": "eslint . --max-warnings 0",
     "lint:css": "stylelint \"src/**/*.{css,astro}\" --max-warnings 0 --allow-empty-input",

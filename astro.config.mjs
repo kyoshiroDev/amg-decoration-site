@@ -12,6 +12,8 @@ import { cspDirectives, INLINE_SCRIPT_HASHES, pruneCspHashes } from './src/lib/c
 import { site } from './src/config/site.ts';
 import { resolveFormTarget } from './src/lib/contact-form.ts';
 import { contentTemplatePlugin, siteTemplateVariables } from './src/lib/content-template.ts';
+import { formatReleaseBlockers, isProductionBuild } from './src/lib/release-guard.ts';
+import { readReleaseBlockers } from './src/lib/release-guard-files.ts';
 
 const SITE = 'https://amgdecorationdinterieur.com';
 
@@ -103,6 +105,17 @@ export default defineConfig({
     },
   ],
   integrations: [
+    // Pages légales incomplètes (`TODO(contenu)`) : le build de production Vercel échoue (ADR-0015).
+    {
+      name: 'amg:garde-fou-production',
+      hooks: {
+        'astro:build:start': () => {
+          if (!isProductionBuild(process.env)) return;
+          const blockers = readReleaseBlockers();
+          if (blockers.length > 0) throw new Error(formatReleaseBlockers(blockers));
+        },
+      },
+    },
     // Empreintes CSP réduites, page par page, à celles des éléments inline présents (ADR-0012).
     {
       name: 'amg:csp-par-page',
