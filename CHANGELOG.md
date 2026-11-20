@@ -4,6 +4,16 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ## [Non publié]
 
+### Phase 8 — Préparation à la mise en ligne
+
+- Garde-fou de mise en production : le build Vercel de production échoue tant qu'un `TODO(contenu)` reste dans les mentions légales, les CGS ou la confidentialité ; `npm run check:prod` donne la même liste en local (ADR-0015).
+- Gabarit des corps Markdown : coordonnées et SIRET injectés depuis `site.ts`, paragraphes de la confidentialité affichés selon le mode réel du formulaire (repli `mailto:` ou service) ; jeton ou bloc inconnu = build en échec (ADR-0016).
+- Comparateur « Rendu 3D ↔ Réalisé » visible sur `/visualisation-3d/` (paire configurable, images provisoires signalées), dévoilement en `transform` au lieu de `clip-path`.
+- Section « Décoratrice d'intérieur à Paris, et à distance partout en France » sur `/contact/`.
+- Redirection `www` → domaine nu en un seul saut (aussi pour les anciennes URL), nœud `Service` sur `/visualisation-3d/`, descriptions avec appel à l'action, plus de recouvrement « plan 3D ».
+- Passe axe sur les colonnes collantes défilantes ; port du serveur de test surchargeable (`PLAYWRIGHT_PORT`).
+- `docs/MISE-EN-LIGNE.md` : informations à obtenir d'Amandine (bloquantes, visuels, faits à confirmer) et checklist de bascule (Vercel, DNS, HTTPS, Search Console, Google Business Profile).
+
 ### Phase 7 — Qualité finale
 
 - CSP stricte par empreintes (`security.csp` d'Astro, balise meta), élaguée page par page aux seuls éléments inline présents ; en-têtes Vercel complétés (`frame-ancestors`, `base-uri`, `object-src`, CORP, Permissions-Policy) ; aucune violation CSP sur les 25 pages, testé en e2e et sur le build en mode service (ADR-0012).
