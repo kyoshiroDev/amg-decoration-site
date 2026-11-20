@@ -30,19 +30,20 @@ Checklist de la bascule de `amgdecorationdinterieur.com` (WordPress) vers le nou
 
 ### Visuels (le site ne montre encore aucune vraie réalisation)
 
-- Photos HD et rendus 3D des 4 réalisations (`src/assets/projets/<slug>/`), avec la nature de chaque image (rendu 3D ou photo réelle) et le lieu de chaque projet.
+- Originaux HD des 4 réalisations : les images en place (31 rendus 3D et photos avant, `src/assets/projets/<slug>/`) viennent de l'ancien site en 1200 × 600 ; tant qu'elles ne font pas 1200 × 630, les pages projets publient l'image Open Graph par défaut. Lieu de 3 projets ; l'esquisse de cuisine `espace-de-vie-scandinave/05` appartient-elle bien à ce projet ?
 - Une vraie paire « rendu 3D / photo du résultat » cadrée à l'identique pour le comparateur de `/visualisation-3d/`.
 - Rendus 3D pour les héros de l'accueil et de `/visualisation-3d/`, couvertures des 2 articles, image Open Graph 1200 × 630.
 - Portrait d'Amandine (photo HD, format portrait) ; logo vectoriel (SVG).
 
 ### Textes et faits à confirmer
 
-- Formation : « certifiée par MJM Design Graphic » et/ou « cursus de 5 ans, certifiée en 2010 » (à propos).
+Déjà tranchés par l'ancien site (relevé du 2026-11-20) : formation (cursus de 5 ans, certifiée en 2010 ; certifiée par MJM Design Graphic), rendez-vous à distance en visio ou par téléphone, accompagnement par WhatsApp ou email, prix affichés.
+
 - Nom de la formule : « Essentiel » ou « Essentielle » ; nombre de vues 3D et de modifications incluses par formule ; prix des options.
 - Conserver l'offre « Meuble sur-mesure 3D » et l'« Offre Professionnels » ? Formule réelle de chaque réalisation.
 - Attribution des avis clients ; questions fréquentes (FAQ, collection vide aujourd'hui).
-- Zone : projets en Suisse acceptés ? déplacements sur place à Paris / Île-de-France ? rendez-vous à distance en visio, par téléphone ou au choix ?
-- Chambre des enfants du chalet (couleurs, matières) ; WhatsApp sur le même numéro ; profil LinkedIn actif.
+- Zone : d'autres projets hors de France acceptés (le chalet en Suisse a été mené à distance) ? déplacements sur place à Paris / Île-de-France ?
+- Chambre des enfants du chalet : texte écrit d'après les rendus, idées clés à confirmer ; WhatsApp (canal confirmé) sur le même numéro que le téléphone ; profil LinkedIn actif.
 - Robots d'IA (`GPTBot`, `Google-Extended`, `ClaudeBot`…) : autoriser (choix actuel) ou bloquer (ADR-0011).
 
 ## 2. Avant la bascule (sur une preview Vercel)

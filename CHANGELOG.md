@@ -4,6 +4,12 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ## [Non publié]
 
+### Après la Phase 8 — Contenus de l'ancien site
+
+- Vraies images des 4 réalisations (31 rendus 3D et photos avant travaux d'Amandine, repris de son ancien site en 1200 × 600) et des couvertures des 2 articles, avec des textes alternatifs descriptifs ; section « chambre des enfants » du chalet décrite d'après les rendus.
+- Réponses reprises de l'ancien site : formation, rendez-vous à distance en visio ou par téléphone, WhatsApp comme canal d'accompagnement, chalet en Suisse mené à distance.
+- Image Open Graph : la couverture si elle atteint 1200 × 630, sinon l'image par défaut avec son texte alternatif (ADR-0011 révisée) ; `srcset` jusqu'à la largeur de la source, `sizes` corrigé du recadrage et calculé au build ; cartes projet sans variantes inutiles (HTML de l'accueil 14,1 Ko gzip).
+
 ### Phase 8 — Préparation à la mise en ligne
 
 - Garde-fou de mise en production : le build Vercel de production échoue tant qu'un `TODO(contenu)` reste dans les mentions légales, les CGS ou la confidentialité ; `npm run check:prod` donne la même liste en local (ADR-0015).

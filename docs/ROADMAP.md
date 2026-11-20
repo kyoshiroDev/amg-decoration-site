@@ -119,7 +119,7 @@
 Ces points attendent une information ou un visuel d'Amandine, ou une décision humaine (`docs/MISE-EN-LIGNE.md`) :
 
 - [ ] Lever les `TODO(contenu)` bloquants des pages légales (`npm run check:prod` vert) : adresse, EI et RNE, médiateur, article 4 des CGS et formulaire type de rétractation, prix (`showPrices`, title de `/prestations/`), clients pros, TTC → TVA non applicable
-- [ ] Visuels réels (réalisations, paire du comparateur, héros, couvertures, OG, portrait, logo) ; puis logo et localité dans le JSON-LD, formule réelle de chaque réalisation (champ `service`), régénération de la régression visuelle (Git LFS ou références locales)
+- [ ] Visuels réels (originaux HD des réalisations — les images de l'ancien site, en 1200 × 600, sont en place depuis le 2026-11-20 —, paire du comparateur, héros, couvertures, OG, portrait, logo) ; puis logo et localité dans le JSON-LD, formule réelle de chaque réalisation (champ `service`), régénération de la régression visuelle (Git LFS ou références locales)
 - [ ] 150 à 300 mots propres par fiche prestation (`redacteur`) et `serviceType` par fiche, à partir des informations d'Amandine
 - [ ] Décision sur les robots d'IA (ADR-0011)
 - [ ] Améliorations non bloquantes de l'audit global : allègement de l'accueil (`content-visibility`, moins de `:has()`, styles inline vers le CSS partagé ; marge HTML de ~0,9 Ko), section accueil vers les offres Meuble / Pros ou les derniers articles, héros intérieurs et gabarits texte (figure, citation), `view-transition-name` sur la seule carte cliquée si le nombre de projets grandit, finitions P3 design et SEO, nom de la formule dans la navigation par titres des fiches
