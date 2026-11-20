@@ -21,6 +21,9 @@ nouveau build.
 
 1. Vérifier que le changement visuel est voulu (ouvrir le diff dans `test-results/visual/`).
 2. Lancer `npm run test:visual:update`, puis `npm run test:visual` deux fois : 0 diff attendu.
+   `--update-snapshots` ne réécrit que les captures en échec : un changement de teinte léger (fonds,
+   palette) reste sous le seuil par pixel de Playwright et laisserait des références périmées. Dans ce
+   cas, régénérer tout : `npx playwright test -c playwright.visual.config.ts --update-snapshots=all`.
 3. Committer les PNG avec un message qui nomme le changement visuel, par exemple
    `test(visuel): met à jour les références après la refonte du pied de page`.
 
