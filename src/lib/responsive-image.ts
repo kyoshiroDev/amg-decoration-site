@@ -1,6 +1,6 @@
 /**
- * Règles pures des images responsives (`srcset` / `sizes`) : largeurs générées sans agrandissement
- * et `sizes` corrigé quand le cadre recadre l'image (`object-fit: cover`).
+ * Règles pures des images responsives (`srcset`) : largeurs générées sans agrandissement et
+ * recadrage au build à la proportion du cadre (`object-fit: cover`).
  */
 
 export interface ImageSize {
@@ -31,59 +31,18 @@ export function parseAspectRatio(ratio: string): number {
 }
 
 /**
- * Facteur d'agrandissement d'une image recadrée en `object-fit: cover` dans un cadre de ratio
- * `frameRatio` : une source plus large que le cadre est affichée plus large que lui (ex. source
- * 2 : 1 dans une arche 4 / 5 → 2,5 fois la largeur du cadre). 1 si la source est plus haute.
+ * Plus grand recadrage de `source` à la proportion `frameRatio` (largeur / hauteur) : toute la
+ * hauteur d'une source plus large que le cadre (paysage 2 : 1 dans une arche 4 / 5 → 480 × 600
+ * depuis 1200 × 600), toute la largeur d'une source plus haute. Passé en `width` / `height` à
+ * `<Picture>`, il fait recadrer chaque variante au build (centrée, comme `object-fit: cover`) :
+ * le navigateur ne télécharge plus les bandes masquées par le cadre.
  */
-export function coverScale(source: ImageSize, frameRatio: number): number {
-  return Math.max(1, source.width / source.height / frameRatio);
-}
-
-/** Découpe sur `separator` hors parenthèses (`calc()`, `min()`, conditions média). */
-function splitTopLevel(text: string, separator: (char: string) => boolean): string[] {
-  const parts: string[] = [];
-  let depth = 0;
-  let start = 0;
-  [...text].forEach((char, index) => {
-    if (char === '(') depth += 1;
-    else if (char === ')') depth -= 1;
-    else if (depth === 0 && separator(char)) {
-      parts.push(text.slice(start, index));
-      start = index + 1;
-    }
-  });
-  parts.push(text.slice(start));
-  return parts;
-}
-
-/** Longueur simple (`30vw`, `12.5rem`) : multipliée directement (HTML plus court) ; sinon `calc()`. */
-function scaleLength(length: string, scale: number): string {
-  const simple = /^(\d+(?:\.\d+)?)([a-z%]+)$/i.exec(length);
-  if (simple) {
-    const [, value = '', unit = ''] = simple;
-    return `${Number((Number(value) * scale).toFixed(2))}${unit}`;
+export function coverCrop(source: ImageSize, frameRatio: number): ImageSize {
+  if (source.width / source.height > frameRatio) {
+    return { width: Math.round(source.height * frameRatio), height: source.height };
   }
-  return `calc(${length} * ${scale})`;
-}
-
-/**
- * Multiplie chaque longueur d'un attribut `sizes` par `factor`, conditions média conservées : une
- * longueur simple est calculée directement (`30vw` × 2,5 → `75vw`), une expression passe par
- * `calc(… * factor)`. Sert à annoncer au navigateur la largeur réellement affichée d'une image
- * recadrée (voir `coverScale`), sans quoi il choisit une variante trop petite. `auto` est conservé.
- */
-export function scaleSizes(sizes: string, factor: number): string {
-  if (factor === 1) {
-    return sizes;
-  }
-  const scale = Number(factor.toFixed(3));
-  return splitTopLevel(sizes, (char) => char === ',')
-    .map((entry) => {
-      const words = splitTopLevel(entry.trim(), (char) => /\s/.test(char)).filter(Boolean);
-      const length = words.pop() ?? '';
-      const condition = words.join(' ');
-      const scaled = length === 'auto' ? length : scaleLength(length, scale);
-      return condition ? `${condition} ${scaled}` : scaled;
-    })
-    .join(', ');
+  return {
+    width: source.width,
+    height: Math.min(source.height, Math.round(source.width / frameRatio)),
+  };
 }

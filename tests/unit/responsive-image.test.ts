@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { coverScale, fitWidths, parseAspectRatio, scaleSizes } from '@/lib/responsive-image';
+import { coverCrop, fitWidths, parseAspectRatio } from '@/lib/responsive-image';
 
 describe('fitWidths', () => {
   it('plafonne à la largeur source et l’ajoute comme dernière variante (source 1200 px)', () => {
@@ -39,38 +39,26 @@ describe('parseAspectRatio', () => {
   });
 });
 
-describe('coverScale', () => {
-  it('source paysage 2 : 1 dans une arche 4 / 5 : 2,5 fois la largeur du cadre', () => {
-    expect(coverScale({ width: 1200, height: 600 }, 0.8)).toBe(2.5);
+describe('coverCrop', () => {
+  it('source plus large que le cadre : toute la hauteur, largeur au ratio du cadre', () => {
+    expect(coverCrop({ width: 1200, height: 600 }, 0.8)).toEqual({ width: 480, height: 600 });
+    expect(coverCrop({ width: 1200, height: 600 }, 1.25)).toEqual({ width: 750, height: 600 });
+    expect(coverCrop({ width: 1200, height: 600 }, 1.5)).toEqual({ width: 900, height: 600 });
   });
 
-  it('1 quand la source est plus haute que le cadre, ou de même ratio', () => {
-    expect(coverScale({ width: 800, height: 1000 }, 1.5)).toBe(1);
-    expect(coverScale({ width: 1500, height: 1000 }, 1.5)).toBe(1);
-  });
-});
-
-describe('scaleSizes', () => {
-  it('multiplie directement les longueurs simples en conservant les conditions média', () => {
-    expect(scaleSizes('(min-width: 64rem) 40vw, 100vw', 2.5)).toBe(
-      '(min-width: 64rem) 100vw, 250vw',
-    );
-    expect(scaleSizes('30rem', 1.333333)).toBe('39.99rem');
+  it('source plus haute que le cadre : toute la largeur, hauteur au ratio du cadre', () => {
+    expect(coverCrop({ width: 800, height: 1200 }, 1.5)).toEqual({ width: 800, height: 533 });
+    expect(coverCrop({ width: 1000, height: 2000 }, 0.8)).toEqual({ width: 1000, height: 1250 });
   });
 
-  it('ne coupe pas à l’intérieur des fonctions CSS', () => {
-    expect(scaleSizes('(min-width: 40rem) min(30rem, 50vw), calc(100vw - 2rem)', 1.333333)).toBe(
-      '(min-width: 40rem) calc(min(30rem, 50vw) * 1.333), calc(calc(100vw - 2rem) * 1.333)',
-    );
+  it('source déjà au ratio du cadre : inchangée', () => {
+    expect(coverCrop({ width: 1500, height: 1000 }, 1.5)).toEqual({ width: 1500, height: 1000 });
+    expect(coverCrop({ width: 1600, height: 2000 }, 0.8)).toEqual({ width: 1600, height: 2000 });
   });
 
-  it('conserve les conditions composées et la valeur auto', () => {
-    expect(scaleSizes('(min-width: 40rem) and (max-width: 64rem)  50vw, auto', 2)).toBe(
-      '(min-width: 40rem) and (max-width: 64rem) 100vw, auto',
-    );
-  });
-
-  it('rend sizes inchangé pour un facteur 1', () => {
-    expect(scaleSizes('(min-width: 64rem) 40vw, 100vw', 1)).toBe('(min-width: 64rem) 40vw, 100vw');
+  it('ne dépasse jamais la source malgré l’arrondi', () => {
+    const crop = coverCrop({ width: 1001, height: 1251 }, 0.8);
+    expect(crop.width).toBeLessThanOrEqual(1001);
+    expect(crop.height).toBeLessThanOrEqual(1251);
   });
 });
