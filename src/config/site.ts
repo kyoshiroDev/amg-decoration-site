@@ -69,7 +69,8 @@ export const site = {
   founder: { name: 'Amandine Gaury', jobTitle: 'Designer d’intérieur' },
   phone: { display: '07\u00A082\u00A035\u00A081\u00A032', e164: '+33782358132' },
   email: 'am.gaury@gmail.com',
-  // TODO(contenu): confirmer que le compte WhatsApp utilise bien le même numéro que le téléphone.
+  // TODO(contenu): canal WhatsApp confirmé par l’ancien site (« Accompagnement par WhatsApp ou email ») ;
+  // numéro identique au téléphone à confirmer (aucun numéro WhatsApp distinct publié).
   whatsapp: { url: 'https://wa.me/33782358132' },
   // TODO(contenu): adresse postale, ville et code postal inconnus (aucun streetAddress publié).
   address: { addressRegion: 'Île-de-France', addressCountry: 'FR' },
@@ -82,7 +83,8 @@ export const site = {
       closes: '17:00',
     },
   ],
-  // TODO(contenu): confirmer si Amandine accepte des projets en Suisse (un projet cité) avant d'ajouter le pays.
+  // TODO(contenu): un projet déjà mené à distance en Suisse (chalet) ; accepter d’autres projets hors de
+  // France ? Décision d’Amandine. Ne pas ajouter la Suisse à areaServed sans sa réponse.
   areaServed: [
     { type: 'City', name: 'Paris' },
     { type: 'AdministrativeArea', name: 'Île-de-France' },

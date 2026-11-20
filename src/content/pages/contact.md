@@ -21,7 +21,7 @@ sections:
   # Zone d'intervention (SEO local + national). Faits : src/config/site.ts (areaServed) et
   # docs/CONTENU-EXISTANT.md (« basée en région parisienne », « toute la France » par email,
   # téléphone, visio). Le premier bouton renvoie au formulaire de cette même page (id du titre).
-  # TODO(contenu): Amandine accepte-t-elle des projets en Suisse (le chalet est en Suisse) ? Si oui, l’ajouter ici et dans site.ts.
+  # TODO(contenu): un projet déjà mené à distance en Suisse (chalet) ; accepter d’autres projets hors de France ? Décision d’Amandine (si oui, l’ajouter ici et dans site.ts).
   # TODO(contenu): Amandine se déplace-t-elle sur place à Paris ou en Île-de-France (visite, prise de mesures) ? Si oui, le dire ici.
   zone:
     eyebrow: 'Zone d’intervention'
