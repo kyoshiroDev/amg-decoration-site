@@ -178,7 +178,26 @@ describe('buildService', () => {
       origin,
     );
     expect(service).not.toHaveProperty('offers');
+    expect(service).not.toHaveProperty('serviceType');
     expect(service).toMatchObject({ provider: { '@id': entityId(origin, 'entreprise') } });
+  });
+
+  it('publie `serviceType` quand il est renseigné', () => {
+    const service = buildService(
+      {
+        name: 'Visualisation 3D',
+        description: 'Plan 3D avant travaux',
+        path: '/visualisation-3d/',
+        serviceType: 'Visualisation 3D d’intérieur',
+      },
+      site.areaServed,
+      origin,
+    );
+    expect(service).toMatchObject({
+      '@id': 'https://amgdecorationdinterieur.com/visualisation-3d/#service',
+      serviceType: 'Visualisation 3D d’intérieur',
+      provider: { '@id': entityId(origin, 'entreprise') },
+    });
   });
 
   it('reprend la zone desservie de l’entreprise (même source que buildBusiness)', () => {

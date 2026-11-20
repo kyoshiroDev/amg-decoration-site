@@ -167,6 +167,8 @@ export interface ServiceInput {
   readonly path: InternalPath;
   /** Visuel de la prestation (URL relative ou absolue), émis seulement s'il existe. */
   readonly imageUrl?: string | undefined;
+  /** Catégorie de service (`serviceType` schema.org), émise seulement si renseignée. */
+  readonly serviceType?: string | undefined;
 }
 
 /**
@@ -183,6 +185,7 @@ export function buildService(
     '@id': pageNodeId(input.path, origin, 'service'),
     name: input.name,
     description: input.description,
+    ...(input.serviceType ? { serviceType: input.serviceType } : {}),
     url: absoluteUrl(input.path, origin),
     ...(input.imageUrl ? { image: new URL(input.imageUrl, origin).href } : {}),
     provider: { '@id': entityId(origin, 'entreprise') },

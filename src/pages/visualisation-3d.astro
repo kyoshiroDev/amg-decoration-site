@@ -12,8 +12,9 @@ import CtaBanner from '@/components/blocks/CtaBanner.astro';
 import { media } from '@/config/media';
 import { microcopy } from '@/config/microcopy';
 import { getMethodData } from '@/lib/pages/method';
+import { requireSiteOrigin } from '@/lib/url';
 
-const data = await getMethodData();
+const data = await getMethodData(requireSiteOrigin(Astro.site));
 const { sections } = data;
 const compareLabels = microcopy.projects.beforeAfter;
 ---
@@ -24,6 +25,7 @@ const compareLabels = microcopy.projects.beforeAfter;
   image={media.methodHero.image}
   imageAlt={media.methodHero.alt}
   breadcrumbs={data.breadcrumbs}
+  jsonLd={data.jsonLd}
 >
   <PageHero
     section={data.hero}
