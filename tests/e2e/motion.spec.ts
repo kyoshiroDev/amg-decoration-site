@@ -81,9 +81,13 @@ test.describe('Apparitions au scroll', () => {
           .locator(`${selector}[data-reveal="list"] > li`)
           .evaluateAll((items) =>
             items.map((item) => {
-              const range = (item.getAnimations()[0] as CSSAnimation | undefined)?.rangeStart as
-                { offset?: CSSUnitValue } | undefined;
-              const offset = range?.offset;
+              // `rangeStart` (Scroll-driven Animations) n'est pas encore dans les types DOM de TypeScript.
+              type ScrollDrivenAnimation = Animation & {
+                rangeStart?: { offset?: CSSUnitValue } | string;
+              };
+              const animation = item.getAnimations()[0] as ScrollDrivenAnimation | undefined;
+              const range = animation?.rangeStart;
+              const offset = typeof range === 'object' ? range.offset : undefined;
               const shift = offset?.unit === 'px' ? offset.value : 0;
               return item.getBoundingClientRect().top + window.scrollY + shift;
             }),
