@@ -68,10 +68,16 @@ test.describe('Visionneuse : styleguide', () => {
     await expect(dialog).toBeVisible();
 
     // Échap enfoncée : le fondu part (opacité visée 0), la fermeture attend le relâchement.
-    await page.keyboard.down('Escape');
-    await expect(dialog).toHaveAttribute('data-closing', '');
-    await expect(dialog).toHaveJSProperty('open', true);
-    await page.keyboard.up('Escape');
+    // État lu dans la même tâche que l'appui : le filet de 500 ms ne peut pas s'intercaler, même
+    // sur une machine chargée.
+    const whileHeld = await dialog.evaluate((element: HTMLDialogElement) => {
+      element.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      return { closing: element.hasAttribute('data-closing'), open: element.open };
+    });
+    expect(whileHeld).toEqual({ closing: true, open: true });
+    await dialog.dispatchEvent('keyup', { key: 'Escape', bubbles: true });
     await expect(dialog).toHaveJSProperty('open', false);
     await expect(dialog).not.toHaveAttribute('data-closing');
     await expect(first).toBeFocused();
