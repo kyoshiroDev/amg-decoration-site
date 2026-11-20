@@ -12,10 +12,10 @@ interface Props {
   section: PageSection;
   services: readonly ServiceCardData[];
   id: string;
-  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  background?: 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
 }
 
-const { section, services, id, background = 'sand' } = Astro.props;
+const { section, services, id, background = 'beige' } = Astro.props;
 ---
 
 <ContentSection section={section} id={id} background={background}>

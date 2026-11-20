@@ -16,10 +16,10 @@ interface Props {
   heading: string;
   items: readonly FurtherItem[];
   id: string;
-  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  background?: 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
 }
 
-const { heading, items, id, background = 'linen' } = Astro.props;
+const { heading, items, id, background = 'cream' } = Astro.props;
 ---
 
 {items.length > 0 && (
@@ -29,7 +29,7 @@ const { heading, items, id, background = 'linen' } = Astro.props;
       <ul
         class:list={[
           'further-reading__list',
-          { 'further-reading__list--on-surface': background === 'cream' },
+          { 'further-reading__list--on-surface': background === 'ivory' },
         ]}
       >
         {items.map((item) => (
@@ -87,7 +87,7 @@ const { heading, items, id, background = 'linen' } = Astro.props;
         outline-offset: var(--focus-ring-offset);
       }
 
-      /* Petite arche filaire terracotta (décor), puis surtitre remonté au-dessus du titre. */
+      /* Petite arche filaire camel (décor), puis surtitre remonté au-dessus du titre. */
       &::before {
         content: '';
         order: -2;

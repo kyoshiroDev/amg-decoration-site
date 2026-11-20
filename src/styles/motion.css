@@ -135,7 +135,7 @@
     position: absolute;
     inset: 0;
     z-index: 1;
-    background-color: var(--color-sand);
+    background-color: var(--color-beige);
     transform-origin: top;
     pointer-events: none;
   }

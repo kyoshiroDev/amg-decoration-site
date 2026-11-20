@@ -28,7 +28,7 @@ const { sections } = model;
   <MediaText
     section={sections.parcours}
     id="parcours-titre"
-    background="cream"
+    background="ivory"
     image={media.portrait?.image}
     imageAlt={media.portrait?.alt}
   >
@@ -37,7 +37,7 @@ const { sections } = model;
     </RichText>
   </MediaText>
   <Quote heading={sections.citation.heading} quote={model.quote} id="citation-titre" />
-  <Values section={sections.missions} id="missions-titre" background="sand" />
+  <Values section={sections.missions} id="missions-titre" background="beige" />
   <Pillars section={sections.valeurs} id="valeurs-titre" />
   {model.testimonials.length > 0 && (
     <Testimonials
@@ -46,5 +46,5 @@ const { sections } = model;
       id="temoignages-titre"
     />
   )}
-  <CtaBanner section={sections.cta} id="contact-titre" background="blush" />
+  <CtaBanner section={sections.cta} id="contact-titre" background="rose" />
 </PageLayout>

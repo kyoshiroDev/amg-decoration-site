@@ -3,7 +3,7 @@
  * Tag — pastille d'information (type de pièce, formule, catégorie).
  * Non interactive par défaut ; fournir `href` pour en faire un lien (filtre, catégorie).
  */
-type Tone = 'sand' | 'blush' | 'sage' | 'outline';
+type Tone = 'beige' | 'rose' | 'greige' | 'outline';
 
 interface Props {
   tone?: Tone;
@@ -11,7 +11,7 @@ interface Props {
   class?: string | undefined;
 }
 
-const { tone = 'sand', href, class: className } = Astro.props;
+const { tone = 'beige', href, class: className } = Astro.props;
 const Element = href ? 'a' : 'span';
 ---
 
@@ -35,16 +35,16 @@ const Element = href ? 'a' : 'span';
       text-decoration: none;
     }
 
-    .tag--sand {
-      background-color: var(--color-sand);
+    .tag--beige {
+      background-color: var(--color-beige);
     }
 
-    .tag--blush {
-      background-color: var(--color-blush);
+    .tag--rose {
+      background-color: var(--color-rose-100);
     }
 
-    .tag--sage {
-      background-color: var(--color-sage);
+    .tag--greige {
+      background-color: var(--color-greige);
     }
 
     .tag--outline {

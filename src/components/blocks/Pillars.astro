@@ -11,10 +11,10 @@ import type { PageSection } from '@/lib/pages/types';
 interface Props {
   section: PageSection;
   id: string;
-  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  background?: 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
 }
 
-const { section, id, background = 'sage' } = Astro.props;
+const { section, id, background = 'greige' } = Astro.props;
 ---
 
 <ContentSection section={section} id={id} background={background} align="center">

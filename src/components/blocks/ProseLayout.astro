@@ -9,12 +9,12 @@ import Section from '@/components/ui/Section.astro';
 import Container from '@/components/ui/Container.astro';
 
 interface Props {
-  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  background?: 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
   /** Mesure du texte : `body` (66ch) ou `legal` (68ch, lecture longue). */
   measure?: 'body' | 'legal';
 }
 
-const { background = 'cream', measure = 'body' } = Astro.props;
+const { background = 'ivory', measure = 'body' } = Astro.props;
 const hasAside = Astro.slots.has('aside');
 ---
 

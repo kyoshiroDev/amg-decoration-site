@@ -6,7 +6,7 @@
 interface Props {
   label: string;
   /** Fond de l'échantillon. */
-  surface?: 'none' | 'cream' | 'linen' | 'sand' | 'blush' | 'sage';
+  surface?: 'none' | 'ivory' | 'cream' | 'beige' | 'rose' | 'greige';
   class?: string | undefined;
 }
 
@@ -47,24 +47,24 @@ const { label, surface = 'none', class: className } = Astro.props;
       border-radius: var(--radius-md);
     }
 
+    .specimen__body--ivory {
+      background-color: var(--color-ivory);
+    }
+
     .specimen__body--cream {
       background-color: var(--color-cream);
     }
 
-    .specimen__body--linen {
-      background-color: var(--color-linen);
+    .specimen__body--beige {
+      background-color: var(--color-beige);
     }
 
-    .specimen__body--sand {
-      background-color: var(--color-sand);
+    .specimen__body--rose {
+      background-color: var(--color-rose-100);
     }
 
-    .specimen__body--blush {
-      background-color: var(--color-blush);
-    }
-
-    .specimen__body--sage {
-      background-color: var(--color-sage);
+    .specimen__body--greige {
+      background-color: var(--color-greige);
     }
   }
 </style>

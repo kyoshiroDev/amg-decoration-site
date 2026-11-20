@@ -1,7 +1,7 @@
 ---
 /**
  * Quote — citation mise en exergue : petit titre de section (h2 discret), guillemets
- * terracotta géants (décor), citation en Fraunces italique, auteur.
+ * camel géants (décor), citation en Fraunces italique, auteur.
  */
 import Section from '@/components/ui/Section.astro';
 import Container from '@/components/ui/Container.astro';
@@ -13,10 +13,10 @@ interface Props {
   heading: string;
   quote: QuoteData;
   id: string;
-  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  background?: 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
 }
 
-const { heading, quote, id, background = 'linen' } = Astro.props;
+const { heading, quote, id, background = 'cream' } = Astro.props;
 ---
 
 <Section background={background} labelledby={id} spacing="compact">

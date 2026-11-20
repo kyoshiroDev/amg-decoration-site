@@ -1,7 +1,7 @@
 ---
 /**
  * ArticleMeta — ligne d'informations d'un article : date de publication (et de mise à jour)
- * en `<time datetime>`, temps de lecture. Séparateurs en petites pastilles terracotta (CSS).
+ * en `<time datetime>`, temps de lecture. Séparateurs en petites pastilles camel (CSS).
  */
 import type { DateDisplay } from '@/lib/pages/articles-model';
 
@@ -52,7 +52,7 @@ const { published, updated, readingTime, labels, class: className } = Astro.prop
       gap: var(--space-xs);
     }
 
-    /* Pastille terracotta entre deux informations (décor, non lue). */
+    /* Pastille camel entre deux informations (décor, non lue). */
     .article-meta__item + .article-meta__item::before {
       content: '';
       inline-size: var(--space-3xs);

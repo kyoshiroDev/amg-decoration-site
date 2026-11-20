@@ -25,10 +25,10 @@ interface Props {
   id: string;
   /** Chapeau facultatif (styleguide : préciser qu'il s'agit de placeholders). */
   lead?: string | undefined;
-  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  background?: 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
 }
 
-const { heading, groups, id, lead, background = 'cream' } = Astro.props;
+const { heading, groups, id, lead, background = 'ivory' } = Astro.props;
 /** Largeurs du grand format (plafonnées à la largeur source par `fitWidths`). */
 const LARGE_WIDTHS = [640, 960, 1280, 1600, 2400];
 /**

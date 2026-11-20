@@ -3,6 +3,9 @@
 Images **provisoires**, à remplacer par les photos et rendus 3D fournis par Amandine.
 Aucune image de banque d'images n'est utilisée ici.
 
+Ces illustrations ont été dessinées avec l'**ancienne palette** (terracotta, sauge) : depuis l'ADR-0017 (palette de
+l'ancien site), elles détonnent légèrement ; elles disparaissent quand les vrais visuels d'Amandine les remplacent.
+
 | Fichier                   | Dimensions  | Origine                                                                                                                                                                                            | Licence                                     | Utilisé par                                                                      |
 | ------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------- |
 | `interieur-lumiere.jpg`   | 1600 × 2000 | Illustration abstraite générée pour le projet (SVG fait main avec les couleurs du design system : mur lin, fenêtre en arche, assise terracotta, plante sauge), rastérisée en JPEG avec `sharp`.    | Création originale du projet, libre d'usage | `/styleguide/`                                                                   |

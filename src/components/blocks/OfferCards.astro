@@ -15,10 +15,10 @@ interface Props {
   section: PageSection;
   offers: readonly OfferCardData[];
   id: string;
-  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  background?: 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
 }
 
-const { section, offers, id, background = 'blush' } = Astro.props;
+const { section, offers, id, background = 'rose' } = Astro.props;
 const { services } = microcopy;
 ---
 

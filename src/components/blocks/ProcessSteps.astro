@@ -16,12 +16,12 @@ interface Props {
   section: PageSection;
   steps: readonly TextItemData[];
   id: string;
-  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  background?: 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
   /** `full` : titre et texte ; `summary` : titres seuls. */
   variant?: 'full' | 'summary';
 }
 
-const { section, steps, id, background = 'sage', variant = 'full' } = Astro.props;
+const { section, steps, id, background = 'greige', variant = 'full' } = Astro.props;
 ---
 
 <ContentSection section={section} id={id} background={background}>

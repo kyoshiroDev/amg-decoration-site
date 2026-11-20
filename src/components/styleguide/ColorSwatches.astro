@@ -6,17 +6,18 @@ import tokensCss from '@/styles/tokens.css?raw';
 import { parseColorTokens } from '@/lib/color-contrast';
 
 const usages: Record<string, string> = {
-  linen: 'Fond principal',
-  cream: 'Cartes, surfaces, texte sur terracotta',
-  sand: 'Sections alternées, bordures douces',
-  blush: 'Aplat pastel rose poudré',
-  sage: 'Aplat pastel sauge',
-  'terracotta-500': 'Décor\u00A0: traits, icônes, formes (jamais de texte)',
-  'terracotta-600': 'Fond des boutons primaires',
-  'terracotta-700': 'Liens, texte d’accent, survols',
+  cream: 'Fond principal (crème de l’ancien site)',
+  ivory: 'Cartes, surfaces, texte sur boutons',
+  beige: 'Sections alternées, pied de page',
+  greige: 'Sections alternées, aplat minéral',
+  'rose-100': 'Vieux rose très clair : une touche par page',
+  'camel-300': 'Camel doré : décor, traits, arches (jamais de texte)',
+  'camel-600': 'Fond des boutons primaires',
+  'camel-700': 'Liens, texte d’accent, survols, focus',
+  'rose-700': 'Erreurs de formulaire (texte, liseré)',
   ink: 'Texte principal',
   'ink-soft': 'Texte secondaire, légendes',
-  taupe: 'Contour des boutons ghost (≥ 3:1, jamais de texte)',
+  taupe: 'Contour des contrôles (≥ 3:1, jamais de texte)',
 };
 
 const tokens = parseColorTokens(tokensCss);

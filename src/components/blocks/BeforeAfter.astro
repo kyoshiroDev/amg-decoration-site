@@ -5,7 +5,7 @@
  * nommées par une pastille. Sous `html.js` (posée avant le premier rendu, ADR-0010) : les images
  * se superposent et un `<input type="range">` natif, invisible mais focalisable, règle la part
  * visible du rendu 3D (calque rogné translaté, figure contre-translatée : `transform` seulement),
- * poignée ronde terracotta, `aria-valuetext` « 60 % rendu 3D, 40 % réalisé ».
+ * poignée ronde camel, `aria-valuetext` « 60 % rendu 3D, 40 % réalisé ».
  * Clavier natif (flèches, Page précédente/suivante, Début/Fin) ; souris et tactile via
  * scripts/before-after.ts (`touch-action: pan-y` : le défilement vertical reste libre).
  * Styles : ./before-after.css.
@@ -33,11 +33,11 @@ interface Props {
   id: string;
   /** Surtitre facultatif. */
   eyebrow?: string | undefined;
-  /** Fragment de `heading` en italique Fraunces terracotta. */
+  /** Fragment de `heading` en italique Fraunces camel. */
   emphasis?: string | undefined;
   /** Chapeau facultatif (images provisoires : le préciser ici). */
   lead?: string | undefined;
-  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  background?: 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
 }
 
 const {
@@ -49,7 +49,7 @@ const {
   eyebrow,
   emphasis,
   lead,
-  background = 'blush',
+  background = 'beige',
 } = Astro.props;
 const copy = microcopy.projects.beforeAfter;
 const START = 50;

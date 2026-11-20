@@ -14,10 +14,10 @@ interface Props {
   section: PageSection;
   testimonials: readonly TestimonialData[];
   id: string;
-  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  background?: 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
 }
 
-const { section, testimonials, id, background = 'linen' } = Astro.props;
+const { section, testimonials, id, background = 'cream' } = Astro.props;
 
 /** Jeton facultatif de la microcopie : sans lui, l'intitulé reste identique pour chaque avis. */
 const AUTHOR_TOKEN = '{author}';

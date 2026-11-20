@@ -19,12 +19,12 @@ interface Props {
   id: string;
   image?: ImageMetadata | undefined;
   imageAlt?: string | undefined;
-  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  background?: 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
   /** Image à droite au lieu de gauche (≥ 64rem). */
   reverse?: boolean;
 }
 
-const { section, id, image, imageAlt = '', background = 'linen', reverse = false } = Astro.props;
+const { section, id, image, imageAlt = '', background = 'cream', reverse = false } = Astro.props;
 ---
 
 <Section background={background} labelledby={id} class="media-text">
@@ -102,7 +102,7 @@ const { section, id, image, imageAlt = '', background = 'linen', reverse = false
       position: relative;
       aspect-ratio: 4 / 5;
       border-radius: var(--radius-arch);
-      background-color: var(--color-blush);
+      background-color: var(--color-beige);
 
       &::before {
         content: '';
@@ -121,7 +121,7 @@ const { section, id, image, imageAlt = '', background = 'linen', reverse = false
       inline-size: 34%;
       aspect-ratio: 1;
       border-radius: var(--radius-pill);
-      background-color: var(--color-sage);
+      background-color: var(--color-accent);
       transform: translateX(-50%);
     }
 

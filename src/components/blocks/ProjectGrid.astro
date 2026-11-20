@@ -13,10 +13,10 @@ interface Props {
   section: PageSection;
   projects: readonly ProjectCardData[];
   id: string;
-  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  background?: 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
 }
 
-const { section, projects, id, background = 'linen' } = Astro.props;
+const { section, projects, id, background = 'cream' } = Astro.props;
 
 /** Cartes larges : 1re et 4e de chaque motif de 4. */
 const isWide = (index: number): boolean => index % 4 === 0 || index % 4 === 3;

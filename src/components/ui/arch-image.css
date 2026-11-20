@@ -12,7 +12,7 @@
     position: relative;
     aspect-ratio: var(--arch-ratio);
     overflow: hidden;
-    background-color: var(--color-sand);
+    background-color: var(--color-beige);
     isolation: isolate;
   }
 

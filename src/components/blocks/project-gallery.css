@@ -35,7 +35,7 @@
       inset-block-start: calc(var(--header-height) + var(--space-m));
     }
 
-    /* Petite arche filaire terracotta (décor). */
+    /* Petite arche filaire camel (décor). */
     &::before {
       content: '';
       flex: none;

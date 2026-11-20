@@ -171,7 +171,7 @@
     appearance: none;
   }
 
-  /* Focus clavier reporté sur la poignée : anneau terracotta séparé de l'image par du crème. */
+  /* Focus clavier reporté sur la poignée : anneau camel séparé de l'image par du crème. */
   .before-after__stage:has(.before-after__range:focus-visible) .before-after__knob {
     outline: var(--focus-ring);
     outline-offset: var(--focus-ring-offset);

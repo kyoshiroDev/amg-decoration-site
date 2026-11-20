@@ -33,7 +33,7 @@
     line-height: var(--leading-tight);
     white-space: nowrap;
 
-    /* Petite arche terracotta entre les mots (décor). */
+    /* Petite arche camel entre les mots (décor). */
     &::after {
       content: '';
       inline-size: var(--space-s);
