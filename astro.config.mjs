@@ -2,12 +2,16 @@
 import { defineConfig, fontProviders } from 'astro/config';
 import { loadEnv } from 'vite';
 import mdx from '@astrojs/mdx';
+import { satteri } from '@astrojs/markdown-satteri';
 import sitemap from '@astrojs/sitemap';
 import { readArticleSources } from './src/lib/article-files.ts';
 import { buildLastmodMap } from './src/lib/sitemap-lastmod.ts';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { cspDirectives, INLINE_SCRIPT_HASHES, pruneCspHashes } from './src/lib/csp.ts';
+import { site } from './src/config/site.ts';
+import { resolveFormTarget } from './src/lib/contact-form.ts';
+import { contentTemplatePlugin, siteTemplateVariables } from './src/lib/content-template.ts';
 
 const SITE = 'https://amgdecorationdinterieur.com';
 
@@ -19,6 +23,12 @@ const lastmod = buildLastmodMap(readArticleSources(), SITE);
 const { PUBLIC_FORM_ENDPOINT } = {
   ...loadEnv(process.env['NODE_ENV'] ?? 'production', process.cwd(), 'PUBLIC_'),
   ...process.env,
+};
+
+// Gabarit des corps Markdown (ADR-0016) : jetons `{email}`… de site.ts, blocs selon le mode du formulaire.
+const contentTemplate = {
+  variables: siteTemplateVariables(site),
+  formMode: resolveFormTarget(PUBLIC_FORM_ENDPOINT, site.email).kind,
 };
 
 // Configuration Astro — voir docs/ARCHITECTURE.md (§ Configuration).
@@ -43,6 +53,9 @@ export default defineConfig({
         resources: ["'self'", { resource: "'unsafe-inline'", kind: 'attribute' }],
       },
     },
+  },
+  markdown: {
+    processor: satteri({ mdastPlugins: [contentTemplatePlugin(contentTemplate)] }),
   },
   prefetch: {
     prefetchAll: false,

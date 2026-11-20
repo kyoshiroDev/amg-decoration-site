@@ -3,7 +3,7 @@
 # servie à l’URL /politique-de-confidentialite/, redirigée en 301 vers /mentions-legales/).
 # Obligations : LCEN (loi n° 2004-575), art. 1-1 depuis la loi SREN n° 2024-449. Synthèse : docs/CONFORMITE.md.
 # Hébergeur : https://vercel.com/legal/privacy-policy et https://vercel.com/legal/terms (consultés le 18/11/2026).
-# Coordonnées recopiées de src/config/site.ts : à mettre à jour ici aussi si elles changent.
+# Coordonnées : jetons `{email}`, `{phone}`, `{phoneE164}`, `{siret}` remplacés au rendu par les valeurs de src/config/site.ts (ADR-0016).
 #
 # TODO(contenu): adresse postale complète du siège (ou adresse de domiciliation) — le site actuel n’affiche que « Gif-sur-Yvette (91) », insuffisant pour l’éditrice (LCEN art. 1-1).
 # TODO(contenu): immatriculation au registre national des entreprises (RNE) ou au RCS : numéro et registre à confirmer, en plus du SIRET.
@@ -26,13 +26,13 @@ hero:
 Le site amgdecorationdinterieur.com est édité par **Amandine Gaury**, AMG Décoration d’Intérieur, décoratrice d’intérieur.
 
 - **Statut** : micro-entrepreneur
-- **SIRET** : 531 938 868 00019
+- **SIRET** : {siret}
 - **Code NAF** : 7410Z (activités spécialisées de design)
 - **Activité** : conseils et services en décoration d’intérieur
 - **Siège** : Gif-sur-Yvette (91), France
 - **TVA** : TVA non applicable, article 293 B du Code général des impôts
-- **Email** : [am.gaury@gmail.com](mailto:am.gaury@gmail.com)
-- **Téléphone** : [07 82 35 81 32](tel:+33782358132)
+- **Email** : [{email}](mailto:{email})
+- **Téléphone** : [{phone}](tel:{phoneE164})
 
 ## Directrice de la publication
 
@@ -65,7 +65,7 @@ Ce site est soumis au droit français. En cas de litige, les tribunaux français
 
 ## Contact
 
-Pour toute question ou réclamation concernant ce site, écrivez-moi à [am.gaury@gmail.com](mailto:am.gaury@gmail.com) ou passez par la [page Contact](/contact/).
+Pour toute question ou réclamation concernant ce site, écrivez-moi à [{email}](mailto:{email}) ou passez par la [page Contact](/contact/).
 
 ## Crédits
 

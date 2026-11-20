@@ -50,6 +50,8 @@ export interface SiteConfig {
   readonly email: string;
   readonly whatsapp: { readonly url: `https://wa.me/${string}` };
   readonly address: { readonly addressRegion: string; readonly addressCountry: 'FR' };
+  /** Identifiants légaux, injectés dans les pages légales par le jeton `{siret}` (ADR-0016). */
+  readonly registration: { readonly siret: string };
   readonly openingHours: readonly OpeningHoursRule[];
   readonly areaServed: readonly AreaServed[];
   readonly socials: readonly SocialLink[];
@@ -71,6 +73,8 @@ export const site = {
   whatsapp: { url: 'https://wa.me/33782358132' },
   // TODO(contenu): adresse postale, ville et code postal inconnus (aucun streetAddress publié).
   address: { addressRegion: 'Île-de-France', addressCountry: 'FR' },
+  // SIRET publié sur le site actuel (docs/CONTENU-EXISTANT.md).
+  registration: { siret: '531\u00A0938\u00A0868\u00A000019' },
   openingHours: [
     {
       days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],

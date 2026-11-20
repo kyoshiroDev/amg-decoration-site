@@ -4,6 +4,7 @@
 # découpage en titres et listes, adresse du site sans « www », renvoi vers la page Contact (art. 12).
 # Aucun ajout juridique : les incohérences sont listées ci-dessous et dans docs/CONFORMITE.md, à trancher par Amandine
 # (idéalement avec un juriste) AVANT la mise en production.
+# Coordonnées : jetons `{email}`, `{phone}`, `{phoneE164}`, `{siret}` remplacés au rendu par les valeurs de src/config/site.ts (ADR-0016).
 #
 # TODO(contenu): prix fixes affichés sur /prestations/ (189, 339, 489, 689 €, meuble 339 €) alors que les art. 1, 3 et 5 parlent de « devis personnalisé » et de tarifs « définis dans le devis » : prix catalogue, prix « à partir de » ou devis systématique ?
 # TODO(contenu): art. 4 (rétractation, contrat conclu à distance avec un particulier) — selon L221-28 1°, le droit de rétractation n’est exclu que si la prestation est PLEINEMENT exécutée avant la fin des 14 jours, après demande expresse et renoncement exprès ; si elle est seulement commencée, le client peut se rétracter en payant la part réalisée (L221-25). Le texte actuel (« ne peut être exercé si la prestation a commencé ») est à reformuler par Amandine. Manquent aussi le formulaire type de rétractation (L221-5, annexe à l’art. R221-1) et ses modalités d’envoi.
@@ -48,12 +49,12 @@ Avant toute prestation, un devis détaillé est établi et remis au Client. Il p
 
 Le Client déclare avoir pris connaissance des présentes CGS et les avoir acceptées avant de signer le devis. Le choix et l’achat d’un service relèvent de la seule responsabilité du Client. Toute signature du devis avec la mention « bon pour accord » vaut acceptation des CGS.
 
-Le site internet amgdecorationdinterieur.com est géré par Amandine Gaury, ci-après dénommée AMG Décoration d’Intérieur, micro-entrepreneur immatriculée sous le numéro SIRET 531 938 868 00019.
+Le site internet amgdecorationdinterieur.com est géré par Amandine Gaury, ci-après dénommée AMG Décoration d’Intérieur, micro-entrepreneur immatriculée sous le numéro SIRET {siret}.
 
 - **Siège social** : Gif-sur-Yvette (91)
 - **Liste des services** : [https://amgdecorationdinterieur.com](https://amgdecorationdinterieur.com)
-- **Email** : [am.gaury@gmail.com](mailto:am.gaury@gmail.com)
-- **Téléphone** : [07 82 35 81 32](tel:+33782358132)
+- **Email** : [{email}](mailto:{email})
+- **Téléphone** : [{phone}](tel:{phoneE164})
 
 ## Article 2 – Commande
 

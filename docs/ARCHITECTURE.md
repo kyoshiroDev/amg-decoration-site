@@ -70,12 +70,14 @@ Même mécanisme pour le **sprite d'icônes** `src/pages/icons.[version].svg.ts`
 
 ### Configuration (`src/config/`)
 
-| Fichier        | Contenu                                                                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `site.ts`      | Source de vérité unique : nom, NAP, horaires, zone, réseaux, `mainNav`, `headerCta`, `legalNav`, `pricing.showPrices`.                      |
-| `microcopy.ts` | Tous les libellés d'interface : lien d'évitement, `aria-label` des navigations, menu mobile, titres et textes du pied de page.              |
-| `seo.ts`       | Valeurs SEO par défaut et image OG (réservé aux composants : importe une image).                                                            |
-| `media.ts`     | Visuels de mise en page hors contenu : héros de l'accueil et de « Visualisation 3D », portrait (importe des images : jamais lu par `lib/`). |
+| Fichier        | Contenu                                                                                                                                      |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `site.ts`      | Source de vérité unique : nom, NAP, `registration.siret`, horaires, zone, réseaux, `mainNav`, `headerCta`, `legalNav`, `pricing.showPrices`. |
+| `microcopy.ts` | Tous les libellés d'interface : lien d'évitement, `aria-label` des navigations, menu mobile, titres et textes du pied de page.               |
+| `seo.ts`       | Valeurs SEO par défaut et image OG (réservé aux composants : importe une image).                                                             |
+| `media.ts`     | Visuels de mise en page hors contenu : héros de l'accueil et de « Visualisation 3D », portrait (importe des images : jamais lu par `lib/`).  |
+
+Les corps Markdown ne recopient pas non plus ces données : les jetons `{email}`, `{phone}`, `{phoneE164}` et `{siret}` y sont remplacés au rendu (§ Gabarit des corps Markdown).
 
 Aucun composant n'écrit de texte en dur : il lit l'un de ces modules ou reçoit le texte en prop. Les textes éditoriaux (y compris ceux des pages techniques : 404, styleguide) vivent dans `src/content/` (§ Collections).
 
@@ -108,6 +110,14 @@ Schémas dans `src/content.config.ts` (Content Layer API d'Astro 7, `z` importé
 - **Section de page** : `eyebrow?`, `heading`, `headingEmphasis?` (fragment exact de `heading`, mis en italique), `lead?`, `items[{title, text?}]`, `quote?{text, author}`, `actions[]` (3 au plus), `links?[]` (1 à 6 liens de maillage `{label, href}` rendus en cartes « Pour aller plus loin » par `resolveFurtherLinks`, `src/lib/pages/further-links.ts` : `label` = surtitre, titre et texte lus dans l'article publié, la prestation ou la réalisation visée ; une cible inconnue ou un brouillon fait échouer le build). La route lit chaque section par sa clé avec `requireSection` : une section manquante fait échouer le build au lieu de publier une page amputée.
 - **Prix** : stockés quand ils sont publics, affichés seulement si `site.pricing.showPrices` vaut `true`, **jamais** en JSON-LD (`Offer`) tant qu'Amandine ne les a pas confirmés (ADR-0007).
 - **Lecture des collections** : jamais dans une route. Le lecteur `src/lib/pages/<page>.ts` appelle `requireEntry(await getEntry('pages', id), 'pages', id)` (pas de `!`) ou `getPageData(id)` ; le modèle pur applique `sortByOrder`, `filterPublished` (articles) et `filterByPage` (témoignages, FAQ) de `src/lib/content.ts` et lit les sections avec `readSections` (§ Données des pages).
+
+### Gabarit des corps Markdown
+
+Le corps des fichiers `.md` (pas des `.mdx`) passe par le plugin Sätteri `contentTemplatePlugin` (`src/lib/content-template.ts`, branché dans `astro.config.mjs` → `markdown.processor`) avant d'être analysé (ADR-0016) :
+
+- **Jetons** : `{email}`, `{phone}` (affichage), `{phoneE164}` (lien `tel:`), `{siret}`, valeurs de `src/config/site.ts` (`siteTemplateVariables`). Ils fonctionnent aussi dans les URL : `[{email}](mailto:{email})`. Un jeton inconnu fait échouer le build.
+- **Blocs selon le mode du formulaire** (`resolveFormTarget`, ADR-0003) : `{formulaire:service}` … `{/formulaire}` n'est publié que si `PUBLIC_FORM_ENDPOINT` est défini, `{formulaire:mailto}` … `{/formulaire}` seulement en repli `mailto:`. Marqueurs seuls sur leur ligne, entourés de lignes vides, sans imbrication. Utilisé par la politique de confidentialité.
+- Le contexte (mode, valeurs) fait partie de la configuration Astro : le changer vide le cache du Content Layer.
 
 ### Nommage des fichiers
 
@@ -161,7 +171,8 @@ Poids total mesuré par page (gzip, audit performance de la Phase 7, hors script
 
 ## Tests
 
-- `tests/unit/` (Vitest, `npm run test`) : fonctions pures de `src/lib/`.
+- `tests/unit/` (Vitest, `npm run test`) : fonctions pures de `src/lib/` (dont `content-template.test.ts`, qui rend aussi du Markdown par Sätteri avec le plugin).
+- Gabarit Markdown (ADR-0016) : `tests/e2e/pages.spec.ts` vérifie les coordonnées de `site.ts` dans les pages légales, le texte du repli `mailto:` de `/confidentialite/` et l'absence de tout jeton ou marqueur dans les HTML de `dist/` ; `tests/e2e-service/privacy.spec.ts` vérifie le texte du mode service.
 - `tests/e2e/` (Playwright + axe, `npm run test:e2e`, `playwright.config.ts`) : build de production `dist/` servi sur le port 4321, projets mobile (Pixel 7) et desktop. Ce build n'a pas de `PUBLIC_FORM_ENDPOINT` : le formulaire de contact y est en repli `mailto:`.
 - CSP (ADR-0012) : `tests/e2e/csp.spec.ts` vérifie la politique et les empreintes de chaque page et l'absence de violation, au chargement et pendant les interactions ; aucun test n'injecte de balise `<style>` ou `<script>` (CSSOM `adoptedStyleSheets` à la place). `tests/e2e/smoke.spec.ts` : aucune erreur console sur toutes les pages, fichiers `/_astro/` cités présents, liens externes en https avec `rel="noopener noreferrer"`.
 - `tests/e2e-service/` (`npm run test:e2e:service`, `playwright.service.config.ts`) : formulaire de contact **en mode service** (ADR-0003). Build distinct dans `dist-service/` (ignoré par git, ESLint, Prettier et TypeScript) avec `PUBLIC_FORM_ENDPOINT=https://formulaire.test/envoi` passé par `webServer.env`, servi sur le port 4322, projet desktop seul. Vérifie la destination, la mention d'information du service et le champ piège (`_honeypot` : `tabindex="-1"`, `autocomplete="off"`, conteneur `aria-hidden`, hors tabulation, envoyé vide avec et sans JS). L'endpoint est intercepté, aucune requête externe ne part. En CI, lancé dans le job `e2e` après la suite principale ; rapport HTML dans `playwright-report/service/`.
@@ -172,6 +183,7 @@ Poids total mesuré par page (gzip, audit performance de la Phase 7, hors script
 - `astro.config.mjs` : `site: 'https://amgdecorationdinterieur.com'`, `trailingSlash: 'always'`, `output: 'static'`, intégrations `sitemap` (filtre des pages `noindex`, `lastmod` des articles lu dans leur frontmatter par `src/lib/article-files.ts` et `src/lib/sitemap-lastmod.ts`, importés sans alias ; les mêmes fichiers donnent les routes d'articles passées à `siteRoutes()`, assemblées dans `tests/site-routes.ts`) (+ `mdx`), `prefetch`, Fonts API, `image` (formats/qualités).
 - `astro.config.mjs` → `security.csp` : Content-Security-Policy en balise meta, empreintes des scripts et styles calculées au build ; directives et empreintes des scripts `is:inline` fournies par `src/lib/csp.ts`, origine de `PUBLIC_FORM_ENDPOINT` autorisée si elle est définie ; intégration `amg:csp-par-page` (hook `astro:build:done`) qui réduit les empreintes de chaque page à celles de ses éléments inline (`pruneCspHashes`, ADR-0012).
 - `vercel.json` : redirections 301, en-têtes de sécurité (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, HSTS, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `Permissions-Policy`, CSP d'en-tête limitée à `frame-ancestors`/`base-uri`/`object-src`), vérifiés par `tests/unit/security-headers.test.ts` ; cache immuable `/_astro/*` et `/icons.<version>.svg` (URLs versionnées par empreinte, vérifié par le même test).
+- `astro.config.mjs` → `markdown.processor` : Sätteri (processeur par défaut d'Astro 7) avec le plugin `contentTemplatePlugin` (§ Gabarit des corps Markdown, ADR-0016).
 - `tsconfig.json` : `astro/tsconfigs/strictest` + alias `@/*`.
 
 ## Déploiement
