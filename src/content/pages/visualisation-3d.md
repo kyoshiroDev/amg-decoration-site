@@ -37,7 +37,7 @@ sections:
     eyebrow: 'Rendu 3D et réalisation'
     heading: 'Du rendu 3D à la réalité'
     headingEmphasis: 'à la réalité'
-    lead: 'Faites glisser le curseur pour passer du rendu 3D, imaginé avant les travaux, à la pièce une fois réalisée. Ces deux images sont des illustrations provisoires, en attendant celles d’un projet réel.'
+    lead: 'D’un côté le rendu 3D, imaginé avant les travaux, de l’autre la pièce une fois réalisée. Ces deux images sont des illustrations provisoires, en attendant celles d’un projet réel.'
   methode:
     eyebrow: 'Ma méthode'
     heading: 'Comment se déroule votre projet 3D'
