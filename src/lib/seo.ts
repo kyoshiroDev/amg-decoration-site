@@ -135,15 +135,32 @@ export interface ImageSize {
   readonly height: number;
 }
 
+/** Image candidate à l'Open Graph et son texte alternatif (`og:image:alt`). */
+export interface OgImageChoice<Source extends ImageSize> {
+  readonly source: Source;
+  readonly alt: string;
+}
+
+/** Vrai si la source couvre la cible dans les deux dimensions (aucun agrandissement nécessaire). */
+export function coversSize(source: ImageSize, target: ImageSize): boolean {
+  return source.width >= target.width && source.height >= target.height;
+}
+
 /**
- * Vérifie qu'une image source peut produire l'image Open Graph sans être agrandie : le service
- * sharp d'Astro redimensionne avec `withoutEnlargement`, une source plus petite donnerait une
- * image OG plus petite que les dimensions annoncées dans `og:image:width` / `og:image:height`.
+ * Image Open Graph retenue : la candidate de la page si elle couvre la cible, sinon l'image par
+ * défaut (avec son propre `alt`). Le service sharp d'Astro n'agrandit jamais : une source plus
+ * petite donnerait une image plus petite que les `og:image:width` / `og:image:height` annoncés.
+ * L'image par défaut, elle, doit couvrir la cible : sinon erreur (le build échoue).
  */
-export function assertOgImageSource(source: ImageSize, target: ImageSize): void {
-  if (source.width < target.width || source.height < target.height) {
+export function pickOgImage<Source extends ImageSize>(
+  candidate: OgImageChoice<Source> | undefined,
+  fallback: OgImageChoice<Source>,
+  target: ImageSize,
+): OgImageChoice<Source> {
+  if (!coversSize(fallback.source, target)) {
     throw new SeoValidationError(
-      `Image Open Graph trop petite (${source.width} × ${source.height} px, minimum ${target.width} × ${target.height} px)\u00A0: fournir une source plus grande.`,
+      `Image Open Graph par défaut trop petite (${fallback.source.width} × ${fallback.source.height} px, minimum ${target.width} × ${target.height} px)\u00A0: fournir une source plus grande.`,
     );
   }
+  return candidate && coversSize(candidate.source, target) ? candidate : fallback;
 }

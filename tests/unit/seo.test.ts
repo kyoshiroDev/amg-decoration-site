@@ -2,14 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
   SeoValidationError,
   assertDescriptionLength,
-  assertOgImageSource,
   buildArticleMetaTags,
   buildCanonicalUrl,
   buildPageTitle,
   buildRobots,
   countCharacters,
+  coversSize,
   isDescriptionLengthValid,
   isTitleLengthValid,
+  pickOgImage,
   seoLimits,
 } from '@/lib/seo';
 
@@ -175,20 +176,43 @@ describe('buildArticleMetaTags', () => {
   });
 });
 
-describe('assertOgImageSource', () => {
+describe('coversSize', () => {
   const target = { width: 1200, height: 630 } as const;
 
-  it('accepte une source au moins aussi grande que l’image OG, dans les deux dimensions', () => {
-    expect(() => assertOgImageSource({ width: 1200, height: 630 }, target)).not.toThrow();
-    expect(() => assertOgImageSource({ width: 1600, height: 2000 }, target)).not.toThrow();
+  it('vrai si la source est au moins aussi grande que la cible, dans les deux dimensions', () => {
+    expect(coversSize({ width: 1200, height: 630 }, target)).toBe(true);
+    expect(coversSize({ width: 1600, height: 2000 }, target)).toBe(true);
   });
 
-  it('refuse une source trop étroite ou trop basse (sharp ne l’agrandirait pas)', () => {
-    expect(() => assertOgImageSource({ width: 1199, height: 2000 }, target)).toThrow(
-      SeoValidationError,
-    );
-    expect(() => assertOgImageSource({ width: 2000, height: 629 }, target)).toThrow(
-      SeoValidationError,
-    );
+  it('faux si la source est trop étroite ou trop basse', () => {
+    expect(coversSize({ width: 1199, height: 2000 }, target)).toBe(false);
+    expect(coversSize({ width: 2000, height: 629 }, target)).toBe(false);
+    expect(coversSize({ width: 1200, height: 600 }, target)).toBe(false);
+  });
+});
+
+describe('pickOgImage', () => {
+  const target = { width: 1200, height: 630 } as const;
+  const fallback = { source: { width: 1200, height: 630 }, alt: 'Image par défaut' } as const;
+
+  it('retient la candidate (et son alt) si elle couvre 1200 × 630', () => {
+    const candidate = { source: { width: 1600, height: 1000 }, alt: 'Couverture' };
+    expect(pickOgImage(candidate, fallback, target)).toBe(candidate);
+  });
+
+  it('se replie sur l’image par défaut et son alt si la candidate est trop petite (1200 × 600)', () => {
+    const candidate = { source: { width: 1200, height: 600 }, alt: 'Couverture' };
+    expect(pickOgImage(candidate, fallback, target)).toBe(fallback);
+  });
+
+  it('retient l’image par défaut sans candidate', () => {
+    expect(pickOgImage(undefined, fallback, target)).toBe(fallback);
+  });
+
+  it('refuse une image par défaut trop petite, même si la candidate convient', () => {
+    const tooSmall = { source: { width: 1200, height: 600 }, alt: 'Image par défaut' };
+    const candidate = { source: { width: 1600, height: 1000 }, alt: 'Couverture' };
+    expect(() => pickOgImage(candidate, tooSmall, target)).toThrow(SeoValidationError);
+    expect(() => pickOgImage(undefined, tooSmall, target)).toThrow(SeoValidationError);
   });
 });
