@@ -34,7 +34,7 @@ export const microcopy = {
     next: 'Image suivante',
     /** `{current}` et `{total}` remplacés par le rang de l'image et le nombre d'images. */
     counter: '{current}\u00A0/\u00A0{total}',
-    /** Annonce lue \u00E0 chaque image (r\u00E9gion aria-live), suivie de la l\u00E9gende : \u00AB Image 2 sur 5 : \u2026 \u00BB. */
+    /** Annonce lue à chaque image (région aria-live), suivie de la légende : « Image 2 sur 5 : … ». */
     status: 'Image {current} sur {total}',
   },
   services: {
