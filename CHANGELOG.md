@@ -4,6 +4,11 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ## [Non publié]
 
+### Palette de l'ancien site
+
+- Palette « pastel + terracotta » remplacée par celle de l'ancien site d'Amandine : fonds crème, beige et grège, camel doré en décor, camel foncé pour les boutons et les liens, vieux rose en touche, texte gris-brun ; erreurs en vieux rose foncé ; favicon assorti (ADR-0017).
+- Tokens renommés d'après leur vraie couleur (`camel-*`, `beige`, `greige`, `rose-*`, `ivory`), contrastes AA vérifiés en test sur les cinq fonds de section.
+
 ### Après la Phase 8 — Contenus de l'ancien site
 
 - Vraies images des 4 réalisations (31 rendus 3D et photos avant travaux d'Amandine, repris de son ancien site en 1200 × 600) et des couvertures des 2 articles, avec des textes alternatifs descriptifs ; section « chambre des enfants » du chalet décrite d'après les rendus.

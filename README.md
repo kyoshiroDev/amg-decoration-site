@@ -1,6 +1,6 @@
 # AMG Décoration d'Intérieur — nouveau site
 
-Refonte complète de [amgdecorationdinterieur.com](https://amgdecorationdinterieur.com/) : Astro (statique) · Vercel · design pastel & terracotta · SEO soigné.
+Refonte complète de [amgdecorationdinterieur.com](https://amgdecorationdinterieur.com/) : Astro (statique) · Vercel · design beige, grège et camel doré · SEO soigné.
 Le projet est conçu pour être **construit de A à Z par Claude Code**, encadré par `CLAUDE.md` et une équipe d'agents spécialisés.
 
 ## Prérequis (une seule fois)
