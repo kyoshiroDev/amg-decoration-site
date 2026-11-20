@@ -12,7 +12,8 @@ import { PROJECT_TRANSITION_CLASS, projectTransitionName, type ProjectCardData }
 // Carte affichée au moins sur ~90vw (mobile) : même sur un écran de 320 px en densité 2, le navigateur
 // demande environ 720 px. Les variantes plus petites ne servaient jamais et allongeaient le HTML de
 // l'accueil (budget de 14 Kio). ArchImage les plafonne à la largeur recadrée au ratio de la carte
-// (480 px pour une source 1200 × 600 en arche 4/5 : une seule variante).
+// (source 1200 × 600 : 480 px en arche 4/5, une seule variante ; 750 px en forme 5/4, variantes 720w
+// et 750w).
 const CARD_WIDTHS = [720, 960, 1280];
 
 interface Props {
