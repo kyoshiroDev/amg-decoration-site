@@ -4,6 +4,20 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ## [Non publié]
 
+### Phase 7 — Qualité finale
+
+- CSP stricte par empreintes (`security.csp` d'Astro, balise meta), élaguée page par page aux seuls éléments inline présents ; en-têtes Vercel complétés (`frame-ancestors`, `base-uri`, `object-src`, CORP, Permissions-Policy) ; aucune violation CSP sur les 25 pages, testé en e2e et sur le build en mode service (ADR-0012).
+- Console propre et ressources vérifiées (liens internes, images, polices) sur toutes les pages, en e2e.
+- Apparitions au défilement liées au scroll en CSS (`animation-timeline: view()`), animées par liste plutôt que par élément, repli IntersectionObserver pour Firefox : environ −75 % de recalculs de style sur l'accueil (ADR-0013).
+- Icônes en sprite SVG `<use>` à URL versionnée (cache immuable d'un an) : HTML de l'accueil 14,9 → 13,5 Ko gzip, sous la fenêtre TCP initiale de 14 Ko, contrôlé en e2e.
+- INP : fermeture de la visionneuse reportée après le rendu, trait du comparateur plus lisible.
+- Accessibilité : visionneuse annonçant « Image n sur N : légende », bandeau en pause tant que le focus clavier y est, `scroll-margin` des ancres sous l'en-tête collant, nature des cartes « Pour aller plus loin » lue après leur titre.
+- Formulaire : un clic sur « Envoyer » juste après la correction d'une erreur n'est plus perdu (test de régression).
+- Audit d'accessibilité complet (0 P1) : les colonnes latérales collantes plus hautes que l'écran (sommaire des pages légales, coordonnées du contact) ne cachent plus de lien atteint au clavier.
+- Régression visuelle de référence : 22 captures pleine page (11 pages, mobile et desktop), `npm run test:visual`, hors CI (rendu des polices propre à chaque machine).
+- `/audit` global consolidé (`.claude/reports/audit-2026-11-19.md`) : 0 P1 dans le code ; les P1 restants (visuels, mentions légales, médiateur, CGS) attendent les informations d'Amandine et sont reportés en Phase 8.
+- Architecture : origine du site exigée par `requireSiteOrigin` (plus de repli silencieux vers `localhost`), JSON-LD des prestations produit hors de la page, garde de type des microcopies du formulaire ; découpage lecteur / modèle de `lib/pages/` documenté (ADR-0014).
+
 ### Phase 6 — SEO avancé
 
 - JSON-LD relié par `@id` sur chaque page (`#service`, `#projet`, `#article`, `#page`, `#fil-ariane`), `CollectionPage` des prestations, zone desservie tirée de `site.ts` ; un test valide le graphe de chaque page de `dist/` (références résolues, URL absolues, propriétés requises).
