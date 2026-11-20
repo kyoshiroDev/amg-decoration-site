@@ -9,6 +9,7 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 - Vraies images des 4 réalisations (31 rendus 3D et photos avant travaux d'Amandine, repris de son ancien site en 1200 × 600) et des couvertures des 2 articles, avec des textes alternatifs descriptifs ; section « chambre des enfants » du chalet décrite d'après les rendus.
 - Réponses reprises de l'ancien site : formation, rendez-vous à distance en visio ou par téléphone, WhatsApp comme canal d'accompagnement, chalet en Suisse mené à distance.
 - Image Open Graph : la couverture si elle atteint 1200 × 630, sinon l'image par défaut avec son texte alternatif (ADR-0011 révisée) ; `srcset` jusqu'à la largeur de la source, `sizes` corrigé du recadrage et calculé au build ; cartes projet sans variantes inutiles (HTML de l'accueil 14,1 Ko gzip).
+- Suivi de revue : MJM Design Graphic retiré de `/a-propos/` en attendant qu'Amandine confirme son lien avec la certification de 2010 ; chapeau du comparateur juste aussi sans JavaScript ; règle « une seule image » de la visionneuse testée en unitaire ; coloration Shiki désactivée (aucun bloc de code).
 
 ### Phase 8 — Préparation à la mise en ligne
 

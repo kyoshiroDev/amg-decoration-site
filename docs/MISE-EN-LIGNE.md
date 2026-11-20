@@ -37,8 +37,9 @@ Checklist de la bascule de `amgdecorationdinterieur.com` (WordPress) vers le nou
 
 ### Textes et faits à confirmer
 
-Déjà tranchés par l'ancien site (relevé du 2026-11-20) : formation (cursus de 5 ans, certifiée en 2010 ; certifiée par MJM Design Graphic), rendez-vous à distance en visio ou par téléphone, accompagnement par WhatsApp ou email, prix affichés.
+Déjà tranchés par l'ancien site (relevé du 2026-11-20) : formation (cursus de 5 ans, certifiée en 2010), rendez-vous à distance en visio ou par téléphone, accompagnement par WhatsApp ou email, prix affichés.
 
+- MJM Design Graphic (cité seul sur l'accueil de l'ancien site) : a-t-il délivré la certification de 2010 ? Intitulé exact ? Peut-on le citer sur `/a-propos/` (retiré en attendant) ?
 - Nom de la formule : « Essentiel » ou « Essentielle » ; nombre de vues 3D et de modifications incluses par formule ; prix des options.
 - Conserver l'offre « Meuble sur-mesure 3D » et l'« Offre Professionnels » ? Formule réelle de chaque réalisation.
 - Attribution des avis clients ; questions fréquentes (FAQ, collection vide aujourd'hui).
