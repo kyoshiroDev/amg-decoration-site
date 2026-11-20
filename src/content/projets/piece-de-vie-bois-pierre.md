@@ -3,16 +3,37 @@
 title: 'Une pièce de vie élégante et intemporelle'
 summary: 'Aménagement et décoration d’une pièce de vie, projet en construction'
 # TODO(contenu): lieu (ville ou région) à demander à Amandine.
+# TODO(contenu): originaux HD à demander (images actuelles : 1200 × 600 issues de l’ancien site).
 roomTypes:
   - piece-de-vie
 style: 'Naturel et intemporel'
-# TODO(contenu): placeholders ; remplacer par les originaux HD dans src/assets/projets/piece-de-vie-bois-pierre/.
 cover:
-  image: ../../assets/placeholders/interieur-lumiere.jpg
-  alt: 'Illustration provisoire d’un intérieur lumineux : arche terracotta, plante vert sauge et sol couleur sable'
+  image: ../../assets/projets/piece-de-vie-bois-pierre/01-salon-3d.jpg
+  alt: 'Rendu 3D du salon : canapé d’angle blanc, coussins terracotta, tables en bois, cuisine et mur en pierre au fond'
 gallery:
-  - image: ../../assets/placeholders/interieur-lumiere.jpg
-    alt: 'Illustration provisoire d’un intérieur lumineux : arche terracotta, plante vert sauge et sol couleur sable'
+  - image: ../../assets/projets/piece-de-vie-bois-pierre/01-salon-3d.jpg
+    alt: 'Rendu 3D du salon : canapé d’angle blanc, coussins terracotta, tables en bois, cuisine et mur en pierre au fond'
+    kind: 3d
+  - image: ../../assets/projets/piece-de-vie-bois-pierre/02-salon-poele-3d.jpg
+    alt: 'Rendu 3D du coin salon : poêle à bois blanc, mur en tasseaux de bois, bibliothèque blanche et fauteuils en bois'
+    kind: 3d
+  - image: ../../assets/projets/piece-de-vie-bois-pierre/03-salon-bibliotheque-3d.jpg
+    alt: 'Rendu 3D du salon vu de haut : canapé blanc adossé à un meuble bas, coussins orangés, voilages et lumière du jardin'
+    kind: 3d
+  - image: ../../assets/projets/piece-de-vie-bois-pierre/04-salle-a-manger-3d.jpg
+    alt: 'Rendu 3D de la salle à manger : table en bois, chaises cordées, buffet cannage, miroir rond et escalier noir'
+    kind: 3d
+  - image: ../../assets/projets/piece-de-vie-bois-pierre/05-entree-sejour-3d.jpg
+    alt: 'Rendu 3D de l’entrée ouverte sur le séjour : buffet en cannage, miroir rond en bois, salon blanc et bois en fond'
+    kind: 3d
+  - image: ../../assets/projets/piece-de-vie-bois-pierre/06-cuisine-3d.jpg
+    alt: 'Rendu 3D de la cuisine vers la salle à manger : îlot effet marbre, façades bois, suspensions en lamelles de bois'
+    kind: 3d
+  - image: ../../assets/projets/piece-de-vie-bois-pierre/07-cuisine-ilot-3d.jpg
+    alt: 'Rendu 3D de la cuisine : mur en pierre apparente, colonnes en bois, îlot blanc veiné et tabourets en rotin'
+    kind: 3d
+  - image: ../../assets/projets/piece-de-vie-bois-pierre/08-cuisine-face-3d.jpg
+    alt: 'Rendu 3D de la cuisine de face : îlot effet marbre, trois tabourets en rotin, pierre apparente et étagères en bois'
     kind: 3d
 featured: true
 order: 2

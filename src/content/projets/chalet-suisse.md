@@ -1,5 +1,6 @@
 ---
-# TODO(contenu): la chambre des enfants n’est pas décrite sur le site actuel. Quelles couleurs, matières et idées clés Amandine veut-elle mettre en avant ?
+# TODO(contenu): chambre des enfants décrite d’après les rendus 3D uniquement ; idées clés à confirmer par Amandine.
+# TODO(contenu): originaux HD à demander (images actuelles : 1200 × 600 issues de l’ancien site).
 # Source : docs/contenu-source/projet-chalet.md (titre et accroche repris du site actuel).
 title: 'Appartement chalet moderne et cocooning en Suisse'
 summary: 'Appartement moderne et cocooning au cœur des Alpes'
@@ -9,15 +10,34 @@ roomTypes:
   - chambre-parentale
   - chambre-enfant
 style: 'Esprit chalet revisité'
-# TODO(contenu): placeholders ; remplacer par les originaux HD dans src/assets/projets/chalet-suisse/.
 cover:
-  image: ../../assets/placeholders/interieur-lumiere.jpg
-  alt: 'Illustration provisoire d’un intérieur lumineux : arche terracotta, plante vert sauge et sol couleur sable'
-# TODO(contenu): nature des images inconnue (rendu 3D ou photo réelle ?), « 3d » par défaut.
+  image: ../../assets/projets/chalet-suisse/01-piece-de-vie-3d.jpg
+  alt: 'Rendu 3D de la pièce de vie : murs en bois clair, canapé gris et plaid rouge à carreaux, table en bois, vue sur la neige'
 gallery:
-  - image: ../../assets/placeholders/interieur-lumiere.jpg
-    alt: 'Illustration provisoire d’un intérieur lumineux : arche terracotta, plante vert sauge et sol couleur sable'
+  - image: ../../assets/projets/chalet-suisse/01-piece-de-vie-3d.jpg
+    alt: 'Rendu 3D de la pièce de vie : murs en bois clair, canapé gris et plaid rouge à carreaux, table en bois, vue sur la neige'
     kind: 3d
+  - image: ../../assets/projets/chalet-suisse/02-salon-3d.jpg
+    alt: 'Rendu 3D du salon : canapé blanc, coussin rouge à carreaux, suspension noire à bras articulés, baie ouverte sur la neige'
+    kind: 3d
+  - image: ../../assets/projets/chalet-suisse/03-chambre-parentale-3d.jpg
+    alt: 'Rendu 3D de la chambre parentale : tête de lit capitonnée crème, coussins vichy gris, suspensions dorées, mur en bois'
+    kind: 3d
+  - image: ../../assets/projets/chalet-suisse/04-chambre-parentale-bureau-3d.jpg
+    alt: 'Rendu 3D du coin bureau de la chambre parentale : plan suspendu sur fond de bois clair, chaise bouclette, miroir en bois'
+    kind: 3d
+  - image: ../../assets/projets/chalet-suisse/05-chambre-enfants-3d.jpg
+    alt: 'Rendu 3D de la chambre des enfants : lits superposés en bois clair, linge vichy gris, papier peint montagne et sapins'
+    kind: 3d
+  - image: ../../assets/projets/chalet-suisse/06-chambre-enfants-lits-3d.jpg
+    alt: 'Rendu 3D de la chambre des enfants : sommets enneigés en noir et blanc sur un mur, lits en bois, patères rondes'
+    kind: 3d
+  - image: ../../assets/projets/chalet-suisse/07-piece-de-vie-avant.jpg
+    alt: 'Photo avant travaux de la pièce de vie : murs blancs nus, parquet, baie vitrée sur balcon en bois et montagnes'
+    kind: avant
+  - image: ../../assets/projets/chalet-suisse/08-chambre-avant.jpg
+    alt: 'Photo avant travaux d’une chambre vide : parquet chêne, porte-fenêtre sur balcon en bois, sommets enneigés au loin'
+    kind: avant
 featured: true
 order: 1
 seo:
@@ -42,6 +62,10 @@ Le bois clair habille les murs et réchauffe l’atmosphère. Des touches de rou
 ## La chambre parentale, tout en douceur
 
 Ici, place à la sérénité. Les teintes crème et grises, la tête de lit capitonnée et les suspensions dorées créent un écrin douillet, empreint de douceur et d’intimité, avec vue sur les sommets enneigés.
+
+## La chambre des enfants, au pied des sommets
+
+Des lits superposés en bois clair, du linge de lit à carreaux vichy gris et, sur tout un mur, un papier peint de montagnes et de sapins en noir et blanc. De petites illustrations d’animaux de la forêt et une grande armoire blanche complètent la pièce.
 
 ## Le rôle de la 3D
 

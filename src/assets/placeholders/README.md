@@ -9,9 +9,10 @@ Aucune image de banque d'images n'est utilisée ici.
 | `comparatif-rendu-3d.jpg` | 1600 × 1200 | Dessin au trait généré pour le projet (SVG fait main : salon, fenêtre en arche, canapé, plante, sol en perspective), mention « PLACEHOLDER · RENDU 3D » incrustée, rastérisé en JPEG avec `sharp`. | Création originale du projet, libre d'usage | `/styleguide/` (BeforeAfter, ProjectGallery), `/visualisation-3d/` (BeforeAfter) |
 | `comparatif-realise.jpg`  | 1600 × 1200 | Même composition en aplats de couleurs du design system, mention « PLACEHOLDER · RÉALISÉ » incrustée, rastérisé en JPEG avec `sharp`.                                                              | Création originale du projet, libre d'usage | `/styleguide/` (BeforeAfter, ProjectGallery), `/visualisation-3d/` (BeforeAfter) |
 
-Réutilisation provisoire de `interieur-lumiere.jpg` (Phase 3) : `cover` et `gallery` des 4 réalisations
-(`src/content/projets/*.md`) et `cover` du modèle d'article (`src/content/articles/modele-article.mdx`),
-en attendant les originaux HD (`TODO(contenu)`, docs/CONTENU-EXISTANT.md §8).
+Réutilisation provisoire de `interieur-lumiere.jpg` (Phase 3) : `cover` du modèle d'article
+(`src/content/articles/modele-article.mdx`). Depuis le 2026-11-20, les 4 réalisations et les 2 articles utilisent les
+vrais rendus 3D et photos d'Amandine repris de l'ancien site (`src/assets/projets/<slug>/`, 1200 × 600) ; les
+originaux HD restent à demander (`TODO(contenu)` dans chaque fiche).
 
 Réutilisation provisoire (Phase 4) : image du héros de l'accueil (`src/config/media.ts`, `TODO(contenu)` : rendu 3D
 d'Amandine). Le portrait de la section « Qui suis-je ? » est remplacé par un décor CSS en attendant la photo.
