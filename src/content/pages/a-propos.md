@@ -1,5 +1,6 @@
 ---
 # Formation (ancien site, relevé du 20/11/2026) : accueil « décoratrice d’intérieur certifiée par MJM Design Graphic à Paris » ; à propos « cursus de 5 ans […] certifiée décoratrice d’intérieur en 2010 ». Deux faits énoncés séparément : ne pas écrire que MJM a délivré la certification de 2010.
+# TODO(contenu): MJM Design Graphic a-t-il délivré la certification de 2010, ou s’agit-il d’une autre formation ? À confirmer par Amandine avant de citer MJM sur cette page (l’accueil de l’ancien site le mentionne seul).
 # Source : docs/contenu-source/a-propos.md (et accueil.md pour la 3D et le travail à distance).
 # Mot-clé : Amandine Gaury décoratrice.
 seo:
@@ -68,7 +69,7 @@ sections:
 
 Créative depuis très jeune, j’ai suivi un parcours artistique à Paris, d’abord dans le graphisme, puis dans la décoration d’intérieur, au cours d’un cursus de cinq ans. J’ai été certifiée décoratrice d’intérieur en 2010.
 
-Aujourd’hui décoratrice d’intérieur certifiée par MJM Design Graphic à Paris, j’exerce ce métier avec passion. Basée en région parisienne, j’accompagne aussi bien des particuliers que des professionnels, à Paris et partout en France.
+Aujourd’hui, j’exerce ce métier avec passion. Basée en région parisienne, j’accompagne aussi bien des particuliers que des professionnels, à Paris et partout en France.
 
 ### Ma façon de travailler
 
