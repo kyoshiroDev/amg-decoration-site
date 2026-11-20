@@ -2,7 +2,7 @@
 # Page d'index du blog « Conseils déco » (docs/SEO-STRATEGIE.md §5). Aucun article publié pour l'instant.
 seo:
   title: 'Conseils déco d’une décoratrice d’intérieur'
-  description: 'Conseils déco d’une décoratrice d’intérieur : couleurs, matières, petits espaces et plans 3D, des idées concrètes pour un intérieur qui vous ressemble.'
+  description: 'Conseils déco d’une décoratrice d’intérieur : couleurs, matières, petits espaces et plans 3D. Des idées concrètes pour votre intérieur : inspirez-vous !'
 hero:
   eyebrow: 'Conseils déco'
   heading: 'Conseils déco pour un intérieur qui vous ressemble'
