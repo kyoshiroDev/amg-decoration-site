@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 4321;
+// `PLAYWRIGHT_PORT` : lancer les tests à côté d'un autre serveur local (worktree, autre build).
+const PORT = Number(process.env['PLAYWRIGHT_PORT'] ?? 4321);
 
 export default defineConfig({
   testDir: 'tests/e2e',
