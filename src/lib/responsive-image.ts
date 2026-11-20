@@ -56,11 +56,6 @@ function splitTopLevel(text: string, separator: (char: string) => boolean): stri
   return parts;
 }
 
-/**
- * Multiplie chaque longueur d'un attribut `sizes` par `factor` (`calc(… * factor)`), conditions
- * média conservées. Sert à annoncer au navigateur la largeur réellement affichée d'une image
- * recadrée (voir `coverScale`), sans quoi il choisit une variante trop petite. `auto` est conservé.
- */
 /** Longueur simple (`30vw`, `12.5rem`) : multipliée directement (HTML plus court) ; sinon `calc()`. */
 function scaleLength(length: string, scale: number): string {
   const simple = /^(\d+(?:\.\d+)?)([a-z%]+)$/i.exec(length);
@@ -71,6 +66,12 @@ function scaleLength(length: string, scale: number): string {
   return `calc(${length} * ${scale})`;
 }
 
+/**
+ * Multiplie chaque longueur d'un attribut `sizes` par `factor`, conditions média conservées : une
+ * longueur simple est calculée directement (`30vw` × 2,5 → `75vw`), une expression passe par
+ * `calc(… * factor)`. Sert à annoncer au navigateur la largeur réellement affichée d'une image
+ * recadrée (voir `coverScale`), sans quoi il choisit une variante trop petite. `auto` est conservé.
+ */
 export function scaleSizes(sizes: string, factor: number): string {
   if (factor === 1) {
     return sizes;

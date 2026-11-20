@@ -58,6 +58,9 @@ export default defineConfig({
   },
   markdown: {
     processor: satteri({ mdastPlugins: [contentTemplatePlugin(contentTemplate)] }),
+    // Aucun bloc de code sur le site : pas de coloration Shiki (ses styles inline ne passeraient
+    // pas la CSP par empreintes, ADR-0012, et Astro le signalait à chaque build).
+    syntaxHighlight: false,
   },
   prefetch: {
     prefetchAll: false,
