@@ -8,7 +8,7 @@
  * reportées après le rendu qui suit l'action (inertie du document coûteuse, INP).
  */
 import { onPageReady } from './lifecycle';
-import { counterText, statusText, wrapIndex } from '@/lib/lightbox';
+import { counterText, hasNavigation, statusText, wrapIndex } from '@/lib/lightbox';
 
 function enhance(root: HTMLElement, signal: AbortSignal): void {
   const dialog = root.querySelector<HTMLDialogElement>('[data-lightbox]');
@@ -25,7 +25,7 @@ function enhance(root: HTMLElement, signal: AbortSignal): void {
   const image = document.createElement('img');
   image.decoding = 'async';
   image.addEventListener('load', () => image.removeAttribute('data-loading'), { signal });
-  nav.hidden = items.length < 2;
+  nav.hidden = !hasNavigation(items.length);
   let current = 0;
   let origin: HTMLAnchorElement | undefined;
 
@@ -44,7 +44,7 @@ function enhance(root: HTMLElement, signal: AbortSignal): void {
     if (!image.isConnected) figure.prepend(image);
     const legend = item.dataset['caption'] ?? '';
     caption.textContent = legend;
-    const several = items.length > 1;
+    const several = hasNavigation(items.length);
     counter.textContent = several
       ? counterText(current, items.length, dialog.dataset['counter'] ?? '')
       : '';
@@ -132,7 +132,7 @@ function enhance(root: HTMLElement, signal: AbortSignal): void {
         if (startClosing()) closeTimer = window.setTimeout(closeAfterPaint, 500);
         return;
       }
-      if (items.length < 2) return;
+      if (!hasNavigation(items.length)) return;
       if (event.key === 'ArrowRight') show(current + 1);
       else if (event.key === 'ArrowLeft') show(current - 1);
     },

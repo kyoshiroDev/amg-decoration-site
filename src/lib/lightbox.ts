@@ -30,3 +30,8 @@ export function statusText(
   const text = caption.trim();
   return text ? `${position}\u00A0: ${text}` : position;
 }
+
+/** Navigation (précédent / suivant, compteur, annonce) seulement s'il y a au moins deux images. */
+export function hasNavigation(length: number): boolean {
+  return length > 1;
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { counterText, statusText, wrapIndex } from '@/lib/lightbox';
+import { counterText, hasNavigation, statusText, wrapIndex } from '@/lib/lightbox';
 import { microcopy } from '@/config/microcopy';
 
 describe('wrapIndex', () => {
@@ -33,5 +33,17 @@ describe('statusText', () => {
 describe('counterText', () => {
   it('numérote à partir de 1', () => {
     expect(counterText(1, 3, microcopy.lightbox.counter)).toBe('2 / 3');
+  });
+});
+
+describe('hasNavigation', () => {
+  it('masque la navigation pour une galerie d’une seule image', () => {
+    expect(hasNavigation(1)).toBe(false);
+    expect(hasNavigation(0)).toBe(false);
+  });
+
+  it('affiche la navigation dès deux images', () => {
+    expect(hasNavigation(2)).toBe(true);
+    expect(hasNavigation(8)).toBe(true);
   });
 });
