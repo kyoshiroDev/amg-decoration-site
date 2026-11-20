@@ -10,13 +10,38 @@
  * deux sauts : `/projet-chalet` → `/projet-chalet/` → `/realisations/chalet-suisse/`.
  * On reproduit la normalisation en DERNIÈRE redirection (`TRAILING_SLASH_REDIRECT`), après
  * les anciennes URLs déclarées avec et sans slash : chaque ancienne URL arrive en un saut.
+ *
+ * Hôte `www` : toutes les règles sont d'abord déclinées pour `www.` avec une destination
+ * ABSOLUE sur le domaine nu (`WWW_REDIRECTS`), puis une règle générique renvoie le reste de
+ * `www.` vers le même chemin du domaine nu. `www.…/projet-chalet` arrive donc en un saut sur
+ * `https://amgdecorationdinterieur.com/realisations/chalet-suisse/` (jamais www → nu → page).
  */
+
+/** Condition Vercel `has` sur l'hôte (`value` : expression régulière ancrée par Vercel). */
+export interface HostCondition {
+  type: 'host';
+  value: string;
+}
 
 export interface VercelRedirect {
   source: string;
   destination: string;
   permanent: true;
+  has?: HostCondition[];
 }
+
+/** Origine canonique (domaine nu, HTTPS) : même valeur que `site` dans astro.config.mjs. */
+export const CANONICAL_ORIGIN = 'https://amgdecorationdinterieur.com';
+
+/** Hôte canonique servi sans redirection. */
+export const CANONICAL_HOST = new URL(CANONICAL_ORIGIN).host;
+
+/** Hôte `www` redirigé en 301/308 vers le domaine nu. */
+export const WWW_HOST = `www.${CANONICAL_HOST}`;
+
+const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const WWW_CONDITION: HostCondition = { type: 'host', value: escapeRegExp(WWW_HOST) };
 
 /** Slugs des 4 réalisations migrées (décision SEO, Phase 3). */
 export const PROJECT_SLUGS = {
@@ -139,8 +164,8 @@ const redirect = (source: string, destination: string): VercelRedirect => ({
   permanent: true,
 });
 
-/** Tableau `redirects` exact attendu dans `vercel.json` (l'ordre compte : première règle gagnante). */
-export function buildVercelRedirects(): VercelRedirect[] {
+/** Règles servies sur le domaine nu (chemins relatifs), dans l'ordre d'évaluation. */
+function canonicalRedirects(): VercelRedirect[] {
   const pages = Object.entries(PAGE_REDIRECTS).flatMap(([source, destination]) => [
     redirect(source, destination),
     redirect(source.slice(0, -1), destination),
@@ -155,7 +180,27 @@ export function buildVercelRedirects(): VercelRedirect[] {
   return [...pages, ...prefixes, ...files, TRAILING_SLASH_REDIRECT];
 }
 
-const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/**
+ * Mêmes règles pour l'hôte `www`, destination absolue sur le domaine nu, puis le reste de
+ * `www.` vers le même chemin (`/:path(.*)` couvre aussi `/`, `/robots.txt`, `/_astro/…`).
+ */
+export function buildWwwRedirects(canonical: readonly VercelRedirect[]): VercelRedirect[] {
+  const absolute = canonical.map((rule) => ({
+    ...redirect(rule.source, `${CANONICAL_ORIGIN}${rule.destination}`),
+    has: [WWW_CONDITION],
+  }));
+  const rest: VercelRedirect = {
+    ...redirect('/:path(.*)', `${CANONICAL_ORIGIN}/:path`),
+    has: [WWW_CONDITION],
+  };
+  return [...absolute, rest];
+}
+
+/** Tableau `redirects` exact attendu dans `vercel.json` (l'ordre compte : première règle gagnante). */
+export function buildVercelRedirects(): VercelRedirect[] {
+  const canonical = canonicalRedirects();
+  return [...buildWwwRedirects(canonical), ...canonical];
+}
 
 /**
  * Compile le sous-ensemble de path-to-regexp utilisé ici (littéraux, `:name+` en fin de
@@ -181,15 +226,23 @@ function compileSource(source: string): RegExp {
   return new RegExp(`^${pattern}$`);
 }
 
+/** Une règle s'applique-t-elle à cet hôte ? (`has` absent = tous les hôtes). */
+function hostMatches(rule: VercelRedirect, host: string): boolean {
+  return (rule.has ?? []).every((condition) => new RegExp(`^${condition.value}$`).test(host));
+}
+
 /**
  * Résout un chemin comme le ferait Vercel avec ces redirections : renvoie la destination de
- * la première règle qui correspond, ou `null` si le chemin est servi tel quel.
+ * la première règle qui correspond (chemin, ou URL absolue pour l'hôte `www`), ou `null` si
+ * le chemin est servi tel quel. `host` : hôte de la requête (domaine nu par défaut).
  */
 export function resolveRedirect(
   path: string,
   redirects: readonly VercelRedirect[] = buildVercelRedirects(),
+  host: string = CANONICAL_HOST,
 ): string | null {
   for (const rule of redirects) {
+    if (!hostMatches(rule, host)) continue;
     const match = compileSource(rule.source).exec(path);
     if (match) {
       const captured = match[1] ?? '';

@@ -3,6 +3,787 @@
   "redirects": [
     {
       "source": "/services/",
+      "destination": "https://amgdecorationdinterieur.com/prestations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/services",
+      "destination": "https://amgdecorationdinterieur.com/prestations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/about/",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/about",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/politique-de-confidentialite/",
+      "destination": "https://amgdecorationdinterieur.com/mentions-legales/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/politique-de-confidentialite",
+      "destination": "https://amgdecorationdinterieur.com/mentions-legales/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/conditions-generales-de-services-cgs/",
+      "destination": "https://amgdecorationdinterieur.com/conditions-generales/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/conditions-generales-de-services-cgs",
+      "destination": "https://amgdecorationdinterieur.com/conditions-generales/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-chalet/",
+      "destination": "https://amgdecorationdinterieur.com/realisations/chalet-suisse/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-chalet",
+      "destination": "https://amgdecorationdinterieur.com/realisations/chalet-suisse/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-iryna/projet-chalet/",
+      "destination": "https://amgdecorationdinterieur.com/realisations/chalet-suisse/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-iryna/projet-chalet",
+      "destination": "https://amgdecorationdinterieur.com/realisations/chalet-suisse/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-lamyae/",
+      "destination": "https://amgdecorationdinterieur.com/realisations/piece-de-vie-bois-pierre/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-lamyae",
+      "destination": "https://amgdecorationdinterieur.com/realisations/piece-de-vie-bois-pierre/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-iryna/",
+      "destination": "https://amgdecorationdinterieur.com/realisations/espace-de-vie-scandinave/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-iryna",
+      "destination": "https://amgdecorationdinterieur.com/realisations/espace-de-vie-scandinave/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet_magali/",
+      "destination": "https://amgdecorationdinterieur.com/realisations/sous-sol-suite-parentale/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet_magali",
+      "destination": "https://amgdecorationdinterieur.com/realisations/sous-sol-suite-parentale/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-1/",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-1",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-2/",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-2",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-3/",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-3",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-4/",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-4",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-5/",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-5",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-6/",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-6",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-7/",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-7",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-marine/",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-marine",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-marine-dupliquer-3417/",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-marine-dupliquer-3417",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-chambre-ado/",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-chambre-ado",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-chambre-ado-dupliquer-3454/",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/projet-chambre-ado-dupliquer-3454",
+      "destination": "https://amgdecorationdinterieur.com/realisations/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/bonjour-tout-le-monde/",
+      "destination": "https://amgdecorationdinterieur.com/conseils-deco/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/bonjour-tout-le-monde",
+      "destination": "https://amgdecorationdinterieur.com/conseils-deco/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/2593-2/",
+      "destination": "https://amgdecorationdinterieur.com/conseils-deco/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/2593-2",
+      "destination": "https://amgdecorationdinterieur.com/conseils-deco/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/category/blog/",
+      "destination": "https://amgdecorationdinterieur.com/conseils-deco/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/category/blog",
+      "destination": "https://amgdecorationdinterieur.com/conseils-deco/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/author/amgdecorationdinterieur-com/",
+      "destination": "https://amgdecorationdinterieur.com/a-propos/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/author/amgdecorationdinterieur-com",
+      "destination": "https://amgdecorationdinterieur.com/a-propos/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/feed/",
+      "destination": "https://amgdecorationdinterieur.com/conseils-deco/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/feed",
+      "destination": "https://amgdecorationdinterieur.com/conseils-deco/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/comments/feed/",
+      "destination": "https://amgdecorationdinterieur.com/conseils-deco/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/comments/feed",
+      "destination": "https://amgdecorationdinterieur.com/conseils-deco/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/bonjour-tout-le-monde/feed/",
+      "destination": "https://amgdecorationdinterieur.com/conseils-deco/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/bonjour-tout-le-monde/feed",
+      "destination": "https://amgdecorationdinterieur.com/conseils-deco/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/2593-2/feed/",
+      "destination": "https://amgdecorationdinterieur.com/conseils-deco/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/2593-2/feed",
+      "destination": "https://amgdecorationdinterieur.com/conseils-deco/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/category/:rest+",
+      "destination": "https://amgdecorationdinterieur.com/conseils-deco/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/category/:rest+/",
+      "destination": "https://amgdecorationdinterieur.com/conseils-deco/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/author/:rest+",
+      "destination": "https://amgdecorationdinterieur.com/a-propos/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/author/:rest+/",
+      "destination": "https://amgdecorationdinterieur.com/a-propos/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/feed/:rest+",
+      "destination": "https://amgdecorationdinterieur.com/conseils-deco/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/feed/:rest+/",
+      "destination": "https://amgdecorationdinterieur.com/conseils-deco/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://amgdecorationdinterieur.com/sitemap-index.xml",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/sitemap_index.xml",
+      "destination": "https://amgdecorationdinterieur.com/sitemap-index.xml",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/wp-sitemap.xml",
+      "destination": "https://amgdecorationdinterieur.com/sitemap-index.xml",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/page-sitemap.xml",
+      "destination": "https://amgdecorationdinterieur.com/sitemap-index.xml",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/post-sitemap.xml",
+      "destination": "https://amgdecorationdinterieur.com/sitemap-index.xml",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/category-sitemap.xml",
+      "destination": "https://amgdecorationdinterieur.com/sitemap-index.xml",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/sitemap.rss",
+      "destination": "https://amgdecorationdinterieur.com/sitemap-index.xml",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/:path((?!(?:\\.well-known|_vercel)/)(?:[^/]+/)*[^/.]+)",
+      "destination": "https://amgdecorationdinterieur.com/:path/",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/:path(.*)",
+      "destination": "https://amgdecorationdinterieur.com/:path",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www\\.amgdecorationdinterieur\\.com"
+        }
+      ]
+    },
+    {
+      "source": "/services/",
       "destination": "/prestations/",
       "permanent": true
     },
