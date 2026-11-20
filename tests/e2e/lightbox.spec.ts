@@ -3,7 +3,7 @@ import { microcopy } from '../../src/config/microcopy';
 import { counterText, statusText } from '../../src/lib/lightbox';
 import { expectNoAxeViolations } from './helpers';
 
-// Visionneuse des galeries : styleguide (3 placeholders, navigation) et page projet (1 image).
+// Visionneuse des galeries : styleguide (3 placeholders, navigation) et page projet (galerie réelle, plusieurs images).
 
 const labels = microcopy.lightbox;
 const counter = (index: number, total: number): string => counterText(index, total, labels.counter);
@@ -144,18 +144,26 @@ test.describe('Visionneuse : styleguide', () => {
 });
 
 test.describe('Visionneuse : page projet', () => {
-  test('une seule image : ni compteur ni boutons de navigation', async ({ page }) => {
+  test('galerie complète : compteur, navigation jusqu’à la dernière image, fermeture', async ({
+    page,
+  }) => {
     await page.goto('/realisations/chalet-suisse/');
-    const link = page.locator('a[data-lightbox-item]').first();
-    await expect(link).toHaveAccessibleName(OPEN_NAME);
-    await link.click();
+    const links = page.locator('a[data-lightbox-item]');
+    const total = await links.count();
+    expect(total).toBeGreaterThan(1);
+    await expect(links.first()).toHaveAccessibleName(OPEN_NAME);
+    await links.first().click();
     const dialog = page.getByRole('dialog', { name: labels.label });
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole('button', { name: labels.next })).toBeHidden();
-    await expect(dialog.locator('[data-lightbox-counter]')).toHaveText('');
-    await expect(dialog.locator('[data-lightbox-status]')).toHaveText('');
+    const counterEl = dialog.locator('[data-lightbox-counter]');
+    await expect(counterEl).toHaveText(counter(0, total));
+    await page.keyboard.press('ArrowLeft');
+    await expect(counterEl).toHaveText(counter(total - 1, total));
+    await dialog.getByRole('button', { name: labels.next }).click();
+    await expect(counterEl).toHaveText(counter(0, total));
     await dialog.getByRole('button', { name: labels.close }).click();
     await expect(dialog).toBeHidden();
+    await expect(links.first()).toBeFocused();
   });
 });
 
