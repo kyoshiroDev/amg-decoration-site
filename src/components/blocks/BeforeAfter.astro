@@ -4,7 +4,8 @@
  * Sans JavaScript : les deux images côte à côte (empilées sur mobile), cadrées à l'identique,
  * nommées par une pastille. Sous `html.js` (posée avant le premier rendu, ADR-0010) : les images
  * se superposent et un `<input type="range">` natif, invisible mais focalisable, règle la part
- * visible du rendu 3D (poignée ronde terracotta, `aria-valuetext` « 60 % rendu 3D, 40 % réalisé »).
+ * visible du rendu 3D (calque rogné translaté, figure contre-translatée : `transform` seulement),
+ * poignée ronde terracotta, `aria-valuetext` « 60 % rendu 3D, 40 % réalisé ».
  * Clavier natif (flèches, Page précédente/suivante, Début/Fin) ; souris et tactile via
  * scripts/before-after.ts (`touch-action: pan-y` : le défilement vertical reste libre).
  * Styles : ./before-after.css.
@@ -51,19 +52,21 @@ const figures = [
     <div class="before-after__compare" data-before-after>
       <div class="before-after__stage" data-before-after-stage>
         {figures.map((figure) => (
-          <figure
-            class={`before-after__figure before-after__figure--${figure.kind}`}
-            data-before-after-kind={figure.kind}
-          >
-            <ArchImage
-              src={figure.image}
-              alt={figure.alt}
-              shape="rounded"
-              ratio="4 / 3"
-              sizes="(min-width: 64rem) 60rem, 92vw"
-            />
-            <figcaption class="before-after__label">{figure.label}</figcaption>
-          </figure>
+          <div class={`before-after__layer before-after__layer--${figure.kind}`}>
+            <figure
+              class={`before-after__figure before-after__figure--${figure.kind}`}
+              data-before-after-kind={figure.kind}
+            >
+              <ArchImage
+                src={figure.image}
+                alt={figure.alt}
+                shape="rounded"
+                ratio="4 / 3"
+                sizes="(min-width: 64rem) 60rem, 92vw"
+              />
+              <figcaption class="before-after__label">{figure.label}</figcaption>
+            </figure>
+          </div>
         ))}
         <div class="before-after__divider" aria-hidden="true">
           <span class="before-after__knob">
