@@ -1,11 +1,13 @@
 ---
-// Contact : formulaire (docs/CONFORMITE.md §5) et coordonnées. Données : getContactData()
-// (src/lib/pages/contact.ts), textes : src/content/pages/contact.md (clé `form`).
+// Contact : formulaire (docs/CONFORMITE.md §5) et coordonnées, puis zone d'intervention
+// (CtaBanner sauge, son premier bouton remonte au formulaire). Données : getContactData()
+// (src/lib/pages/contact.ts), textes : src/content/pages/contact.md (`sections`, `form`).
 import PageLayout from '@/layouts/PageLayout.astro';
 import PageHero from '@/components/blocks/PageHero.astro';
 import ContactLayout from '@/components/blocks/ContactLayout.astro';
 import ContactForm from '@/components/blocks/ContactForm.astro';
 import ContactDetails from '@/components/blocks/ContactDetails.astro';
+import CtaBanner from '@/components/blocks/CtaBanner.astro';
 import { getContactData } from '@/lib/pages/contact';
 import { requireSiteOrigin } from '@/lib/url';
 
@@ -24,4 +26,5 @@ const { sections } = data;
     <ContactForm section={sections.formulaire} form={data.form} id="formulaire-titre" />
     <ContactDetails slot="aside" section={sections.coordonnees} id="coordonnees-titre" />
   </ContactLayout>
+  <CtaBanner section={sections.zone} id="zone-titre" actionsAside />
 </PageLayout>

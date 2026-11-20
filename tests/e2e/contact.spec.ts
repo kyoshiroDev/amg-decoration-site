@@ -121,6 +121,24 @@ test.describe('Contact : sans JavaScript', () => {
     await expect(details.locator(`a[href="${site.whatsapp.url}"]`)).toHaveCount(1);
     await expect(details).toContainText(/lundi au vendredi/);
   });
+
+  test('zone d’intervention sous le formulaire : h2 et 3 liens valides', async ({
+    page,
+    request,
+  }) => {
+    await page.goto('/contact/');
+    const zone = page.locator('section[aria-labelledby="zone-titre"]');
+    await expect(zone.locator('h2#zone-titre')).toHaveText(/Paris.*partout en France/);
+    const links = zone.getByRole('link');
+    await expect(links).toHaveCount(3);
+    for (const href of await links.evaluateAll((els) => els.map((a) => a.getAttribute('href')))) {
+      const url = new URL(href ?? '', page.url());
+      expect((await request.get(url.pathname)).status(), href ?? '').toBe(200);
+      if (url.pathname === '/contact/' && url.hash) {
+        await expect(page.locator(url.hash)).toHaveCount(1);
+      }
+    }
+  });
 });
 
 test.describe('Contact : avec JavaScript', () => {

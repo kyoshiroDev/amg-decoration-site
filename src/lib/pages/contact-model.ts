@@ -16,7 +16,11 @@ import { breadcrumbTrail } from './breadcrumb-trail';
 import { readSections } from './sections';
 import type { PageData, PageSection } from './types';
 
-export const CONTACT_SECTION_KEYS = ['formulaire', 'coordonnees'] as const;
+/**
+ * Sections obligatoires de contact.md : formulaire, coordonnées (« Me joindre ») et zone
+ * d'intervention (appel à l'action de fin de page, sous le formulaire).
+ */
+export const CONTACT_SECTION_KEYS = ['formulaire', 'coordonnees', 'zone'] as const;
 export type ContactSectionKey = (typeof CONTACT_SECTION_KEYS)[number];
 
 export const CONTACT_PATH = '/contact/';
