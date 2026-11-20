@@ -254,3 +254,35 @@ test.describe(
     }
   },
 );
+
+// Au-delà de 50rem de haut, le sommaire des pages légales reste collant et défile en interne s'il
+// dépasse l'écran : cette région défilante doit rester accessible au clavier (axe :
+// `scrollable-region-focusable`). La passe axe générale tourne sur des écrans où la règle ne
+// s'applique pas.
+test.describe('Colonne latérale défilante sur écran haut (axe)', { tag: '@desktop' }, () => {
+  test.use({ reducedMotion: 'reduce', viewport: { width: 1280, height: 820 } });
+
+  test('/conditions-generales/ : sommaire défilant, 0 violation', async ({ page }) => {
+    await page.goto('/conditions-generales/');
+    const scrollable = await page
+      .locator(ASIDE)
+      .first()
+      .evaluate((element) => {
+        const nodes = [element, ...element.querySelectorAll('*')];
+        return nodes.some(
+          (node) =>
+            node.scrollHeight > node.clientHeight + 1 &&
+            getComputedStyle(node).overflowY !== 'visible',
+        );
+      });
+    expect(scrollable).toBe(true);
+    await expectNoAxeViolations(page);
+  });
+
+  for (const path of ['/prestations/meuble-sur-mesure/', '/contact/']) {
+    test(`${path} : colonne collante, 0 violation`, async ({ page }) => {
+      await page.goto(path);
+      await expectNoAxeViolations(page);
+    });
+  }
+});
