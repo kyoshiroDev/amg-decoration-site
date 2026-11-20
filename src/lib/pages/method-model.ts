@@ -12,6 +12,7 @@ import type { PageData, PageSection } from './types';
 
 export const METHOD_SECTION_KEYS = [
   'promesse',
+  'comparatif',
   'methode',
   'avantages',
   'plus-loin',

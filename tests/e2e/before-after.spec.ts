@@ -3,8 +3,8 @@ import { microcopy } from '../../src/config/microcopy';
 import { compareValueText } from '../../src/lib/before-after';
 import { expectNoAxeViolations } from './helpers';
 
-// Comparateur « Rendu 3D ↔ Réalisé » : démontré dans le styleguide (placeholders), aucun projet
-// n'ayant encore de vraie paire rendu 3D / photo.
+// Comparateur « Rendu 3D ↔ Réalisé » : comportements détaillés sur le styleguide (placeholders),
+// présence publique vérifiée sur /visualisation-3d/ (paire provisoire de src/config/media.ts).
 
 const copy = microcopy.projects.beforeAfter;
 const valueText = (value: number): string => compareValueText(value, copy.valueText);
@@ -138,5 +138,61 @@ test.describe('Comparateur sans JavaScript', () => {
     await expect(figures).toHaveCount(2);
     for (const figure of await figures.all()) await expect(figure).toBeVisible();
     await expect(section.locator('figcaption')).toHaveText([copy.rendering, copy.result]);
+  });
+});
+
+test.describe('Comparateur sur /visualisation-3d/', () => {
+  test('présent après « Ma promesse », utilisable au clavier', async ({ page }) => {
+    await page.goto('/visualisation-3d/');
+    const section = page.locator('#comparatif-titre').locator('xpath=ancestor::section[1]');
+    await expect(section.getByRole('heading', { level: 2 })).toHaveText(copy.heading);
+    // Placé entre la promesse et la méthode (ordre du document).
+    const order = await page
+      .locator('#promesse-titre, #comparatif-titre, #methode-titre')
+      .evaluateAll((headings) => headings.map((h) => h.id));
+    expect(order).toEqual(['promesse-titre', 'comparatif-titre', 'methode-titre']);
+    // Images provisoires annoncées comme telles (chapeau et textes alternatifs).
+    await expect(section.getByText(/illustrations provisoires/)).toBeVisible();
+    for (const img of await section.locator('img').all()) {
+      await expect(img).toHaveAttribute('alt', /^Illustration provisoire/);
+    }
+
+    const slider = section.getByRole('slider', { name: copy.slider });
+    await slider.scrollIntoViewIfNeeded();
+    await expect(slider).toHaveAccessibleDescription(copy.hint);
+    await expect(slider).toHaveAttribute('aria-valuetext', valueText(50));
+    await slider.focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect(slider).toHaveValue('49');
+    await expect(slider).toHaveAttribute('aria-valuetext', valueText(49));
+    await page.keyboard.press('Home');
+    await expect(slider).toHaveAttribute('aria-valuetext', valueText(0));
+
+    // Dévoilement en transform : le bord droit du calque du rendu 3D suit la valeur, l'image
+    // reste immobile (aucune propriété de mise en page ni clip-path).
+    await page.keyboard.press('End');
+    await page.keyboard.press('PageDown');
+    await page.keyboard.press('PageDown');
+    await page.keyboard.press('PageDown');
+    await expect(slider).toHaveValue('70');
+    const stage = section.locator('[data-before-after-stage]');
+    const layer = section.locator('.before-after__layer--rendering');
+    const image = section.locator('[data-before-after-kind="rendering"] img');
+    await expect(layer).toHaveCSS('clip-path', 'none');
+    await expect
+      .poll(async () => {
+        const [s, l, i] = await Promise.all([
+          stage.boundingBox(),
+          layer.boundingBox(),
+          image.boundingBox(),
+        ]);
+        if (!s || !l || !i) return undefined;
+        return [
+          Math.round(((l.x + l.width - s.x) / s.width) * 100),
+          Math.round(i.x - s.x),
+          Math.round(i.width - s.width),
+        ];
+      })
+      .toEqual([70, 0, 0]);
   });
 });

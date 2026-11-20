@@ -31,12 +31,26 @@ interface Props {
   result: Figure;
   labels: { readonly rendering: string; readonly result: string };
   id: string;
-  /** Chapeau facultatif (styleguide : préciser qu'il s'agit de placeholders). */
+  /** Surtitre facultatif. */
+  eyebrow?: string | undefined;
+  /** Fragment de `heading` en italique Fraunces terracotta. */
+  emphasis?: string | undefined;
+  /** Chapeau facultatif (images provisoires : le préciser ici). */
   lead?: string | undefined;
   background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
 }
 
-const { heading, rendering, result, labels, id, lead, background = 'blush' } = Astro.props;
+const {
+  heading,
+  rendering,
+  result,
+  labels,
+  id,
+  eyebrow,
+  emphasis,
+  lead,
+  background = 'blush',
+} = Astro.props;
 const copy = microcopy.projects.beforeAfter;
 const START = 50;
 const hintId = `${id}-consigne`;
@@ -48,7 +62,7 @@ const figures = [
 
 <Section background={background} labelledby={id} class="before-after-section">
   <Container class="before-after">
-    <SectionIntro id={id} heading={heading} lead={lead} />
+    <SectionIntro id={id} eyebrow={eyebrow} heading={heading} emphasis={emphasis} lead={lead} />
     <div class="before-after__compare" data-before-after>
       <div class="before-after__stage" data-before-after-stage>
         {figures.map((figure) => (
