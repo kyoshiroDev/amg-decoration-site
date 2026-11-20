@@ -9,6 +9,11 @@ import ArchImage from '@/components/ui/ArchImage.astro';
 import { microcopy } from '@/config/microcopy';
 import { PROJECT_TRANSITION_CLASS, projectTransitionName, type ProjectCardData } from '@/lib/cards';
 
+// Carte affichée au moins sur ~90vw (mobile) et recadrée : même sur un écran de 320 px en densité 2,
+// le navigateur demande environ 720 px. Les variantes plus petites ne servaient jamais et allongeaient
+// le HTML de l'accueil (budget de 14 Kio).
+const CARD_WIDTHS = [720, 960, 1280];
+
 interface Props {
   project: ProjectCardData;
   /** `arch` : portrait 4/5 en arche ; `wide` : paysage 5/4 arrondi. */
@@ -28,6 +33,7 @@ const meta = [project.style, project.location].filter((part): part is string => 
     src={project.image}
     alt={project.alt}
     sizes={sizes}
+    widths={CARD_WIDTHS}
     shape={shape === 'arch' ? 'arch' : 'rounded'}
     ratio={shape === 'arch' ? '4 / 5' : '5 / 4'}
     transitionName={projectTransitionName(project.slug)}

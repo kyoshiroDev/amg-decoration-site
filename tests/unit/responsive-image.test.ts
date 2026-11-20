@@ -51,10 +51,11 @@ describe('coverScale', () => {
 });
 
 describe('scaleSizes', () => {
-  it('multiplie chaque longueur en conservant les conditions média', () => {
+  it('multiplie directement les longueurs simples en conservant les conditions média', () => {
     expect(scaleSizes('(min-width: 64rem) 40vw, 100vw', 2.5)).toBe(
-      '(min-width: 64rem) calc(40vw * 2.5), calc(100vw * 2.5)',
+      '(min-width: 64rem) 100vw, 250vw',
     );
+    expect(scaleSizes('30rem', 1.333333)).toBe('39.99rem');
   });
 
   it('ne coupe pas à l’intérieur des fonctions CSS', () => {
@@ -65,7 +66,7 @@ describe('scaleSizes', () => {
 
   it('conserve les conditions composées et la valeur auto', () => {
     expect(scaleSizes('(min-width: 40rem) and (max-width: 64rem)  50vw, auto', 2)).toBe(
-      '(min-width: 40rem) and (max-width: 64rem) calc(50vw * 2), auto',
+      '(min-width: 40rem) and (max-width: 64rem) 100vw, auto',
     );
   });
 

@@ -61,6 +61,16 @@ function splitTopLevel(text: string, separator: (char: string) => boolean): stri
  * média conservées. Sert à annoncer au navigateur la largeur réellement affichée d'une image
  * recadrée (voir `coverScale`), sans quoi il choisit une variante trop petite. `auto` est conservé.
  */
+/** Longueur simple (`30vw`, `12.5rem`) : multipliée directement (HTML plus court) ; sinon `calc()`. */
+function scaleLength(length: string, scale: number): string {
+  const simple = /^(\d+(?:\.\d+)?)([a-z%]+)$/i.exec(length);
+  if (simple) {
+    const [, value = '', unit = ''] = simple;
+    return `${Number((Number(value) * scale).toFixed(2))}${unit}`;
+  }
+  return `calc(${length} * ${scale})`;
+}
+
 export function scaleSizes(sizes: string, factor: number): string {
   if (factor === 1) {
     return sizes;
@@ -71,7 +81,7 @@ export function scaleSizes(sizes: string, factor: number): string {
       const words = splitTopLevel(entry.trim(), (char) => /\s/.test(char)).filter(Boolean);
       const length = words.pop() ?? '';
       const condition = words.join(' ');
-      const scaled = length === 'auto' ? length : `calc(${length} * ${scale})`;
+      const scaled = length === 'auto' ? length : scaleLength(length, scale);
       return condition ? `${condition} ${scaled}` : scaled;
     })
     .join(', ');
