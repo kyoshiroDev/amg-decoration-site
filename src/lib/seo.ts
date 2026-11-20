@@ -2,6 +2,7 @@
  * Règles SEO pures (CLAUDE.md §5) : titre ≤ 60 caractères, description de 140 à 160,
  * canonical absolu avec slash final. Toute violation lève une erreur : le build échoue.
  */
+import type { ImageSize } from './responsive-image';
 import { absoluteUrl } from './url';
 
 export class SeoValidationError extends Error {
@@ -128,11 +129,6 @@ export function buildArticleMetaTags(article: OpenGraphArticle): MetaProperty[] 
     ...(article.section ? [{ property: 'article:section', content: article.section }] : []),
     ...(article.tags ?? []).map((tag) => ({ property: 'article:tag', content: tag })),
   ];
-}
-
-export interface ImageSize {
-  readonly width: number;
-  readonly height: number;
 }
 
 /** Image candidate à l'Open Graph et son texte alternatif (`og:image:alt`). */

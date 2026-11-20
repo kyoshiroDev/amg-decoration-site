@@ -15,6 +15,7 @@ import Icon from '@/components/ui/Icon.astro';
 import SectionIntro from './SectionIntro.astro';
 import Lightbox from './Lightbox.astro';
 import { microcopy } from '@/config/microcopy';
+import { fitWidths } from '@/lib/responsive-image';
 import './project-gallery.css';
 import type { GalleryGroup } from '@/lib/pages/projects-model';
 
@@ -28,7 +29,7 @@ interface Props {
 }
 
 const { heading, groups, id, lead, background = 'cream' } = Astro.props;
-/** Largeurs du grand format (bornées à la largeur source). */
+/** Largeurs du grand format (plafonnées à la largeur source par `fitWidths`). */
 const LARGE_WIDTHS = [640, 960, 1280, 1600, 2400];
 /**
  * `sizes` de l'image en visionneuse : elle tient dans la largeur (moins les marges du dialogue,
@@ -43,11 +44,10 @@ const views = await Promise.all(
     ...group,
     items: await Promise.all(
       group.items.map(async (item) => {
-        const widths = LARGE_WIDTHS.filter((width) => width <= item.image.width);
         const large = await getImage({
           src: item.image,
           width: Math.min(1600, item.image.width),
-          widths: widths.length > 0 ? widths : [item.image.width],
+          widths: fitWidths(LARGE_WIDTHS, item.image.width),
           format: 'webp',
         });
         return { ...item, large };
