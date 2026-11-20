@@ -9,7 +9,7 @@
  * Trois formes :
  *   data-reveal=""      le bloc entier (ouverture de section, citation, liste courte) ;
  *   data-reveal="list"  un seul bloc préparé, ses enfants directs en cascade (cartes, étapes) ;
- *   data-reveal="image" le masque de l'image se lève (galeries, toujours en pending → in).
+ *   data-reveal="image" un voile se replie sur l'image (galeries, toujours en pending → in).
  *
  * Coût (audit perf Phase 5) : une animation temporelle en cours oblige le fil principal à
  * recalculer le style de son élément à chaque image du défilement, et chaque démarrage ou fin
@@ -122,15 +122,30 @@
 
   /*
    * ---------- 2. Image reveal ----------
-   * Le masque se lève du bas vers le haut (clip-path inset) pendant que l'image se dézoome
-   * (--reveal-image-scale → 1). clip-path ne touche ni la mise en page ni le CLS. Le masque
-   * est posé sur l'<img>, pas sur le cadre observé : un élément entièrement masqué par son
-   * propre clip-path ne « croise » jamais l'écran pour IntersectionObserver.
+   * Un voile couleur de cadre (pseudo-élément du cadre, rogné par son arche) se replie vers le
+   * haut (scaleY 1 → 0, origine en haut) et découvre l'image du bas vers le haut, pendant que
+   * l'image se dézoome (--reveal-image-scale → 1) : l'arche « se lève ». Transform seul, sur le
+   * compositeur, aucune incidence sur la mise en page. Le voile n'existe que dans les états
+   * posés par reveal.ts (rien sans JS ni en mouvement réduit). Le cadre observé n'est jamais
+   * masqué lui-même : IntersectionObserver le voit entrer.
    * Attribut répété : l'emporte sur le transform de survol d'ArchImage (même couche).
    */
+  [data-reveal='image'][data-reveal][data-reveal-state]::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background-color: var(--color-sand);
+    transform-origin: top;
+    pointer-events: none;
+  }
+
   [data-reveal='image'][data-reveal][data-reveal-state='pending'] img {
-    clip-path: inset(100% 0 0);
     transform: scale(var(--reveal-image-scale));
+  }
+
+  [data-reveal='image'][data-reveal][data-reveal-state='in']::after {
+    animation: reveal-image-veil var(--dur-slow) var(--ease-out) both;
   }
 
   [data-reveal='image'][data-reveal][data-reveal-state='in'] img {
@@ -152,9 +167,13 @@
 
   [data-reveal='image'][data-reveal][data-reveal-state]:focus-within img,
   :focus [data-reveal='image'][data-reveal][data-reveal-state] img {
-    clip-path: none;
     transform: none;
     animation: none;
+  }
+
+  [data-reveal='image'][data-reveal][data-reveal-state]:focus-within::after,
+  :focus [data-reveal='image'][data-reveal][data-reveal-state]::after {
+    content: none;
   }
 
   /* Impression : tout est visible, quel que soit l'état. */
@@ -163,9 +182,12 @@
     [data-reveal-state] > *,
     [data-reveal-state] img {
       opacity: 1 !important;
-      clip-path: none !important;
       transform: none !important;
       animation: none !important;
+    }
+
+    [data-reveal-state]::after {
+      content: none !important;
     }
   }
 }
@@ -195,8 +217,17 @@
 
 @keyframes reveal-image {
   from {
-    clip-path: inset(100% 0 0);
     transform: scale(var(--reveal-image-scale));
+  }
+}
+
+@keyframes reveal-image-veil {
+  from {
+    transform: scaleY(1);
+  }
+
+  to {
+    transform: scaleY(0);
   }
 }
 
