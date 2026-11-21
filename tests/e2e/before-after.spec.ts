@@ -4,7 +4,7 @@ import { compareValueText } from '../../src/lib/before-after';
 import { expectNoAxeViolations } from './helpers';
 
 // Comparateur « Rendu 3D ↔ Réalisé » : comportements détaillés sur le styleguide (placeholders),
-// présence publique vérifiée sur /visualisation-3d/ (paire provisoire de src/config/media.ts).
+// présence publique vérifiée sur /visualisation-3d/ (vraie paire de src/config/media.ts).
 
 const copy = microcopy.projects.beforeAfter;
 const valueText = (value: number): string => compareValueText(value, copy.valueText);
@@ -151,11 +151,12 @@ test.describe('Comparateur sur /visualisation-3d/', () => {
       .locator('#promesse-titre, #comparatif-titre, #methode-titre')
       .evaluateAll((headings) => headings.map((h) => h.id));
     expect(order).toEqual(['promesse-titre', 'comparatif-titre', 'methode-titre']);
-    // Images provisoires annoncées comme telles (chapeau et textes alternatifs).
-    await expect(section.getByText(/illustrations provisoires/)).toBeVisible();
-    for (const img of await section.locator('img').all()) {
-      await expect(img).toHaveAttribute('alt', /^Illustration provisoire/);
-    }
+    // Vraie paire : plus aucune mention de placeholder, rendu 3D puis photo du résultat.
+    await expect(section.getByText(/provisoire/)).toHaveCount(0);
+    const alts = await section
+      .locator('img')
+      .evaluateAll((imgs) => imgs.map((img) => img.getAttribute('alt') ?? ''));
+    expect(alts).toEqual([expect.stringMatching(/^Rendu 3D /), expect.stringMatching(/^Photo /)]);
 
     const slider = section.getByRole('slider', { name: copy.slider });
     await slider.scrollIntoViewIfNeeded();

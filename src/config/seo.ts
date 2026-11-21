@@ -4,8 +4,9 @@
  */
 import type { ImageMetadata } from 'astro';
 import { seoLimits } from '@/lib/seo';
-// TODO(contenu): remplacer par un visuel OG de marque (rendu 3D d'Amandine, 1200 × 630).
-import defaultOgImage from '@/assets/placeholders/interieur-lumiere.jpg';
+// Rendu 3D d'Amandine (2560 × 1440, recadré en 1200 × 630 au build).
+// TODO(contenu): visuel Open Graph de marque (logo, nom) à valider avec Amandine.
+import defaultOgImage from '@/assets/brand/rendu-salon-lumineux.jpg';
 
 export interface SeoDefaults {
   readonly titleSuffix: string;
@@ -27,7 +28,7 @@ export const seoDefaults = {
   locale: 'fr_FR',
   ogImage: defaultOgImage,
   ogImageAlt:
-    'Illustration abstraite d’un intérieur lumineux\u00A0: arche terracotta, petite plante vert sauge et sol couleur sable',
+    'Rendu 3D d’un salon lumineux\u00A0: canapé d’angle blanc, coussins orangés, tables basses en bois et mur en tasseaux',
   ogImageSize: { width: 1200, height: 630 },
   twitterCard: 'summary_large_image',
 } as const satisfies SeoDefaults;
