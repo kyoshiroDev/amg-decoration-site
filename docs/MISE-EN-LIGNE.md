@@ -8,7 +8,7 @@ Checklist de la bascule de `amgdecorationdinterieur.com` (WordPress) vers le nou
 
 ## 1. Contenus à obtenir d'Amandine
 
-`npm run check:prod` liste les points **bloquants** (pages légales, ADR-0015) ; le build de production Vercel qui sert le vrai domaine échoue tant qu’il en reste. Les autres `TODO(contenu)` (`grep -rn "TODO(contenu)" src`) n'empêchent pas la mise en ligne mais dégradent le site.
+`npm run check:prod` liste les points **bloquants** (pages légales, ADR-0015) ; le build de production Vercel qui sert le vrai domaine échoue tant qu'il en reste. Les autres `TODO(contenu)` (`grep -rn "TODO(contenu)" src`) n'empêchent pas la mise en ligne mais dégradent le site.
 
 ### Bloquant (légal)
 
@@ -65,11 +65,11 @@ Déjà tranchés par l'ancien site (relevé du 2026-11-20) : formation (cursus d
 ## 3. Bascule
 
 - [ ] Merge de la PR `dev → main` par l'humain.
-- [ ] `npm run check:prod` vert **avant** de toucher aux domaines (le rattachement sert immédiatement la dernière production, construite sans garde-fou).
+- [ ] `npm run check:prod` vert **avant** de toucher aux domaines, lancé sur `main` à jour (même SHA que le déploiement de production en cours, pas sur `dev`) : le rattachement sert immédiatement la dernière production, construite sans garde-fou.
 - [ ] Vercel → Domains : ajouter `amgdecorationdinterieur.com` (production) et `www.amgdecorationdinterieur.com` **servi par le projet, sans l'option « Redirect to … »** : la redirection www → domaine nu est faite en un saut par `vercel.json` (`docs/SEO-STRATEGIE.md` §6).
+- [ ] **Redéployer la production** (Deployments → Redeploy) **avant la bascule DNS** : tant que le DNS pointe vers WordPress, rien n'est exposé. Vérifier dans le journal de build que `VERCEL_PROJECT_PRODUCTION_URL` vaut bien `amgdecorationdinterieur.com` (le garde-fou revérifie alors les pages légales) ; si le build échoue, ne pas toucher au DNS et compléter les pages.
 - [ ] DNS chez le registrar : enregistrement `A` du domaine nu et `CNAME` de `www` vers les valeurs indiquées par Vercel ; baisser le TTL la veille.
 - [ ] HTTPS : certificat émis par Vercel pour les deux hôtes.
-- [ ] **Redéployer la production** (Deployments → Redeploy) : le build revérifie les pages légales avec le vrai domaine ; s'il échoue, retirer le domaine et compléter les pages.
 - [ ] Contrôles :
   - `curl -sI https://amgdecorationdinterieur.com/` → 200, sans `x-robots-tag: noindex` ;
   - `curl -sI https://www.amgdecorationdinterieur.com/projet-chalet` → 308, `location: https://amgdecorationdinterieur.com/realisations/chalet-suisse/` ;
