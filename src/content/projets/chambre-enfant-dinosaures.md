@@ -24,7 +24,7 @@ gallery:
     alt: 'Rendu 3D du coin bureau : long plan en bois sur bacs de rangement, silhouette de dinosaure au mur, fenêtre de toit'
     kind: 3d
   - image: ../../assets/projets/chambre-enfant-dinosaures/05-apres.jpg
-    alt: 'Photo après travaux : lit cabane en bois naturel, mur vert profond, tapis rond en jute et bibliothèque basse'
+    alt: 'Photo après travaux : lit cabane en bois naturel, mur vert sauge soutenu, tapis rond en jute et bibliothèque basse'
     kind: apres
   - image: ../../assets/projets/chambre-enfant-dinosaures/06-apres.jpg
     alt: 'Photo après travaux : bureau en bois et bacs de rangement sous la fenêtre de toit, lambris peint en blanc'
@@ -53,7 +53,7 @@ beforeAfter:
     alt: 'Rendu 3D de la chambre vue de face : lit cabane blanc, commode blanche et dinosaures en peluche sur le tapis'
   result:
     image: ../../assets/projets/chambre-enfant-dinosaures/comparatif-realise.jpg
-    alt: 'Photo après travaux, vue de face : lit cabane en bois, mur vert profond et tapis rond en jute à pompons'
+    alt: 'Photo après travaux, vue de face : lit cabane en bois, mur vert sauge soutenu et tapis rond en jute à pompons'
 featured: false
 order: 5
 seo:

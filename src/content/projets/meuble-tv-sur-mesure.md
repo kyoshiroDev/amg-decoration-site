@@ -47,7 +47,7 @@ Une pièce de vie encore vide, de grandes baies vitrées sur la campagne et une 
 
 ## Le mur TV, pièce maîtresse
 
-J’ai dessiné un meuble bas sur mesure qui court le long du mur, de part et d’autre de la cheminée. Des tasseaux de bois habillent le mur derrière la télévision et le coin banquette, et des étagères flottantes accueillent livres et objets. Une planche technique détaille ce meuble pour sa réalisation.
+J’ai dessiné un meuble bas sur mesure qui court le long du mur, de part et d’autre de la cheminée. Des tasseaux de bois habillent le mur derrière la télévision et le coin banquette, et des étagères flottantes accueillent livres et objets.
 
 ## Un coin repas et un salon tournés vers la nature
 
