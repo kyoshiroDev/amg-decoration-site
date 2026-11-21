@@ -12,7 +12,12 @@ import { cspDirectives, INLINE_SCRIPT_HASHES, pruneCspHashes } from './src/lib/c
 import { site } from './src/config/site.ts';
 import { resolveFormTarget } from './src/lib/contact-form.ts';
 import { contentTemplatePlugin, siteTemplateVariables } from './src/lib/content-template.ts';
-import { formatReleaseBlockers, isReleaseGuarded } from './src/lib/release-guard.ts';
+import {
+  describeReleaseGuard,
+  formatReleaseBlockers,
+  isProductionBuild,
+  isReleaseGuarded,
+} from './src/lib/release-guard.ts';
 import { readReleaseBlockers } from './src/lib/release-guard-files.ts';
 
 const SITE = 'https://amgdecorationdinterieur.com';
@@ -113,7 +118,9 @@ export default defineConfig({
     {
       name: 'amg:garde-fou-production',
       hooks: {
-        'astro:build:start': () => {
+        'astro:build:start': ({ logger }) => {
+          // État écrit dans le journal de build Vercel (vérification au rattachement du domaine).
+          if (isProductionBuild(process.env)) logger.info(describeReleaseGuard(process.env, SITE));
           if (!isReleaseGuarded(process.env, SITE)) return;
           const blockers = readReleaseBlockers();
           if (blockers.length > 0) throw new Error(formatReleaseBlockers(blockers));
