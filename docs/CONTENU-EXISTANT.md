@@ -475,7 +475,7 @@ Informations manquantes :
 - `TODO(contenu): adresse postale complète à publier dans les mentions légales (obligatoire pour l'éditeur) ou adresse de domiciliation.`
 - `TODO(contenu): médiateur de la consommation choisi par Amandine (obligatoire pour une prestation à des particuliers).`
 - `TODO(contenu): assureur RC Pro (nom) si Amandine souhaite l'afficher.`
-- `TODO(contenu): quelles photos du site viennent de Pexels ? Les exclure du nouveau site ou les créditer.`
+- ~~Photos Pexels de l'ancien site~~ : réglé le 2026-11-21, aucune photo Pexels n'est reprise (seuls les rendus et photos d'Amandine le sont, `src/assets/placeholders/README.md`) ; rien à créditer (décision dans `src/content/pages/mentions-legales.md`).
 
 ---
 
