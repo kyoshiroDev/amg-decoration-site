@@ -4,6 +4,13 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ## [Non publié]
 
+### Images de l'ancien site
+
+- Plus aucun placeholder sur les pages publiques : portrait d'Amandine (accueil, `/a-propos/`), rendus 3D en 2560 px pour les héros de l'accueil et de `/visualisation-3d/` et pour l'image Open Graph par défaut, vraie paire rendu 3D / photo du résultat pour le comparateur (chambre d'enfant sous combles, points de vue proches mais pas identiques, signalé dans le chapeau).
+- 8 anciens projets publiés sans texte sur l'ancien site ajoutés aux réalisations (12 au total) : rendus 3D en 1600 × 900, photos avant et, pour la chambre d'enfant, photos après ; textes rédigés d'après les images, sans prénom de client, à faire confirmer par Amandine (`TODO(contenu)`).
+- `/projet-1/` à `/projet-7/` et `/projet-marine/` redirigent vers leur nouvelle fiche au lieu de `/realisations/`.
+- Les 4 projets récents restent en 1200 × 600 : c'est la taille des fichiers d'origine sur l'ancien site.
+
 ### Palette de l'ancien site
 
 - Palette « pastel + terracotta » remplacée par celle de l'ancien site d'Amandine : fonds crème, beige et grège, camel doré en décor, camel foncé pour les boutons et les liens, vieux rose en touche, texte gris-brun ; erreurs en vieux rose foncé ; favicon assorti (ADR-0017).

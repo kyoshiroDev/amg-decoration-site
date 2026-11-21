@@ -28,12 +28,14 @@ Checklist de la bascule de `amgdecorationdinterieur.com` (WordPress) vers le nou
 | Photos Pexels de l'ancien site (à exclure ou créditer) ; crédit de conception du site (ou retrait de la ligne)                                          | mentions légales                            |
 | Affichage de l'hébergeur Vercel sans téléphone (validation)                                                                                             | mentions légales                            |
 
-### Visuels (le site ne montre encore aucune vraie réalisation)
+### Visuels (tous repris de l'ancien site, en attendant les originaux)
 
-- Originaux HD des 4 réalisations : les images en place (31 rendus 3D et photos avant, `src/assets/projets/<slug>/`) viennent de l'ancien site en 1200 × 600 ; tant qu'elles ne font pas 1200 × 630, les pages projets publient l'image Open Graph par défaut. Lieu de 3 projets ; l'esquisse de cuisine `espace-de-vie-scandinave/05` appartient-elle bien à ce projet ?
-- Une vraie paire « rendu 3D / photo du résultat » cadrée à l'identique pour le comparateur de `/visualisation-3d/`.
-- Rendus 3D pour les héros de l'accueil et de `/visualisation-3d/`, couvertures des 2 articles, image Open Graph 1200 × 630.
-- Portrait d'Amandine (photo HD, format portrait) ; logo vectoriel (SVG).
+Depuis le 2026-11-21, le site n'affiche plus aucun placeholder public : 12 réalisations, héros, portrait, image Open Graph et comparateur utilisent les images de l'ancien site (`src/assets/placeholders/README.md`).
+
+- Originaux HD des 4 réalisations récentes : les fichiers d'origine en ligne ne font que 1200 × 600 ; tant qu'ils ne font pas 1200 × 630, ces pages publient l'image Open Graph par défaut. Lieu de 3 projets ; l'esquisse de cuisine `espace-de-vie-scandinave/05` appartient-elle bien à ce projet ?
+- 8 anciens projets (`/projet-1/` à `/projet-7/`, `/projet-marine/`) publiés sans texte : textes rédigés d'après les images, à relire (demande, lieu, formule) ; accord des clients pour les publier.
+- Une paire « rendu 3D / photo du résultat » cadrée à l'identique et en HD pour le comparateur de `/visualisation-3d/` (l'actuelle, chambre d'enfant sous combles, a deux points de vue proches et une photo de 676 px).
+- Portrait HD (l'actuel vient de l'ancien site) ; logo vectoriel (SVG) : l'ancien site n'a que des PNG.
 
 ### Textes et faits à confirmer
 
