@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   EMAIL_TOKEN,
   fillEmail,
+  CONTACT_ERROR_KEYS,
+  isFormMessages,
   isValidEmail,
   isValidPhone,
   resolveFormTarget,
@@ -103,5 +105,27 @@ describe('selectNoticeText', () => {
 
   it('mention adaptée au repli mailto: (aucun service ne transmet les données)', () => {
     expect(selectNoticeText(notice, 'mailto')).toBe('Votre messagerie s’ouvre');
+  });
+});
+
+describe('isFormMessages', () => {
+  const complete = Object.fromEntries(CONTACT_ERROR_KEYS.map((key) => [key, `Erreur ${key}`]));
+
+  it('accepte un message texte pour chaque clé d’erreur', () => {
+    expect(isFormMessages(complete)).toBe(true);
+  });
+
+  it('refuse un objet incomplet ou un message non textuel', () => {
+    const incomplete = Object.fromEntries(
+      Object.entries(complete).filter(([key]) => key !== 'emailInvalid'),
+    );
+    expect(isFormMessages(incomplete)).toBe(false);
+    expect(isFormMessages({ ...complete, phoneInvalid: 42 })).toBe(false);
+  });
+
+  it('refuse ce qui n’est pas un objet', () => {
+    expect(isFormMessages(null)).toBe(false);
+    expect(isFormMessages('{}')).toBe(false);
+    expect(isFormMessages([])).toBe(false);
   });
 });

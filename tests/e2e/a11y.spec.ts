@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { microcopy } from '../../src/config/microcopy';
-import { SITE_ROUTES } from '../../src/lib/redirects';
+import { SITE_ROUTES } from '../site-routes';
 import {
   NOT_FOUND_PATH,
   expectNoAxeViolations,
@@ -145,7 +145,20 @@ test.describe('Espacement du texte (1.4.12)', () => {
   for (const path of LONG_PAGES) {
     test(`${path} : aucun débordement avec les espacements WCAG`, async ({ page }) => {
       await page.goto(path);
-      await page.addStyleTag({ content: TEXT_SPACING_CSS });
+      // Feuille construite (CSSOM) plutôt qu'une balise <style> : la CSP bloque tout <style>
+      // sans empreinte, comme elle le ferait pour un script injecté (ADR-0012).
+      await page.evaluate((css) => {
+        const sheet = new CSSStyleSheet();
+        sheet.replaceSync(css);
+        document.adoptedStyleSheets.push(sheet);
+      }, TEXT_SPACING_CSS);
+      // Espacements bien appliqués (0,12 em d'espacement des lettres sur le h1).
+      const h1 = page.getByRole('heading', { level: 1 });
+      const [letterSpacing, fontSize] = await h1.evaluate((el) => {
+        const style = getComputedStyle(el);
+        return [parseFloat(style.letterSpacing), parseFloat(style.fontSize)];
+      });
+      expect(letterSpacing).toBeCloseTo(fontSize * 0.12, 1);
       expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
     });
   }
@@ -173,6 +186,103 @@ test.describe('Focus non masqué par l’en-tête collant (2.4.11)', () => {
         const headerBottom = box ? box.y + box.height : 0;
         expect(state.bottom, state.label).toBeGreaterThan(headerBottom);
       }
+    });
+  }
+});
+
+// Mouvement actif : le bloc visé ne doit pas être décalé par une apparition au moment où le
+// navigateur défile vers l'ancre (sinon le défilement vise la position décalée de 20 px).
+test.describe('Ancre d’un titre à surtitre (2.4.11)', () => {
+  test('/visualisation-3d/#avantages-titre : le surtitre reste sous l’en-tête', async ({
+    page,
+  }) => {
+    await page.goto('/visualisation-3d/#avantages-titre');
+    const eyebrow = page.locator('#avantages-titre').locator('xpath=preceding-sibling::p[1]');
+    await expect(eyebrow).toHaveClass(/\beyebrow\b/);
+    // Le défilement vers l'ancre peut survenir après le chargement des polices.
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+    await waitForAnimationsToSettle(page);
+    const header = await page.locator('header').first().boundingBox();
+    const box = await eyebrow.boundingBox();
+    expect(box?.y ?? 0).toBeGreaterThanOrEqual((header?.y ?? 0) + (header?.height ?? 0));
+  });
+});
+
+const ASIDE = '.prose-layout__aside, .contact-layout__aside';
+
+// Colonne latérale collante plus haute que la fenêtre (sommaire des CGS, « En bref » d'une
+// prestation, coordonnées de la page Contact) : sur un écran bas ou zoomé, sa fin restait hors
+// écran pendant toute la lecture et un lien focalisé au clavier y était invisible. Elle n'est
+// désormais collante que si la fenêtre est assez haute (sinon dans le flux), avec défilement
+// interne en dernier recours pour le sommaire de longueur non bornée.
+test.describe(
+  'Colonne latérale collante sur écran bas (2.4.7, 2.4.11)',
+  { tag: '@desktop' },
+  () => {
+    test.use({ reducedMotion: 'reduce', viewport: { width: 1280, height: 600 } });
+
+    for (const path of ['/conditions-generales/', '/prestations/meuble-sur-mesure/', '/contact/']) {
+      test(`${path} : chaque lien de la colonne reste visible au clavier`, async ({ page }) => {
+        await page.goto(path);
+        const aside = page.locator(ASIDE);
+        const links = aside.locator('a[href], button');
+        const count = await links.count();
+        expect(count).toBeGreaterThan(0);
+        await page.locator('main a').first().focus();
+        const header = page.locator('header').first();
+        let seen = 0;
+        for (let i = 0; i < 40 && seen < count; i += 1) {
+          await page.keyboard.press('Tab');
+          const box = await page.evaluate((selector) => {
+            const el = document.activeElement;
+            if (!el?.closest(selector)) return null;
+            const { top, bottom } = el.getBoundingClientRect();
+            return { top, bottom, label: el.textContent?.trim().slice(0, 40) ?? '' };
+          }, ASIDE);
+          if (!box) continue;
+          seen += 1;
+          const headerBox = await header.boundingBox();
+          const viewport = page.viewportSize();
+          expect(box.top, box.label).toBeGreaterThanOrEqual(
+            (headerBox?.y ?? 0) + (headerBox?.height ?? 0),
+          );
+          // Tolérance d'un pixel : le navigateur aligne parfois le lien au bord à une fraction près.
+          expect(box.bottom, box.label).toBeLessThanOrEqual((viewport?.height ?? 0) + 1);
+        }
+        expect(seen).toBe(count);
+      });
+    }
+  },
+);
+
+// Au-delà de 50rem de haut, le sommaire des pages légales reste collant et défile en interne s'il
+// dépasse l'écran : cette région défilante doit rester accessible au clavier (axe :
+// `scrollable-region-focusable`). La passe axe générale tourne sur des écrans où la règle ne
+// s'applique pas.
+test.describe('Colonne latérale défilante sur écran haut (axe)', { tag: '@desktop' }, () => {
+  test.use({ reducedMotion: 'reduce', viewport: { width: 1280, height: 820 } });
+
+  test('/conditions-generales/ : sommaire défilant, 0 violation', async ({ page }) => {
+    await page.goto('/conditions-generales/');
+    const scrollable = await page
+      .locator(ASIDE)
+      .first()
+      .evaluate((element) => {
+        const nodes = [element, ...element.querySelectorAll('*')];
+        return nodes.some(
+          (node) =>
+            node.scrollHeight > node.clientHeight + 1 &&
+            getComputedStyle(node).overflowY !== 'visible',
+        );
+      });
+    expect(scrollable).toBe(true);
+    await expectNoAxeViolations(page);
+  });
+
+  for (const path of ['/prestations/meuble-sur-mesure/', '/contact/']) {
+    test(`${path} : colonne collante, 0 violation`, async ({ page }) => {
+      await page.goto(path);
+      await expectNoAxeViolations(page);
     });
   }
 });

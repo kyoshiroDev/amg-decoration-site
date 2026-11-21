@@ -121,6 +121,24 @@ test.describe('Contact : sans JavaScript', () => {
     await expect(details.locator(`a[href="${site.whatsapp.url}"]`)).toHaveCount(1);
     await expect(details).toContainText(/lundi au vendredi/);
   });
+
+  test('zone d’intervention sous le formulaire : h2 et 3 liens valides', async ({
+    page,
+    request,
+  }) => {
+    await page.goto('/contact/');
+    const zone = page.locator('section[aria-labelledby="zone-titre"]');
+    await expect(zone.locator('h2#zone-titre')).toHaveText(/Paris.*partout en France/);
+    const links = zone.getByRole('link');
+    await expect(links).toHaveCount(3);
+    for (const href of await links.evaluateAll((els) => els.map((a) => a.getAttribute('href')))) {
+      const url = new URL(href ?? '', page.url());
+      expect((await request.get(url.pathname)).status(), href ?? '').toBe(200);
+      if (url.pathname === '/contact/' && url.hash) {
+        await expect(page.locator(url.hash)).toHaveCount(1);
+      }
+    }
+  });
 });
 
 test.describe('Contact : avec JavaScript', () => {
@@ -161,56 +179,79 @@ test.describe('Contact : avec JavaScript', () => {
     await expect(name).not.toHaveAttribute('aria-invalid');
   });
 
-  test('succès : état d’envoi, message annoncé et focalisé, formulaire masqué', async ({
+  // Régression (Phase 7) : corriger le dernier champ en erreur puis cliquer directement sur le
+  // bouton. La revalidation à la sortie du champ retirait le message d'erreur au mousedown, le
+  // bouton remontait et le clic était perdu.
+  test('après des erreurs, un clic direct sur le bouton envoie bien le formulaire', async ({
     page,
   }) => {
-    await useMockService(page);
-    let payload: Record<string, string> = {};
-    let release: () => void = () => undefined;
-    const held = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    await page.route(MOCK_ENDPOINT, async (route) => {
-      payload = route.request().postDataJSON() as Record<string, string>;
-      await held;
-      await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
-    });
-
+    await page
+      .locator('form[data-contact-form]')
+      .evaluate((form) => form.addEventListener('submit', (event) => event.preventDefault()));
+    await page.getByRole('button', { name: TEXTS.submit }).click();
     await fillValidForm(page);
     await page.getByRole('button', { name: TEXTS.submit }).click();
-    const button = page.locator('form[data-contact-form] button[type="submit"]');
-    await expect(button).toHaveText(TEXTS.sending);
-    await expect(button).toHaveAttribute('aria-disabled', 'true');
-    await expect(page.getByRole('status')).toHaveText(TEXTS.sending);
-    release();
-
-    const status = page.getByRole('status');
-    await expect(status).toContainText(TEXTS.success);
-    await expect(status).toBeFocused();
-    await expect(page.locator('form[data-contact-form]')).toBeHidden();
-    expect(payload).toMatchObject({
-      nom: 'Camille Martin',
-      email: 'camille@exemple.fr',
-      projet: 'Je ne sais pas encore',
-    });
-    await expectNoAxeViolations(page);
+    await expect(page.getByRole('status')).toContainText(TEXTS.mailtoHint);
   });
 
-  test('échec : message avec l’email du site, formulaire conservé', async ({ page }) => {
-    await useMockService(page);
-    await page.route(MOCK_ENDPOINT, (route) => route.fulfill({ status: 500, body: '' }));
-    await fillValidForm(page);
-    await page.getByRole('button', { name: TEXTS.submit }).click();
+  test.describe('service simulé', () => {
+    // La CSP de ce build (sans service) n'autorise aucune connexion externe : `connect-src 'self'`
+    // bloquerait l'envoi vers le service simulé par `useMockService`. Elle est contournée pour ces
+    // seuls tests de comportement ; la CSP réelle du mode service (origine du service autorisée)
+    // est vérifiée par tests/e2e-service/csp.spec.ts.
+    test.use({ bypassCSP: true });
 
-    const status = page.getByRole('status');
-    await expect(status).toContainText(TEXTS.failure);
-    await expect(status).toContainText(site.email);
-    await expect(status).toBeFocused();
-    await expect(page.getByLabel('Votre nom')).toHaveValue('Camille Martin');
-    await expect(page.getByRole('button', { name: TEXTS.submit })).toHaveAttribute(
-      'aria-disabled',
-      'false',
-    );
+    test('succès : état d’envoi, message annoncé et focalisé, formulaire masqué', async ({
+      page,
+    }) => {
+      await useMockService(page);
+      let payload: Record<string, string> = {};
+      let release: () => void = () => undefined;
+      const held = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      await page.route(MOCK_ENDPOINT, async (route) => {
+        payload = route.request().postDataJSON() as Record<string, string>;
+        await held;
+        await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
+      });
+
+      await fillValidForm(page);
+      await page.getByRole('button', { name: TEXTS.submit }).click();
+      const button = page.locator('form[data-contact-form] button[type="submit"]');
+      await expect(button).toHaveText(TEXTS.sending);
+      await expect(button).toHaveAttribute('aria-disabled', 'true');
+      await expect(page.getByRole('status')).toHaveText(TEXTS.sending);
+      release();
+
+      const status = page.getByRole('status');
+      await expect(status).toContainText(TEXTS.success);
+      await expect(status).toBeFocused();
+      await expect(page.locator('form[data-contact-form]')).toBeHidden();
+      expect(payload).toMatchObject({
+        nom: 'Camille Martin',
+        email: 'camille@exemple.fr',
+        projet: 'Je ne sais pas encore',
+      });
+      await expectNoAxeViolations(page);
+    });
+
+    test('échec : message avec l’email du site, formulaire conservé', async ({ page }) => {
+      await useMockService(page);
+      await page.route(MOCK_ENDPOINT, (route) => route.fulfill({ status: 500, body: '' }));
+      await fillValidForm(page);
+      await page.getByRole('button', { name: TEXTS.submit }).click();
+
+      const status = page.getByRole('status');
+      await expect(status).toContainText(TEXTS.failure);
+      await expect(status).toContainText(site.email);
+      await expect(status).toBeFocused();
+      await expect(page.getByLabel('Votre nom')).toHaveValue('Camille Martin');
+      await expect(page.getByRole('button', { name: TEXTS.submit })).toHaveAttribute(
+        'aria-disabled',
+        'false',
+      );
+    });
   });
 
   test('repli mailto: l’indice est annoncé avant l’ouverture de la messagerie', async ({

@@ -13,10 +13,10 @@ interface Props {
   section: PageSection;
   projects: readonly ProjectCardData[];
   id: string;
-  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  background?: 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
 }
 
-const { section, projects, id, background = 'linen' } = Astro.props;
+const { section, projects, id, background = 'cream' } = Astro.props;
 
 /** Cartes larges : 1re et 4e de chaque motif de 4. */
 const isWide = (index: number): boolean => index % 4 === 0 || index % 4 === 3;
@@ -27,11 +27,11 @@ const SIZES = {
 ---
 
 <ContentSection section={section} id={id} background={background}>
-  <ul class="project-grid">
+  <ul class="project-grid" data-reveal="list">
     {projects.map((project, index) => {
       const shape = isWide(index) ? 'wide' : 'arch';
       return (
-        <li class="project-grid__item" data-reveal>
+        <li class="project-grid__item">
           <ProjectCard project={project} shape={shape} sizes={SIZES[shape]} />
         </li>
       );
@@ -47,9 +47,13 @@ const SIZES = {
       padding: 0;
       margin: 0;
 
+      /* Deux colonnes visuelles dès 48rem (aussi sur la grille de 12 à 64rem) :
+         cascade d'apparition par colonne (--reveal-columns / --reveal-shift, motion.css). */
       @media (width >= 48rem) {
         grid-template-columns: repeat(2, 1fr);
         align-items: start;
+
+        --reveal-columns: 2;
       }
 
       @media (width >= 64rem) {
@@ -65,6 +69,8 @@ const SIZES = {
       .project-grid__item:nth-child(4n + 2) {
         grid-column: 9 / span 4;
         margin-block-start: var(--grid-stagger);
+
+        --reveal-shift: var(--grid-stagger);
       }
 
       .project-grid__item:nth-child(4n + 3) {
@@ -74,6 +80,8 @@ const SIZES = {
       .project-grid__item:nth-child(4n) {
         grid-column: 6 / span 7;
         margin-block-start: var(--grid-stagger);
+
+        --reveal-shift: var(--grid-stagger);
       }
     }
   }

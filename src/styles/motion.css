@@ -1,70 +1,326 @@
 /*
- * Apparitions au scroll (docs/DESIGN-SYSTEM.md §5, effets 1 et 2), pilotées par
+ * Apparitions au scroll (docs/DESIGN-SYSTEM.md §5, effets 1 et 2 ; ADR-0013), pilotées par
  * src/scripts/reveal.ts. Aucun état caché dans le HTML : `data-reveal-state` n'est posé que
  * par le script, uniquement sur les éléments encore sous la ligne de flottaison, et jamais en
  * mouvement réduit (le script ne fait alors rien : contenu immédiatement visible).
- *   pending → état de départ (hors écran) ; in → transition vers l'état normal ; puis retiré.
+ *   scroll  → apparition pilotée par le défilement (navigateurs qui gèrent view()) ;
+ *   pending → état de départ (hors écran) ; in → animation vers l'état normal ; puis retiré.
+ *
+ * Trois formes :
+ *   data-reveal=""      le bloc entier (ouverture de section, citation, liste courte) ;
+ *   data-reveal="list"  un seul bloc préparé, ses enfants directs en cascade (cartes, étapes) ;
+ *   data-reveal="image" un voile se replie sur l'image (galeries, toujours en pending → in).
+ *
+ * Coût (audit perf Phase 5) : une animation temporelle en cours oblige le fil principal à
+ * recalculer le style de son élément à chaque image du défilement, et chaque démarrage ou fin
+ * coûte ~6 recalculs. D'où, par ordre de préférence :
+ *   1. `scroll` : animation liée à view(), sur le compositeur, aucun changement d'état ;
+ *   2. repli `pending` → `in` : la cascade n'utilise PAS de délai par enfant ; tous les enfants
+ *      d'une liste jouent une animation de même durée (--reveal-cascade-duration), démarrée et
+ *      terminée ensemble, dont les @keyframes « attendent » rang × --stagger avant de bouger.
  */
 @layer components {
-  /* 1. Reveal : fondu + translateY(--reveal-distance), décalé de --stagger × --reveal-order. */
-  [data-reveal='']:is([data-reveal-state='pending'], [data-reveal-state='in']) {
-    transition:
-      opacity var(--dur-base) var(--ease-out),
-      transform var(--dur-base) var(--ease-out);
-    transition-delay: calc(var(--stagger) * var(--reveal-order, 0));
+  /* ---------- 1a. Reveal piloté par le défilement ---------- */
+
+  /*
+   * Le bloc se dévoile pendant les --reveal-scroll-length de son entrée par le bas de la
+   * fenêtre (fondu + translateY(--reveal-distance), --ease-out), puis reste à l'état normal :
+   * rien n'est voilé dans la zone de lecture. Dans une rangée de cartes, chaque colonne
+   * commence --reveal-scroll-stagger plus tard : la cascade est spatiale.
+   */
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      [data-reveal=''][data-reveal-state='scroll'],
+      [data-reveal='list'][data-reveal-state='scroll'] > * {
+        animation: reveal-in linear both;
+        animation-timing-function: var(--ease-out);
+        animation-timeline: view();
+        animation-range: entry var(--reveal-offset, 0%) entry
+          calc(var(--reveal-offset, 0%) + var(--reveal-scroll-length));
+      }
+
+      /*
+       * Rang de colonne d'un enfant : chaque bloc de liste déclare son nombre de colonnes
+       * (--reveal-columns, aux mêmes points de rupture que sa grille) ; une requête de style
+       * sur le parent en déduit la colonne de chaque enfant. Sans déclaration : une colonne,
+       * aucun décalage. Un enfant abaissé par une marge éditoriale (zigzag) déclare cette marge
+       * dans --reveal-shift : elle est retranchée, sinon il entrerait après la colonne suivante.
+       * Ordre d'apparition = ordre de lecture, quel que soit le nombre de colonnes.
+       */
+      @container style(--reveal-columns: 2) {
+        [data-reveal='list'][data-reveal-state='scroll'] > :nth-child(2n) {
+          --reveal-offset: calc(var(--reveal-scroll-stagger) - var(--reveal-shift));
+        }
+      }
+
+      @container style(--reveal-columns: 3) {
+        [data-reveal='list'][data-reveal-state='scroll'] > :nth-child(3n + 2) {
+          --reveal-offset: calc(var(--reveal-scroll-stagger) - var(--reveal-shift));
+        }
+
+        [data-reveal='list'][data-reveal-state='scroll'] > :nth-child(3n) {
+          --reveal-offset: calc(2 * var(--reveal-scroll-stagger) - var(--reveal-shift));
+        }
+      }
+
+      @container style(--reveal-columns: 4) {
+        [data-reveal='list'][data-reveal-state='scroll'] > :nth-child(4n + 2) {
+          --reveal-offset: calc(var(--reveal-scroll-stagger) - var(--reveal-shift));
+        }
+
+        [data-reveal='list'][data-reveal-state='scroll'] > :nth-child(4n + 3) {
+          --reveal-offset: calc(2 * var(--reveal-scroll-stagger) - var(--reveal-shift));
+        }
+
+        [data-reveal='list'][data-reveal-state='scroll'] > :nth-child(4n) {
+          --reveal-offset: calc(3 * var(--reveal-scroll-stagger) - var(--reveal-shift));
+        }
+      }
+    }
   }
 
-  [data-reveal=''][data-reveal-state='pending'] {
+  /* ---------- 1b. Reveal temporel (repli sans view()) ---------- */
+
+  [data-reveal=''][data-reveal-state='pending'],
+  [data-reveal='list'][data-reveal-state='pending'] > * {
     opacity: 0;
     transform: translateY(var(--reveal-distance));
   }
 
+  [data-reveal=''][data-reveal-state='in'] {
+    animation: reveal-in var(--dur-base) var(--ease-out);
+  }
+
   /*
-   * 2. Image reveal : le masque se lève du bas vers le haut (clip-path inset) pendant que
-   * l'image se dézoome (--reveal-image-scale → 1). clip-path ne touche ni la mise en page ni
-   * le CLS (seule la peinture change) : c'est l'effet 2 du catalogue, joué une seule fois.
-   * Le masque est posé sur l'<img>, pas sur le cadre observé : un élément entièrement masqué
-   * par son propre clip-path ne « croise » jamais l'écran pour IntersectionObserver.
-   * Attribut répété : l'emporte sur la transition de survol d'ArchImage (même couche).
+   * Cascade : rang = position dans la liste (6 rangs, les suivants partagent le dernier).
+   * Les enfants d'une liste révélée ne portent pas de transform propre (décalages éditoriaux
+   * par marges) : la fin des @keyframes fixe `transform: none`.
    */
-  [data-reveal='image'][data-reveal]:is([data-reveal-state='pending'], [data-reveal-state='in'])
-    img {
-    transition:
-      clip-path var(--dur-slow) var(--ease-out),
-      transform var(--dur-slow) var(--ease-out);
-    transition-delay: calc(var(--stagger) * var(--reveal-order, 0));
+  [data-reveal='list'][data-reveal-state='in'] > * {
+    animation: reveal-cascade-5 var(--reveal-cascade-duration) linear;
+  }
+
+  [data-reveal='list'][data-reveal-state='in'] > :nth-child(1) {
+    animation-name: reveal-cascade-0;
+  }
+
+  [data-reveal='list'][data-reveal-state='in'] > :nth-child(2) {
+    animation-name: reveal-cascade-1;
+  }
+
+  [data-reveal='list'][data-reveal-state='in'] > :nth-child(3) {
+    animation-name: reveal-cascade-2;
+  }
+
+  [data-reveal='list'][data-reveal-state='in'] > :nth-child(4) {
+    animation-name: reveal-cascade-3;
+  }
+
+  [data-reveal='list'][data-reveal-state='in'] > :nth-child(5) {
+    animation-name: reveal-cascade-4;
+  }
+
+  /*
+   * ---------- 2. Image reveal ----------
+   * Un voile couleur de cadre (pseudo-élément du cadre, rogné par son arche) se replie vers le
+   * haut (scaleY 1 → 0, origine en haut) et découvre l'image du bas vers le haut, pendant que
+   * l'image se dézoome (--reveal-image-scale → 1) : l'arche « se lève ». Transform seul, sur le
+   * compositeur, aucune incidence sur la mise en page. Le voile n'existe que dans les états
+   * posés par reveal.ts (rien sans JS ni en mouvement réduit). Le cadre observé n'est jamais
+   * masqué lui-même : IntersectionObserver le voit entrer.
+   * Attribut répété : l'emporte sur le transform de survol d'ArchImage (même couche).
+   */
+  [data-reveal='image'][data-reveal][data-reveal-state]::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background-color: var(--color-beige);
+    transform-origin: top;
+    pointer-events: none;
   }
 
   [data-reveal='image'][data-reveal][data-reveal-state='pending'] img {
-    clip-path: inset(100% 0 0);
     transform: scale(var(--reveal-image-scale));
   }
 
+  [data-reveal='image'][data-reveal][data-reveal-state='in']::after {
+    animation: reveal-image-veil var(--dur-slow) var(--ease-out) both;
+  }
+
+  [data-reveal='image'][data-reveal][data-reveal-state='in'] img {
+    animation: reveal-image var(--dur-slow) var(--ease-out);
+  }
+
   /*
-   * Focus clavier dans un élément encore en attente : visible tout de suite, sans transition
+   * Focus clavier dans un élément encore en attente : visible tout de suite, sans animation
    * (reveal.ts retire aussitôt l'état ; cette règle couvre la première image).
    */
   [data-reveal][data-reveal-state]:focus-within,
-  :focus [data-reveal][data-reveal-state] {
+  :focus [data-reveal][data-reveal-state],
+  [data-reveal='list'][data-reveal-state]:focus-within > *,
+  :focus [data-reveal='list'][data-reveal-state] > * {
     opacity: 1;
     transform: none;
-    transition: none;
+    animation: none;
   }
 
   [data-reveal='image'][data-reveal][data-reveal-state]:focus-within img,
   :focus [data-reveal='image'][data-reveal][data-reveal-state] img {
-    clip-path: none;
     transform: none;
-    transition: none;
+    animation: none;
+  }
+
+  [data-reveal='image'][data-reveal][data-reveal-state]:focus-within::after,
+  :focus [data-reveal='image'][data-reveal][data-reveal-state]::after {
+    content: none;
   }
 
   /* Impression : tout est visible, quel que soit l'état. */
   @media print {
     [data-reveal-state],
+    [data-reveal-state] > *,
     [data-reveal-state] img {
       opacity: 1 !important;
-      clip-path: none !important;
       transform: none !important;
+      animation: none !important;
     }
+
+    [data-reveal-state]::after {
+      content: none !important;
+    }
+  }
+}
+
+/*
+ * Paramètres de la cascade par colonne, non hérités : une liste imbriquée dans une carte ne
+ * reprend ni le nombre de colonnes de la grille parente ni la marge de la carte.
+ */
+@property --reveal-columns {
+  syntax: '<integer>';
+  inherits: false;
+  initial-value: 1;
+}
+
+@property --reveal-shift {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0;
+}
+
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--reveal-distance));
+  }
+}
+
+@keyframes reveal-image {
+  from {
+    transform: scale(var(--reveal-image-scale));
+  }
+}
+
+@keyframes reveal-image-veil {
+  from {
+    transform: scaleY(1);
+  }
+
+  to {
+    transform: scaleY(0);
+  }
+}
+
+/*
+ * Rang n sur --reveal-cascade-duration (D = --dur-base + 5 × --stagger = 800 ms) :
+ * immobile jusqu'à n × --stagger, mouvement en --dur-base (--ease-out), puis état final.
+ *   départ = n × 70 / 800 ; arrivée = (n × 70 + 450) / 800.
+ * Pourcentages vérifiés contre les tokens par tests/unit/reveal-keyframes.test.ts.
+ */
+@keyframes reveal-cascade-0 {
+  0% {
+    opacity: 0;
+    transform: translateY(var(--reveal-distance));
+    animation-timing-function: var(--ease-out);
+  }
+
+  56.25%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes reveal-cascade-1 {
+  0%,
+  8.75% {
+    opacity: 0;
+    transform: translateY(var(--reveal-distance));
+    animation-timing-function: var(--ease-out);
+  }
+
+  65%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes reveal-cascade-2 {
+  0%,
+  17.5% {
+    opacity: 0;
+    transform: translateY(var(--reveal-distance));
+    animation-timing-function: var(--ease-out);
+  }
+
+  73.75%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes reveal-cascade-3 {
+  0%,
+  26.25% {
+    opacity: 0;
+    transform: translateY(var(--reveal-distance));
+    animation-timing-function: var(--ease-out);
+  }
+
+  82.5%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes reveal-cascade-4 {
+  0%,
+  35% {
+    opacity: 0;
+    transform: translateY(var(--reveal-distance));
+    animation-timing-function: var(--ease-out);
+  }
+
+  91.25%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes reveal-cascade-5 {
+  0%,
+  43.75% {
+    opacity: 0;
+    transform: translateY(var(--reveal-distance));
+    animation-timing-function: var(--ease-out);
+  }
+
+  100% {
+    opacity: 1;
+    transform: none;
   }
 }

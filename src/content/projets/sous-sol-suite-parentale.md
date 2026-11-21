@@ -3,20 +3,37 @@
 title: 'Du sous-sol à une chambre parentale lumineuse'
 summary: 'Transformation d’un sous-sol en chambre parentale'
 # TODO(contenu): lieu (ville ou région) à demander à Amandine.
+# TODO(contenu): originaux HD à demander (images actuelles : 1200 × 600 issues de l’ancien site).
 roomTypes:
   - chambre-parentale
   - dressing
   - salle-de-bain
 style: 'Contemporain et doux'
-# TODO(contenu): placeholders ; remplacer par les originaux HD dans src/assets/projets/sous-sol-suite-parentale/.
 cover:
-  image: ../../assets/placeholders/interieur-lumiere.jpg
-  alt: 'Illustration provisoire d’un intérieur lumineux : arche terracotta, plante vert sauge et sol couleur sable'
-# TODO(contenu): nature des images inconnue (rendu 3D ou photo réelle ?), « 3d » par défaut.
+  image: ../../assets/projets/sous-sol-suite-parentale/01-chambre-3d.jpg
+  alt: 'Rendu 3D de la suite parentale : lit blanc et plaid tressé, tête de lit à niches lumineuses, ouvertures en arche'
 gallery:
-  - image: ../../assets/placeholders/interieur-lumiere.jpg
-    alt: 'Illustration provisoire d’un intérieur lumineux : arche terracotta, plante vert sauge et sol couleur sable'
+  - image: ../../assets/projets/sous-sol-suite-parentale/01-chambre-3d.jpg
+    alt: 'Rendu 3D de la suite parentale : lit blanc et plaid tressé, tête de lit à niches lumineuses, ouvertures en arche'
     kind: 3d
+  - image: ../../assets/projets/sous-sol-suite-parentale/02-coiffeuse-3d.jpg
+    alt: 'Rendu 3D de la coiffeuse : miroir rond rétroéclairé sur tasseaux de bois, entre deux arches vers dressing et salle d’eau'
+    kind: 3d
+  - image: ../../assets/projets/sous-sol-suite-parentale/03-chambre-coiffeuse-3d.jpg
+    alt: 'Rendu 3D de la chambre : étagères en bois et cadres beiges, coiffeuse suspendue et tabouret bouclette crème'
+    kind: 3d
+  - image: ../../assets/projets/sous-sol-suite-parentale/04-salle-d-eau-3d.jpg
+    alt: 'Rendu 3D de la salle d’eau : vasque blanche, robinetterie dorée, niches en bois clair et miroir rond lumineux'
+    kind: 3d
+  - image: ../../assets/projets/sous-sol-suite-parentale/05-douche-3d.jpg
+    alt: 'Rendu 3D de la douche à l’italienne : colonne dorée, carrelage beige et niche habillée de bois strié'
+    kind: 3d
+  - image: ../../assets/projets/sous-sol-suite-parentale/06-sous-sol-avant.jpg
+    alt: 'Photo avant travaux du sous-sol : chaudière murale, tuyaux apparents, étagère encombrée et carrelage ocre'
+    kind: avant
+  - image: ../../assets/projets/sous-sol-suite-parentale/07-sous-sol-avant-2.jpg
+    alt: 'Photo avant travaux d’une pièce du sous-sol : appareil de sport, sol bleu et porte vitrée sur l’extérieur'
+    kind: avant
 featured: true
 order: 4
 seo:

@@ -1,9 +1,9 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { microcopy } from '../../src/config/microcopy';
-import { counterText } from '../../src/lib/lightbox';
+import { counterText, statusText } from '../../src/lib/lightbox';
 import { expectNoAxeViolations } from './helpers';
 
-// Visionneuse des galeries : styleguide (3 placeholders, navigation) et page projet (1 image).
+// Visionneuse des galeries : styleguide (3 placeholders, navigation) et page projet (galerie réelle, plusieurs images).
 
 const labels = microcopy.lightbox;
 const counter = (index: number, total: number): string => counterText(index, total, labels.counter);
@@ -59,6 +59,63 @@ test.describe('Visionneuse : styleguide', () => {
     await expect(first).toBeFocused();
   });
 
+  test('fermeture reportée après le rendu : fondu immédiat, rien en suspens à la réouverture', async ({
+    page,
+  }) => {
+    const dialog = page.getByRole('dialog', { name: labels.label });
+    const first = thumbnails(page).first();
+    await first.click();
+    await expect(dialog).toBeVisible();
+
+    // Échap enfoncée : le fondu part (opacité visée 0), la fermeture attend le relâchement.
+    // État lu dans la même tâche que l'appui : le filet de 500 ms ne peut pas s'intercaler, même
+    // sur une machine chargée.
+    const whileHeld = await dialog.evaluate((element: HTMLDialogElement) => {
+      element.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      return { closing: element.hasAttribute('data-closing'), open: element.open };
+    });
+    expect(whileHeld).toEqual({ closing: true, open: true });
+    await dialog.dispatchEvent('keyup', { key: 'Escape', bubbles: true });
+    await expect(dialog).toHaveJSProperty('open', false);
+    await expect(dialog).not.toHaveAttribute('data-closing');
+    await expect(first).toBeFocused();
+
+    // Filet : sans relâchement (fenêtre quittée touche enfoncée), fermeture quand même.
+    await first.click();
+    await expect(dialog).toBeVisible();
+    await dialog.dispatchEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    await expect(dialog).toHaveJSProperty('open', false);
+
+    // Bouton de fermeture : même report, et la visionneuse rouverte est pleinement visible.
+    await first.click();
+    await dialog.getByRole('button', { name: labels.close }).click();
+    await expect(dialog).toBeHidden();
+    await first.click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog).not.toHaveAttribute('data-closing');
+    await expect(dialog).toHaveCSS('opacity', '1');
+  });
+
+  test('annonce « Image n sur N : légende » dans une seule région live', async ({ page }) => {
+    const links = gallery(page).locator('a[data-lightbox-item]');
+    const legends = await links.evaluateAll((items) =>
+      items.map((link) => link.getAttribute('data-caption') || link.getAttribute('data-alt')),
+    );
+    await thumbnails(page).first().click();
+    const dialog = page.getByRole('dialog', { name: labels.label });
+    await expect(dialog).toBeVisible();
+    // Une seule région live ; le compteur visuel « 1 / 3 » est masqué aux lecteurs d'écran.
+    await expect(dialog.locator('[aria-live]')).toHaveCount(1);
+    await expect(dialog.locator('[data-lightbox-counter]')).toHaveAttribute('aria-hidden', 'true');
+    const status = dialog.locator('[aria-live="polite"]');
+    await expect(status).toHaveText(statusText(0, 3, labels.status, legends[0] ?? ''));
+    await page.keyboard.press('ArrowRight');
+    await expect(status).toHaveText(statusText(1, 3, labels.status, legends[1] ?? ''));
+    await expect(status).toContainText(/^Image 2 sur 3/);
+  });
+
   test('ouverte au clavier, focus piégé dans la visionneuse', async ({ page }) => {
     const second = thumbnails(page).nth(1);
     await second.focus();
@@ -87,17 +144,26 @@ test.describe('Visionneuse : styleguide', () => {
 });
 
 test.describe('Visionneuse : page projet', () => {
-  test('une seule image : ni compteur ni boutons de navigation', async ({ page }) => {
+  test('galerie complète : compteur, navigation jusqu’à la dernière image, fermeture', async ({
+    page,
+  }) => {
     await page.goto('/realisations/chalet-suisse/');
-    const link = page.locator('a[data-lightbox-item]').first();
-    await expect(link).toHaveAccessibleName(OPEN_NAME);
-    await link.click();
+    const links = page.locator('a[data-lightbox-item]');
+    const total = await links.count();
+    expect(total).toBeGreaterThan(1);
+    await expect(links.first()).toHaveAccessibleName(OPEN_NAME);
+    await links.first().click();
     const dialog = page.getByRole('dialog', { name: labels.label });
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole('button', { name: labels.next })).toBeHidden();
-    await expect(dialog.locator('[data-lightbox-counter]')).toHaveText('');
+    const counterEl = dialog.locator('[data-lightbox-counter]');
+    await expect(counterEl).toHaveText(counter(0, total));
+    await page.keyboard.press('ArrowLeft');
+    await expect(counterEl).toHaveText(counter(total - 1, total));
+    await dialog.getByRole('button', { name: labels.next }).click();
+    await expect(counterEl).toHaveText(counter(0, total));
     await dialog.getByRole('button', { name: labels.close }).click();
     await expect(dialog).toBeHidden();
+    await expect(links.first()).toBeFocused();
   });
 });
 

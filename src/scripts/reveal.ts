@@ -1,67 +1,87 @@
 /**
- * Apparitions au scroll (docs/DESIGN-SYSTEM.md §5, effets 1 et 2) sur `[data-reveal]`.
- * - Rien sans IntersectionObserver ni en mouvement réduit : le contenu reste tel quel.
- * - Seuls les éléments encore SOUS la ligne de flottaison sont préparés (`pending`) : rien de
- *   ce qui est déjà à l'écran ne disparaît (aucun clignotement, LCP intact).
- * - Déclenchement à 15 % de visibilité, une seule fois ; les éléments entrés ensemble
- *   apparaissent en cascade (`--reveal-order` × `--stagger`), puis l'état est retiré.
- * - Focus clavier (WCAG 2.4.7, 2.4.11) : un élément encore en attente qui reçoit le focus (ou
- *   dont un descendant le reçoit) est révélé immédiatement, sans transition ; motion.css le
- *   rend visible dès la première image via `:focus-within`.
- * transform, opacity et clip-path uniquement (src/styles/motion.css) : aucun décalage (CLS).
+ * Apparitions au scroll (docs/DESIGN-SYSTEM.md §5, effets 1 et 2 ; ADR-0013) sur `[data-reveal]`.
+ * - Rien en mouvement réduit : le contenu reste tel quel.
+ * - Seuls les blocs encore SOUS la ligne de flottaison sont préparés : rien de ce qui est déjà
+ *   à l'écran ne disparaît (aucun clignotement, LCP intact), ni le bloc visé par l'ancre.
+ * - Navigateurs qui gèrent `animation-timeline: view()` : état `scroll`, l'apparition suit le
+ *   défilement, entièrement en CSS et sur le compositeur (src/styles/motion.css). Aucun
+ *   observateur, aucun changement d'état ensuite : c'est ce qui la rend presque gratuite.
+ * - Sinon (et toujours pour l'image reveal) : `pending`, puis `in` quand le haut du bloc
+ *   franchit 90 % de la fenêtre (IntersectionObserver, une fois), animation CSS, état retiré
+ *   au premier `animationend`. Une liste (`data-reveal="list"`) est un seul bloc : la cascade
+ *   de ses enfants est portée par le CSS, sans observateur ni délai par enfant.
+ * - Focus clavier (WCAG 2.4.7, 2.4.11) : un bloc préparé qui reçoit le focus (lui ou un
+ *   descendant) est révélé immédiatement, sans animation ; motion.css le rend visible dès la
+ *   première image via `:focus-within`.
+ * transform et opacity uniquement : aucun décalage (CLS).
  */
 import { onPageReady } from './lifecycle';
 
-const THRESHOLD = 0.15;
-/** Au-delà, les éléments d'un même lot apparaissent ensemble (cascade bornée). */
-const MAX_ORDER = 5;
+/** Bande basse ignorée : le bloc apparaît une fois réellement entré dans la page. */
+const ROOT_MARGIN = '0px 0px -10% 0px';
 
 onPageReady((signal) => {
-  if (!('IntersectionObserver' in window)) return;
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const scrollDriven = CSS.supports('animation-timeline: view()');
+  const observable = 'IntersectionObserver' in window;
 
   const fold = window.innerHeight;
+  // Ancre de l'URL (#avantages-titre) : le navigateur y défile souvent APRÈS ce script. Son
+  // bloc ne doit pas être décalé (translateY) à ce moment-là, sinon le défilement vise la
+  // position décalée et le surtitre finit sous l'en-tête collant.
+  const anchor = window.location.hash
+    ? document.getElementById(decodeURIComponent(window.location.hash.slice(1)))
+    : null;
   const targets = [...document.querySelectorAll<HTMLElement>('[data-reveal]')].filter(
-    (element) => !element.dataset['revealState'] && element.getBoundingClientRect().top > fold,
+    (element) =>
+      !element.dataset['revealState'] &&
+      element.getBoundingClientRect().top > fold &&
+      !(anchor && (element.contains(anchor) || anchor.contains(element))) &&
+      ((scrollDriven && element.dataset['reveal'] !== 'image') || observable),
   );
   if (targets.length === 0) return;
 
-  // Fin de l'apparition : opacité (texte, cartes) ou masque de l'image (image reveal).
-  const settle = (event: TransitionEvent): void => {
-    const element = event.currentTarget;
-    if (!(element instanceof HTMLElement)) return;
-    if (event.propertyName !== 'opacity' && event.propertyName !== 'clip-path') return;
+  const settle = (element: HTMLElement): void => {
     delete element.dataset['revealState'];
-    element.style.removeProperty('--reveal-order');
   };
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      let order = 0;
-      for (const entry of entries) {
-        if (!entry.isIntersecting) continue;
-        const element = entry.target as HTMLElement;
-        observer.unobserve(element);
-        element.style.setProperty('--reveal-order', String(Math.min(order, MAX_ORDER)));
-        element.addEventListener('transitionend', settle, { signal });
-        element.dataset['revealState'] = 'in';
-        order += 1;
-      }
-    },
-    { threshold: THRESHOLD },
-  );
+  // Les animations d'un bloc (ou de tous les enfants d'une liste) finissent ensemble : le
+  // premier `animationend` remonté marque la fin du bloc entier.
+  const onAnimationEnd = (event: AnimationEvent): void => {
+    if (!event.animationName.startsWith('reveal-')) return;
+    if (event.currentTarget instanceof HTMLElement) settle(event.currentTarget);
+  };
+
+  const observer = observable
+    ? new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            const element = entry.target as HTMLElement;
+            observer?.unobserve(element);
+            element.dataset['revealState'] = 'in';
+          }
+        },
+        { rootMargin: ROOT_MARGIN },
+      )
+    : undefined;
 
   for (const element of targets) {
+    if (scrollDriven && element.dataset['reveal'] !== 'image') {
+      element.dataset['revealState'] = 'scroll';
+      continue;
+    }
     element.dataset['revealState'] = 'pending';
-    observer.observe(element);
+    element.addEventListener('animationend', onAnimationEnd, { signal });
+    element.addEventListener('animationcancel', onAnimationEnd, { signal });
+    observer?.observe(element);
   }
 
-  // Focus clavier dans un élément pas encore révélé : affichage immédiat, sans attendre
-  // IntersectionObserver ni la transition (le focus ne doit jamais être invisible).
+  // Focus clavier dans un bloc préparé : affichage immédiat, sans attendre le défilement,
+  // IntersectionObserver ni l'animation (le focus ne doit jamais être invisible).
   const showNow = (element: HTMLElement): void => {
-    observer.unobserve(element);
-    delete element.dataset['revealState'];
-    element.style.removeProperty('--reveal-order');
+    observer?.unobserve(element);
+    settle(element);
   };
   document.addEventListener(
     'focusin',
@@ -81,8 +101,8 @@ onPageReady((signal) => {
   signal.addEventListener(
     'abort',
     () => {
-      observer.disconnect();
-      for (const element of targets) delete element.dataset['revealState'];
+      observer?.disconnect();
+      for (const element of targets) settle(element);
     },
     { once: true },
   );

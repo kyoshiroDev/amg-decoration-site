@@ -18,6 +18,23 @@ sections:
     heading: 'Me joindre directement'
     headingEmphasis: 'directement'
     lead: 'Vous préférez un échange de vive voix ? Appelez-moi ou écrivez-moi directement. Pour une collaboration, une mission en freelance ou de la sous-traitance, je reste également à votre écoute.'
+  # Zone d'intervention (SEO local + national). Faits : src/config/site.ts (areaServed) et
+  # docs/CONTENU-EXISTANT.md (« basée en région parisienne », « toute la France » par email,
+  # téléphone, visio). Le premier bouton renvoie au formulaire de cette même page (id du titre).
+  # TODO(contenu): un projet déjà mené à distance en Suisse (chalet) ; accepter d’autres projets hors de France ? Décision d’Amandine (si oui, l’ajouter ici et dans site.ts).
+  # TODO(contenu): Amandine se déplace-t-elle sur place à Paris ou en Île-de-France (visite, prise de mesures) ? Si oui, le dire ici.
+  zone:
+    eyebrow: 'Zone d’intervention'
+    heading: 'Décoratrice d’intérieur à Paris, et à distance partout en France'
+    headingEmphasis: 'à distance partout en France'
+    lead: 'Je suis basée en région parisienne et j’accompagne mes clients dans toute la France. Vous m’envoyez vos plans et vos photos, nous échangeons par email, téléphone ou visio, et je vous montre votre futur intérieur en 3D. Où que vous habitiez, vous voyez le résultat avant de vous lancer.'
+    actions:
+      - label: 'Décrire mon projet'
+        href: '/contact/#formulaire-titre'
+      - label: 'Voir les formules'
+        href: '/prestations/'
+      - label: 'Comment ça marche à distance'
+        href: '/conseils-deco/decoratrice-interieur-a-distance/'
 # Formulaire : textes EXACTS de docs/CONFORMITE.md §5. Types, `autocomplete` et champs obligatoires
 # sont fixés par le composant ContactForm. `{email}` est remplacé par l’adresse de src/config/site.ts.
 # Pas d’adresse postale (minimisation RGPD), pas de case de consentement.

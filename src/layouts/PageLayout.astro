@@ -6,6 +6,7 @@
 import BaseLayout, { type Props as BaseProps } from './BaseLayout.astro';
 import Breadcrumbs from '@/components/layout/Breadcrumbs.astro';
 import { buildBreadcrumbList, type BreadcrumbItem } from '@/lib/jsonld';
+import { requireSiteOrigin } from '@/lib/url';
 
 interface Props extends BaseProps {
   /** Chemin depuis l'accueil, page courante comprise (dernier élément). */
@@ -13,7 +14,7 @@ interface Props extends BaseProps {
 }
 
 const { breadcrumbs, jsonLd = [], ...base } = Astro.props;
-const origin = Astro.site ?? Astro.url;
+const origin = requireSiteOrigin(Astro.site);
 ---
 
 <BaseLayout {...base} jsonLd={[...jsonLd, buildBreadcrumbList(breadcrumbs, origin)]}>

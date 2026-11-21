@@ -2,6 +2,8 @@
  * Jeu d'icônes du site : noms et tracés SVG (grille 24×24, trait 1.5, currentColor).
  * Formes des marques sociales simplifiées. Consommé par Icon.astro.
  */
+import { buildIconSprite, iconSpriteVersion } from '@/lib/icon-sprite';
+
 export const iconNames = [
   'arrow-right',
   'arrow-left',
@@ -47,3 +49,12 @@ export const iconPaths: Record<IconName, string> = {
   pause: '<path d="M9 6v12"/><path d="M15 6v12"/>',
   play: '<path d="M8 5.5v13l10.5-6.5Z"/>',
 };
+
+/** Version du sprite (empreinte de son contenu), segment de son URL. */
+export const ICON_SPRITE_VERSION = iconSpriteVersion(buildIconSprite(iconPaths));
+
+/**
+ * Sprite généré au build par src/pages/icons.[version].svg.ts ; une icône =
+ * `${ICON_SPRITE_URL}#nom`. URL versionnée : cache immuable (vercel.json).
+ */
+export const ICON_SPRITE_URL = `/icons.${ICON_SPRITE_VERSION}.svg`;

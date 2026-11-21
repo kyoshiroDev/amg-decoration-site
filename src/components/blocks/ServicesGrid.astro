@@ -12,16 +12,16 @@ interface Props {
   section: PageSection;
   services: readonly ServiceCardData[];
   id: string;
-  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  background?: 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
 }
 
-const { section, services, id, background = 'sand' } = Astro.props;
+const { section, services, id, background = 'beige' } = Astro.props;
 ---
 
 <ContentSection section={section} id={id} background={background}>
-  <ul class="services-grid">
+  <ul class="services-grid" data-reveal="list">
     {services.map((service) => (
-      <li class="services-grid__item" data-reveal>
+      <li class="services-grid__item">
         <ServiceCard service={service} />
       </li>
     ))}
@@ -36,18 +36,25 @@ const { section, services, id, background = 'sand' } = Astro.props;
       padding: 0;
       margin: 0;
 
+      /* --reveal-columns / --reveal-shift : cascade d'apparition par colonne (motion.css). */
       @media (width >= 48rem) {
         grid-template-columns: repeat(2, 1fr);
+
+        --reveal-columns: 2;
       }
 
       @media (width >= 80rem) {
         grid-template-columns: repeat(4, 1fr);
+
+        --reveal-columns: 4;
       }
 
       /* Trois cartes (autres formules d'une page de détail) : trois colonnes, sans case vide. */
       @media (width >= 64rem) {
         &:has(> :last-child:nth-child(3)) {
           grid-template-columns: repeat(3, 1fr);
+
+          --reveal-columns: 3;
         }
       }
     }
@@ -60,6 +67,8 @@ const { section, services, id, background = 'sand' } = Astro.props;
 
       .services-grid__item:nth-child(even) {
         margin-block-start: var(--grid-stagger);
+
+        --reveal-shift: var(--grid-stagger);
       }
     }
   }

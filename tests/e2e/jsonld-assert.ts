@@ -25,7 +25,7 @@ export function expectedPageTypes(path: string): string[] {
     types.push('CollectionPage');
   } else if (path.startsWith('/realisations/')) types.push('CreativeWork');
   else if (path.startsWith('/conseils-deco/')) types.push('BlogPosting');
-  else if (path.startsWith('/prestations/')) types.push('Service');
+  else if (path.startsWith('/prestations/') || path === '/visualisation-3d/') types.push('Service');
   else if (path === '/a-propos/') types.push('AboutPage');
   else if (path === '/contact/') types.push('ContactPage');
   return types;

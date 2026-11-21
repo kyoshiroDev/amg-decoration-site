@@ -1,7 +1,7 @@
 /**
  * Lecture des sources des articles sur le disque (Node uniquement) : pour les outils qui
- * tournent hors des collections Astro (astro.config.mjs pour le sitemap, `SITE_ROUTES` lu par
- * les tests). Sans alias d'import : chargé avant la configuration de Vite.
+ * tournent hors des collections Astro (astro.config.mjs pour le sitemap, les routes d'articles
+ * de `siteRoutes()`, assemblées par tests/site-routes.ts). Sans alias d'import : chargé avant la configuration de Vite.
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { articlePath, type ArticlePath } from './routes';

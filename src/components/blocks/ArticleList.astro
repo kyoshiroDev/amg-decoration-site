@@ -10,11 +10,11 @@ import type { ArticleCardData } from '@/lib/pages/articles-model';
 
 interface Props {
   articles: readonly ArticleCardData[];
-  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  background?: 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
   headingLevel?: 2 | 3;
 }
 
-const { articles, background = 'cream', headingLevel = 2 } = Astro.props;
+const { articles, background = 'ivory', headingLevel = 2 } = Astro.props;
 ---
 
 <Section background={background} as="div" spacing="compact">

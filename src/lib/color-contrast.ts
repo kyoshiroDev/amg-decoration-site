@@ -5,9 +5,9 @@
  */
 
 export interface ColorToken {
-  /** Nom du token sans préfixe, ex. `terracotta-700`. */
+  /** Nom du token sans préfixe, ex. `camel-700`. */
   name: string;
-  /** Valeur hexadécimale normalisée en minuscules, ex. `#9a4a30`. */
+  /** Valeur hexadécimale normalisée en minuscules, ex. `#6b5636`. */
   hex: string;
 }
 

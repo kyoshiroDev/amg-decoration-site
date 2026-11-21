@@ -29,6 +29,15 @@ sections:
         text: 'Une sélection pensée selon vos goûts et votre budget, visible directement dans les rendus.'
       - title: 'Des visuels 4K'
         text: 'Des images nettes et détaillées, à garder sous la main pour vos achats et vos travaux.'
+  # Comparateur « Rendu 3D ↔ Réalisé » : images dans src/config/media.ts (`methodCompare`), titre
+  # repris de microcopy.projects.beforeAfter.heading.
+  # TODO(contenu): paire provisoire (placeholders) ; avec la vraie paire d'Amandine, retirer la
+  # dernière phrase du chapeau.
+  comparatif:
+    eyebrow: 'Rendu 3D et réalisation'
+    heading: 'Du rendu 3D à la réalité'
+    headingEmphasis: 'à la réalité'
+    lead: 'D’un côté le rendu 3D, imaginé avant les travaux, de l’autre la pièce une fois réalisée. Ces deux images sont des illustrations provisoires, en attendant celles d’un projet réel.'
   methode:
     eyebrow: 'Ma méthode'
     heading: 'Comment se déroule votre projet 3D'

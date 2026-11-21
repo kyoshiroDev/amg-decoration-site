@@ -17,7 +17,7 @@ quote:
 order: 6
 seo:
   title: 'Home staging virtuel : visuels 3D pour l’immobilier'
-  description: 'Agents immobiliers, investisseurs : valorisez vos biens avec des visuels 3D réalistes qui aident les acheteurs à se projeter. Tarif dégressif dès 3 biens.'
+  description: 'Home staging virtuel pour agents immobiliers et investisseurs : des visuels 3D qui aident l’acheteur à se projeter. Tarif dégressif dès 3 biens. Parlons-en.'
 ---
 
 ## Pour les agents immobiliers et les investisseurs

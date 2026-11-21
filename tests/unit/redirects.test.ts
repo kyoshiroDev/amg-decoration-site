@@ -2,11 +2,14 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   buildVercelRedirects,
+  CANONICAL_HOST,
+  CANONICAL_ORIGIN,
   resolveRedirect,
   SITE_FILES,
-  SITE_ROUTES,
+  WWW_HOST,
   type VercelRedirect,
 } from '@/lib/redirects';
+import { SITE_ROUTES } from '../site-routes';
 import { publishedArticleRoutes } from '@/lib/article-files';
 
 interface VercelConfig {
@@ -99,9 +102,9 @@ describe('table des redirections', () => {
     expect(redirects.every((rule) => rule.permanent)).toBe(true);
   });
 
-  it('ne contient aucune source en double', () => {
-    const sources = redirects.map((rule) => rule.source);
-    expect(new Set(sources).size).toBe(sources.length);
+  it('ne contient aucune source en double (par hôte)', () => {
+    const keys = redirects.map((rule) => `${JSON.stringify(rule.has ?? [])} ${rule.source}`);
+    expect(new Set(keys).size).toBe(keys.length);
   });
 
   it('ne redirige aucune page du nouveau site', () => {
@@ -156,6 +159,76 @@ describe('migration : chaque ancienne URL a une destination (200 ou 301 en un sa
     expect(resolveRedirect('/wp-login.php')).toBeNull();
     expect(resolveRedirect('/wp-admin/')).toBeNull();
     expect(resolveRedirect('/wp-content/uploads/2026/04/chalet2.png')).toBeNull();
+  });
+});
+
+describe('hôte www → domaine nu (301/308 en un seul saut)', () => {
+  const www = (path: string): string | null => resolveRedirect(path, redirects, WWW_HOST);
+  /** Chemin d'une destination absolue sur le domaine nu (sinon échec explicite). */
+  const pathOf = (location: string | null): string => {
+    expect(location?.startsWith(`${CANONICAL_ORIGIN}/`), String(location)).toBe(true);
+    return new URL(location ?? '').pathname;
+  };
+
+  it('origine canonique alignée sur `site` (astro.config.mjs) et sur la condition `has`', () => {
+    const config = readFileSync(new URL('../../astro.config.mjs', import.meta.url), 'utf8');
+    expect(config).toContain(`const SITE = '${CANONICAL_ORIGIN}';`);
+    expect(WWW_HOST).toBe(`www.${CANONICAL_HOST}`);
+    const conditions = redirects.flatMap((rule) => rule.has ?? []);
+    expect(new Set(conditions.map((c) => `${c.type}:${c.value}`))).toEqual(
+      new Set(['host:www\\.amgdecorationdinterieur\\.com']),
+    );
+  });
+
+  it('les règles www précèdent toutes les règles du domaine nu et finissent par un générique', () => {
+    const firstCanonical = redirects.findIndex((rule) => !rule.has);
+    const lastWww = redirects.findLastIndex((rule) => rule.has);
+    expect(lastWww).toBe(firstCanonical - 1);
+    expect(redirects[lastWww]).toMatchObject({
+      source: '/:path(.*)',
+      destination: `${CANONICAL_ORIGIN}/:path`,
+    });
+  });
+
+  it('ne s’applique qu’à www : le domaine nu et les autres hôtes ne sont pas redirigés', () => {
+    for (const path of [...SITE_ROUTES, ...SITE_FILES]) {
+      expect(resolveRedirect(path, redirects, CANONICAL_HOST), path).toBeNull();
+    }
+    expect(resolveRedirect('/', redirects, 'amg-decoration.vercel.app')).toBeNull();
+    expect(resolveRedirect('/', redirects, 'wwwXamgdecorationdinterieur.com')).toBeNull();
+  });
+
+  it('chaque page et fichier du site arrive sur la même URL du domaine nu', () => {
+    for (const path of [...SITE_ROUTES, ...SITE_FILES]) {
+      expect(www(path), path).toBe(`${CANONICAL_ORIGIN}${path}`);
+    }
+    expect(www('/_astro/index.B1x2.css')).toBe(`${CANONICAL_ORIGIN}/_astro/index.B1x2.css`);
+  });
+
+  it('URL sans slash final : slash ajouté dans le même saut', () => {
+    expect(www('/prestations')).toBe(`${CANONICAL_ORIGIN}/prestations/`);
+    expect(www('/realisations/chalet-suisse')).toBe(
+      `${CANONICAL_ORIGIN}/realisations/chalet-suisse/`,
+    );
+  });
+
+  it.each([...Object.keys(LEGACY_URLS), ...Object.keys(LEGACY_VARIANTS)])(
+    'ancienne URL www %s : destination finale directe, sans chaîne',
+    (path) => {
+      const final = pathOf(www(path));
+      expect(final).toBe(resolveRedirect(path) ?? path);
+      expect(isServed(final), final).toBe(true);
+      expect(resolveRedirect(final)).toBeNull();
+    },
+  );
+
+  it('toutes les destinations www sont absolues et sur le domaine nu', () => {
+    for (const rule of redirects.filter((candidate) => candidate.has)) {
+      expect(rule.destination.startsWith(`${CANONICAL_ORIGIN}/`), rule.source).toBe(true);
+    }
+    for (const rule of redirects.filter((candidate) => !candidate.has)) {
+      expect(rule.destination.startsWith('/'), rule.source).toBe(true);
+    }
   });
 });
 

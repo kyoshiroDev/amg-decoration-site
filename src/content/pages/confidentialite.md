@@ -3,14 +3,16 @@
 # Constat technique au 18/11/2026 : site statique, polices auto-hébergées (Fonts API, fournisseur Fontsource téléchargé au build),
 # aucun script tiers, aucun iframe, aucun cookie, aucun localStorage, aucune mesure d’audience.
 # Hébergeur : https://vercel.com/legal/privacy-policy (Vercel déclare adhérer au EU-U.S. Data Privacy Framework et recourir aux clauses contractuelles types).
-# Coordonnées recopiées de src/config/site.ts : à mettre à jour ici aussi si elles changent.
+# Coordonnées : jetons `{email}`, `{phone}`, `{phoneE164}`, `{siret}` remplacés au rendu par les valeurs de src/config/site.ts (ADR-0016).
+# Paragraphes propres au mode du formulaire : blocs `{formulaire:service}` (PUBLIC_FORM_ENDPOINT défini) et `{formulaire:mailto}` (repli mailto:),
+# fermés par `{/formulaire}` ; seul le bloc du mode du build est publié (ADR-0016).
 #
-# TODO(contenu): nommer le prestataire du formulaire (ADR-0003), son pays d’établissement, son pays d’hébergement et la garantie de transfert éventuelle, dans les sections « Qui reçoit vos données » et « Transferts ».
+# TODO(contenu): si le formulaire passe par un service (ADR-0003) : nommer le prestataire, son pays d’établissement, son pays d’hébergement et la garantie de transfert éventuelle, dans les blocs `{formulaire:service}` des sections « Qui reçoit vos données » et « Transferts ». Si le site est mis en ligne avec le repli mailto:, ce point est sans objet : supprimer ce TODO.
 # TODO(contenu): durée de conservation des demandes sans suite : 3 ans maximum après le dernier échange (repère du référentiel CNIL « gestion commerciale ») ; Amandine peut choisir plus court.
 # TODO(contenu): Amandine confirme-t-elle ne faire aucune prospection (newsletter, relances commerciales) avec les coordonnées reçues ? Sinon, prévoir une case à cocher distincte et adapter cette page.
 # TODO(contenu): messagerie Gmail grand public (am.gaury@gmail.com) : envisager une messagerie professionnelle couverte par un contrat de sous-traitance (Google Workspace ou fournisseur européen) ; adapter la section « Qui reçoit vos données ».
 # TODO(contenu): date de mise à jour à ajuster le jour de la mise en ligne.
-# TODO(contenu): si un fil Instagram, une carte ou une vidéo intégrée est ajouté un jour, mettre à jour la section « Cookies » et charger l’intégration au clic.
+# Rappel (maintenance, non bloquant) : si un fil Instagram, une carte ou une vidéo intégrée est ajouté un jour, mettre à jour la section « Cookies » et charger l’intégration au clic.
 seo:
   title: 'Politique de confidentialité'
   description: 'Comment AMG Décoration d’Intérieur traite vos données personnelles : formulaire de contact, hébergement, durées de conservation, vos droits et la CNIL.'
@@ -24,9 +26,9 @@ _Dernière mise à jour : novembre 2026._
 
 ## Qui est responsable de vos données ?
 
-Le responsable du traitement est **Amandine Gaury**, AMG Décoration d’Intérieur, micro-entrepreneur (SIRET 531 938 868 00019), dont le siège est situé à Gif-sur-Yvette (91).
+Le responsable du traitement est **Amandine Gaury**, AMG Décoration d’Intérieur, micro-entrepreneur (SIRET {siret}), dont le siège est situé à Gif-sur-Yvette (91).
 
-Pour toute question sur vos données, écrivez-moi à [am.gaury@gmail.com](mailto:am.gaury@gmail.com) ou appelez-moi au [07 82 35 81 32](tel:+33782358132).
+Pour toute question sur vos données, écrivez-moi à [{email}](mailto:{email}) ou appelez-moi au [{phone}](tel:{phoneE164}).
 
 ## Ce que ce site ne fait pas
 
@@ -43,7 +45,15 @@ Pour toute question sur vos données, écrivez-moi à [am.gaury@gmail.com](mailt
 - votre numéro de téléphone, si vous souhaitez que je vous rappelle (facultatif) ;
 - le type de projet et votre message, avec les informations que vous choisissez d’y ajouter (lieu, surface, budget…).
 
-Le service qui reçoit le formulaire enregistre aussi la date de l’envoi et votre adresse IP, pour lutter contre les envois automatiques (spam). Merci de ne pas indiquer dans votre message d’informations sensibles (santé, opinions…), elles ne me sont pas utiles pour votre projet.
+{formulaire:service}
+Le service qui reçoit le formulaire enregistre aussi la date de l’envoi et votre adresse IP, pour lutter contre les envois automatiques (spam).
+{/formulaire}
+
+{formulaire:mailto}
+Le formulaire n’envoie rien lui-même : il ouvre votre propre messagerie avec votre demande pré-remplie, et c’est vous qui l’envoyez. Le message part de votre adresse email vers la mienne, sans passer par aucun service intermédiaire ; comme pour tout email, je reçois aussi votre adresse email et la date d’envoi.
+{/formulaire}
+
+Merci de ne pas indiquer dans votre message d’informations sensibles (santé, opinions…), elles ne me sont pas utiles pour votre projet.
 
 ### Quand vous m’écrivez ou m’appelez directement
 
@@ -65,16 +75,26 @@ Vos coordonnées ne servent pas à de la prospection commerciale. Elles ne sont 
 
 - **Demande restée sans suite** : au maximum 3 ans après notre dernier échange, puis suppression.
 - **Projet confié** : pendant toute la durée de la prestation, puis les devis signés et les factures sont conservés 10 ans, comme l’exige le Code de commerce (article L123-22).
-- **Copie détenue par le service de formulaire** : elle suit les mêmes durées maximales.
 - **Journaux techniques de l’hébergeur** : une durée courte, fixée par Vercel pour la sécurité et le bon fonctionnement du service.
+
+{formulaire:service}
+La copie détenue par le service de formulaire suit les mêmes durées maximales.
+{/formulaire}
 
 ## Qui reçoit vos données
 
 Je suis la seule personne à lire vos messages. Des prestataires techniques les traitent uniquement pour mon compte, chacun pour sa mission :
 
-- le service de formulaire en ligne, qui reçoit le formulaire et me le transmet par email ;
 - ma messagerie électronique (Gmail, service de Google) ;
 - mon hébergeur, Vercel Inc. (États-Unis), voir les [mentions légales](/mentions-legales/).
+
+{formulaire:service}
+S’y ajoute le service de formulaire en ligne, qui reçoit le formulaire et me le transmet par email.
+{/formulaire}
+
+{formulaire:mailto}
+Le formulaire de contact ne passe par aucun service intermédiaire : votre message part de votre propre messagerie, dont le fournisseur applique ses propres règles de confidentialité.
+{/formulaire}
 
 Vos données ne sont communiquées à personne d’autre, sauf obligation légale.
 
@@ -82,7 +102,9 @@ Vos données ne sont communiquées à personne d’autre, sauf obligation légal
 
 Vercel est une société américaine dont les serveurs sont répartis dans le monde. Elle déclare adhérer au cadre de protection des données UE–États-Unis (Data Privacy Framework), reconnu par la Commission européenne, et recourir aux clauses contractuelles types de la Commission européenne. Google, qui fournit ma messagerie, peut également traiter des données hors de l’Union européenne, avec ses propres garanties.
 
+{formulaire:service}
 Le service de formulaire et les garanties qui s’appliquent à lui seront précisés ici dès qu’il sera choisi.
+{/formulaire}
 
 ## Cookies et autres traceurs
 
@@ -94,7 +116,13 @@ Le site propose des liens vers Instagram, Facebook, Pinterest, WhatsApp et les a
 
 ## Sécurité
 
+{formulaire:service}
 Le site est servi exclusivement en HTTPS, ce qui chiffre les échanges entre votre navigateur et le serveur, formulaire compris. L’accès à mes outils (messagerie, service de formulaire, hébergement) est protégé et réservé à moi seule.
+{/formulaire}
+
+{formulaire:mailto}
+Le site est servi exclusivement en HTTPS, ce qui chiffre les échanges entre votre navigateur et le serveur. L’accès à mes outils (messagerie, hébergement) est protégé et réservé à moi seule.
+{/formulaire}
 
 ## Vos droits
 
@@ -108,7 +136,7 @@ Vous pouvez à tout moment :
 - recevoir les données que vous m’avez fournies dans un format réutilisable (portabilité) ;
 - définir des directives sur le sort de vos données après votre décès.
 
-Pour exercer ces droits, écrivez-moi à [am.gaury@gmail.com](mailto:am.gaury@gmail.com). Je vous réponds dans un délai d’un mois. Je ne vous demanderai un justificatif d’identité qu’en cas de doute raisonnable sur l’auteur de la demande.
+Pour exercer ces droits, écrivez-moi à [{email}](mailto:{email}). Je vous réponds dans un délai d’un mois. Je ne vous demanderai un justificatif d’identité qu’en cas de doute raisonnable sur l’auteur de la demande.
 
 ## Réclamation auprès de la CNIL
 

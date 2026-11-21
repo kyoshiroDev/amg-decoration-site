@@ -2,7 +2,8 @@ import { readFile } from 'node:fs/promises';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { microcopy } from '../../src/config/microcopy';
 import { resolveRedirect } from '../../src/lib/redirects';
-import { NOT_FOUND_PATH, readJpegSize } from './helpers';
+import { SITE_ROUTES } from '../site-routes';
+import { NOINDEX_PATHS, NOT_FOUND_PATH, readJpegSize } from './helpers';
 
 const SITE_ORIGIN = 'https://amgdecorationdinterieur.com';
 const DIST = new URL('../../dist/', import.meta.url);
@@ -166,6 +167,15 @@ test.describe('SEO des pages non indexables', () => {
     expect(sitemap).not.toContain('404');
   });
 
+  // SITE_ROUTES (lu sur le disque, détection des brouillons par regex) alimente les tests axe et
+  // pages : il doit lister exactement les pages du sitemap (construit, lui, par Astro).
+  test('le sitemap liste exactement SITE_ROUTES', async () => {
+    const sitemap = await readFile(SITEMAP_FILE, 'utf8');
+    const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1] ?? '');
+    const expected = SITE_ROUTES.map((path) => `${SITE_ORIGIN}${path}`);
+    expect([...locs].sort()).toEqual([...expected].sort());
+  });
+
   test('sitemap-index.xml référence le sitemap des pages', async ({ request }) => {
     const index = await request.get('/sitemap-index.xml');
     expect(index.status()).toBe(200);
@@ -179,8 +189,6 @@ test.describe('SEO des pages non indexables', () => {
 // ---------------------------------------------------------------------------------------------
 
 /** Pages non indexables, absentes du sitemap mais crawlées pour leurs liens. */
-const NOINDEX_PATHS = ['/merci/', '/styleguide/', NOT_FOUND_PATH] as const;
-
 async function sitemapPaths(): Promise<string[]> {
   const xml = await readFile(SITEMAP_FILE, 'utf8');
   return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => new URL(match[1] ?? '').pathname);

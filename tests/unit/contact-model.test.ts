@@ -95,6 +95,21 @@ describe('buildContactModel', () => {
     });
   });
 
+  it('expose la zone d’intervention (sous le formulaire)', () => {
+    expect(CONTACT_SECTION_KEYS).toContain('zone');
+    expect(buildContactModel(input()).sections.zone.heading).toBe('zone');
+  });
+
+  it('échoue sans section `zone`', () => {
+    const base = input();
+    const sections = Object.fromEntries(
+      Object.entries(base.page.sections).filter(([key]) => key !== 'zone'),
+    );
+    expect(() => buildContactModel({ ...base, page: { ...base.page, sections } })).toThrow(
+      /Section « zone » absente/,
+    );
+  });
+
   it('échoue sans clé `form`', () => {
     const base = input();
     const page = { ...base.page, form: undefined };

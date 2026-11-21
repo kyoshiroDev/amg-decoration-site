@@ -4,7 +4,8 @@
  * Sans JavaScript : les deux images côte à côte (empilées sur mobile), cadrées à l'identique,
  * nommées par une pastille. Sous `html.js` (posée avant le premier rendu, ADR-0010) : les images
  * se superposent et un `<input type="range">` natif, invisible mais focalisable, règle la part
- * visible du rendu 3D (poignée ronde terracotta, `aria-valuetext` « 60 % rendu 3D, 40 % réalisé »).
+ * visible du rendu 3D (calque rogné translaté, figure contre-translatée : `transform` seulement),
+ * poignée ronde camel, `aria-valuetext` « 60 % rendu 3D, 40 % réalisé ».
  * Clavier natif (flèches, Page précédente/suivante, Début/Fin) ; souris et tactile via
  * scripts/before-after.ts (`touch-action: pan-y` : le défilement vertical reste libre).
  * Styles : ./before-after.css.
@@ -30,12 +31,26 @@ interface Props {
   result: Figure;
   labels: { readonly rendering: string; readonly result: string };
   id: string;
-  /** Chapeau facultatif (styleguide : préciser qu'il s'agit de placeholders). */
+  /** Surtitre facultatif. */
+  eyebrow?: string | undefined;
+  /** Fragment de `heading` en italique Fraunces camel. */
+  emphasis?: string | undefined;
+  /** Chapeau facultatif (images provisoires : le préciser ici). */
   lead?: string | undefined;
-  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  background?: 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
 }
 
-const { heading, rendering, result, labels, id, lead, background = 'blush' } = Astro.props;
+const {
+  heading,
+  rendering,
+  result,
+  labels,
+  id,
+  eyebrow,
+  emphasis,
+  lead,
+  background = 'beige',
+} = Astro.props;
 const copy = microcopy.projects.beforeAfter;
 const START = 50;
 const hintId = `${id}-consigne`;
@@ -47,23 +62,25 @@ const figures = [
 
 <Section background={background} labelledby={id} class="before-after-section">
   <Container class="before-after">
-    <SectionIntro id={id} heading={heading} lead={lead} />
+    <SectionIntro id={id} eyebrow={eyebrow} heading={heading} emphasis={emphasis} lead={lead} />
     <div class="before-after__compare" data-before-after>
       <div class="before-after__stage" data-before-after-stage>
         {figures.map((figure) => (
-          <figure
-            class={`before-after__figure before-after__figure--${figure.kind}`}
-            data-before-after-kind={figure.kind}
-          >
-            <ArchImage
-              src={figure.image}
-              alt={figure.alt}
-              shape="rounded"
-              ratio="4 / 3"
-              sizes="(min-width: 64rem) 60rem, 92vw"
-            />
-            <figcaption class="before-after__label">{figure.label}</figcaption>
-          </figure>
+          <div class={`before-after__layer before-after__layer--${figure.kind}`}>
+            <figure
+              class={`before-after__figure before-after__figure--${figure.kind}`}
+              data-before-after-kind={figure.kind}
+            >
+              <ArchImage
+                src={figure.image}
+                alt={figure.alt}
+                shape="rounded"
+                ratio="4 / 3"
+                sizes="(min-width: 64rem) 60rem, 92vw"
+              />
+              <figcaption class="before-after__label">{figure.label}</figcaption>
+            </figure>
+          </div>
         ))}
         <div class="before-after__divider" aria-hidden="true">
           <span class="before-after__knob">

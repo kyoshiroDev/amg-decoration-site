@@ -1,8 +1,8 @@
 ---
 /**
  * ContactLayout — page Contact : formulaire (slot par défaut, 7/12) et coordonnées (slot
- * `aside`, 5/12, collantes sous l'en-tête) à partir de 64rem ; empilés sur mobile, formulaire
- * d'abord. Le formulaire est posé sur une carte crème.
+ * `aside`, 5/12, collantes sous l'en-tête si la fenêtre est assez haute) à partir de 64rem ;
+ * empilés sur mobile, formulaire d'abord. Le formulaire est posé sur une carte crème.
  */
 import Section from '@/components/ui/Section.astro';
 import Container from '@/components/ui/Container.astro';
@@ -43,10 +43,19 @@ import Container from '@/components/ui/Container.astro';
       }
     }
 
+    /*
+     * Coordonnées collantes seulement si la fenêtre est assez haute pour montrer la carte en
+     * entier sous l'en-tête compact. Carte compacte mesurée (ContactDetails) : ~47rem dès 75rem
+     * de large (libellé et valeur sur une ligne), ~57rem entre 64 et 75rem (colonne étroite,
+     * rubriques empilées). Plus bas (portable 1280 × 800, zoom), elle reste dans le flux : rien
+     * n'est rogné, un lien focalisé au clavier défile à l'écran comme le reste de la page
+     * (WCAG 2.4.7, 2.4.11). Pas de défilement interne. Seuils en rem : ils suivent la taille de
+     * police choisie par le visiteur.
+     */
     .contact-layout__aside {
-      @media (width >= 64rem) {
+      @media (width >= 64rem) and (height >= 64rem), (width >= 75rem) and (height >= 53rem) {
         position: sticky;
-        inset-block-start: calc(var(--header-height-compact) + var(--space-m));
+        inset-block-start: calc(var(--header-height-compact) + var(--space-s));
       }
     }
   }

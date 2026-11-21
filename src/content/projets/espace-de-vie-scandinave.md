@@ -3,17 +3,38 @@
 title: 'Espace de vie scandinave'
 summary: 'Aménagement et décoration d’un espace de vie, projet en construction'
 # TODO(contenu): lieu (ville ou région) à demander à Amandine.
+# TODO(contenu): originaux HD à demander (images actuelles : 1200 × 600 issues de l’ancien site).
 roomTypes:
   - piece-de-vie
 style: 'Scandinave moderne et épuré'
-# TODO(contenu): placeholders ; remplacer par les originaux HD dans src/assets/projets/espace-de-vie-scandinave/.
 cover:
-  image: ../../assets/placeholders/interieur-lumiere.jpg
-  alt: 'Illustration provisoire d’un intérieur lumineux : arche terracotta, plante vert sauge et sol couleur sable'
+  image: ../../assets/projets/espace-de-vie-scandinave/01-salon-3d.jpg
+  alt: 'Rendu 3D du salon scandinave : canapé gris clair, tables gigognes en ciment, tapis en jute, voilages baignés de lumière'
 gallery:
-  - image: ../../assets/placeholders/interieur-lumiere.jpg
-    alt: 'Illustration provisoire d’un intérieur lumineux : arche terracotta, plante vert sauge et sol couleur sable'
+  - image: ../../assets/projets/espace-de-vie-scandinave/01-salon-3d.jpg
+    alt: 'Rendu 3D du salon scandinave : canapé gris clair, tables gigognes en ciment, tapis en jute, voilages baignés de lumière'
     kind: 3d
+  - image: ../../assets/projets/espace-de-vie-scandinave/02-salon-tv-3d.jpg
+    alt: 'Rendu 3D du coin télévision : mur en tasseaux de bois, fauteuil bouclette crème, suspension en rotin, rideaux écrus'
+    kind: 3d
+  - image: ../../assets/projets/espace-de-vie-scandinave/03-sejour-3d.jpg
+    alt: 'Rendu 3D du séjour : table ronde en bois clair, chaises cordées, bibliothèque en chêne et canapé gris en arrière-plan'
+    kind: 3d
+  - image: ../../assets/projets/espace-de-vie-scandinave/04-cuisine-salle-a-manger-3d.jpg
+    alt: 'Rendu 3D de la cuisine ouverte : façades bois, comptoir et tabourets noirs, table ronde sur tapis tressé, buffet cannage'
+    kind: 3d
+  - image: ../../assets/projets/espace-de-vie-scandinave/05-cuisine-elevation-3d.jpg
+    alt: 'Esquisse 3D d’une cuisine en angle : meubles bois, crédence beige, îlot gris et tabourets en métal fin'
+    kind: 3d
+  - image: ../../assets/projets/espace-de-vie-scandinave/06-piece-de-vie-avant.jpg
+    alt: 'Photo avant travaux de la pièce de vie en chantier : murs blancs, sol brut, baie vitrée encore protégée'
+    kind: avant
+  - image: ../../assets/projets/espace-de-vie-scandinave/07-piece-de-vie-avant-2.jpg
+    alt: 'Photo avant travaux du séjour vide, vu de biais : baie vitrée sur terrasse et ouvertures vers les autres pièces'
+    kind: avant
+  - image: ../../assets/projets/espace-de-vie-scandinave/08-entree-avant.jpg
+    alt: 'Photo avant travaux de l’entrée : murs blancs nus, porte ouverte et tableau électrique encore apparent'
+    kind: avant
 featured: true
 order: 3
 seo:

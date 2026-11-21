@@ -1,5 +1,6 @@
 ---
-# TODO(contenu): le site actuel affiche à la fois « certifiée par MJM Design Graphic à Paris » (accueil) et « cursus de 5 ans… certifiée décoratrice d’intérieur en 2010 » (à propos). Quel est l’intitulé exact de la certification, quel organisme l’a délivrée, et le cursus de 5 ans inclut-il MJM ? Faut-il citer MJM Design Graphic ?
+# Formation (ancien site, relevé du 20/11/2026) : accueil « décoratrice d’intérieur certifiée par MJM Design Graphic à Paris » ; à propos « cursus de 5 ans […] certifiée décoratrice d’intérieur en 2010 ». Deux faits énoncés séparément : ne pas écrire que MJM a délivré la certification de 2010.
+# TODO(contenu): MJM Design Graphic a-t-il délivré la certification de 2010, ou s’agit-il d’une autre formation ? À confirmer par Amandine avant de citer MJM sur cette page (l’accueil de l’ancien site le mentionne seul).
 # Source : docs/contenu-source/a-propos.md (et accueil.md pour la 3D et le travail à distance).
 # Mot-clé : Amandine Gaury décoratrice.
 seo:

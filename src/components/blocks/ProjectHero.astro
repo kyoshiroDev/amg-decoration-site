@@ -2,7 +2,7 @@
 /**
  * ProjectHero — ouverture d'une page projet (sous le fil d'Ariane) : surtitre, h1, accroche,
  * fiche d'identité (ProjectFacts) ; à droite, la couverture en arche cadrée, posée sur un soleil
- * sauge. C'est la seule image `priority` de la page ; son cadre porte le nom de View Transition
+ * grège. C'est la seule image `priority` de la page ; son cadre porte le nom de View Transition
  * de la carte du projet (morphing grille → page, ADR-0006).
  */
 import type { ImageMetadata } from 'astro';
@@ -51,7 +51,6 @@ const {
         src={image}
         alt={imageAlt}
         sizes="(min-width: 64rem) 30rem, (min-width: 40rem) 29rem, 85vw"
-        widths={[360, 540, 720, 960]}
         priority
         framed
         ratio="4 / 5"
@@ -92,7 +91,7 @@ const {
       inline-size: min(100%, var(--hero-visual-max));
     }
 
-    /* Soleil sauge derrière l'arche (décor), déborde en bas à gauche. */
+    /* Soleil grège derrière l'arche (décor), déborde en bas à gauche. */
     .project-hero__sun {
       position: absolute;
       inset-block-end: calc(var(--space-l) * -1);
@@ -100,7 +99,7 @@ const {
       inline-size: 45%;
       aspect-ratio: 1;
       border-radius: var(--radius-pill);
-      background-color: var(--color-sage);
+      background-color: var(--color-greige);
     }
   }
 </style>

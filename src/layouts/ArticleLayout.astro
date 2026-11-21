@@ -15,7 +15,7 @@ import CtaBanner from '@/components/blocks/CtaBanner.astro';
 import { microcopy } from '@/config/microcopy';
 import { site } from '@/config/site';
 import { buildBlogPosting, FOUNDER_PROFILE_PATH } from '@/lib/jsonld';
-import { absoluteUrl } from '@/lib/url';
+import { absoluteUrl, requireSiteOrigin } from '@/lib/url';
 import { buildByline, type ArticlePageModel } from '@/lib/pages/articles-model';
 import type { PageSection } from '@/lib/pages/types';
 
@@ -28,7 +28,7 @@ interface Props {
 
 const { article, imageUrl, cta } = Astro.props;
 const labels = microcopy.articles;
-const origin = Astro.site ?? Astro.url;
+const origin = requireSiteOrigin(Astro.site);
 // Signature visible : la même personne que l'`author` du BlogPosting (site.founder).
 const byline = buildByline(site.founder, labels.byline);
 const blogPosting = buildBlogPosting(
@@ -85,7 +85,7 @@ const blogPosting = buildBlogPosting(
     heading={labels.further.heading}
     items={article.further}
     id="plus-loin-titre"
-    background="cream"
+    background="ivory"
   />
   <CtaBanner section={cta} id="contact-titre" />
 </PageLayout>

@@ -15,12 +15,12 @@ import type { CatalogItem, FilterOption } from '@/lib/pages/projects-model';
 interface Props {
   projects: readonly CatalogItem[];
   filters: readonly FilterOption[];
-  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  background?: 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
   /** Niveau des titres de carte (2 si la page n'a pas de h2 au-dessus). */
   headingLevel?: 2 | 3;
 }
 
-const { projects, filters, background = 'cream', headingLevel = 2 } = Astro.props;
+const { projects, filters, background = 'ivory', headingLevel = 2 } = Astro.props;
 const SIZES = '(min-width: 64rem) 36vw, (min-width: 48rem) 45vw, 90vw';
 ---
 

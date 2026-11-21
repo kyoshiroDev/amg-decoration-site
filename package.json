@@ -13,6 +13,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
+    "check:prod": "node scripts/check-prod.ts",
     "lint": "npm run lint:js && npm run lint:css && npm run lint:format",
     "lint:js": "eslint . --max-warnings 0",
     "lint:css": "stylelint \"src/**/*.{css,astro}\" --max-warnings 0 --allow-empty-input",
@@ -22,10 +23,13 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:service": "playwright test -c playwright.service.config.ts",
+    "test:visual": "playwright test -c playwright.visual.config.ts",
+    "test:visual:update": "playwright test -c playwright.visual.config.ts --update-snapshots",
     "lhci": "lhci autorun",
     "verify": "npm run check && npm run lint && npm run test && npm run build"
   },
   "dependencies": {
+    "@astrojs/markdown-satteri": "^0.4.10",
     "@astrojs/mdx": "^8.1.6",
     "@astrojs/sitemap": "^3.7.5",
     "astro": "^7.4.12"
@@ -45,6 +49,7 @@
     "postcss-html": "^2.0.1",
     "prettier": "^3.10.1",
     "prettier-plugin-astro": "^1.1.2",
+    "satteri": "^0.11.7",
     "schema-dts": "^2.1.0",
     "stylelint": "^18.0.0",
     "stylelint-config-html": "^2.0.0",

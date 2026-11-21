@@ -32,15 +32,15 @@ addEventListener(
 - Chaîne exacte (minifiée) : `JS_CLASS_SCRIPT` dans `src/lib/inline-scripts.ts`, rendue par `<script is:inline set:html={JS_CLASS_SCRIPT} />` (170 octets).
 - **Filet de sécurité** (audit accessibilité de la Phase 5) : si un module ne se charge pas ou lève une exception, le script retire la classe `js`. Le site revient alors à sa version sans JS, complète, au lieu d'afficher des filtres ou un comparateur inertes accompagnés d'une consigne fausse. Les erreurs d'images ne déclenchent pas ce retour (cible `<img>`). Vérifié par `tests/e2e/js-fallback.spec.ts`.
 - Les styles dépendants du JS s'écrivent `.js .composant { … }` (ou `:global(.js) .composant` dans un style scopé) ; par défaut, le composant est dans son état sans JS.
-- Les **états d'animation** (apparitions au scroll) ne dépendent pas de cette classe : ils restent posés élément par élément par `scripts/reveal.ts`, uniquement hors écran, pour ne jamais cacher le contenu visible au chargement.
+- Les **états d'animation** (apparitions au scroll) ne dépendent pas de cette classe : ils restent posés bloc par bloc (une liste = un bloc, ADR-0013) par `scripts/reveal.ts`, uniquement hors écran, pour ne jamais cacher le contenu visible au chargement.
 
 ## CSP (Phase 7)
 
-Le script est inline : la future `Content-Security-Policy` devra l'autoriser par son empreinte, jamais par `'unsafe-inline'`.
+Le script est inline : la `Content-Security-Policy` (ADR-0012) l'autorise par son empreinte, jamais par `'unsafe-inline'`.
 
-- Empreinte actuelle : `sha256-oO9dQz2/+Q17QWsmmtXJ9ZNoha86yQvUljQCBOLLu2E=` (170 octets).
-- À déclarer dans `security.csp.scriptDirective.hashes` (configuration Astro) ou dans l'en-tête CSP de `vercel.json`. La documentation d'Astro ne garantit pas que les scripts `is:inline` soient hachés automatiquement : à vérifier sur le build en Phase 7.
-- `tests/unit/inline-scripts.test.ts` vérifie la taille (< 200 octets) et l'empreinte : toute modification du script fait échouer le test, ce qui oblige à mettre à jour cette ADR et la CSP.
+- Empreinte : `sha256-oO9dQz2/+Q17QWsmmtXJ9ZNoha86yQvUljQCBOLLu2E=` (170 octets).
+- Vérifié sur le build (`astro@7.4.12`) : Astro **ne hache pas** les scripts `is:inline`. L'empreinte est calculée par `src/lib/csp.ts` (`INLINE_SCRIPT_HASHES`, à partir de `JS_CLASS_SCRIPT`) et déclarée dans `security.csp.scriptDirective.hashes` (`astro.config.mjs`).
+- `tests/unit/inline-scripts.test.ts` vérifie la taille (< 200 octets) et l'empreinte documentée ici ; `tests/e2e/csp.spec.ts` vérifie que chaque script inline de chaque page a son empreinte dans la politique. Toute modification du script met donc à jour l'empreinte de la CSP automatiquement, et oblige à mettre à jour cette ADR.
 
 ## Alternatives écartées
 

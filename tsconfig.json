@@ -4,6 +4,7 @@
   "exclude": [
     "dist",
     "dist-service",
+    "dist-visual",
     "node_modules",
     "playwright-report",
     "test-results",

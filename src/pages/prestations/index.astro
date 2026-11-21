@@ -8,8 +8,9 @@ import FeatureList from '@/components/blocks/FeatureList.astro';
 import OfferCards from '@/components/blocks/OfferCards.astro';
 import CtaBanner from '@/components/blocks/CtaBanner.astro';
 import { getServicesData } from '@/lib/pages/services';
+import { requireSiteOrigin } from '@/lib/url';
 
-const data = await getServicesData(Astro.site ?? Astro.url);
+const data = await getServicesData(requireSiteOrigin(Astro.site));
 const { sections } = data;
 ---
 
@@ -24,10 +25,10 @@ const { sections } = data;
     section={sections.formules}
     services={data.formulas}
     id="formules-titre"
-    background="sand"
+    background="beige"
   />
-  <FeatureList section={sections.inclus} id="inclus-titre" background="cream" />
-  <FeatureList section={sections.options} id="options-titre" variant="pills" background="linen" />
+  <FeatureList section={sections.inclus} id="inclus-titre" background="ivory" />
+  <FeatureList section={sections.options} id="options-titre" variant="pills" background="cream" />
   <OfferCards section={sections.offres} offers={data.offers} id="offres-titre" />
   <CtaBanner section={sections.cta} id="contact-titre" />
 </PageLayout>

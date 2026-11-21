@@ -12,6 +12,8 @@
     @media (width >= 64rem) {
       grid-template-columns: repeat(2, 1fr);
       gap: var(--space-l);
+
+      --reveal-columns: 2; /* cascade d'apparition par colonne (motion.css) */
     }
   }
 

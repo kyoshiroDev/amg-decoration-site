@@ -8,6 +8,7 @@ import type { ImageMetadata } from 'astro';
 import { ContentError, filterPublished, requireSection } from '../content';
 import { FOUNDER_PROFILE_PATH, type BreadcrumbItem } from '../jsonld';
 import type { InternalPath } from '@/config/site';
+import { lowerFirst } from '../format';
 import { readingTime } from '../reading-time';
 import { articlePath, projectPath, servicePath, type ArticlePath } from '../routes';
 import type { ProjectEntryLike, ServiceEntryLike } from '../cards';
@@ -276,6 +277,10 @@ export function buildByline(
   founder: { readonly name: string; readonly jobTitle: string },
   prefix: string,
 ): Byline {
-  const role = founder.jobTitle.charAt(0).toLocaleLowerCase('fr-FR') + founder.jobTitle.slice(1);
-  return { prefix, name: founder.name, role, href: FOUNDER_PROFILE_PATH };
+  return {
+    prefix,
+    name: founder.name,
+    role: lowerFirst(founder.jobTitle),
+    href: FOUNDER_PROFILE_PATH,
+  };
 }

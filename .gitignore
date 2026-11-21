@@ -1,6 +1,7 @@
 # build (dist-service/ : build des tests e2e en mode service)
 dist/
 dist-service/
+dist-visual/
 .astro/
 .vercel/
 
@@ -21,6 +22,7 @@ coverage/
 # Claude Code — état local (approbations, rapports, réglages perso)
 .claude/state/
 .claude/reports/
+.claude/worktrees/
 .claude/settings.local.json
 
 # OS / éditeurs

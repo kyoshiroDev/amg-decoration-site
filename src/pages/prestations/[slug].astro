@@ -10,16 +10,13 @@ import ServicesGrid from '@/components/blocks/ServicesGrid.astro';
 import FurtherReading from '@/components/blocks/FurtherReading.astro';
 import CtaBanner from '@/components/blocks/CtaBanner.astro';
 import { microcopy } from '@/config/microcopy';
-import { site } from '@/config/site';
-import { buildService } from '@/lib/jsonld';
 import { getServicePaths, type ServicePageProps } from '@/lib/pages/services';
 
 export const getStaticPaths = getServicePaths;
 
 type Props = ServicePageProps;
 
-const { model, further, imageUrl, Content } = Astro.props;
-const origin = Astro.site ?? Astro.url;
+const { model, further, jsonLd, Content } = Astro.props;
 ---
 
 <PageLayout
@@ -28,7 +25,7 @@ const origin = Astro.site ?? Astro.url;
   image={model.cover?.image}
   imageAlt={model.cover?.alt}
   breadcrumbs={model.breadcrumbs}
-  jsonLd={[buildService({ ...model.service, imageUrl }, site.areaServed, origin)]}
+  jsonLd={jsonLd}
 >
   <PageHero section={model.hero} id="prestation-titre" />
   <ProseLayout>
@@ -41,14 +38,14 @@ const origin = Astro.site ?? Astro.url;
     heading={microcopy.services.further.heading}
     items={further}
     id="plus-loin-titre"
-    background="cream"
+    background="ivory"
   />
   {model.others.length > 0 && (
     <ServicesGrid
       section={model.othersSection}
       services={model.others}
       id="autres-formules-titre"
-      background="sand"
+      background="beige"
     />
   )}
   <CtaBanner section={model.cta} id="contact-titre" />

@@ -13,18 +13,18 @@ interface Props {
   section: PageSection;
   benefits: readonly TextItemData[];
   id: string;
-  background?: 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+  background?: 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
   /** `full` : titre et texte ; `summary` : titres seuls. */
   variant?: 'full' | 'summary';
 }
 
-const { section, benefits, id, background = 'blush', variant = 'full' } = Astro.props;
+const { section, benefits, id, background = 'rose', variant = 'full' } = Astro.props;
 ---
 
 <ContentSection section={section} id={id} background={background} layout="split">
-  <ul class:list={['benefits', `benefits--${variant}`]}>
+  <ul class:list={['benefits', `benefits--${variant}`]} data-reveal="list">
     {benefits.map((benefit) => (
-      <li class="benefits__item" data-reveal>
+      <li class="benefits__item">
         <span class="benefits__arch" aria-hidden="true" />
         {/* Résumé : intitulés en <p>, pas 8 h3 vides. */}
         <Heading level={3} size="sm" as={variant === 'summary' ? 'p' : undefined}>
@@ -46,6 +46,8 @@ const { section, benefits, id, background = 'blush', variant = 'full' } = Astro.
 
       @media (width >= 40rem) {
         grid-template-columns: repeat(2, 1fr);
+
+        --reveal-columns: 2; /* cascade d'apparition par colonne (motion.css) */
       }
     }
 

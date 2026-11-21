@@ -19,6 +19,7 @@ import Footer from '@/components/layout/Footer.astro';
 import { site } from '@/config/site';
 import { buildBusiness, buildFounder, buildGraph, buildWebSite } from '@/lib/jsonld';
 import { JS_CLASS_SCRIPT } from '@/lib/inline-scripts';
+import { requireSiteOrigin } from '@/lib/url';
 
 export interface Props {
   title: string;
@@ -44,7 +45,7 @@ const {
   jsonLd = [],
 } = Astro.props;
 
-const origin = Astro.site ?? Astro.url;
+const origin = requireSiteOrigin(Astro.site);
 const graph = buildGraph([
   buildWebSite(site, origin),
   buildBusiness(site, origin),

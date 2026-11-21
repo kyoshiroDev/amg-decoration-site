@@ -86,7 +86,7 @@
 
     &:hover:not(:disabled) {
       color: var(--color-text);
-      background-color: var(--color-sand);
+      background-color: var(--color-beige);
       border-color: var(--color-text);
     }
   }

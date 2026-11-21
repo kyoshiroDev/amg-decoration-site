@@ -11,7 +11,7 @@ Refondre totalement le site **amgdecorationdinterieur.com** d'Amandine Gaury, d�
 
 Objectifs, par ordre de priorité :
 
-1. **Donner envie** : site éditorial, chaleureux, raffiné, qui met ses réalisations et ses rendus 3D en valeur (palette **pastel + terracotta**).
+1. **Donner envie** : site éditorial, chaleureux, raffiné, qui met ses réalisations et ses rendus 3D en valeur (palette **beige, grège et camel doré, reprise de l'ancien site**, ADR-0017).
 2. **Être trouvé** : SEO irréprochable (technique, local, sémantique), migration sans perte de référencement.
 3. **Convertir** : chaque page mène vers une prise de contact (formulaire, téléphone, WhatsApp).
 4. **Être rapide et accessible** : Lighthouse ≥ 95 partout, WCAG 2.2 AA.
@@ -97,7 +97,7 @@ docs/                       # documentation vivante (voir §9)
 ## 4. Design (résumé, détail dans `docs/DESIGN-SYSTEM.md`)
 
 - Direction : **"Atelier lumineux"**, éditorial et chaleureux, beaucoup d'air, grandes images, typographie serif expressive, formes en **arche**, grain de papier subtil.
-- Palette : fond lin/crème, terracotta (couleur de marque), rose poudré, sauge, sable, encre brun profond. **Uniquement via les tokens** `--color-*` ; aucune couleur hexadécimale hors de `tokens.css`.
+- Palette : beige, grège et camel doré, repris de l'ancien site (ADR-0017) : fonds crème, beige et grège, camel foncé pour les boutons et liens, camel doré en décor, touche de vieux rose, texte gris-brun. **Uniquement via les tokens** `--color-*` ; aucune couleur hexadécimale hors de `tokens.css`.
 - Effets : apparitions douces au scroll, View Transitions entre pages, **slider avant/après "Rendu 3D ↔ Réalisé"** (signature du site), zoom lent des images au survol, curseur/CTA magnétiques légers, marquee de mots-clés.
 - **Toute animation respecte `prefers-reduced-motion`**, n'anime que `transform`/`opacity`, et ne bloque jamais le contenu (le contenu est visible sans JS).
 - Mobile first. Points de rupture via tokens. Cibles tactiles ≥ 44 px.

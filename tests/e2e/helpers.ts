@@ -4,12 +4,19 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Locator, type Page } from '@playwright/test';
 import { microcopy } from '../../src/config/microcopy';
+import { SITE_ROUTES } from '../site-routes';
 
 /** Niveaux WCAG vérifiés par axe-core (CLAUDE.md §6 : 0 violation). */
 export const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 /** URL qui n'existe pas : sert la page 404. */
 export const NOT_FOUND_PATH = '/page-inexistante/';
+
+/** Pages servies mais non indexées (hors sitemap). */
+export const NOINDEX_PATHS = ['/merci/', '/styleguide/', NOT_FOUND_PATH] as const;
+
+/** Toutes les pages du build : pages publiques, articles compris, puis pages non indexées. */
+export const ALL_PAGE_PATHS: readonly string[] = [...SITE_ROUTES, ...NOINDEX_PATHS];
 
 export async function expectNoAxeViolations(page: Page): Promise<void> {
   const results = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
@@ -50,13 +57,19 @@ export async function openMenuWithKeyboard(page: Page): Promise<void> {
 
 /**
  * Attend la fin de toutes les animations et transitions CSS en cours, hors animations infinies
- * (défilement continu du bandeau de mots, qui ne s'arrête jamais par définition).
+ * (défilement continu du bandeau de mots, qui ne s'arrête jamais par définition) et hors
+ * animations liées au défilement (apparitions `animation-timeline: view()`, ADR-0013) : elles
+ * n'avancent pas avec le temps, seulement avec la position de la page.
  */
 export async function waitForAnimationsToSettle(page: Page): Promise<void> {
   await page.waitForFunction(() =>
     document
       .getAnimations()
-      .every((animation) => animation.effect?.getComputedTiming().endTime === Infinity),
+      .every(
+        (animation) =>
+          !(animation.timeline instanceof DocumentTimeline) ||
+          animation.effect?.getComputedTiming().endTime === Infinity,
+      ),
   );
 }
 
@@ -135,4 +148,48 @@ export function readJpegSize(bytes: Uint8Array): { width: number; height: number
     offset += 2 + length;
   }
   throw new Error('Segment SOF introuvable dans le JPEG');
+}
+
+/** Messages console des violations de Content-Security-Policy (formulations de Chromium). */
+const CSP_CONSOLE_MESSAGE = /Content[ -]Security[ -]Policy/i;
+
+/**
+ * Enregistre toutes les violations de la CSP (ADR-0012) pendant la vie de la page, navigations
+ * comprises : évènements `securitypolicyviolation` (détail de la directive et de la ressource) et
+ * messages console du navigateur. À appeler avant le premier `page.goto`.
+ */
+export async function watchCspViolations(page: Page): Promise<readonly string[]> {
+  const violations: string[] = [];
+  await page.exposeFunction('reportCspViolation', (violation: string) => {
+    violations.push(violation);
+  });
+  await page.addInitScript(() => {
+    document.addEventListener('securitypolicyviolation', (event) => {
+      const report = (window as unknown as { reportCspViolation: (v: string) => void })
+        .reportCspViolation;
+      report(
+        `${event.effectiveDirective} : ${event.blockedURI} (${event.sample}) sur ${location.pathname}`,
+      );
+    });
+  });
+  page.on('console', (message) => {
+    if (CSP_CONSOLE_MESSAGE.test(message.text())) violations.push(message.text());
+  });
+  return violations;
+}
+
+/** Politique de la balise meta CSP de la page (une seule balise, dans le <head>). */
+export async function readMetaCsp(page: Page): Promise<string> {
+  const meta = page.locator('head meta[http-equiv="content-security-policy"]');
+  await expect(meta).toHaveCount(1);
+  return (await meta.getAttribute('content')) ?? '';
+}
+
+/** Valeur d'une directive CSP (`connect-src` → `'self' https://…`), `undefined` si absente. */
+export function cspDirective(policy: string, name: string): string | undefined {
+  for (const entry of policy.split(';')) {
+    const [directive, ...sources] = entry.trim().split(/\s+/);
+    if (directive === name) return sources.join(' ');
+  }
+  return undefined;
 }

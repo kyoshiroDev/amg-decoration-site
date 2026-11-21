@@ -9,16 +9,16 @@
  */
 import {
   CONTACT_FIELDS,
+  isFormMessages,
   validateContact,
-  type ContactErrorKey,
   type ContactErrors,
   type ContactFieldKey,
   type ContactValues,
+  type FormMessages,
 } from '@/lib/contact-form';
 import { onPageReady } from './lifecycle';
 
 type Control = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
-type Messages = Readonly<Record<ContactErrorKey, string>>;
 
 const FIELD_KEYS = Object.keys(CONTACT_FIELDS) as ContactFieldKey[];
 
@@ -32,7 +32,7 @@ function readValues(form: HTMLFormElement): ContactValues {
 }
 
 /** Affiche (ou efface) l'erreur de chaque champ ; renvoie les champs en erreur, dans l'ordre. */
-function renderFieldErrors(form: HTMLFormElement, errors: ContactErrors, messages: Messages) {
+function renderFieldErrors(form: HTMLFormElement, errors: ContactErrors, messages: FormMessages) {
   return FIELD_KEYS.flatMap((key) => {
     const field = control(form, key);
     const slot = form.querySelector(`[data-field-error="${CONTACT_FIELDS[key]}"]`);
@@ -80,7 +80,9 @@ onPageReady((signal) => {
   const submitLabel = submit?.querySelector('.button__label');
   if (!form || !root || !summary || !status || !submit || !submitLabel) return;
 
-  const messages = JSON.parse(form.dataset['messages'] ?? '{}') as Messages;
+  // Microcopies absentes ou incomplètes : pas d'amélioration, l'envoi HTML natif reste possible.
+  const messages: unknown = JSON.parse(form.dataset['messages'] ?? '{}');
+  if (!isFormMessages(messages)) return;
   const idleLabel = submitLabel.textContent ?? '';
   let sending = false;
   form.noValidate = true;
@@ -91,11 +93,21 @@ onPageReady((signal) => {
     submitLabel.textContent = value ? (form.dataset['sending'] ?? idleLabel) : idleLabel;
   };
 
+  // Appui en cours sur le bouton d'envoi : la sortie du champ ne revalide pas. Sinon le message
+  // d'erreur retiré au mousedown ferait remonter le bouton sous le pointeur et le clic serait
+  // perdu (mouseup à côté). `submit` valide de toute façon. pointerdown plutôt que
+  // `relatedTarget` : Safari ne donne pas le focus aux boutons au clic.
+  let pressingSubmit = false;
+  submit.addEventListener('pointerdown', () => (pressingSubmit = true), { signal });
+  document.addEventListener('pointerup', () => (pressingSubmit = false), { signal });
+  document.addEventListener('pointercancel', () => (pressingSubmit = false), { signal });
+
   // Une fois signalé, un champ est revérifié à la sortie : l'erreur disparaît dès qu'il est corrigé.
   form.addEventListener(
     'focusout',
     (event) => {
       const target = event.target as Element;
+      if (pressingSubmit || event.relatedTarget === submit) return;
       if (target.getAttribute('aria-invalid') !== 'true') return;
       renderFieldErrors(form, validateContact(readValues(form)), messages);
     },

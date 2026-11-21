@@ -21,7 +21,7 @@
     padding: var(--space-m);
     border-inline-start: var(--border-thin) solid var(--color-error);
     border-radius: var(--radius-md);
-    background-color: var(--color-blush);
+    background-color: var(--color-rose-100);
 
     &[hidden] {
       display: none;
@@ -49,12 +49,12 @@
     gap: var(--space-2xs);
     padding: var(--space-m);
     border-radius: var(--radius-md);
-    background-color: var(--color-sage);
+    background-color: var(--color-greige);
   }
 
   .contact-form__status[data-state='failure'] {
     border-inline-start: var(--border-thin) solid var(--color-error);
-    background-color: var(--color-blush);
+    background-color: var(--color-rose-100);
   }
 
   .contact-form__status-title {
@@ -134,7 +134,7 @@
       margin-inline-end: var(--space-2xs);
       border-radius: var(--radius-pill);
       background-color: var(--color-error);
-      color: var(--color-cream);
+      color: var(--color-ivory);
       font-size: var(--step--1);
     }
   }

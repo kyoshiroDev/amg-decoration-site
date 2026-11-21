@@ -23,8 +23,25 @@ export const HONEYPOT_NAME = '_honeypot';
 /** Champ de redirection après un envoi sans JS (Formspark). */
 export const REDIRECT_NAME = '_redirect';
 
-export type ContactErrorKey =
-  'nameRequired' | 'emailRequired' | 'emailInvalid' | 'phoneInvalid' | 'messageRequired';
+export const CONTACT_ERROR_KEYS = [
+  'nameRequired',
+  'emailRequired',
+  'emailInvalid',
+  'phoneInvalid',
+  'messageRequired',
+] as const;
+
+export type ContactErrorKey = (typeof CONTACT_ERROR_KEYS)[number];
+
+/** Microcopie de chaque erreur (attribut `data-messages` du formulaire, contenu `contact.md`). */
+export type FormMessages = Readonly<Record<ContactErrorKey, string>>;
+
+/** Garde de type : un message texte pour chaque clé d'erreur (JSON lu dans le DOM). */
+export function isFormMessages(value: unknown): value is FormMessages {
+  if (typeof value !== 'object' || value === null) return false;
+  const entries = new Map(Object.entries(value));
+  return CONTACT_ERROR_KEYS.every((key) => typeof entries.get(key) === 'string');
+}
 
 export type ContactValues = Readonly<Record<ContactFieldKey, string>>;
 

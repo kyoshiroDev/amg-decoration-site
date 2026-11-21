@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { formatAmount, resolvePriceDisplay } from '@/lib/price';
 import { projectPath, servicePath } from '@/lib/routes';
-import { SITE_ROUTES } from '@/lib/redirects';
+import { SITE_ROUTES } from '../site-routes';
 
 const NBSP = '\u00A0';
 const NNBSP = '\u202F';

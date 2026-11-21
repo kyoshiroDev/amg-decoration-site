@@ -1,5 +1,6 @@
 dist/
 dist-service/
+dist-visual/
 .astro/
 .vercel/
 node_modules/
@@ -10,4 +11,5 @@ coverage/
 .lighthouseci/
 .claude/state/
 .claude/reports/
+.claude/worktrees/
 .playwright-mcp/

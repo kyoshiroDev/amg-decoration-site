@@ -5,13 +5,14 @@
 import { toTextItems, type TextItemData } from '../cards';
 import type { FurtherItem } from './articles-model';
 import { resolveFurtherLinks, type FurtherSources } from './further-links';
-import type { BreadcrumbItem } from '../jsonld';
+import type { BreadcrumbItem, ServiceInput } from '../jsonld';
 import { breadcrumbTrail } from './breadcrumb-trail';
 import { readSections } from './sections';
 import type { PageData, PageSection } from './types';
 
 export const METHOD_SECTION_KEYS = [
   'promesse',
+  'comparatif',
   'methode',
   'avantages',
   'plus-loin',
@@ -20,6 +21,9 @@ export const METHOD_SECTION_KEYS = [
 export type MethodSectionKey = (typeof METHOD_SECTION_KEYS)[number];
 
 export const METHOD_PATH = '/visualisation-3d/';
+
+/** `serviceType` schema.org du nœud `Service` de la page (docs/SEO-STRATEGIE.md §4). */
+export const METHOD_SERVICE_TYPE = 'Visualisation 3D d’intérieur';
 const PAGE_ID = 'visualisation-3d';
 
 type OrderedText = {
@@ -45,6 +49,8 @@ export interface MethodModel {
   readonly benefits: readonly TextItemData[];
   /** Maillage vers l'article, les offres et une réalisation (section `plus-loin`). */
   readonly further: readonly FurtherItem[];
+  /** Données du nœud JSON-LD `Service` (nom et description = balises title/description). */
+  readonly service: ServiceInput;
 }
 
 export function buildMethodModel(input: MethodInput): MethodModel {
@@ -61,5 +67,11 @@ export function buildMethodModel(input: MethodInput): MethodModel {
     steps: toTextItems(input.etapes),
     benefits: toTextItems(input.avantages),
     further: resolveFurtherLinks(sections['plus-loin'], input.further, PAGE_ID),
+    service: {
+      name: page.seo.title,
+      description: page.seo.description,
+      path: METHOD_PATH,
+      serviceType: METHOD_SERVICE_TYPE,
+    },
   };
 }

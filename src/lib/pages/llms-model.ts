@@ -8,6 +8,7 @@ import type { InternalPath, NavItem, SiteConfig } from '@/config/site';
 import { sortByOrder } from '../content';
 import type { LlmsLink, LlmsTxtInput } from '../crawlers';
 import { articlePath, projectPath, servicePath } from '../routes';
+import { lowerFirst } from '../format';
 import { absoluteUrl } from '../url';
 import { selectPublishedArticles, type ArticleEntryLike } from './articles-model';
 
@@ -78,7 +79,8 @@ export function buildLlmsModel(input: LlmsModelInput): LlmsTxtInput {
   const pageLink = (page: LlmsPage): LlmsLink => link(page.label, page.href, page.description);
   const about = fillTemplate(labels.about, {
     founder: site.founder.name,
-    jobTitle: site.founder.jobTitle,
+    // Repris au milieu d'une phrase : « Amandine Gaury, designer d'intérieur ».
+    jobTitle: lowerFirst(site.founder.jobTitle),
     name: site.name,
     areas: site.areaServed.map((area) => area.name).join(', '),
     email: site.email,

@@ -10,6 +10,7 @@ export default defineConfig(
   globalIgnores([
     'dist/',
     'dist-service/',
+    'dist-visual/',
     '.astro/',
     '.vercel/',
     'node_modules/',
@@ -18,6 +19,7 @@ export default defineConfig(
     'coverage/',
     '.lighthouseci/',
     '.playwright-mcp/',
+    '.claude/worktrees/',
   ]),
   js.configs.recommended,
   tseslint.configs.strict,

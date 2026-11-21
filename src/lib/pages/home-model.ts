@@ -17,7 +17,8 @@ import {
   type TestimonialEntryLike,
   type TextItemData,
 } from '../cards';
-import { ContentError, filterByPage, requireSection, sortByOrder } from '../content';
+import { ContentError, filterByPage, sortByOrder } from '../content';
+import { readSections } from './sections';
 import type { PriceDisplayOptions } from '../price';
 import type { PageSection, QuoteData } from './types';
 
@@ -79,9 +80,7 @@ const PAGE_ID = 'accueil';
 
 export function buildHomeModel(input: HomeInput): HomeModel {
   const { page } = input;
-  const sections = Object.fromEntries(
-    HOME_SECTION_KEYS.map((key) => [key, requireSection(page.sections, key, PAGE_ID)]),
-  ) as Record<HomeSectionKey, PageSection>;
+  const sections = readSections(page.sections, HOME_SECTION_KEYS, PAGE_ID);
 
   const quote = sections.citation.quote;
   if (!quote) {

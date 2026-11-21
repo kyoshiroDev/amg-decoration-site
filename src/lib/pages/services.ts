@@ -4,6 +4,7 @@
  */
 import { getImage } from 'astro:assets';
 import { getCollection, render, type CollectionEntry } from 'astro:content';
+import type { Thing } from 'schema-dts';
 import { microcopy } from '@/config/microcopy';
 import { site } from '@/config/site';
 import type { FurtherItem } from './articles-model';
@@ -15,7 +16,8 @@ import {
   type ServicesInput,
   type ServicesModel,
 } from './services-model';
-import { buildCollectionPage, webPageInputFrom } from '../jsonld';
+import { buildCollectionPage, buildService, webPageInputFrom } from '../jsonld';
+import { requireSiteOrigin } from '../url';
 import { getPageData } from './page';
 import type { WithJsonLd } from './types';
 
@@ -56,15 +58,21 @@ export interface ServicePageProps {
   readonly model: ServiceDetailModel;
   /** « Pour aller plus loin » : 1 article publié et 1 réalisation. */
   readonly further: readonly FurtherItem[];
-  /** Visuel `cover` pour le JSON-LD `Service` (URL relative), absent sans visuel. */
-  readonly imageUrl: string | undefined;
+  /** Nœud JSON-LD `Service` (visuel `cover` compris s'il existe), prêt pour le layout. */
+  readonly jsonLd: readonly Thing[];
   readonly Content: Awaited<ReturnType<typeof render>>['Content'];
 }
 
-/** `getStaticPaths` de /prestations/[slug]/ : une page par entrée de la collection. */
+/**
+ * `getStaticPaths` de /prestations/[slug]/ : une page par entrée de la collection.
+ * `Astro.site` n'existe pas dans `getStaticPaths` : l'origine vient de `import.meta.env.SITE`.
+ */
 export async function getServicePaths(): Promise<
   { params: { slug: string }; props: ServicePageProps }[]
 > {
+  const origin = requireSiteOrigin(
+    import.meta.env.SITE ? new URL(import.meta.env.SITE) : undefined,
+  );
   const [{ input, entries }, articles, projets] = await Promise.all([
     readInput(),
     getCollection('articles'),
@@ -92,7 +100,14 @@ export async function getServicePaths(): Promise<
       });
       return {
         params: { slug: entry.id },
-        props: { model, further, imageUrl: image?.src, Content },
+        props: {
+          model,
+          further,
+          jsonLd: [
+            buildService({ ...model.service, imageUrl: image?.src }, site.areaServed, origin),
+          ],
+          Content,
+        },
       };
     }),
   );

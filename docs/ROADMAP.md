@@ -90,22 +90,36 @@
 
 ## Phase 7 — Qualité finale
 
-- [ ] Audit `performance` : budgets atteints (chiffres dans la PR)
-- [ ] Audit `accessibilite` complet : 0 violation, parcours clavier OK
-- [ ] Régression visuelle de référence
-- [ ] Vérification des liens, console propre, en-têtes de sécurité
-- [ ] `/audit` global : 0 point P1
-- [ ] Coût des apparitions au défilement (audit perf Phase 5 : 386 recalculs de style sur l'accueil) : animations pilotées par le scroll en CSS (`animation-timeline: view()`) ou animer les listes plutôt que chaque élément ; décision `designer` (ADR si changement de rendu)
-- [ ] HTML de l'accueil sous 14 Ko gzip (fenêtre TCP initiale) : sprite SVG `<use>` pour les icônes, contrôle en CI
-- [ ] `view-transition-name` posé seulement sur la carte cliquée si le nombre de projets grandit
-- [ ] Accessibilité (P3) : visionneuse annonçant « Image n sur N : légende », pause du bandeau au focus, visibilité du trait du comparateur
-- [ ] Accessibilité (P3, Phase 6) : ancre `#avantages-titre` dont le surtitre passe sous le header collant (`scroll-margin`), nature de la carte « Pour aller plus loin » lue après son titre, nom de la formule dans la navigation par titres des fiches (à arbitrer avec le SEO), fond des cartes « Pour aller plus loin » sur section crème (`designer`)
+- [x] Audit `performance` : budgets atteints (chiffres dans la PR)
+- [x] Audit `accessibilite` complet : 0 violation, parcours clavier OK
+- [x] Régression visuelle de référence (`npm run test:visual`, hors CI)
+- [x] Vérification des liens, console propre, en-têtes de sécurité
+- [x] `/audit` global : 0 point P1 dans le code (`.claude/reports/audit-2026-11-19.md`) ; P1 de contenu reportés en Phase 8
+- [x] Coût des apparitions au défilement (audit perf Phase 5 : 386 recalculs de style sur l'accueil) : animations pilotées par le scroll en CSS (`animation-timeline: view()`) ou animer les listes plutôt que chaque élément ; décision `designer` (ADR si changement de rendu)
+- [x] HTML de l'accueil sous 14 Ko gzip (fenêtre TCP initiale) : sprite SVG `<use>` pour les icônes, contrôle en CI
+- [ ] `view-transition-name` posé seulement sur la carte cliquée si le nombre de projets grandit (sans objet à 4 projets ; reporté après la mise en ligne)
+- [x] Accessibilité (P3) : visionneuse annonçant « Image n sur N : légende », pause du bandeau au focus, visibilité du trait du comparateur
+- [x] Accessibilité (P3, Phase 6) : ancre `#avantages-titre` dont le surtitre passe sous le header collant (`scroll-margin`), nature de la carte « Pour aller plus loin » lue après son titre, nom de la formule dans la navigation par titres des fiches (à arbitrer avec le SEO), fond des cartes « Pour aller plus loin » sur section crème (`designer`)
 
 ## Phase 8 — Préparation à la mise en ligne
 
-- [ ] Checklist de mise en production dans la PR (domaine sur Vercel, DNS, HTTPS, Search Console, GBP)
-- [ ] Liste consolidée des `TODO(contenu)` et infos à fournir par Amandine
-- [ ] Synthèse finale (scores, captures)
-- [ ] Confidentialité : adapter les sections « Les données que je reçois » et « Qui reçoit vos données » au mode réel du formulaire (repli `mailto:` ou service choisi) ; faire valider « je suis la seule personne à lire vos messages »
-- [ ] Pages légales : injecter email, téléphone et SIRET depuis `src/config/site.ts` (jetons) au lieu de les recopier
-- [ ] Reports de l'audit SEO de la Phase 6 : formule réelle de chaque réalisation (champ `service`), 150 à 300 mots propres par fiche prestation (`redacteur`), section accueil vers les offres Meuble / Pros ou les derniers articles (`designer`), logo et localité dans le JSON-LD, title de `/prestations/` selon `showPrices`, redirection `www` → domaine nu, décision sur les robots d'IA
+- [x] Checklist de mise en production (domaine sur Vercel, DNS, HTTPS, Search Console, GBP) : `docs/MISE-EN-LIGNE.md`, reprise dans la PR
+- [x] Liste consolidée des `TODO(contenu)` et infos à fournir par Amandine (`docs/MISE-EN-LIGNE.md` §1)
+- [x] Synthèse finale (scores, budgets) dans la PR
+- [x] Garde-fou : build de production Vercel en échec tant qu'un `TODO(contenu)` reste dans les pages légales, `npm run check:prod` (ADR-0015)
+- [x] Confidentialité selon le mode réel du formulaire (repli `mailto:` ou service), blocs conditionnels du gabarit Markdown (ADR-0016)
+- [x] Pages légales : email, téléphone et SIRET injectés depuis `src/config/site.ts` (jetons)
+- [x] Comparateur « Rendu 3D ↔ Réalisé » sur `/visualisation-3d/` (paire configurable, placeholders signalés), dévoilement en `transform`
+- [x] Section « Paris et à distance partout en France » sur `/contact/`
+- [x] Redirection `www` → domaine nu en un seul saut ; nœud `Service` sur `/visualisation-3d/`
+- [x] Descriptions avec appel à l'action, plus de recouvrement « plan 3D » ; passe axe sur les colonnes défilantes
+
+## Après les contenus d'Amandine (hors roadmap de construction)
+
+Ces points attendent une information ou un visuel d'Amandine, ou une décision humaine (`docs/MISE-EN-LIGNE.md`) :
+
+- [ ] Lever les `TODO(contenu)` bloquants des pages légales (`npm run check:prod` vert) : adresse, EI et RNE, médiateur, article 4 des CGS et formulaire type de rétractation, prix (`showPrices`, title de `/prestations/`), clients pros, TTC → TVA non applicable
+- [ ] Visuels réels (originaux HD des réalisations — les images de l'ancien site, en 1200 × 600, sont en place depuis le 2026-11-20 —, paire du comparateur, héros, couvertures, OG, portrait, logo) ; puis logo et localité dans le JSON-LD, formule réelle de chaque réalisation (champ `service`), régénération de la régression visuelle (Git LFS ou références locales)
+- [ ] 150 à 300 mots propres par fiche prestation (`redacteur`) et `serviceType` par fiche, à partir des informations d'Amandine
+- [ ] Décision sur les robots d'IA (ADR-0011)
+- [ ] Améliorations non bloquantes de l'audit global : allègement de l'accueil (`content-visibility`, moins de `:has()`, styles inline vers le CSS partagé ; marge HTML de ~0,9 Ko), section accueil vers les offres Meuble / Pros ou les derniers articles, comparateur et section « Paris et à distance » sur l'accueil (reportés : marge HTML de l'accueil insuffisante, à faire après l'allègement), héros intérieurs et gabarits texte (figure, citation), `view-transition-name` sur la seule carte cliquée si le nombre de projets grandit, finitions P3 design et SEO, nom de la formule dans la navigation par titres des fiches

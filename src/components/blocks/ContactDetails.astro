@@ -75,7 +75,7 @@ const hours = formatOpeningHours(site.openingHours);
       gap: var(--space-m);
       padding: var(--space-l) var(--space-m);
       border-radius: var(--radius-lg);
-      background-color: var(--color-blush);
+      background-color: var(--color-beige);
     }
 
     /* Arche dans le flux (jamais par-dessus le titre, quelle que soit sa longueur). */
@@ -87,9 +87,16 @@ const hours = formatOpeningHours(site.openingHours);
       border-radius: var(--radius-arch);
     }
 
+    /* Chapeau au corps du texte : la carte accompagne le formulaire, elle ne le concurrence pas
+       (et reste assez courte pour tenir à l'écran à côté de lui, ContactLayout). */
+    .contact-details :global(.section-intro__lead) {
+      font-size: var(--step-0);
+    }
+
     .contact-details__list {
       display: grid;
       margin: 0;
+      container-type: inline-size;
     }
 
     .contact-details__row {
@@ -97,6 +104,18 @@ const hours = formatOpeningHours(site.openingHours);
       gap: var(--space-3xs);
       padding-block: var(--space-s);
       border-block-start: var(--border-hairline) solid var(--color-border-strong);
+
+      /* Carte assez large : libellé à gauche, valeur à droite, une ligne par rubrique. */
+      @container (width >= 22rem) {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+        column-gap: var(--space-s);
+        align-items: baseline;
+        padding-block: var(--space-xs);
+
+        & dd {
+          grid-column: 2;
+        }
+      }
 
       & dt {
         font-size: var(--text-eyebrow);

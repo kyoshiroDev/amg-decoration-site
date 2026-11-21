@@ -13,6 +13,7 @@
  */
 import type { ImageMetadata } from 'astro';
 import { Picture } from 'astro:assets';
+import { coverCrop, fitWidths, parseAspectRatio } from '@/lib/responsive-image';
 import './arch-image.css';
 
 type Shape = 'arch' | 'rounded';
@@ -20,15 +21,15 @@ type Shape = 'arch' | 'rounded';
 interface Props {
   src: ImageMetadata;
   alt: string;
-  /** Largeurs générées (px). */
+  /** Largeurs générées (px), plafonnées à la largeur recadrée (`fitWidths`). */
   widths?: number[];
-  /** Attribut sizes ; à adapter à la mise en page réelle. */
+  /** Attribut sizes : largeur du cadre (les variantes sont recadrées à sa proportion). */
   sizes?: string;
   priority?: boolean;
   /** Ratio CSS du cadre, ex. « 4 / 5 ». */
   ratio?: string;
   shape?: Shape;
-  /** Liseré terracotta décalé derrière l'arche. */
+  /** Liseré camel décalé derrière l'arche. */
   framed?: boolean;
   /** Légende visible (rend un <figure>). */
   caption?: string | undefined;
@@ -58,6 +59,9 @@ const {
 } = Astro.props;
 
 const Element = caption ? 'figure' : 'div';
+// Variantes recadrées au build à la proportion du cadre (centrées, comme `object-fit: cover`) :
+// une source paysage dans une arche portrait ne fait plus télécharger les bandes masquées.
+const crop = coverCrop(src, parseAspectRatio(ratio));
 const transitionStyle = transitionName
   ? [
       `view-transition-name: ${transitionName}`,
@@ -80,7 +84,9 @@ const transitionStyle = transitionName
     <Picture
       src={src}
       alt={alt}
-      widths={widths.filter((w) => w <= src.width)}
+      width={crop.width}
+      height={crop.height}
+      widths={fitWidths(widths, crop.width)}
       sizes={sizes}
       formats={['avif', 'webp']}
       fallbackFormat="jpg"

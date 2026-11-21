@@ -8,35 +8,41 @@
 :root {
   color-scheme: light;
 
-  /* ---------- Couleurs : palette ---------- */
-  --color-linen: #f8f3ec;
-  --color-cream: #fffcf7;
-  --color-sand: #efe3d3;
-  --color-blush: #f2dcd3;
-  --color-sage: #dde3d3;
-  --color-terracotta-500: #c66b4e;
-  --color-terracotta-600: #b05a3d;
-  --color-terracotta-700: #9a4a30;
-  --color-ink: #2f2622;
-  --color-ink-soft: #5e514a;
-  --color-taupe: #857870; /* filets de contrôle : ≥ 3:1 sur tous les fonds clairs (WCAG 1.4.11) */
+  /*
+   * ---------- Couleurs : palette ----------
+   * Reprise de l'ancien site d'Amandine (ADR-0017) : beige, grège, camel doré.
+   * Contrastes mesurés (WCAG 2.x, non arrondis) dans docs/DESIGN-SYSTEM.md et vérifiés par
+   * tests/unit/palette-contrast.test.ts.
+   */
+  --color-cream: #faf8f5; /* fond principal (crème de l'ancien site) */
+  --color-ivory: #fffdfa; /* cartes, surfaces, texte sur boutons */
+  --color-beige: #eee3d6; /* sections alternées, pied de page */
+  --color-greige: #dedad4; /* sections alternées (aplat plus minéral) */
+  --color-rose-100: #f3e4e0; /* vieux rose très clair (dérivé de #da9393) : une touche par page */
+  --color-camel-300: #c4a882; /* camel doré de l'ancien site : décor seulement (~2:1, jamais de texte) */
+  --color-camel-600: #7a6440; /* fond des boutons primaires (ivoire dessus ≥ 4.5:1) */
+  --color-camel-700: #6b5636; /* texte d'accent, liens, survol, focus : ≥ 4.5:1 sur tous les fonds */
+  --color-rose-700: #9a4343; /* erreurs de formulaire : ≥ 4.5:1 sur tous les fonds */
+  --color-ink: #3a3530; /* texte : gris-brun profond */
+  --color-ink-soft: #5c544c;
+  --color-taupe: #7a7168; /* filets de contrôle : ≥ 3:1 sur tous les fonds clairs (WCAG 1.4.11) */
 
   /* ---------- Couleurs : rôles (à préférer dans les composants) ---------- */
-  --color-bg: var(--color-linen);
-  --color-surface: var(--color-cream);
+  --color-bg: var(--color-cream);
+  --color-surface: var(--color-ivory);
   --color-text: var(--color-ink);
   --color-text-soft: var(--color-ink-soft);
-  --color-accent: var(--color-terracotta-500); /* décoratif uniquement : traits, icônes, formes */
-  --color-accent-text: var(--color-terracotta-700); /* texte d'accent et liens sur fonds clairs */
-  --color-action: var(--color-terracotta-600); /* fond des boutons primaires */
-  --color-action-hover: var(--color-terracotta-700);
-  --color-on-action: var(--color-cream);
-  --color-border: rgb(47 38 34 / 14%); /* encre à 14 % : bordures fines neutres */
-  --color-border-strong: rgb(47 38 34 / 32%);
+  --color-accent: var(--color-camel-300); /* décoratif uniquement : traits, icônes, formes */
+  --color-accent-text: var(--color-camel-700); /* texte d'accent et liens sur fonds clairs */
+  --color-action: var(--color-camel-600); /* fond des boutons primaires */
+  --color-action-hover: var(--color-camel-700);
+  --color-on-action: var(--color-ivory);
+  --color-border: rgb(58 53 48 / 14%); /* encre à 14 % : bordures fines neutres */
+  --color-border-strong: rgb(58 53 48 / 32%);
   --color-border-control: var(--color-taupe); /* contour des boutons ghost */
-  --color-scrim: rgb(248 243 236 / 90%); /* lin à 90 % : accent-text ≥ 4.5:1 sur tout fond */
-  --color-backdrop: rgb(47 38 34 / 28%); /* voile derrière le menu mobile */
-  --color-lightbox-bg: rgb(248 243 236 / 97%); /* lin quasi opaque : visionneuse plein écran */
+  --color-scrim: rgb(250 248 245 / 90%); /* crème à 90 % : accent-text ≥ 4.5:1 sur tout fond */
+  --color-backdrop: rgb(58 53 48 / 28%); /* voile derrière le menu mobile */
+  --color-lightbox-bg: rgb(250 248 245 / 97%); /* crème quasi opaque : visionneuse plein écran */
 
   /* ---------- Typographie ---------- */
 
@@ -108,13 +114,13 @@
   /* Formulaires */
   --field-min-height: 3.25rem; /* ≥ --tap-target, confortable au pouce */
   --field-textarea-rows: 7;
-  --field-bg: var(--color-cream);
-  --field-border: var(--color-taupe); /* contour ≥ 3:1 sur lin et crème (WCAG 1.4.11) */
+  --field-bg: var(--color-ivory);
+  --field-border: var(--color-taupe); /* contour ≥ 3:1 sur tous les fonds clairs (WCAG 1.4.11) */
   --field-border-hover: var(--color-ink-soft);
-  --color-error: var(--color-terracotta-700); /* texte et liseré d'erreur, ≥ 4.5:1 sur crème */
+  --color-error: var(--color-rose-700); /* texte et liseré d'erreur, ≥ 4.5:1 sur tous les fonds */
 
-  /* Chevron des listes déroulantes (trait ink-soft #5e514a, encodé pour une URL de données). */
-  --field-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235e514a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  /* Chevron des listes déroulantes (trait ink-soft #5c544c, encodé pour une URL de données). */
+  --field-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235c544c' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 
   /* En-tête : hauteur de mise en page FIXE (aucun décalage au scroll), compactage visuel en transform. */
   --header-height: 5.5rem;
@@ -130,6 +136,7 @@
   --compare-handle-size: 3rem; /* poignée ronde ≥ --tap-target */
   --compare-start: 50%; /* position initiale du curseur (avant interaction) */
   --compare-max: 60rem; /* largeur maximale du comparateur interactif */
+  --compare-divider-width: 2px; /* trait crème du comparateur, bordé de taupe (lisible sur image claire) */
 
   /*
    * Points de rupture (documentaires : les custom properties ne sont pas utilisables
@@ -157,9 +164,9 @@
   --border-thin: 1.5px;
 
   /* ---------- Ombres (chaudes, diffuses) ---------- */
-  --shadow-soft: 0 20px 50px -20px rgb(47 38 34 / 18%);
-  --shadow-lifted: 0 30px 70px -28px rgb(47 38 34 / 26%);
-  --shadow-inset-hairline: inset 0 0 0 1px rgb(47 38 34 / 8%);
+  --shadow-soft: 0 20px 50px -20px rgb(58 53 48 / 18%);
+  --shadow-lifted: 0 30px 70px -28px rgb(58 53 48 / 26%);
+  --shadow-inset-hairline: inset 0 0 0 1px rgb(58 53 48 / 8%);
 
   /* ---------- Matière ---------- */
 
@@ -180,6 +187,21 @@
   --dur-slow: 800ms;
   --dur-reduced: 150ms;
   --stagger: 70ms;
+
+  /*
+   * Cascade d'une liste révélée (ADR-0013) : 6 rangs au plus sur une même durée partagée
+   * (apparition + 5 décalages). Les pourcentages des @keyframes reveal-cascade-* de motion.css
+   * en dérivent : tests/unit/reveal-keyframes.test.ts échoue s'ils ne suivent plus ces tokens.
+   */
+  --reveal-cascade-duration: calc(var(--dur-base) + 5 * var(--stagger));
+
+  /*
+   * Apparition pilotée par le défilement (ADR-0013) : parcours de l'entrée du bloc par le bas
+   * de la fenêtre pendant lequel il se dévoile (bande basse courte : jamais de texte voilé dans
+   * la zone de lecture), et décalage par colonne d'une même rangée de cartes.
+   */
+  --reveal-scroll-length: 18vh;
+  --reveal-scroll-stagger: 3vh;
   --reveal-distance: 20px;
   --hover-zoom: 1.04;
   --dur-morph: 600ms; /* morphing d'un visuel de projet entre deux pages (View Transition) */
@@ -190,7 +212,7 @@
   --opacity-ornament: 0.4; /* numéros d'étapes géants (décor) */
 
   /* ---------- Focus ---------- */
-  --focus-ring-color: var(--color-terracotta-700);
+  --focus-ring-color: var(--color-camel-700); /* ≥ 3:1 sur tous les fonds (WCAG 2.4.13) */
   --focus-ring-width: 2px;
   --focus-ring-offset: 3px;
   --focus-ring: var(--focus-ring-width) solid var(--focus-ring-color);

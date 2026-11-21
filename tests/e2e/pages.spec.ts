@@ -1,8 +1,10 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { microcopy } from '../../src/config/microcopy';
-import { SITE_ROUTES } from '../../src/lib/redirects';
+import { site } from '../../src/config/site';
+import { SITE_ROUTES } from '../site-routes';
 import { expectNoAxeViolations } from './helpers';
+import { PRIVACY_PATH, PRIVACY_TEXTS } from './privacy-texts';
 
 // Pages du lot 2A : Visualisation 3D, À propos, Contact, Merci et pages légales.
 
@@ -24,6 +26,10 @@ const AUDITED = [
 ] as const;
 
 const SITEMAP_FILE = new URL('../../dist/sitemap-0.xml', import.meta.url);
+const DIST_DIR = new URL('../../dist/', import.meta.url);
+
+/** Jeton ou marqueur de bloc du gabarit Markdown (ADR-0016) resté tel quel. */
+const TEMPLATE_LEFTOVER = /\{(?:email|phone|phoneE164|siret|\/?formulaire[^}]*)\}/;
 
 test.describe('Routes construites', () => {
   test('la liste couvre les 13 pages du lot', () => {
@@ -85,6 +91,42 @@ test.describe('Pages légales', () => {
       }
     });
   }
+
+  for (const path of ['/mentions-legales/', '/confidentialite/', '/conditions-generales/']) {
+    test(`${path} : coordonnées injectées depuis site.ts`, async ({ page }) => {
+      await page.goto(path);
+      const body = page.locator('.rich-text');
+      await expect(body.locator(`a[href="mailto:${site.email}"]`).first()).toHaveText(site.email);
+      expect(await body.innerText()).not.toMatch(/\{[^}\s]*\}/);
+    });
+  }
+
+  test('SIRET et téléphone de site.ts dans les mentions légales', async ({ page }) => {
+    await page.goto('/mentions-legales/');
+    const body = page.locator('.rich-text');
+    await expect(body).toContainText(site.registration.siret);
+    await expect(body.locator(`a[href="tel:${site.phone.e164}"]`)).toHaveText(site.phone.display);
+  });
+
+  test('confidentialité en repli mailto : aucun service de formulaire décrit', async ({ page }) => {
+    await page.goto(PRIVACY_PATH);
+    await expect(page.getByText(PRIVACY_TEXTS.mailtoSending)).toBeVisible();
+    await expect(page.getByText(PRIVACY_TEXTS.mailtoRecipient)).toBeVisible();
+    await expect(page.getByText(PRIVACY_TEXTS.serviceIp)).toHaveCount(0);
+    await expect(page.getByText(PRIVACY_TEXTS.serviceRecipient)).toHaveCount(0);
+    await expect(page.locator('.rich-text')).not.toContainText('service de formulaire');
+  });
+
+  test('aucun jeton ni marqueur de gabarit dans les pages générées', async () => {
+    const files = (await readdir(DIST_DIR, { recursive: true })).filter((file) =>
+      file.endsWith('.html'),
+    );
+    expect(files.length).toBeGreaterThan(0);
+    for (const file of files) {
+      const html = await readFile(new URL(file, DIST_DIR), 'utf8');
+      expect(html, file).not.toMatch(TEMPLATE_LEFTOVER);
+    }
+  });
 
   test('mesure de lecture longue entre 60 et 72 caractères', async ({ page }) => {
     await page.goto('/conditions-generales/');

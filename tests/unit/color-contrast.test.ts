@@ -33,8 +33,8 @@ describe('contrastRatio', () => {
   });
 
   it('retrouve les valeurs documentées du design system', () => {
-    expect(formatRatio(contrastRatio('#9a4a30', '#f8f3ec'))).toBe('5.60');
-    expect(formatRatio(contrastRatio('#fffcf7', '#b05a3d'))).toBe('4.68');
+    expect(formatRatio(contrastRatio('#6b5636', '#faf8f5'))).toBe('6.58');
+    expect(formatRatio(contrastRatio('#fffdfa', '#7a6440'))).toBe('5.55');
   });
 });
 
@@ -49,15 +49,15 @@ describe('contrastLevel', () => {
 describe('parseColorTokens', () => {
   it('extrait uniquement les tokens de couleur hexadécimaux', () => {
     const css = `:root {
-      --color-linen: #F8F3EC;
-      --color-bg: var(--color-linen);
+      --color-cream: #FAF8F5;
+      --color-bg: var(--color-cream);
       --color-border: rgb(47 38 34 / 14%);
       --radius-sm: 6px;
-      --color-ink: #2f2622;
+      --color-ink: #3a3530;
     }`;
     expect(parseColorTokens(css)).toEqual([
-      { name: 'linen', hex: '#f8f3ec' },
-      { name: 'ink', hex: '#2f2622' },
+      { name: 'cream', hex: '#faf8f5' },
+      { name: 'ink', hex: '#3a3530' },
     ]);
   });
 });

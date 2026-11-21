@@ -6,7 +6,7 @@
 
 1. **Statique d'abord** : tout est pré-rendu au build. Zéro serveur, zéro base de données.
 2. **Contenu séparé du code** : les textes vivent dans `src/content/` (Markdown/YAML validés par Zod) ; les infos de l'entreprise dans `src/config/site.ts`.
-3. **Couches** : `pages` (routes) → `layouts` (squelette + SEO) → `blocks` (sections) → `ui` (atomes). `lib/` est transverse et pur.
+3. **Couches** : `pages` (routes) → `layouts` (squelette + SEO) → `blocks` (sections) → `ui` (atomes). `lib/` est transverse et pur, à trois exceptions documentées : les lecteurs de collections `lib/pages/<page>.ts` (I/O Astro, ADR-0014), `lib/article-files.ts` (lecture du disque pour `astro.config.mjs` et les tests) et `lib/release-guard-files.ts` (lecture des pages légales pour le garde-fou de mise en production, ADR-0015).
 4. **Progressive enhancement** : le HTML/CSS fonctionne seul ; le JS (`src/scripts/`) n'ajoute que de l'agrément.
 
 ## Styleguide interne
@@ -16,31 +16,68 @@
 ## Flux de données
 
 ```
-src/config/site.ts ──────┐
-src/config/microcopy.ts ─┼──> layouts/BaseLayout.astro ──> components/seo/SEO.astro + JsonLd.astro
-src/lib/jsonld.ts ───────┘                │            └─> components/layout/* (SkipLink, Header, Footer)
-                                      ▼
-src/content/** ──(getEntry / getCollection)──> pages/*.astro ──> components/blocks/* ──> components/ui/*
-       ▲                                            │
-src/content.config.ts (schémas Zod 4)        src/lib/content.ts (tri, filtres, requireEntry)
+src/content/**  (validé par src/content.config.ts, schémas Zod 4)
+      │  getEntry / getCollection / render / getImage
+      ▼
+src/lib/pages/<page>.ts ──────── LECTEUR (I/O Astro) : lit les collections, src/config/site.ts
+      │                          et microcopy.ts, reçoit l'origine du site, assemble le JSON-LD
+      │  entrées brutes + libellés
+      ▼
+src/lib/pages/<page>-model.ts ── MODÈLE PUR : tri, filtres, sections obligatoires, cartes,
+      │                          fil d'Ariane (testé dans tests/unit/*-model.test.ts)
+      │  { ...modèle, jsonLd }
+      ▼
+src/pages/<route>.astro ──────── assemblage : requireSiteOrigin(Astro.site) → getXxxData(origin)
+      │                          ou getStaticPaths = getXxxPaths
+      ▼
+src/layouts/*Layout.astro ────── BaseLayout : SEO.astro + JsonLd.astro (@graph global + jsonLd de la page)
+      │                          PageLayout : fil d'Ariane + BreadcrumbList
+      ▼
+src/components/blocks/* ──> src/components/ui/*
 ```
+
+`src/config/site.ts` (NAP, navigation) et `src/config/media.ts` (visuels de mise en page) sont lus directement par les layouts, `layout/*` et les pages ; `src/lib/jsonld.ts`, `seo.ts`, `url.ts` sont des fonctions pures appelées par les lecteurs et les layouts. L'origine du site vient toujours de `site` (`astro.config.mjs`) par `requireSiteOrigin` (`src/lib/url.ts`) : `Astro.site` dans un composant, `site` dans le contexte d'un endpoint, `import.meta.env.SITE` dans un `getStaticPaths` (où `Astro.site` n'existe pas). Son absence fait échouer le build ; aucun repli sur `Astro.url`.
+
+### Données des pages : lecteur / modèle
+
+Chaque page a deux fichiers dans `src/lib/pages/` (ADR-0014) :
+
+| Fichier           | Rôle                                                                                                                                                                                                                                                                | Testé                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `<page>.ts`       | **Lecteur** : seul point d'accès aux collections pour la page (`getEntry`, `getCollection`, `render`, `getImage`). Passe les entrées brutes et les libellés au modèle, puis ajoute le JSON-LD (`WithJsonLd<Model>`) ou fournit `getStaticPaths` (`get<Page>Paths`). | non (I/O Astro, couvert par l'e2e)      |
+| `<page>-model.ts` | **Modèle** : fonction pure `build<Page>Model(input)`, sans import Astro à l'exécution (types seulement). Lit les sections obligatoires, trie, filtre, construit les cartes et le fil d'Ariane.                                                                      | oui (`tests/unit/<page>-model.test.ts`) |
+
+Briques partagées :
+
+- `types.ts` : types de données de page (`PageData`, `PageSection`, `PageAction`, `QuoteData`) et `WithJsonLd<T>` (modèle + nœuds schema.org passés à la prop `jsonLd` des layouts). Import de type uniquement.
+- `sections.ts` : `readSections(sections, KEYS, pageId)` lit d'un coup les sections obligatoires déclarées par un tableau `<PAGE>_SECTION_KEYS` et renvoie un objet typé par ces clés.
+- `breadcrumb-trail.ts` : `breadcrumbTrail(homeLabel, ...items)`, fil d'Ariane depuis l'accueil (même tableau pour le composant `Breadcrumbs` et le `BreadcrumbList`).
+- `page.ts` : `getPageData(id)`, lecteur générique d'une entrée `pages` (404, styleguide, pages simples).
+- `ContentError` (`src/lib/content.ts`) : erreur levée par `requireEntry`, `requireSection` et les modèles quand un contenu attendu manque ; elle fait échouer le build avec le fichier et la clé en cause.
+
+Une page ne fait donc qu'un appel (`getXxxData(origin)` ou `getStaticPaths = getXxxPaths`) et passe le résultat aux blocs. Ajouter une page : déclarer ses sections dans `src/content/pages/<page>.md`, écrire `<page>-model.ts` et son test, puis le lecteur `<page>.ts`.
 
 ### Fichiers pour les robots (endpoints statiques)
 
-Les fichiers texte destinés aux robots sont des **endpoints statiques** `src/pages/<nom>.txt.ts` (`export const GET: APIRoute`), pré-rendus au build dans `dist/<nom>.txt`. Ils ne contiennent aucune logique : le contenu est produit par les fonctions pures de `src/lib/crawlers.ts` (testées dans `tests/unit/crawlers.test.ts`) ; l'URL absolue vient de `site` (`astro.config.mjs`), dont l'absence fait échouer le build. Décisions : ADR-0011.
+Les fichiers texte destinés aux robots sont des **endpoints statiques** `src/pages/<nom>.txt.ts` (`export const GET: APIRoute`), pré-rendus au build dans `dist/<nom>.txt`. Ils ne contiennent aucune logique : le contenu est produit par les fonctions pures de `src/lib/crawlers.ts` (testées dans `tests/unit/crawlers.test.ts`) ; l'URL absolue vient de `site` (`astro.config.mjs`) par `requireSiteOrigin`, dont l'échec fait échouer le build. Décisions : ADR-0011.
 
 | Endpoint                  | Fonction                                                 | Contenu                                                                                      |
 | ------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | `src/pages/robots.txt.ts` | `buildRobotsTxt`                                         | Tout autorisé, sans `Disallow`, sitemap absolu.                                              |
 | `src/pages/llms.txt.ts`   | `buildLlmsTxt` (+ `lib/pages/llms.ts` / `llms-model.ts`) | Résumé Markdown llmstxt.org : pages, prestations, réalisations, articles publiés, sans prix. |
 
+Même mécanisme pour le **sprite d'icônes** `src/pages/icons.[version].svg.ts` → `dist/icons.<version>.svg` : `buildIconSprite` (`src/lib/icon-sprite.ts`, testé dans `tests/unit/icon-sprite.test.ts`) assemble un `<symbol>` par tracé de `src/components/ui/icons.ts` ; `Icon.astro` le référence par `<use href="/icons.<version>.svg#nom">` (`ICON_SPRITE_URL`). La version est le début de l'empreinte SHA-256 du sprite (`iconSpriteVersion`) : l'URL change avec le contenu, d'où un cache navigateur immuable d'un an (`vercel.json`) au lieu d'une revalidation à chaque page. Les pages n'embarquent plus les tracés : l'accueil tient sous 14 Kio gzip (fenêtre TCP initiale), contrôlé par `tests/e2e/html-budget.spec.ts`.
+
 ### Configuration (`src/config/`)
 
-| Fichier        | Contenu                                                                                                                        |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `site.ts`      | Source de vérité unique : nom, NAP, horaires, zone, réseaux, `mainNav`, `headerCta`, `legalNav`, `pricing.showPrices`.         |
-| `microcopy.ts` | Tous les libellés d'interface : lien d'évitement, `aria-label` des navigations, menu mobile, titres et textes du pied de page. |
-| `seo.ts`       | Valeurs SEO par défaut et image OG (réservé aux composants : importe une image).                                               |
+| Fichier        | Contenu                                                                                                                                      |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `site.ts`      | Source de vérité unique : nom, NAP, `registration.siret`, horaires, zone, réseaux, `mainNav`, `headerCta`, `legalNav`, `pricing.showPrices`. |
+| `microcopy.ts` | Tous les libellés d'interface : lien d'évitement, `aria-label` des navigations, menu mobile, titres et textes du pied de page.               |
+| `seo.ts`       | Valeurs SEO par défaut et image OG (réservé aux composants : importe une image).                                                             |
+| `media.ts`     | Visuels de mise en page hors contenu : héros de l'accueil et de « Visualisation 3D », portrait (importe des images : jamais lu par `lib/`).  |
+
+Les corps Markdown ne recopient pas non plus ces données : les jetons `{email}`, `{phone}`, `{phoneE164}` et `{siret}` y sont remplacés au rendu (§ Gabarit des corps Markdown).
 
 Aucun composant n'écrit de texte en dur : il lit l'un de ces modules ou reçoit le texte en prop. Les textes éditoriaux (y compris ceux des pages techniques : 404, styleguide) vivent dans `src/content/` (§ Collections).
 
@@ -72,14 +109,22 @@ Schémas dans `src/content.config.ts` (Content Layer API d'Astro 7, `z` importé
 - **Pages où afficher** (`pages[]` des témoignages et de la FAQ) : `accueil`, `prestations`, `visualisation-3d`, `realisations`, `a-propos`, `contact`.
 - **Section de page** : `eyebrow?`, `heading`, `headingEmphasis?` (fragment exact de `heading`, mis en italique), `lead?`, `items[{title, text?}]`, `quote?{text, author}`, `actions[]` (3 au plus), `links?[]` (1 à 6 liens de maillage `{label, href}` rendus en cartes « Pour aller plus loin » par `resolveFurtherLinks`, `src/lib/pages/further-links.ts` : `label` = surtitre, titre et texte lus dans l'article publié, la prestation ou la réalisation visée ; une cible inconnue ou un brouillon fait échouer le build). La route lit chaque section par sa clé avec `requireSection` : une section manquante fait échouer le build au lieu de publier une page amputée.
 - **Prix** : stockés quand ils sont publics, affichés seulement si `site.pricing.showPrices` vaut `true`, **jamais** en JSON-LD (`Offer`) tant qu'Amandine ne les a pas confirmés (ADR-0007).
-- **Lecture dans une route** : `requireEntry(await getEntry('pages', 'accueil'), 'pages', 'accueil')` (pas de `!`), puis `sortByOrder`, `filterPublished` (articles) et `filterByPage` (témoignages, FAQ) de `src/lib/content.ts`.
+- **Lecture des collections** : jamais dans une route. Le lecteur `src/lib/pages/<page>.ts` appelle `requireEntry(await getEntry('pages', id), 'pages', id)` (pas de `!`) ou `getPageData(id)` ; le modèle pur applique `sortByOrder`, `filterPublished` (articles) et `filterByPage` (témoignages, FAQ) de `src/lib/content.ts` et lit les sections avec `readSections` (§ Données des pages).
+
+### Gabarit des corps Markdown
+
+Le corps des fichiers `.md` (pas des `.mdx`) passe par le plugin Sätteri `contentTemplatePlugin` (`src/lib/content-template.ts`, branché dans `astro.config.mjs` → `markdown.processor`) avant d'être analysé (ADR-0016) :
+
+- **Jetons** : `{email}`, `{phone}` (affichage), `{phoneE164}` (lien `tel:`), `{siret}`, valeurs de `src/config/site.ts` (`siteTemplateVariables`). Ils fonctionnent aussi dans les URL : `[{email}](mailto:{email})`. Un jeton inconnu fait échouer le build.
+- **Blocs selon le mode du formulaire** (`resolveFormTarget`, ADR-0003) : `{formulaire:service}` … `{/formulaire}` n'est publié que si `PUBLIC_FORM_ENDPOINT` est défini, `{formulaire:mailto}` … `{/formulaire}` seulement en repli `mailto:`. Marqueurs seuls sur leur ligne, entourés de lignes vides, sans imbrication. Utilisé par la politique de confidentialité.
+- Le contexte (mode, valeurs) fait partie de la configuration Astro : le changer vide le cache du Content Layer.
 
 ### Nommage des fichiers
 
 - Un fichier = une entrée ; **le nom du fichier est le slug de l'URL** : minuscules, sans accents, mots séparés par des tirets (`chalet-suisse.md`, `bien-choisir-sa-peinture.mdx`). Le renommer change l'URL : prévoir une redirection 301 dans `vercel.json`.
 - Dans les fichiers YAML, la clé de chaque entrée suit la même règle (`sebastien-t`).
 - Images d'un projet : `src/assets/projets/<slug>/` (`01-avant.jpg`, `02-3d-salon.jpg`, `03-apres.jpg`…) ; images d'un article : `src/assets/articles/<slug>/`. En attendant les originaux : `src/assets/placeholders/` (listés dans son `README.md`).
-- Aucun texte de la forme `TODO(contenu): …` ne doit rester dans une page publiée.
+- Aucun texte de la forme `TODO(contenu): …` ne doit rester dans une page publiée. Dans les trois pages légales, le moindre `TODO(contenu)` (même en commentaire YAML) fait échouer le build de production Vercel (§ Déploiement, ADR-0015).
 
 ### Ajouter une réalisation (pas à pas)
 
@@ -106,36 +151,45 @@ JavaScript vanilla, chargé par un `<script>` Astro dans le composant qui en a b
 - **Classe `js`** : un script inline de 170 octets en tête de `BaseLayout` (`JS_CLASS_SCRIPT`, `src/lib/inline-scripts.ts`) pose `js` sur `<html>` avant le premier rendu, et la retire si un module échoue (retour à la version sans JS). Les composants qui n'ont de sens qu'avec JS (filtres, comparateur, bandeau animé) s'affichent sous `.js` sans décalage de mise en page. Empreinte CSP et test : ADR-0010.
 - **Logique pure** des scripts dans `src/lib/` (testée par Vitest) : `before-after.ts` (position sous le pointeur, `aria-valuetext`), `magnetic.ts` (décalage borné), `lightbox.ts` (index en boucle, compteur).
 
-| Script              | Chargé par                      | Rôle                                                                                                   | Poids (gzip) |
-| ------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------ |
-| `lifecycle.ts`      | importé par tous                | `onPageReady(signal)`                                                                                  | 0,2 Ko       |
-| `header.ts`         | `BaseLayout` (toutes)           | IntersectionObserver sur un repère à 80 px → `data-compact`                                            | 0,3 Ko       |
-| `mobile-nav.ts`     | `BaseLayout` (toutes)           | Confort du menu mobile (Popover API native)                                                            | 0,5 Ko       |
-| `reveal.ts`         | `BaseLayout` (toutes)           | Apparitions au scroll et image reveal (`data-reveal`, hors écran uniquement, rien en mouvement réduit) | 0,6 Ko       |
-| `magnetic.ts`       | `BaseLayout` (toutes)           | CTA magnétique (`[data-magnetic]`, pointeur fin, ≤ 6 px)                                               | 0,7 Ko       |
-| `marquee.ts`        | `Marquee` (accueil)             | Bouton pause / lecture, pause hors écran                                                               | 0,4 Ko       |
-| `project-filter.ts` | `ProjectFilters` (Réalisations) | Filtre par type de pièce, `aria-pressed`, annonce du nombre                                            | 0,5 Ko       |
-| `lightbox.ts`       | `Lightbox` (pages projet)       | Visionneuse `<dialog>` : ouverture, image à la demande, ← →, retour du focus                           | 0,9 Ko       |
-| `before-after.ts`   | `BeforeAfter` (si paire)        | Comparateur : valeur, `aria-valuetext`, pointeur et tactile                                            | 0,8 Ko       |
-| `contact-form.ts`   | `ContactForm` (`/contact/`)     | Validation et envoi `fetch`, repli HTML sans JS                                                        | 1,4 Ko       |
-| _prefetch d'Astro_  | toutes                          | Préchargement au survol                                                                                | 1,1 Ko       |
+| Script              | Chargé par                      | Rôle                                                                                                                                                                                                  | Poids (gzip) |
+| ------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| `lifecycle.ts`      | importé par tous                | `onPageReady(signal)`                                                                                                                                                                                 | 0,2 Ko       |
+| `header.ts`         | `BaseLayout` (toutes)           | IntersectionObserver sur un repère à 80 px → `data-compact`                                                                                                                                           | 0,3 Ko       |
+| `mobile-nav.ts`     | `BaseLayout` (toutes)           | Confort du menu mobile (Popover API native)                                                                                                                                                           | 0,5 Ko       |
+| `reveal.ts`         | `BaseLayout` (toutes)           | Apparitions au scroll et image reveal (`data-reveal`, liées au défilement si `view()`, sinon IntersectionObserver ; une liste = un bloc ; hors écran uniquement, rien en mouvement réduit ; ADR-0013) | 0,6 Ko       |
+| `magnetic.ts`       | `BaseLayout` (toutes)           | CTA magnétique (`[data-magnetic]`, pointeur fin, ≤ 6 px)                                                                                                                                              | 0,7 Ko       |
+| `marquee.ts`        | `Marquee` (accueil)             | Bouton pause / lecture, pause hors écran                                                                                                                                                              | 0,4 Ko       |
+| `project-filter.ts` | `ProjectFilters` (Réalisations) | Filtre par type de pièce, `aria-pressed`, annonce du nombre                                                                                                                                           | 0,5 Ko       |
+| `lightbox.ts`       | `Lightbox` (pages projet)       | Visionneuse `<dialog>` : ouverture et fermeture reportées après le rendu (INP), image à la demande, ← →, retour du focus                                                                              | 1,1 Ko       |
+| `before-after.ts`   | `BeforeAfter` (si paire)        | Comparateur : valeur, `aria-valuetext`, pointeur et tactile                                                                                                                                           | 0,8 Ko       |
+| `contact-form.ts`   | `ContactForm` (`/contact/`)     | Validation et envoi `fetch`, repli HTML sans JS                                                                                                                                                       | 1,4 Ko       |
+| _prefetch d'Astro_  | toutes                          | Préchargement au survol                                                                                                                                                                               | 1,1 Ko       |
 
-Poids total mesuré par page (gzip, fin de Phase 5, hors script inline de 0,15 Ko) : 2,7 Ko sur la plupart des pages, 3,0 Ko sur l'accueil, 3,1 Ko sur `/realisations/`, 3,6 Ko sur les pages projet, 4,0 Ko sur `/contact/`, 4,8 Ko sur `/styleguide/` (tous les scripts). Budget : 30 Ko.
+Poids total mesuré par page (gzip, audit performance de la Phase 7, hors script inline de 153 octets) : 2,8 Ko sur les pages simples, 3,2 Ko sur l'accueil, 3,9 Ko sur les fiches projet, 4,2 Ko sur `/contact/`, 5,1 Ko sur `/styleguide/` (tous les scripts). Budget : 30 Ko.
 
 - Interdits : `console.*`, écouteur `scroll` (préférer IntersectionObserver), état d'animation présent dans le HTML initial (il est posé par le script, ou par du CSS sous `.js`).
 
 ## Tests
 
-- `tests/unit/` (Vitest, `npm run test`) : fonctions pures de `src/lib/`.
+- `tests/unit/` (Vitest, `npm run test`) : fonctions pures de `src/lib/` (dont `content-template.test.ts`, qui rend aussi du Markdown par Sätteri avec le plugin, et `release-guard.test.ts`).
+- Gabarit Markdown (ADR-0016) : `tests/e2e/pages.spec.ts` vérifie les coordonnées de `site.ts` dans les pages légales, le texte du repli `mailto:` de `/confidentialite/` et l'absence de tout jeton ou marqueur dans les HTML de `dist/` ; `tests/e2e-service/privacy.spec.ts` vérifie le texte du mode service.
 - `tests/e2e/` (Playwright + axe, `npm run test:e2e`, `playwright.config.ts`) : build de production `dist/` servi sur le port 4321, projets mobile (Pixel 7) et desktop. Ce build n'a pas de `PUBLIC_FORM_ENDPOINT` : le formulaire de contact y est en repli `mailto:`.
+- CSP (ADR-0012) : `tests/e2e/csp.spec.ts` vérifie la politique et les empreintes de chaque page et l'absence de violation, au chargement et pendant les interactions ; aucun test n'injecte de balise `<style>` ou `<script>` (CSSOM `adoptedStyleSheets` à la place). `tests/e2e/smoke.spec.ts` : aucune erreur console sur toutes les pages, fichiers `/_astro/` cités présents, liens externes en https avec `rel="noopener noreferrer"`.
 - `tests/e2e-service/` (`npm run test:e2e:service`, `playwright.service.config.ts`) : formulaire de contact **en mode service** (ADR-0003). Build distinct dans `dist-service/` (ignoré par git, ESLint, Prettier et TypeScript) avec `PUBLIC_FORM_ENDPOINT=https://formulaire.test/envoi` passé par `webServer.env`, servi sur le port 4322, projet desktop seul. Vérifie la destination, la mention d'information du service et le champ piège (`_honeypot` : `tabindex="-1"`, `autocomplete="off"`, conteneur `aria-hidden`, hors tabulation, envoyé vide avec et sans JS). L'endpoint est intercepté, aucune requête externe ne part. En CI, lancé dans le job `e2e` après la suite principale ; rapport HTML dans `playwright-report/service/`.
+- `tests/visual/` (`npm run test:visual`, `test:visual:update`, `playwright.visual.config.ts`) : régression visuelle `toHaveScreenshot` pleine page de 11 pages clés en mobile (390×844) et desktop (1440×900). Build distinct dans `dist-visual/` (ignoré par git, ESLint, Prettier et TypeScript), port 4338. **Hors CI et hors `test:e2e`** : le rendu des polices dépend de la machine, les références locales échoueraient sur le runner. Mode d'emploi et mise à jour des références : `tests/visual/README.md`.
 
 ## Configuration
 
-- `astro.config.mjs` : `site: 'https://amgdecorationdinterieur.com'`, `trailingSlash: 'always'`, `output: 'static'`, intégrations `sitemap` (filtre des pages `noindex`, `lastmod` des articles lu dans leur frontmatter par `src/lib/article-files.ts` et `src/lib/sitemap-lastmod.ts`, importés sans alias ; les mêmes fichiers donnent les routes d'articles de `SITE_ROUTES`) (+ `mdx`), `prefetch`, Fonts API, `image` (formats/qualités).
-- `vercel.json` : redirections 301, en-têtes de sécurité (CSP, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`), cache immuable `/_astro/*`.
+- `astro.config.mjs` : `site: 'https://amgdecorationdinterieur.com'`, `trailingSlash: 'always'`, `output: 'static'`, intégrations `sitemap` (filtre des pages `noindex`, `lastmod` des articles lu dans leur frontmatter par `src/lib/article-files.ts` et `src/lib/sitemap-lastmod.ts`, importés sans alias ; les mêmes fichiers donnent les routes d'articles passées à `siteRoutes()`, assemblées dans `tests/site-routes.ts`) (+ `mdx`), `prefetch`, Fonts API, `image` (formats/qualités).
+- `astro.config.mjs` → `security.csp` : Content-Security-Policy en balise meta, empreintes des scripts et styles calculées au build ; directives et empreintes des scripts `is:inline` fournies par `src/lib/csp.ts`, origine de `PUBLIC_FORM_ENDPOINT` autorisée si elle est définie ; intégration `amg:csp-par-page` (hook `astro:build:done`) qui réduit les empreintes de chaque page à celles de ses éléments inline (`pruneCspHashes`, ADR-0012).
+- `vercel.json` : redirections 301, en-têtes de sécurité (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, HSTS, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `Permissions-Policy`, CSP d'en-tête limitée à `frame-ancestors`/`base-uri`/`object-src`), vérifiés par `tests/unit/security-headers.test.ts` ; cache immuable `/_astro/*` et `/icons.<version>.svg` (URLs versionnées par empreinte, vérifié par le même test).
+- `astro.config.mjs` → `markdown.processor` : Sätteri (processeur par défaut d'Astro 7) avec le plugin `contentTemplatePlugin` (§ Gabarit des corps Markdown, ADR-0016).
+- `astro.config.mjs` → intégration `amg:garde-fou-production` (hook `astro:build:start`) : si `VERCEL_ENV` vaut `production`, échec du build tant qu'un `TODO(contenu)` reste dans les pages légales (ADR-0015).
+- `scripts/check-prod.ts` (`npm run check:prod`, exécuté directement par Node) : le même contrôle en local, quel que soit l'environnement. Ne pas confondre avec `src/scripts/` (JS client).
 - `tsconfig.json` : `astro/tsconfigs/strictest` + alias `@/*`.
 
 ## Déploiement
 
 GitHub → Vercel : chaque push sur `dev` = preview ; merge dans `main` (humain) = production. La CI GitHub Actions (`.github/workflows/ci.yml`) doit être verte avant tout merge.
+
+**Garde-fou de mise en production** (ADR-0015) : le build de production Vercel (`VERCEL_ENV=production`) échoue tant qu'un `TODO(contenu)` reste dans `mentions-legales.md`, `conditions-generales.md` ou `confidentialite.md` ; le message liste chaque TODO en `fichier:ligne`, et la production précédente reste en ligne. Builds locaux, CI et previews ne sont pas concernés. Avant de rattacher le domaine : `npm run check:prod` (même liste, code de sortie 1 s'il en reste) et vérifier dans Vercel que les variables système sont exposées.

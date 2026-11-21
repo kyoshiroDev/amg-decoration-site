@@ -2,7 +2,7 @@
 /**
  * ServiceCard — carte d'une formule : titre-lien (zone cliquable étendue à toute la carte),
  * accroche en italique, résumé, pièces concernées, tarif (si affiché) et invitation visuelle.
- * Formule mise en avant : pastille « La plus demandée » et liseré terracotta. Styles : ./service-card.css.
+ * Formule mise en avant : pastille « La plus demandée » et liseré camel. Styles : ./service-card.css.
  */
 import Icon from '@/components/ui/Icon.astro';
 import Tag from '@/components/ui/Tag.astro';
@@ -22,7 +22,7 @@ const Title = `h${headingLevel}` as const;
 <article class:list={['service-card', { 'service-card--highlight': service.highlight }]}>
   <span class="service-card__arch" aria-hidden="true"></span>
   {service.highlight && (
-    <Tag tone="blush" class="service-card__badge">
+    <Tag tone="rose" class="service-card__badge">
       {microcopy.services.highlight}
     </Tag>
   )}

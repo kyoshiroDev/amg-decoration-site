@@ -4,7 +4,7 @@
  * Règle de composition : un seul pastel par section, deux pastels maximum à l'écran.
  * Donner `labelledby` (id du titre) pour exposer la section comme région nommée.
  */
-type Background = 'linen' | 'cream' | 'sand' | 'blush' | 'sage';
+type Background = 'cream' | 'ivory' | 'beige' | 'rose' | 'greige';
 
 interface Props {
   background?: Background;
@@ -17,7 +17,7 @@ interface Props {
 }
 
 const {
-  background = 'linen',
+  background = 'cream',
   as: Element = 'section',
   labelledby,
   spacing = 'section',
@@ -41,24 +41,24 @@ const {
       background-color: var(--section-bg);
     }
 
-    .section--linen {
-      --section-bg: var(--color-linen);
-    }
-
     .section--cream {
       --section-bg: var(--color-cream);
     }
 
-    .section--sand {
-      --section-bg: var(--color-sand);
+    .section--ivory {
+      --section-bg: var(--color-ivory);
     }
 
-    .section--blush {
-      --section-bg: var(--color-blush);
+    .section--beige {
+      --section-bg: var(--color-beige);
     }
 
-    .section--sage {
-      --section-bg: var(--color-sage);
+    .section--rose {
+      --section-bg: var(--color-rose-100);
+    }
+
+    .section--greige {
+      --section-bg: var(--color-greige);
     }
 
     .section--space-section {

@@ -1,7 +1,7 @@
 ---
 /**
  * Hero — ouverture de l'accueil : composition 7/5, surtitre, titre (h1) avec fragment en
- * italique, chapeau, actions (principale, secondaire) ; arche avec liseré décalé et soleil sauge.
+ * italique, chapeau, actions (principale, secondaire) ; arche avec liseré décalé et soleil grège.
  * Seule image `priority` de la page. Dans le styleguide : `headingLevel={2}` et `priority={false}`.
  */
 import type { ImageMetadata } from 'astro';
@@ -107,7 +107,7 @@ const {
       }
     }
 
-    /* Soleil sauge qui « pose » l'arche (décor, derrière l'image). */
+    /* Soleil grège qui « pose » l'arche (décor, derrière l'image). */
     .hero__sun {
       position: absolute;
       inset-block-end: calc(var(--space-l) * -1);
@@ -115,7 +115,7 @@ const {
       inline-size: 42%;
       aspect-ratio: 1;
       border-radius: var(--radius-pill);
-      background-color: var(--color-sage);
+      background-color: var(--color-greige);
     }
   }
 </style>

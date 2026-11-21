@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { ContentError } from '@/lib/content';
 import { ABOUT_SECTION_KEYS, buildAboutModel } from '@/lib/pages/about-model';
 import { LEGAL_TOC_MIN_ITEMS, buildLegalModel, buildToc, legalPath } from '@/lib/pages/legal-model';
-import { METHOD_SECTION_KEYS, buildMethodModel } from '@/lib/pages/method-model';
+import {
+  METHOD_SECTION_KEYS,
+  METHOD_SERVICE_TYPE,
+  buildMethodModel,
+} from '@/lib/pages/method-model';
 import type { PageSection } from '@/lib/pages/types';
 
 const seo = { title: 'T', description: 'D' };
@@ -38,6 +42,13 @@ describe('buildMethodModel', () => {
       label: 'Visualisation 3D',
       href: '/visualisation-3d/',
     });
+    expect(model.service).toEqual({
+      name: 'T',
+      description: 'D',
+      path: '/visualisation-3d/',
+      serviceType: METHOD_SERVICE_TYPE,
+    });
+    expect(METHOD_SERVICE_TYPE).toBe('Visualisation 3D d’intérieur');
   });
 });
 

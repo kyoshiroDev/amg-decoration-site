@@ -9,18 +9,19 @@ import { seoDefaults } from '@/config/seo';
 import { site } from '@/config/site';
 import {
   assertDescriptionLength,
-  assertOgImageSource,
   buildArticleMetaTags,
   buildCanonicalUrl,
   buildPageTitle,
   buildRobots,
+  pickOgImage,
   type OpenGraphArticle,
 } from '@/lib/seo';
-import { absoluteUrl } from '@/lib/url';
+import { absoluteUrl, requireSiteOrigin } from '@/lib/url';
 
 interface Props {
   title: string;
   description: string;
+  /** Image candidate ; remplacée par l'image par défaut si elle est plus petite que 1200 × 630. */
   image?: ImageMetadata | undefined;
   imageAlt?: string | undefined;
   noindex?: boolean;
@@ -32,13 +33,14 @@ interface Props {
 const {
   title,
   description,
-  image = seoDefaults.ogImage,
+  image,
   imageAlt = seoDefaults.ogImageAlt,
   noindex = false,
   titleSuffix = true,
   article,
 } = Astro.props;
 
+const origin = requireSiteOrigin(Astro.site);
 const fullTitle = buildPageTitle(
   title,
   {
@@ -51,14 +53,19 @@ const fullTitle = buildPageTitle(
 const metaDescription = assertDescriptionLength(description, seoDefaults.descriptionLength);
 const ogType = article ? 'article' : 'website';
 const articleTags = article ? buildArticleMetaTags(article) : [];
-const canonical = noindex ? undefined : buildCanonicalUrl(Astro.url.pathname, Astro.site);
+const canonical = noindex ? undefined : buildCanonicalUrl(Astro.url.pathname, origin);
 const { width, height } = seoDefaults.ogImageSize;
-// sharp n'agrandit jamais : une source plus petite que 1200 × 630 fait échouer le build.
-assertOgImageSource(image, seoDefaults.ogImageSize);
+// sharp n'agrandit jamais : une candidate plus petite que 1200 × 630 cède la place à l'image par
+// défaut (et à son alt) ; une image par défaut trop petite fait échouer le build.
+const og = pickOgImage(
+  image ? { source: image, alt: imageAlt } : undefined,
+  { source: seoDefaults.ogImage, alt: seoDefaults.ogImageAlt },
+  seoDefaults.ogImageSize,
+);
 // Recadrage centré au format 1200 × 630 ; JPEG : format le plus largement accepté par les
 // aperçus de liens (Facebook, LinkedIn, WhatsApp…).
-const ogImage = await getImage({ src: image, width, height, fit: 'cover', format: 'jpg' });
-const ogImageUrl = absoluteUrl(ogImage.src, Astro.site ?? Astro.url);
+const ogImage = await getImage({ src: og.source, width, height, fit: 'cover', format: 'jpg' });
+const ogImageUrl = absoluteUrl(ogImage.src, origin);
 ---
 
 <title>{fullTitle}</title>
@@ -76,7 +83,7 @@ const ogImageUrl = absoluteUrl(ogImage.src, Astro.site ?? Astro.url);
 <meta property="og:image:type" content="image/jpeg" />
 <meta property="og:image:width" content={String(width)} />
 <meta property="og:image:height" content={String(height)} />
-<meta property="og:image:alt" content={imageAlt} />
+<meta property="og:image:alt" content={og.alt} />
 {articleTags.map((tag) => (
   <meta property={tag.property} content={tag.content} />
 ))}
@@ -85,4 +92,4 @@ const ogImageUrl = absoluteUrl(ogImage.src, Astro.site ?? Astro.url);
 <meta name="twitter:title" content={fullTitle} />
 <meta name="twitter:description" content={metaDescription} />
 <meta name="twitter:image" content={ogImageUrl} />
-<meta name="twitter:image:alt" content={imageAlt} />
+<meta name="twitter:image:alt" content={og.alt} />

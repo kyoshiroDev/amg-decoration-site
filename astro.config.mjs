@@ -1,14 +1,37 @@
 // @ts-check
 import { defineConfig, fontProviders } from 'astro/config';
+import { loadEnv } from 'vite';
 import mdx from '@astrojs/mdx';
+import { satteri } from '@astrojs/markdown-satteri';
 import sitemap from '@astrojs/sitemap';
 import { readArticleSources } from './src/lib/article-files.ts';
 import { buildLastmodMap } from './src/lib/sitemap-lastmod.ts';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { cspDirectives, INLINE_SCRIPT_HASHES, pruneCspHashes } from './src/lib/csp.ts';
+import { site } from './src/config/site.ts';
+import { resolveFormTarget } from './src/lib/contact-form.ts';
+import { contentTemplatePlugin, siteTemplateVariables } from './src/lib/content-template.ts';
+import { formatReleaseBlockers, isProductionBuild } from './src/lib/release-guard.ts';
+import { readReleaseBlockers } from './src/lib/release-guard-files.ts';
 
 const SITE = 'https://amgdecorationdinterieur.com';
 
 // `lastmod` du sitemap : dates réelles des articles seulement (src/lib/sitemap-lastmod.ts).
 const lastmod = buildLastmodMap(readArticleSources(), SITE);
+
+// Service de formulaire (ADR-0003) : lu comme Vite le lira (`process.env`, puis fichiers `.env`),
+// pour autoriser son origine dans la CSP.
+const { PUBLIC_FORM_ENDPOINT } = {
+  ...loadEnv(process.env['NODE_ENV'] ?? 'production', process.cwd(), 'PUBLIC_'),
+  ...process.env,
+};
+
+// Gabarit des corps Markdown (ADR-0016) : jetons `{email}`… de site.ts, blocs selon le mode du formulaire.
+const contentTemplate = {
+  variables: siteTemplateVariables(site),
+  formMode: resolveFormTarget(PUBLIC_FORM_ENDPOINT, site.email).kind,
+};
 
 // Configuration Astro — voir docs/ARCHITECTURE.md (§ Configuration).
 export default defineConfig({
@@ -17,6 +40,27 @@ export default defineConfig({
   trailingSlash: 'always',
   build: {
     format: 'directory',
+  },
+  // Content-Security-Policy en balise meta, empreintes calculées au build (ADR-0012).
+  security: {
+    csp: {
+      algorithm: 'SHA-256',
+      directives: cspDirectives(PUBLIC_FORM_ENDPOINT),
+      scriptDirective: {
+        // Scripts `is:inline` : Astro ne les hache pas (ADR-0010).
+        hashes: [...INLINE_SCRIPT_HASHES],
+      },
+      styleDirective: {
+        // Attributs `style` (variables CSS posées par les composants) : voir ADR-0012.
+        resources: ["'self'", { resource: "'unsafe-inline'", kind: 'attribute' }],
+      },
+    },
+  },
+  markdown: {
+    processor: satteri({ mdastPlugins: [contentTemplatePlugin(contentTemplate)] }),
+    // Aucun bloc de code sur le site : pas de coloration Shiki (ses styles inline ne passeraient
+    // pas la CSP par empreintes, ADR-0012, et Astro le signalait à chaque build).
+    syntaxHighlight: false,
   },
   prefetch: {
     prefetchAll: false,
@@ -64,6 +108,33 @@ export default defineConfig({
     },
   ],
   integrations: [
+    // Pages légales incomplètes (`TODO(contenu)`) : le build de production Vercel échoue (ADR-0015).
+    {
+      name: 'amg:garde-fou-production',
+      hooks: {
+        'astro:build:start': () => {
+          if (!isProductionBuild(process.env)) return;
+          const blockers = readReleaseBlockers();
+          if (blockers.length > 0) throw new Error(formatReleaseBlockers(blockers));
+        },
+      },
+    },
+    // Empreintes CSP réduites, page par page, à celles des éléments inline présents (ADR-0012).
+    {
+      name: 'amg:csp-par-page',
+      hooks: {
+        'astro:build:done': ({ dir }) => {
+          const root = fileURLToPath(dir);
+          for (const file of readdirSync(root, { recursive: true, encoding: 'utf8' })) {
+            if (!file.endsWith('.html')) continue;
+            const path = `${root}/${file}`;
+            const html = readFileSync(path, 'utf8');
+            const pruned = pruneCspHashes(html);
+            if (pruned !== html) writeFileSync(path, pruned);
+          }
+        },
+      },
+    },
     mdx(),
     sitemap({
       // Pages non indexées (noindex) : jamais dans le sitemap (styleguide interne, remerciement du formulaire).

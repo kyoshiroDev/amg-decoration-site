@@ -1,11 +1,17 @@
 /*
  * Styles du comparateur « Rendu 3D ↔ Réalisé » (blocks/BeforeAfter.astro).
  * Par défaut (sans JS) : deux images côte à côte. Sous `html.js` : images superposées, la part
- * visible du rendu 3D suit `--compare-pos` (posée par scripts/before-after.ts) ; clip-path pour
- * le masque, transform pour la poignée : aucune propriété de mise en page n'est modifiée.
+ * visible du rendu 3D suit `--compare-pos` (posée par scripts/before-after.ts). Tout passe par
+ * `transform` : le calque du rendu 3D (`overflow: hidden`) est translaté vers la gauche de la part
+ * masquée et sa figure contre-translatée d'autant (l'image reste immobile, seul le bord droit du
+ * calque se déplace) ; la poignée est translatée de --compare-pos. Aucune propriété de mise en
+ * page n'est modifiée, rien n'est animé hors du compositeur.
  */
 @layer components {
-  /* Le calque de la poignée (pleine largeur, translaté) dépasse à droite : jamais de défilement. */
+  /*
+   * Les calques translatés (poignée à droite, rendu 3D à gauche) dépassent de la scène : jamais
+   * de défilement horizontal.
+   */
   .before-after-section {
     overflow-x: clip;
   }
@@ -78,9 +84,20 @@
     }
   }
 
-  .js .before-after__figure--rendering {
+  /*
+   * Rendu 3D : calque pleine largeur, rogné, translaté de -(100 % - pos) ; sa figure, translatée
+   * de +(100 % - pos), reste en place. Les deux pourcentages valent la largeur de la scène.
+   * Le calque ne capte pas le pointeur (il déborde à gauche) : la scène reçoit les gestes.
+   */
+  .js .before-after__layer--rendering {
     z-index: var(--z-raised);
-    clip-path: inset(0 calc(100% - var(--compare-pos)) 0 0);
+    overflow: hidden;
+    pointer-events: none;
+    transform: translateX(calc(var(--compare-pos) - 100%));
+  }
+
+  .js .before-after__figure--rendering {
+    transform: translateX(calc(100% - var(--compare-pos)));
   }
 
   .js .before-after__figure--result .before-after__label {
@@ -95,14 +112,20 @@
     pointer-events: none;
     transform: translateX(var(--compare-pos));
 
+    /*
+     * Trait crème bordé d'un filet taupe de chaque côté (--color-border-control, ≥ 3:1 sur
+     * les fonds clairs) : le crème se lit sur une image sombre, le filet sur une image claire.
+     */
     &::before {
       content: '';
       position: absolute;
       inset-block: 0;
       inset-inline-start: 0;
-      inline-size: var(--border-thin);
+      inline-size: var(--compare-divider-width);
       background-color: var(--color-surface);
-      box-shadow: var(--shadow-soft);
+      box-shadow:
+        0 0 0 var(--border-hairline) var(--color-border-control),
+        var(--shadow-soft);
       translate: -50% 0;
     }
   }
@@ -124,12 +147,13 @@
     translate: -50% -50%;
   }
 
-  /* Transition courte au clavier et au clic ; aucune pendant un glisser (suivi direct). */
+  /*
+   * Transition courte au clavier et au clic ; aucune pendant un glisser (suivi direct). Calque,
+   * figure et poignée partagent durée et courbe : la figure reste immobile pendant la transition.
+   */
   .js .before-after__compare:not([data-dragging]) {
-    & .before-after__figure--rendering {
-      transition: clip-path var(--dur-fast) var(--ease-out);
-    }
-
+    & .before-after__layer--rendering,
+    & .before-after__figure--rendering,
     & .before-after__divider {
       transition: transform var(--dur-fast) var(--ease-out);
     }
@@ -147,7 +171,7 @@
     appearance: none;
   }
 
-  /* Focus clavier reporté sur la poignée : anneau terracotta séparé de l'image par du crème. */
+  /* Focus clavier reporté sur la poignée : anneau camel séparé de l'image par du crème. */
   .before-after__stage:has(.before-after__range:focus-visible) .before-after__knob {
     outline: var(--focus-ring);
     outline-offset: var(--focus-ring-offset);

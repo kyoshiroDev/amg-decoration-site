@@ -60,7 +60,7 @@ const pageSection = z
   .strictObject({
     eyebrow: text.optional(),
     heading: text,
-    /** Fragment de `heading` mis en italique Fraunces terracotta. */
+    /** Fragment de `heading` mis en italique Fraunces camel. */
     headingEmphasis: text.optional(),
     lead: text.optional(),
     items: z.array(textItem).default([]),
@@ -166,7 +166,7 @@ const prestations = defineCollection({
         tagline: text,
         /** h1 de la fiche, orienté mot-clé ; le nom (`title`) reste affiché en surtitre. */
         heroTitle: text,
-        /** Fragment exact de `heroTitle` mis en italique terracotta. */
+        /** Fragment exact de `heroTitle` mis en italique camel. */
         heroTitleEmphasis: text.optional(),
         /** Pièces ou public ciblés, texte libre. */
         target: text.optional(),
