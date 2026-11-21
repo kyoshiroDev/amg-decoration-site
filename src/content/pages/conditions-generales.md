@@ -4,12 +4,16 @@
 # découpage en titres et listes, adresse du site sans « www », renvoi vers la page Contact (art. 12) ;
 # 2026-11-21 : « TTC » remplacé par « prix nets » (TVA non applicable, déjà indiqué) et définitions alignées sur la
 # commande par devis signé décrite à l’art. 2 (le site ne permet pas de commander en ligne).
-# Aucun ajout juridique : les incohérences sont listées ci-dessous et dans docs/CONFORMITE.md, à trancher par Amandine
+# 2026-11-21 (sur demande explicite) : art. 4 reformulé (« Exceptions au délai de rétractation » devient « Droit de
+# rétractation ») d’après le Code de la consommation vérifié sur Légifrance (L221-5, L221-18, L221-19, L221-21,
+# L221-24, L221-25, L221-28 1°, L221-3 d’après des sources secondaires) ; la renonciation automatique par la signature du devis est retirée (contraire à L221-25 et
+# L221-28 1°) ; formulaire type de rétractation ajouté en annexe (texte de l’annexe à l’art. R221-1, version du 28/05/2022).
+# Aucun autre ajout juridique : les incohérences sont listées ci-dessous et dans docs/CONFORMITE.md, à trancher par Amandine
 # (idéalement avec un juriste) AVANT la mise en production.
 # Coordonnées : jetons `{email}`, `{phone}`, `{phoneE164}`, `{siret}` remplacés au rendu par les valeurs de src/config/site.ts (ADR-0016).
 #
 # TODO(contenu): prix fixes affichés sur /prestations/ (189, 339, 489, 689 €, meuble 339 €) alors que les art. 1, 3 et 5 parlent de « devis personnalisé » et de tarifs « définis dans le devis » : prix catalogue, prix « à partir de » ou devis systématique ?
-# TODO(contenu): art. 4 (rétractation, contrat conclu à distance avec un particulier) — selon L221-28 1°, le droit de rétractation n’est exclu que si la prestation est PLEINEMENT exécutée avant la fin des 14 jours, après demande expresse et renoncement exprès ; si elle est seulement commencée, le client peut se rétracter en payant la part réalisée (L221-25). Le texte actuel (« ne peut être exercé si la prestation a commencé ») est à reformuler par Amandine. Manquent aussi le formulaire type de rétractation (L221-5, annexe à l’art. R221-1) et ses modalités d’envoi.
+# TODO(contenu): art. 4 reformulé et formulaire type ajouté le 2026-11-21 : à valider par Amandine, idéalement avec un juriste, avant la mise en production (nouvelle clause contractuelle, rédigée sans elle). Bloquant parce que la clause renvoie à des pratiques qu’elle seule peut mettre en place : (1) son modèle de devis doit porter une mention distincte, non pré-cochée, par laquelle le client demande le démarrage avant la fin des 14 jours et reconnaît perdre son droit de rétractation une fois la prestation pleinement exécutée (L221-25 ; sans elle, rien n’est dû en cas de rétractation) ; (2) le formulaire de rétractation doit accompagner le devis ou la confirmation de commande envoyée par email (L221-13) ; (3) l’adresse postale devra être ajoutée dans le destinataire du formulaire quand elle sera connue (voir TODO adresse). À confirmer par le juriste : la « fonctionnalité de rétractation » en ligne (L221-21, en vigueur depuis le 19/06/2026) ne vise que les contrats conclus au moyen d’une interface en ligne, a priori pas un devis signé par email ; cas d’un devis signé chez le client (contrat hors établissement, L221-3 pour les petits professionnels).
 # TODO(contenu): médiateur de la consommation absent (obligatoire pour les clients particuliers, L612-1 et L616-1) : nom, site et adresse du médiateur choisi à ajouter (art. 11 et mentions légales).
 # TODO(contenu): offre aux professionnels : si des clients professionnels sont facturés, les pénalités de retard et l’indemnité forfaitaire de 40 € pour frais de recouvrement doivent figurer dans les conditions (Code de commerce L441-10).
 # TODO(contenu): art. 6 délais « indiqués sur le devis » : un délai indicatif par formule doit être communiqué avant la commande (L111-1 3°) ; le confirmer pour chaque formule.
@@ -82,18 +86,40 @@ Les prix sont exprimés en euros (€), nets. AMG Décoration d’Intérieur n�
 
 Les tarifs sont fermes et non révisables pendant leur période de validité.
 
-## Article 4 – Exceptions au délai de rétractation
+## Article 4 – Droit de rétractation
 
-Conformément aux articles L221-18 et suivants du Code de la consommation, le Client dispose d’un délai de 14 jours pour exercer son droit de rétractation.
+### Clients concernés
 
-Toutefois, conformément à l’article L221-28, ce droit ne peut être exercé si la prestation a commencé avec l’accord exprès du Client.
+Le droit de rétractation est ouvert au Client qui agit en qualité de consommateur, c’est-à-dire à des fins qui n’entrent pas dans le cadre de son activité professionnelle. Il ne s’applique pas au Client qui commande pour les besoins de son activité professionnelle, sauf dans les cas où la loi le lui accorde (article L221-3 du Code de la consommation).
 
-En signant le devis, le Client accepte expressément :
+### Délai
 
-- le démarrage de la prestation avant la fin du délai de rétractation ;
-- la renonciation à son droit de rétractation.
+Conformément aux articles L221-18 et L221-19 du Code de la consommation, le Client dispose d’un délai de 14 jours pour se rétracter, sans avoir à motiver sa décision. Ce délai court à compter du jour de la conclusion du contrat, qui n’est pas compté. S’il expire un samedi, un dimanche ou un jour férié ou chômé, il est prolongé jusqu’au premier jour ouvrable suivant.
 
-En cas de rétractation après le début de la prestation, le Client devra régler les prestations déjà réalisées.
+### Comment se rétracter
+
+Le Client informe le Prestataire de sa décision avant l’expiration du délai, par email à l’adresse [{email}](mailto:{email}), au moyen :
+
+- soit du [formulaire de rétractation](#annexe--formulaire-de-rétractation) reproduit en annexe ;
+- soit de toute autre déclaration, dénuée d’ambiguïté, exprimant sa volonté de se rétracter.
+
+### Démarrage de la prestation pendant le délai
+
+La prestation étant payée en totalité avant son démarrage (articles 2 et 5), elle ne commence avant la fin du délai de rétractation que si le Client en fait la demande expresse. Cette demande est recueillie par une mention prévue à cet effet sur le devis, que le Client complète s’il le souhaite ; il y reconnaît également qu’il perdra son droit de rétractation une fois la prestation pleinement exécutée (article L221-25).
+
+Si le Client se rétracte après avoir demandé ce démarrage anticipé, il doit un montant correspondant au service fourni jusqu’à la communication de sa décision de se rétracter, proportionné au prix total de la prestation convenu dans le devis.
+
+Sans demande expresse du Client, aucune somme n’est due au Prestataire en cas de rétractation dans le délai.
+
+### Fin du droit de rétractation
+
+Conformément à l’article L221-28 1° du Code de la consommation, le droit de rétractation ne peut plus être exercé lorsque la prestation a été pleinement exécutée avant la fin du délai de rétractation, après la demande expresse du Client et sa reconnaissance de la perte de son droit de rétractation.
+
+### Remboursement
+
+En cas de rétractation, le Prestataire rembourse les sommes versées par le Client, déduction faite, le cas échéant, du montant dû pour le service déjà fourni, sans retard injustifié et au plus tard dans les 14 jours suivant le jour où il est informé de la décision de rétractation (article L221-24).
+
+Le remboursement est effectué par le même moyen de paiement que celui utilisé pour le paiement initial, sauf accord exprès du Client pour un autre moyen n’occasionnant pas de frais pour lui.
 
 ## Article 5 – Tarifs et modalités de paiement
 
@@ -161,3 +187,23 @@ Le Prestataire déclare être couvert par une assurance responsabilité civile p
 Cette assurance couvre les dommages causés à des tiers dans le cadre de l’exercice de son activité de décoratrice d’intérieur, conformément aux termes et conditions du contrat d’assurance.
 
 Pour toute information supplémentaire concernant cette assurance, veuillez nous contacter via la [page Contact](/contact/).
+
+## Annexe – Formulaire de rétractation
+
+Ce formulaire reprend le modèle figurant en annexe à l’article R221-1 du Code de la consommation. Le Client qui souhaite se rétracter (article 4) peut le copier dans un email, le compléter et l’envoyer à [{email}](mailto:{email}).
+
+### Modèle de formulaire de rétractation
+
+_(Veuillez compléter et renvoyer le présent formulaire uniquement si vous souhaitez vous rétracter du contrat.)_
+
+À l’attention d’AMG Décoration d’Intérieur, Amandine Gaury, [{email}](mailto:{email}) :
+
+Je/nous (\*) vous notifie/notifions (\*) par la présente ma/notre (\*) rétractation du contrat portant sur la vente du bien (\*)/pour la prestation de services (\*) ci-dessous :
+
+- Commandé le (\*)/reçu le (\*) :
+- Nom du (des) consommateur(s) :
+- Adresse du (des) consommateur(s) :
+- Signature du (des) consommateur(s) (uniquement en cas de notification du présent formulaire sur papier) :
+- Date :
+
+(\*) Rayez la mention inutile.

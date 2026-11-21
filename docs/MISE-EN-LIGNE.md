@@ -12,20 +12,20 @@ Checklist de la bascule de `amgdecorationdinterieur.com` (WordPress) vers le nou
 
 ### Bloquant (légal)
 
-| Information                                                                                                                                             | Où                                          |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| Adresse postale complète du siège ou adresse de domiciliation                                                                                           | mentions légales, CGS art. 1, `site.ts`     |
-| Mention « Amandine Gaury EI » (ou « entrepreneur individuel ») et numéro RNE                                                                            | mentions légales, CGS                       |
-| Médiateur de la consommation : adhésion, puis nom, site et adresse                                                                                      | mentions légales, CGS art. 11               |
-| Article 4 des CGS (droit de rétractation, L221-25 / L221-28) validé, idéalement par un juriste ; accord pour ajouter le formulaire type de rétractation | CGS                                         |
-| Prix : affichage ferme, « à partir de » ou devis seul ; délai indicatif par formule                                                                     | CGS art. 3, 5, 6 ; `site.ts` (`showPrices`) |
-| Clients professionnels facturés ? (pénalités de retard, indemnité de 40 €)                                                                              | CGS                                         |
-| Accord des clients pour publier les projets, photos et avis                                                                                             | CGS art. 7, réalisations, témoignages       |
-| Assureur RC Pro et couverture (facultatif)                                                                                                              | CGS art. 12                                 |
-| Date d'entrée en vigueur des CGS                                                                                                                        | CGS                                         |
-| Durée de conservation des demandes sans suite ; aucune prospection confirmée                                                                            | confidentialité                             |
+| Information                                                                                                                                      | Où                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
+| Adresse postale complète du siège ou adresse de domiciliation                                                                                    | mentions légales, CGS art. 1, `site.ts`     |
+| Mention « Amandine Gaury EI » (ou « entrepreneur individuel ») et numéro RNE                                                                     | mentions légales, CGS                       |
+| Médiateur de la consommation : adhésion, puis nom, site et adresse                                                                               | mentions légales, CGS art. 11               |
+| Validation de l'art. 4 des CGS (rétractation) et du formulaire type ajoutés le 2026-11-21 ; mention de démarrage anticipé sur le modèle de devis | CGS art. 4, annexe                          |
+| Prix : affichage ferme, « à partir de » ou devis seul ; délai indicatif par formule                                                              | CGS art. 3, 5, 6 ; `site.ts` (`showPrices`) |
+| Clients professionnels facturés ? (pénalités de retard, indemnité de 40 €)                                                                       | CGS                                         |
+| Accord des clients pour publier les projets, photos et avis                                                                                      | CGS art. 7, réalisations, témoignages       |
+| Assureur RC Pro et couverture (facultatif)                                                                                                       | CGS art. 12                                 |
+| Date d'entrée en vigueur des CGS                                                                                                                 | CGS                                         |
+| Durée de conservation des demandes sans suite ; aucune prospection confirmée                                                                     | confidentialité                             |
 
-Réglés sans Amandine le 2026-11-21 (décisions tracées en commentaire dans chaque page) : « TTC » → « prix nets » et définitions des CGS alignées sur le devis signé ; mise en ligne avec le repli `mailto:` (pas de service de formulaire) ; aucune photo Pexels reprise ; pas de ligne de crédit pour la conception ; hébergeur Vercel affiché avec son adresse et son email (pas de téléphone publié). Messagerie professionnelle : simple recommandation, non bloquante.
+Réglés sans Amandine le 2026-11-21 (décisions tracées en commentaire dans chaque page) : « TTC » → « prix nets » et définitions des CGS alignées sur le devis signé ; mise en ligne avec le repli `mailto:` (pas de service de formulaire) ; aucune photo Pexels reprise ; pas de ligne de crédit pour la conception ; hébergeur Vercel affiché avec son adresse et son email (pas de téléphone publié) ; article 4 des CGS reformulé et formulaire type de rétractation ajouté en annexe (reste à valider, voir le tableau et `docs/CONFORMITE.md` § 6, point 2). Messagerie professionnelle : simple recommandation, non bloquante.
 
 ### Visuels (tous repris de l'ancien site, en attendant les originaux)
 
