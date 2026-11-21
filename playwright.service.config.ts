@@ -32,6 +32,7 @@ export default defineConfig({
     // Variable lue par Vite au build (`import.meta.env.PUBLIC_*` depuis `process.env`).
     env: { PUBLIC_FORM_ENDPOINT: MOCK_FORM_ENDPOINT },
     reuseExistingServer: !process.env['CI'],
-    timeout: 180_000,
+    // Build compris : voir playwright.config.ts (génération des images à froid ~6 min en CI).
+    timeout: 600_000,
   },
 });

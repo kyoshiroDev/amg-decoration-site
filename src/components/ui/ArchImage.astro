@@ -2,7 +2,8 @@
 /**
  * ArchImage — image en arche (signature visuelle), via <Picture> AVIF + WebP.
  * `alt` est obligatoire (chaîne vide pour une image décorative).
- * `priority` : image héro (loading="eager", fetchpriority="high", decoding="sync").
+ * `priority` : image héro (loading="eager", fetchpriority="high", decoding="sync"), encodée en
+ * qualité `PRIORITY_QUALITY` : c'est l'élément LCP, chaque Ko compte (budget LCP < 2 s).
  * Zoom lent au survol (transform uniquement, désactivé si mouvement réduit).
  * `transitionName` : `view-transition-name` posé sur le cadre (morphing grille → page projet),
  * `transitionClass` : `view-transition-class` associée (durée et cadrage du morphing, global.css).
@@ -58,6 +59,12 @@ const {
   class: className,
 } = Astro.props;
 
+/**
+ * Qualité de l'image héro (sharp, défaut 50). Mesure sur un rendu 3D détaillé recadré en 720 × 900 :
+ * AVIF 30 Ko en qualité 50, 17 Ko en qualité 40, sans perte visible sur un rendu ; avec les sources
+ * 1600 × 900 des réalisations, la variante 720w (mobile en densité 1,75) dépassait le budget LCP.
+ */
+const PRIORITY_QUALITY = 40;
 const Element = caption ? 'figure' : 'div';
 // Variantes recadrées au build à la proportion du cadre (centrées, comme `object-fit: cover`) :
 // une source paysage dans une arche portrait ne fait plus télécharger les bandes masquées.
@@ -91,6 +98,7 @@ const transitionStyle = transitionName
       formats={['avif', 'webp']}
       fallbackFormat="jpg"
       priority={priority}
+      {...(priority ? { quality: PRIORITY_QUALITY } : {})}
       class="arch-image__img"
     />
   </div>

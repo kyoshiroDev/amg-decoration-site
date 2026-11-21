@@ -51,6 +51,7 @@ export default defineConfig({
     command: `npx astro build --outDir ${OUT_DIR} && npx astro preview --outDir ${OUT_DIR} --port ${PORT} --ignore-lock`,
     url: `http://localhost:${PORT}/`,
     reuseExistingServer: true,
-    timeout: 180_000,
+    // Build compris : voir playwright.config.ts (génération des images à froid ~6 min en CI).
+    timeout: 600_000,
   },
 });

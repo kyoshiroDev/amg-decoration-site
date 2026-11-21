@@ -49,6 +49,15 @@ export const PROJECT_SLUGS = {
   lamyae: 'piece-de-vie-bois-pierre',
   iryna: 'espace-de-vie-scandinave',
   magali: 'sous-sol-suite-parentale',
+  // Anciens projets sans texte, migrés le 2026-11-21 avec un texte rédigé d'après les images.
+  meubleTv: 'meuble-tv-sur-mesure',
+  verriere: 'sejour-verriere',
+  safari: 'chambre-enfant-safari',
+  terrasse: 'terrasse-pergola',
+  villa: 'villa-mediterraneenne',
+  cheminee: 'salon-cheminee',
+  dinosaures: 'chambre-enfant-dinosaures',
+  boheme: 'piece-de-vie-boheme',
 } as const;
 
 const project = (slug: string): string => `/realisations/${slug}/`;
@@ -85,15 +94,8 @@ export function siteRoutes(articleRoutes: readonly string[]): readonly string[] 
 /** Fichiers techniques générés au build (sitemap Astro, robots.txt, llms.txt). */
 export const SITE_FILES: readonly string[] = ['/sitemap-index.xml', '/robots.txt', '/llms.txt'];
 
+/** Anciens projets non migrés (doublons de galerie) : page parente la plus proche. */
 const OLD_PROJECTS_WITHOUT_TEXT = [
-  '/projet-1/',
-  '/projet-2/',
-  '/projet-3/',
-  '/projet-4/',
-  '/projet-5/',
-  '/projet-6/',
-  '/projet-7/',
-  '/projet-marine/',
   '/projet-marine-dupliquer-3417/',
   '/projet-chambre-ado/',
   '/projet-chambre-ado-dupliquer-3454/',
@@ -114,6 +116,14 @@ export const PAGE_REDIRECTS: Readonly<Record<string, string>> = {
   '/projet-lamyae/': project(PROJECT_SLUGS.lamyae),
   '/projet-iryna/': project(PROJECT_SLUGS.iryna),
   '/projet_magali/': project(PROJECT_SLUGS.magali),
+  '/projet-1/': project(PROJECT_SLUGS.meubleTv),
+  '/projet-2/': project(PROJECT_SLUGS.verriere),
+  '/projet-3/': project(PROJECT_SLUGS.safari),
+  '/projet-4/': project(PROJECT_SLUGS.terrasse),
+  '/projet-5/': project(PROJECT_SLUGS.villa),
+  '/projet-6/': project(PROJECT_SLUGS.cheminee),
+  '/projet-7/': project(PROJECT_SLUGS.dinosaures),
+  '/projet-marine/': project(PROJECT_SLUGS.boheme),
   ...Object.fromEntries(OLD_PROJECTS_WITHOUT_TEXT.map((path) => [path, '/realisations/'])),
   '/bonjour-tout-le-monde/': '/conseils-deco/',
   '/2593-2/': '/conseils-deco/',

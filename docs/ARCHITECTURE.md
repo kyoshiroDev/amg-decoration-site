@@ -190,6 +190,6 @@ Poids total mesuré par page (gzip, audit performance de la Phase 7, hors script
 
 ## Déploiement
 
-GitHub → Vercel : chaque push sur `dev` = preview ; merge dans `main` (humain) = production. La CI GitHub Actions (`.github/workflows/ci.yml`) doit être verte avant tout merge.
+GitHub → Vercel : chaque push sur `dev` = preview ; merge dans `main` (humain) = production. La CI GitHub Actions (`.github/workflows/ci.yml`) doit être verte avant tout merge. Le cache des images optimisées par Astro (`node_modules/.astro/assets`) est conservé entre les runs (`actions/cache`, clé : dépendances, `astro.config.mjs` et `src/assets/`) : le job `verify` l'écrit, le job `e2e` le relit. Sans lui, chaque build régénère les ~2 200 variantes (~6 min).
 
 **Garde-fou de mise en production** (ADR-0015) : le build de production Vercel (`VERCEL_ENV=production`) échoue tant qu'un `TODO(contenu)` reste dans `mentions-legales.md`, `conditions-generales.md` ou `confidentialite.md` ; le message liste chaque TODO en `fichier:ligne`, et la production précédente reste en ligne. Builds locaux, CI et previews ne sont pas concernés. Avant de rattacher le domaine : `npm run check:prod` (même liste, code de sortie 1 s'il en reste) et vérifier dans Vercel que les variables système sont exposées.

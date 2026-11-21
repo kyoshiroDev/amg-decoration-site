@@ -31,13 +31,13 @@ sections:
         text: 'Des images nettes et détaillées, à garder sous la main pour vos achats et vos travaux.'
   # Comparateur « Rendu 3D ↔ Réalisé » : images dans src/config/media.ts (`methodCompare`), titre
   # repris de microcopy.projects.beforeAfter.heading.
-  # TODO(contenu): paire provisoire (placeholders) ; avec la vraie paire d'Amandine, retirer la
-  # dernière phrase du chapeau.
+  # Paire réelle (chambre d'enfant sous combles, media.methodCompare) ; prises de vue proches mais
+  # pas identiques, d'où « au plus près » dans le chapeau.
   comparatif:
     eyebrow: 'Rendu 3D et réalisation'
     heading: 'Du rendu 3D à la réalité'
     headingEmphasis: 'à la réalité'
-    lead: 'D’un côté le rendu 3D, imaginé avant les travaux, de l’autre la pièce une fois réalisée. Ces deux images sont des illustrations provisoires, en attendant celles d’un projet réel.'
+    lead: 'D’un côté le rendu 3D, imaginé avant les travaux, de l’autre la même chambre d’enfant une fois réalisée, photographiée au plus près du même point de vue.'
   methode:
     eyebrow: 'Ma méthode'
     heading: 'Comment se déroule votre projet 3D'

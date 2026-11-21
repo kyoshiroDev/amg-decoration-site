@@ -1,34 +1,35 @@
 # Placeholders d'images
 
-Images **provisoires**, à remplacer par les photos et rendus 3D fournis par Amandine.
-Aucune image de banque d'images n'est utilisée ici.
+Images **provisoires** dessinées pour le projet. Aucune image de banque d'images n'est utilisée ici.
 
-Ces illustrations ont été dessinées avec l'**ancienne palette** (terracotta, sauge) : depuis l'ADR-0017 (palette de
-l'ancien site), elles détonnent légèrement ; elles disparaissent quand les vrais visuels d'Amandine les remplacent.
+Depuis le 2026-11-21, plus aucune page publique ne les affiche : héros, portrait, image Open Graph, comparateur et
+réalisations utilisent les vraies images d'Amandine reprises de son ancien site (`src/assets/brand/`,
+`src/assets/projets/<slug>/`, `src/config/media.ts`). Elles restent pour les pages internes (noindex) ci-dessous.
 
-| Fichier                   | Dimensions  | Origine                                                                                                                                                                                            | Licence                                     | Utilisé par                                                                      |
-| ------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------- |
-| `interieur-lumiere.jpg`   | 1600 × 2000 | Illustration abstraite générée pour le projet (SVG fait main avec les couleurs du design system : mur lin, fenêtre en arche, assise terracotta, plante sauge), rastérisée en JPEG avec `sharp`.    | Création originale du projet, libre d'usage | `/styleguide/`                                                                   |
-| `comparatif-rendu-3d.jpg` | 1600 × 1200 | Dessin au trait généré pour le projet (SVG fait main : salon, fenêtre en arche, canapé, plante, sol en perspective), mention « PLACEHOLDER · RENDU 3D » incrustée, rastérisé en JPEG avec `sharp`. | Création originale du projet, libre d'usage | `/styleguide/` (BeforeAfter, ProjectGallery), `/visualisation-3d/` (BeforeAfter) |
-| `comparatif-realise.jpg`  | 1600 × 1200 | Même composition en aplats de couleurs du design system, mention « PLACEHOLDER · RÉALISÉ » incrustée, rastérisé en JPEG avec `sharp`.                                                              | Création originale du projet, libre d'usage | `/styleguide/` (BeforeAfter, ProjectGallery), `/visualisation-3d/` (BeforeAfter) |
+Ces illustrations ont été dessinées avec l'**ancienne palette** (terracotta, sauge), d'avant l'ADR-0017.
 
-Réutilisation provisoire de `interieur-lumiere.jpg` (Phase 3) : `cover` du modèle d'article
-(`src/content/articles/modele-article.mdx`). Depuis le 2026-11-20, les 4 réalisations et les 2 articles utilisent les
-vrais rendus 3D et photos d'Amandine repris de l'ancien site (`src/assets/projets/<slug>/`, 1200 × 600) ; les
-originaux HD restent à demander (`TODO(contenu)` dans chaque fiche).
+| Fichier                   | Dimensions  | Origine                                                                                                                                                                                            | Licence                                     | Utilisé par                                                          |
+| ------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------- |
+| `interieur-lumiere.jpg`   | 1600 × 2000 | Illustration abstraite générée pour le projet (SVG fait main avec les couleurs du design system : mur lin, fenêtre en arche, assise terracotta, plante sauge), rastérisée en JPEG avec `sharp`.    | Création originale du projet, libre d'usage | `/styleguide/`, couverture du modèle d'article (`draft`, non publié) |
+| `comparatif-rendu-3d.jpg` | 1600 × 1200 | Dessin au trait généré pour le projet (SVG fait main : salon, fenêtre en arche, canapé, plante, sol en perspective), mention « PLACEHOLDER · RENDU 3D » incrustée, rastérisé en JPEG avec `sharp`. | Création originale du projet, libre d'usage | `/styleguide/` (BeforeAfter, ProjectGallery)                         |
+| `comparatif-realise.jpg`  | 1600 × 1200 | Même composition en aplats de couleurs du design system, mention « PLACEHOLDER · RÉALISÉ » incrustée, rastérisé en JPEG avec `sharp`.                                                              | Création originale du projet, libre d'usage | `/styleguide/` (BeforeAfter, ProjectGallery)                         |
 
-Réutilisation provisoire (Phase 4) : image du héros de l'accueil (`src/config/media.ts`, `TODO(contenu)` : rendu 3D
-d'Amandine). Le portrait de la section « Qui suis-je ? » est remplacé par un décor CSS en attendant la photo.
+Les deux images `comparatif-*` ne doivent jamais servir de `beforeAfter` à une réalisation.
 
-Démonstration du comparateur « Rendu 3D ↔ Réalisé » (Phase 5) : `comparatif-rendu-3d.jpg` et `comparatif-realise.jpg`
-sont utilisés dans `/styleguide/` (noindex) et, depuis la Phase 8, sur `/visualisation-3d/` (`media.methodCompare`,
-`src/config/media.ts`). Partout ils sont libellés comme provisoires : dans l'image (« PLACEHOLDER »), le texte
-alternatif (« Illustration provisoire ») et le chapeau de la section. Ils ne doivent jamais servir de `beforeAfter` à
-une réalisation.
+## Images reprises de l'ancien site (2026-11-21)
 
-TODO(contenu): fournir une vraie paire rendu 3D / photo du résultat, cadrée à l'identique (même point de vue, même
-focale, 4:3, 1600 × 1200 minimum), par exemple le salon de Mathieu publié sur Instagram. Elle s'ajoute dans
-`src/assets/projets/<slug>/` et dans le champ `beforeAfter` du projet : le comparateur apparaît alors
-automatiquement sur la page (ProjectLayout).
-Elle remplace aussi `media.methodCompare` (et la mention « provisoires » du chapeau `sections.comparatif.lead` de
-`src/content/pages/visualisation-3d.md`).
+Le plus grand fichier publié sur l'ancien site a été retenu pour chaque image : les variantes WordPress `-scaled`
+(2560 px) quand elles existent, sinon le fichier d'origine.
+
+- Héros de l'accueil, image Open Graph par défaut : `brand/rendu-salon-lumineux.jpg` (2560 × 1440).
+- Héros de `/visualisation-3d/` : `brand/rendu-cuisine-verriere.jpg` (2560 × 1440).
+- Portrait (« Qui suis-je ? », `/a-propos/`) : `brand/portrait-amandine.jpg` (1600 × 1929).
+- Comparateur de `/visualisation-3d/` et de la chambre d'enfant sous combles : `projets/chambre-enfant-dinosaures/
+comparatif-*.jpg`. Le rendu est recadré au point de vue de la photo, mais les deux prises de vue ne sont pas
+  identiques, et la photo ne fait que 676 × 507.
+- 8 anciens projets publiés sans texte (`/projet-1/` à `/projet-7/`, `/projet-marine/`) : rendus 3D en 1600 × 900,
+  photos avant et après.
+- Les 4 projets récents restent en 1200 × 600 : c'est la taille des fichiers d'origine sur l'ancien site.
+
+TODO(contenu): demander à Amandine les originaux HD (rendus 4K, photos du résultat) et une paire rendu 3D / photo
+cadrée à l'identique (même point de vue, même focale, 4:3, 1600 × 1200 minimum).

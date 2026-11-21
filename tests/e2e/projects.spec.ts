@@ -1,3 +1,4 @@
+import { readdirSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { microcopy } from '../../src/config/microcopy';
 import { expectNoAxeViolations } from './helpers';
@@ -7,6 +8,10 @@ import { expectNoAxeViolations } from './helpers';
 const INDEX = '/realisations/';
 const PROJECT = '/realisations/chalet-suisse/';
 const filters = microcopy.projects.filters;
+/** Une carte par fiche de `src/content/projets/` : le total suit le contenu. */
+const PROJECT_COUNT = readdirSync('src/content/projets').filter((file) =>
+  file.endsWith('.md'),
+).length;
 
 function statusText(count: number): string {
   return (count === 1 ? filters.statusOne : filters.statusOther).replace('{count}', String(count));
@@ -22,7 +27,7 @@ test.describe('Réalisations : index', () => {
     await page.goto(INDEX);
     await expect(page.locator('h1')).toHaveCount(1);
     const links = page.locator('main [data-project-rooms] h2 a');
-    expect(await links.count()).toBe(4);
+    expect(await links.count()).toBe(PROJECT_COUNT);
     for (const href of await links.evaluateAll((a) => a.map((el) => el.getAttribute('href')))) {
       expect(href).toMatch(/^\/realisations\/[a-z0-9-]+\/$/);
     }
@@ -52,8 +57,8 @@ test.describe('Réalisations : index', () => {
     await expectNoAxeViolations(page);
 
     await all.click();
-    await expect(page.locator('[data-project-rooms]:visible')).toHaveCount(4);
-    await expect(page.getByRole('status')).toHaveText(statusText(4));
+    await expect(page.locator('[data-project-rooms]:visible')).toHaveCount(PROJECT_COUNT);
+    await expect(page.getByRole('status')).toHaveText(statusText(PROJECT_COUNT));
   });
 
   test.describe('sans JavaScript', () => {
@@ -62,7 +67,7 @@ test.describe('Réalisations : index', () => {
     test('barre de filtres absente, grille complète visible', async ({ page }) => {
       await page.goto(INDEX);
       await expect(page.getByRole('group', { name: filters.label })).toBeHidden();
-      await expect(page.locator('[data-project-rooms]:visible')).toHaveCount(4);
+      await expect(page.locator('[data-project-rooms]:visible')).toHaveCount(PROJECT_COUNT);
     });
   });
 });
