@@ -45,11 +45,38 @@ export function findContentTodos(text: string): ContentTodo[] {
 export type BuildEnv = Readonly<Record<string, string | undefined>>;
 
 /**
- * Le contrôle ne s'applique qu'au build de production Vercel (`VERCEL_ENV`, variable système) :
- * les builds locaux, la CI et les previews restent possibles tant que le contenu est incomplet.
+ * Build de production Vercel (`VERCEL_ENV`, variable système) : les builds locaux, la CI et les
+ * previews restent possibles tant que le contenu est incomplet.
  */
 export function isProductionBuild(env: BuildEnv): boolean {
   return env['VERCEL_ENV'] === 'production';
+}
+
+/** Nom d'hôte sans protocole, chemin ni `www.`, en minuscules. */
+function bareHost(value: string): string {
+  return (
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .split('/')[0]
+      ?.replace(/^www\./, '') ?? ''
+  );
+}
+
+/**
+ * Le garde-fou bloque le build de production qui servirait le vrai domaine (`siteUrl`), et lui
+ * seul (ADR-0015 révisée) : tant que la production n'a que son adresse `*.vercel.app` (en
+ * `noindex` via `vercel.json`), elle peut être déployée avec des pages légales incomplètes.
+ * `VERCEL_PROJECT_PRODUCTION_URL` (variable système, sans protocole) donne le domaine de
+ * production le plus court, ou l'adresse `vercel.app` sans domaine personnalisé. Absente alors
+ * que `VERCEL_ENV` est fourni : on bloque par prudence.
+ */
+export function isReleaseGuarded(env: BuildEnv, siteUrl: string): boolean {
+  if (!isProductionBuild(env)) return false;
+  const productionHost = env['VERCEL_PROJECT_PRODUCTION_URL'];
+  if (!productionHost) return true;
+  return bareHost(productionHost) === bareHost(siteUrl);
 }
 
 /** Message d'erreur listant chaque `TODO(contenu)` restant en `fichier:ligne`. */

@@ -3,6 +3,7 @@ import {
   findContentTodos,
   formatReleaseBlockers,
   isProductionBuild,
+  isReleaseGuarded,
   RELEASE_BLOCKING_FILES,
 } from '@/lib/release-guard';
 import { readReleaseBlockers } from '@/lib/release-guard-files';
@@ -42,6 +43,38 @@ describe('isProductionBuild', () => {
     expect(isProductionBuild({ VERCEL_ENV: 'development' })).toBe(false);
     expect(isProductionBuild({ CI: 'true' })).toBe(false);
     expect(isProductionBuild({})).toBe(false);
+  });
+});
+
+describe('isReleaseGuarded', () => {
+  const SITE = 'https://amgdecorationdinterieur.com';
+  const production = (url?: string) =>
+    url === undefined
+      ? { VERCEL_ENV: 'production' }
+      : { VERCEL_ENV: 'production', VERCEL_PROJECT_PRODUCTION_URL: url };
+
+  it('bloque la production qui sert le vrai domaine (avec ou sans www, protocole, casse)', () => {
+    expect(isReleaseGuarded(production('amgdecorationdinterieur.com'), SITE)).toBe(true);
+    expect(isReleaseGuarded(production('www.amgdecorationdinterieur.com'), SITE)).toBe(true);
+    expect(isReleaseGuarded(production('https://AMGdecorationdinterieur.com/'), SITE)).toBe(true);
+  });
+
+  it('laisse passer la production sur son adresse vercel.app', () => {
+    expect(isReleaseGuarded(production('amg-decoration-site.vercel.app'), SITE)).toBe(false);
+  });
+
+  it('bloque par prudence si le domaine de production est inconnu', () => {
+    expect(isReleaseGuarded(production(), SITE)).toBe(true);
+    expect(isReleaseGuarded(production(''), SITE)).toBe(true);
+  });
+
+  it('ne s’applique jamais hors production', () => {
+    const preview = {
+      VERCEL_ENV: 'preview',
+      VERCEL_PROJECT_PRODUCTION_URL: 'amgdecorationdinterieur.com',
+    };
+    expect(isReleaseGuarded(preview, SITE)).toBe(false);
+    expect(isReleaseGuarded({}, SITE)).toBe(false);
   });
 });
 
