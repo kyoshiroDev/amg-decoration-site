@@ -29,6 +29,8 @@ export default defineConfig({
     command: `npm run build && npm run preview -- --port ${PORT} --ignore-lock`,
     url: `http://localhost:${PORT}/`,
     reuseExistingServer: !process.env['CI'],
-    timeout: 180_000,
+    // Build compris : à froid, la génération des ~2 200 variantes d'images prend ~6 min en CI
+    // (12 réalisations). Le cache d'images d'Astro accélère les builds suivants.
+    timeout: 600_000,
   },
 });
