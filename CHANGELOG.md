@@ -6,6 +6,8 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ### Production provisoire sur Vercel
 
+- Pages légales : 7 des 23 points bloquants réglés sans attendre Amandine (« prix nets » au lieu de « TTC », définitions des CGS alignées sur le devis signé, repli `mailto:` assumé, aucune photo Pexels, pas de crédit de conception, hébergeur sans téléphone, messagerie Gmail en simple recommandation) ; 16 restent (`npm run check:prod`).
+- Chaque build de production écrit l'état du garde-fou légal dans son journal (« Garde-fou légal : actif / inactif »).
 - Le garde-fou des pages légales ne bloque plus que le build de production qui sert le vrai domaine (`VERCEL_PROJECT_PRODUCTION_URL`) : la production se déploie sur son adresse `*.vercel.app` (en `noindex`) sans attendre les informations d'Amandine ; rattacher le domaine exige `check:prod` vert puis un redéploiement (ADR-0015 révisée, `docs/MISE-EN-LIGNE.md`).
 
 ### Images de l'ancien site

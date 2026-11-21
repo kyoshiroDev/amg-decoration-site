@@ -8,9 +8,9 @@
 # TODO(contenu): adresse postale complète du siège (ou adresse de domiciliation) — le site actuel n’affiche que « Gif-sur-Yvette (91) », insuffisant pour l’éditrice (LCEN art. 1-1).
 # TODO(contenu): immatriculation au registre national des entreprises (RNE) ou au RCS : numéro et registre à confirmer, en plus du SIRET.
 # TODO(contenu): depuis le 15/05/2022, la mention « EI » ou « entrepreneur individuel » doit accompagner le nom de l’entrepreneuse individuelle : formulation à valider par Amandine.
-# TODO(contenu): Vercel ne publie aucun numéro de téléphone ; vérifier auprès de Vercel ou faire valider l’affichage de la seule adresse et de l’email de contact.
-# TODO(contenu): quelles photos viennent de Pexels sur le site actuel ? Les exclure du nouveau site, ou les créditer (photographe + lien) dans la section « Crédits ».
-# TODO(contenu): nom (ou agence) à créditer pour la conception et la réalisation du nouveau site.
+# Décision (2026-11-21, validée par l’humain) : Vercel ne publie aucun numéro de téléphone ; la page affiche son adresse postale et son email de contact.
+# Décision (2026-11-21) : aucune photo Pexels de l’ancien site n’est reprise (seuls les rendus et photos d’Amandine le sont, src/assets/placeholders/README.md) ; rien à créditer.
+# Décision (2026-11-21) : pas de ligne de crédit pour la conception du site.
 # TODO(contenu): médiateur de la consommation (obligatoire, Code de la consommation L612-1) : à ajouter ici une fois choisi.
 seo:
   title: 'Mentions légales'

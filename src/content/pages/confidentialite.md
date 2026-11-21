@@ -7,10 +7,11 @@
 # Paragraphes propres au mode du formulaire : blocs `{formulaire:service}` (PUBLIC_FORM_ENDPOINT défini) et `{formulaire:mailto}` (repli mailto:),
 # fermés par `{/formulaire}` ; seul le bloc du mode du build est publié (ADR-0016).
 #
-# TODO(contenu): si le formulaire passe par un service (ADR-0003) : nommer le prestataire, son pays d’établissement, son pays d’hébergement et la garantie de transfert éventuelle, dans les blocs `{formulaire:service}` des sections « Qui reçoit vos données » et « Transferts ». Si le site est mis en ligne avec le repli mailto:, ce point est sans objet : supprimer ce TODO.
+# Décision (2026-11-21) : mise en ligne avec le repli mailto: (aucun PUBLIC_FORM_ENDPOINT) ; seuls les blocs `{formulaire:mailto}` sont publiés.
+# Rappel (non bloquant) : si un service de formulaire est choisi un jour (ADR-0003), nommer le prestataire, son pays d’établissement, son pays d’hébergement et la garantie de transfert dans les blocs `{formulaire:service}` AVANT de définir PUBLIC_FORM_ENDPOINT.
 # TODO(contenu): durée de conservation des demandes sans suite : 3 ans maximum après le dernier échange (repère du référentiel CNIL « gestion commerciale ») ; Amandine peut choisir plus court.
 # TODO(contenu): Amandine confirme-t-elle ne faire aucune prospection (newsletter, relances commerciales) avec les coordonnées reçues ? Sinon, prévoir une case à cocher distincte et adapter cette page.
-# TODO(contenu): messagerie Gmail grand public (am.gaury@gmail.com) : envisager une messagerie professionnelle couverte par un contrat de sous-traitance (Google Workspace ou fournisseur européen) ; adapter la section « Qui reçoit vos données ».
+# Rappel (recommandation, non bloquant) : la page déclare la messagerie Gmail (Google) parmi les destinataires ; une messagerie professionnelle couverte par un contrat de sous-traitance (Google Workspace ou fournisseur européen) serait préférable, en adaptant alors « Qui reçoit vos données ».
 # TODO(contenu): date de mise à jour à ajuster le jour de la mise en ligne.
 # Rappel (maintenance, non bloquant) : si un fil Instagram, une carte ou une vidéo intégrée est ajouté un jour, mettre à jour la section « Cookies » et charger l’intégration au clic.
 seo:

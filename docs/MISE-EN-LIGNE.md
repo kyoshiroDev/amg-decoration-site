@@ -21,14 +21,11 @@ Checklist de la bascule de `amgdecorationdinterieur.com` (WordPress) vers le nou
 | Prix : affichage ferme, « à partir de » ou devis seul ; délai indicatif par formule                                                                     | CGS art. 3, 5, 6 ; `site.ts` (`showPrices`) |
 | Clients professionnels facturés ? (pénalités de retard, indemnité de 40 €)                                                                              | CGS                                         |
 | Accord des clients pour publier les projets, photos et avis                                                                                             | CGS art. 7, réalisations, témoignages       |
-| « TTC » → « prix nets, TVA non applicable » ; commande « passée sur le site » → devis signé                                                             | CGS                                         |
 | Assureur RC Pro et couverture (facultatif)                                                                                                              | CGS art. 12                                 |
 | Date d'entrée en vigueur des CGS                                                                                                                        | CGS                                         |
-| Service de formulaire (Formspark recommandé, ADR-0003) ou maintien du repli `mailto:`                                                                   | confidentialité, `PUBLIC_FORM_ENDPOINT`     |
 | Durée de conservation des demandes sans suite ; aucune prospection confirmée                                                                            | confidentialité                             |
-| Messagerie professionnelle (facultatif, recommandé)                                                                                                     | confidentialité                             |
-| Photos Pexels de l'ancien site (à exclure ou créditer) ; crédit de conception du site (ou retrait de la ligne)                                          | mentions légales                            |
-| Affichage de l'hébergeur Vercel sans téléphone (validation)                                                                                             | mentions légales                            |
+
+Réglés sans Amandine le 2026-11-21 (décisions tracées en commentaire dans chaque page) : « TTC » → « prix nets » et définitions des CGS alignées sur le devis signé ; mise en ligne avec le repli `mailto:` (pas de service de formulaire) ; aucune photo Pexels reprise ; pas de ligne de crédit pour la conception ; hébergeur Vercel affiché avec son adresse et son email (pas de téléphone publié). Messagerie professionnelle : simple recommandation, non bloquante.
 
 ### Visuels (tous repris de l'ancien site, en attendant les originaux)
 

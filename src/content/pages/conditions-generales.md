@@ -1,7 +1,9 @@
 ---
 # Source : docs/contenu-source/conditions-generales-de-services-cgs.md (CGS en 12 articles du site actuel).
 # Reprise FIDÈLE : mêmes engagements, même numérotation. Seules modifications : orthographe et typographie,
-# découpage en titres et listes, adresse du site sans « www », renvoi vers la page Contact (art. 12).
+# découpage en titres et listes, adresse du site sans « www », renvoi vers la page Contact (art. 12) ;
+# 2026-11-21 : « TTC » remplacé par « prix nets » (TVA non applicable, déjà indiqué) et définitions alignées sur la
+# commande par devis signé décrite à l’art. 2 (le site ne permet pas de commander en ligne).
 # Aucun ajout juridique : les incohérences sont listées ci-dessous et dans docs/CONFORMITE.md, à trancher par Amandine
 # (idéalement avec un juriste) AVANT la mise en production.
 # Coordonnées : jetons `{email}`, `{phone}`, `{phoneE164}`, `{siret}` remplacés au rendu par les valeurs de src/config/site.ts (ADR-0016).
@@ -10,12 +12,10 @@
 # TODO(contenu): art. 4 (rétractation, contrat conclu à distance avec un particulier) — selon L221-28 1°, le droit de rétractation n’est exclu que si la prestation est PLEINEMENT exécutée avant la fin des 14 jours, après demande expresse et renoncement exprès ; si elle est seulement commencée, le client peut se rétracter en payant la part réalisée (L221-25). Le texte actuel (« ne peut être exercé si la prestation a commencé ») est à reformuler par Amandine. Manquent aussi le formulaire type de rétractation (L221-5, annexe à l’art. R221-1) et ses modalités d’envoi.
 # TODO(contenu): médiateur de la consommation absent (obligatoire pour les clients particuliers, L612-1 et L616-1) : nom, site et adresse du médiateur choisi à ajouter (art. 11 et mentions légales).
 # TODO(contenu): offre aux professionnels : si des clients professionnels sont facturés, les pénalités de retard et l’indemnité forfaitaire de 40 € pour frais de recouvrement doivent figurer dans les conditions (Code de commerce L441-10).
-# TODO(contenu): art. 3 « prix en euros TTC » alors que la TVA n’est pas applicable : formulation à valider (« prix nets, TVA non applicable »).
 # TODO(contenu): art. 6 délais « indiqués sur le devis » : un délai indicatif par formule doit être communiqué avant la commande (L111-1 3°) ; le confirmer pour chaque formule.
 # TODO(contenu): art. 7 publication des projets et des photos transmises par le client : prévoir un accord explicite du client (photos de son logement), en particulier pour les avis et les fiches réalisations.
 # TODO(contenu): art. 12 assurance RC Pro : nom de l’assureur et couverture géographique à indiquer si Amandine le souhaite ; la référence à l’article 1240 du Code civil (responsabilité délictuelle) est à vérifier.
 # TODO(contenu): mention « EI » ou « entrepreneur individuel » à côté du nom (obligatoire depuis le 15/05/2022) et adresse complète du siège.
-# TODO(contenu): les définitions parlent de commandes « passées sur le site internet » alors que le site ne permet pas de commander en ligne (commande par devis signé) : formulation à valider.
 # TODO(contenu): date d’entrée en vigueur de cette version des CGS à fixer.
 seo:
   title: 'Conditions générales de services'
@@ -31,9 +31,9 @@ hero:
 Les termes employés dans les présentes Conditions générales de services ont la signification indiquée ci-dessous.
 
 - **Conditions générales de services ou CGS** : le présent document, qui s’applique entre le Prestataire et le Client.
-- **Commande** : l’ordre d’achat du Client portant sur un ou plusieurs services présentés sur le site internet amgdecorationdinterieur.com.
+- **Commande** : l’engagement du Client portant sur un ou plusieurs services présentés sur le site internet amgdecorationdinterieur.com, formalisé par la signature du devis (article 2).
 - **Site internet** : le site accessible à l’adresse [https://amgdecorationdinterieur.com](https://amgdecorationdinterieur.com).
-- **Service ou prestation** : les services proposés à la vente sur le site internet par AMG Décoration d’Intérieur.
+- **Service ou prestation** : les services de décoration d’intérieur proposés par AMG Décoration d’Intérieur et présentés sur le site internet.
 - **Client** : la personne physique ou morale qui utilise le site internet et acquiert un ou plusieurs services, à des fins personnelles ou professionnelles, après avoir accepté les présentes CGS.
 - **Prestataire** : Amandine Gaury, AMG Décoration d’Intérieur, décoratrice d’intérieur.
 
@@ -41,7 +41,7 @@ Tout Client reconnaît avoir pris connaissance de ce document avant de signer un
 
 ## Article 1 – Contenu et champ d’application
 
-Les présentes CGS s’appliquent sans restriction ni réserve à toutes les prestations de services conclues sur le site internet amgdecorationdinterieur.com, où sont présentées les différentes prestations de décoration d’intérieur.
+Les présentes CGS s’appliquent sans restriction ni réserve à toutes les prestations de services conclues avec AMG Décoration d’Intérieur par devis signé ; les différentes prestations de décoration d’intérieur sont présentées sur le site internet amgdecorationdinterieur.com.
 
 Nous proposons des services de décoration d’intérieur personnalisés, comprenant notamment la conception de planches d’ambiance et de mobilier, de plans d’aménagement et de visuels 3D, ainsi que le choix des matériaux, des couleurs et du mobilier. Nos prestations sont réalisées sur devis personnalisé, établi en fonction des besoins spécifiques de chaque Client.
 
@@ -78,7 +78,7 @@ Les commandes font l’objet d’un devis personnalisé.
 
 Les devis établis par le Prestataire sont valables un mois à compter de leur date d’émission.
 
-Les prix sont exprimés en euros (€), toutes taxes comprises (TTC). AMG Décoration d’Intérieur n’est pas assujettie à la TVA : TVA non applicable, article 293 B du Code général des impôts.
+Les prix sont exprimés en euros (€), nets. AMG Décoration d’Intérieur n’est pas assujettie à la TVA : TVA non applicable, article 293 B du Code général des impôts.
 
 Les tarifs sont fermes et non révisables pendant leur période de validité.
 

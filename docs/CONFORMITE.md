@@ -133,20 +133,20 @@ Toutes ces microcopies (libellés et aides des champs, options, mention, erreurs
 
 ### Risque moyen
 
-6. **Service de formulaire non choisi** : la politique de confidentialité ne peut pas encore nommer ce sous-traitant ni son pays (article 13.1.e et f du RGPD). Bloquant avant la mise en ligne du formulaire.
+6. **Service de formulaire non choisi** (mise en ligne avec le repli `mailto:`, décidée le 2026-11-21 : point sans objet tant qu'aucun service n'est configuré) : la politique de confidentialité ne peut pas encore nommer ce sous-traitant ni son pays (article 13.1.e et f du RGPD). Bloquant avant la mise en ligne du formulaire.
 7. **Messagerie Gmail grand public** : les demandes arrivent sur am.gaury@gmail.com, sans contrat de sous-traitance avec Google. Envisager une messagerie professionnelle couverte par un DPA (Google Workspace ou fournisseur européen).
 8. **Clients professionnels** : l'« Offre professionnels » implique des factures B2B ; les pénalités de retard et l'indemnité forfaitaire de 40 € doivent figurer dans les conditions (Code de commerce, L441-10).
 9. **Publication des projets (CGS art. 7)** : les photos transmises par le client montrent son logement. Prévoir un accord explicite pour toute publication (site, réseaux, fiches réalisations), comme pour les avis clients publiés.
 10. **Mention « EI »** : depuis le 15/05/2022, le nom de l'entrepreneuse individuelle doit être accompagné de « EI » ou « entrepreneur individuel » sur ses documents et sa communication.
-11. **Crédits Pexels** : l'ancien site crédite « Photos libres de droits sur Pexels » sans préciser lesquelles. Les exclure du nouveau site ou les créditer.
+11. ~~**Crédits Pexels**~~ (réglé le 2026-11-21 : aucune photo Pexels reprise) : l'ancien site crédite « Photos libres de droits sur Pexels » sans préciser lesquelles. Les exclure du nouveau site ou les créditer.
 
 ### Risque faible
 
-12. **Téléphone de l'hébergeur** : Vercel n'en publie pas ; l'adresse postale et l'email sont donnés.
-13. **CGS art. 3** : « prix TTC » alors que la TVA n'est pas applicable ; préférer « prix nets, TVA non applicable, art. 293 B du CGI ».
+12. **Téléphone de l'hébergeur** (décision validée le 2026-11-21) : Vercel n'en publie pas ; l'adresse postale et l'email sont donnés.
+13. ~~**CGS art. 3**~~ (réglé le 2026-11-21 : « prix nets ») : « prix TTC » alors que la TVA n'est pas applicable ; préférer « prix nets, TVA non applicable, art. 293 B du CGI ».
 14. **CGS art. 6** : délais renvoyés au devis ; un délai indicatif par formule doit être connu avant la commande (L111-1 3°).
 15. **CGS art. 12** : la référence à l'article 1240 du Code civil (responsabilité délictuelle) ne fonde pas une obligation d'assurance ; nom de l'assureur et couverture géographique à indiquer si Amandine le souhaite.
-16. **CGS, définitions** : « commande passée sur le site » alors qu'aucune commande en ligne n'est possible (commande par devis signé).
+16. ~~**CGS, définitions**~~ (réglé le 2026-11-21 : commande = devis signé) : « commande passée sur le site » alors qu'aucune commande en ligne n'est possible (commande par devis signé).
 17. **Durée de conservation** des demandes sans suite fixée à 3 ans maximum (repère du référentiel CNIL « gestion des activités commerciales », délibération n° 2021-131) : Amandine peut choisir plus court.
 18. **Date d'entrée en vigueur** des CGS et date de mise à jour de la politique de confidentialité à fixer le jour de la mise en ligne.
 
@@ -157,7 +157,7 @@ Toutes ces microcopies (libellés et aides des champs, options, mention, erreurs
 3. Formulation avec la mention « EI » ou « entrepreneur individuel ».
 4. Médiateur de la consommation choisi : nom, site internet, adresse.
 5. Choix sur les prix : prix fermes, « à partir de » ou devis systématique, et alignement des CGS (art. 1, 3, 5).
-6. Service de formulaire retenu (recommandation : Formspark, voir ADR-0003) et création du compte.
+6. (Facultatif) Service de formulaire, si elle en veut un un jour (recommandation : Formspark, voir ADR-0003) ; le site part avec le repli `mailto:`.
 7. Nouvelle rédaction de l'article 4 des CGS (rétractation) et formulaire type de rétractation, idéalement validés par un juriste.
 8. Pénalités de retard et indemnité de 40 € pour les clients professionnels, si l'offre pro est maintenue.
 9. Délai indicatif de réalisation par formule.
