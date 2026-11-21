@@ -23,6 +23,18 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # Cache des images optimisées par Astro (AVIF/WebP, ~110 Mo) : sans lui, chaque build régénère
+      # les ~2 200 variantes (~6 min en CI). Restauré APRÈS `npm ci`, qui efface `node_modules/`.
+      # Clé : dépendances + config Astro + images sources ; `restore-keys` réutilise un cache
+      # partiel (Astro indexe chaque variante par son contenu et ses options, rien de périmé n'est servi).
+      # `verify` l'écrit, `e2e` le relit (builds `dist/` et `dist-service/`).
+      - uses: actions/cache@v6
+        with:
+          path: node_modules/.astro/assets
+          key: astro-img-${{ runner.os }}-${{ hashFiles('package-lock.json', 'astro.config.mjs') }}-${{ hashFiles('src/assets/**') }}
+          restore-keys: |
+            astro-img-${{ runner.os }}-${{ hashFiles('package-lock.json', 'astro.config.mjs') }}-
+            astro-img-${{ runner.os }}-
       - run: npm run verify
       - uses: actions/upload-artifact@v7
         with:
@@ -41,6 +53,14 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # Même cache que le job `verify` (voir plus haut).
+      - uses: actions/cache@v6
+        with:
+          path: node_modules/.astro/assets
+          key: astro-img-${{ runner.os }}-${{ hashFiles('package-lock.json', 'astro.config.mjs') }}-${{ hashFiles('src/assets/**') }}
+          restore-keys: |
+            astro-img-${{ runner.os }}-${{ hashFiles('package-lock.json', 'astro.config.mjs') }}-
+            astro-img-${{ runner.os }}-
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       # Formulaire en mode service (build dist-service/ avec un PUBLIC_FORM_ENDPOINT factice) :

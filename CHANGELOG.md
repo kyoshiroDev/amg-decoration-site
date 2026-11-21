@@ -10,6 +10,7 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 - 8 anciens projets publiés sans texte sur l'ancien site ajoutés aux réalisations (12 au total) : rendus 3D en 1600 × 900, photos avant et, pour la chambre d'enfant, photos après ; textes rédigés d'après les images, sans prénom de client, à faire confirmer par Amandine (`TODO(contenu)`).
 - `/projet-1/` à `/projet-7/` et `/projet-marine/` redirigent vers leur nouvelle fiche au lieu de `/realisations/`.
 - Les 4 projets récents restent en 1200 × 600 : c'est la taille des fichiers d'origine sur l'ancien site.
+- CI : délai de démarrage du serveur e2e porté à 10 min, et cache des images optimisées entre les jobs (`actions/cache`), pour éviter de régénérer les ~2 200 variantes à chaque build.
 
 ### Palette de l'ancien site
 
