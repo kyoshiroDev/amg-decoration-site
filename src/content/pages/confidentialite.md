@@ -8,7 +8,7 @@
 # fermés par `{/formulaire}` ; seul le bloc du mode du build est publié (ADR-0016).
 #
 # Décision (2026-11-21) : mise en ligne avec le repli mailto: (aucun PUBLIC_FORM_ENDPOINT) ; seuls les blocs `{formulaire:mailto}` sont publiés.
-# Rappel (non bloquant) : si un service de formulaire est choisi un jour (ADR-0003), nommer le prestataire, son pays d’établissement, son pays d’hébergement et la garantie de transfert dans les blocs `{formulaire:service}` AVANT de définir PUBLIC_FORM_ENDPOINT.
+# Garde-fou : la phrase d’attente des « Transferts » porte le marqueur `{à-préciser}` ; tout build avec PUBLIC_FORM_ENDPOINT échoue tant que le prestataire, son pays d’établissement, son pays d’hébergement et la garantie de transfert ne la remplacent pas (blocs `{formulaire:service}`, ADR-0016).
 # TODO(contenu): durée de conservation des demandes sans suite : 3 ans maximum après le dernier échange (repère du référentiel CNIL « gestion commerciale ») ; Amandine peut choisir plus court.
 # TODO(contenu): Amandine confirme-t-elle ne faire aucune prospection (newsletter, relances commerciales) avec les coordonnées reçues ? Sinon, prévoir une case à cocher distincte et adapter cette page.
 # Rappel (recommandation, non bloquant) : la page déclare la messagerie Gmail (Google) parmi les destinataires ; une messagerie professionnelle couverte par un contrat de sous-traitance (Google Workspace ou fournisseur européen) serait préférable, en adaptant alors « Qui reçoit vos données ».
@@ -104,7 +104,7 @@ Vos données ne sont communiquées à personne d’autre, sauf obligation légal
 Vercel est une société américaine dont les serveurs sont répartis dans le monde. Elle déclare adhérer au cadre de protection des données UE–États-Unis (Data Privacy Framework), reconnu par la Commission européenne, et recourir aux clauses contractuelles types de la Commission européenne. Google, qui fournit ma messagerie, peut également traiter des données hors de l’Union européenne, avec ses propres garanties.
 
 {formulaire:service}
-Le service de formulaire et les garanties qui s’appliquent à lui seront précisés ici dès qu’il sera choisi.
+{à-préciser} Le service de formulaire et les garanties qui s’appliquent à lui seront précisés ici dès qu’il sera choisi.
 {/formulaire}
 
 ## Cookies et autres traceurs

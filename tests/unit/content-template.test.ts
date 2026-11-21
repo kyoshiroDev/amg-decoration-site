@@ -100,13 +100,41 @@ describe('contentTemplatePlugin (Sätteri)', () => {
   });
 });
 
+describe('marqueur {à-préciser}', () => {
+  const body = 'Avant.\n{formulaire:service}\n{à-préciser} Prestataire.\n{/formulaire}\nAprès.';
+  it('retiré avec son bloc dans l’autre mode', () => {
+    expect(renderContentTemplate(body, { variables, formMode: 'mailto' })).toBe('Avant.\nAprès.');
+  });
+  it('publié, il fait échouer le rendu', () => {
+    expect(() => renderContentTemplate(body, { variables, formMode: 'service' })).toThrow(
+      /à préciser.*service/,
+    );
+  });
+});
+
 describe('pages légales', () => {
-  it.each(LEGAL_PAGE_IDS)('%s se rend dans les deux modes, sans jeton restant', (id) => {
-    const source = readFileSync(join(process.cwd(), `src/content/pages/${id}.md`), 'utf8');
-    const body = source.replace(/^---\n[\s\S]*?\n---\n/, '');
-    for (const formMode of ['service', 'mailto'] as const) {
-      const output = renderContentTemplate(body, { variables, formMode });
+  const read = (id: string): string =>
+    readFileSync(join(process.cwd(), `src/content/pages/${id}.md`), 'utf8').replace(
+      /^---\n[\s\S]*?\n---\n/,
+      '',
+    );
+
+  it.each(LEGAL_PAGE_IDS)('%s se rend en mode mailto, sans jeton restant', (id) => {
+    const output = renderContentTemplate(read(id), { variables, formMode: 'mailto' });
+    expect(output).not.toMatch(/\{[^}\s]*\}/);
+  });
+
+  it.each(LEGAL_PAGE_IDS.filter((id) => id !== 'confidentialite'))(
+    '%s se rend en mode service, sans jeton restant',
+    (id) => {
+      const output = renderContentTemplate(read(id), { variables, formMode: 'service' });
       expect(output).not.toMatch(/\{[^}\s]*\}/);
-    }
+    },
+  );
+
+  it('confidentialite bloque le mode service tant que le prestataire n’est pas nommé', () => {
+    expect(() =>
+      renderContentTemplate(read('confidentialite'), { variables, formMode: 'service' }),
+    ).toThrow(/à préciser/);
   });
 });
