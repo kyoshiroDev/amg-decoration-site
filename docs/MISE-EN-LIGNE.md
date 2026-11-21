@@ -8,7 +8,7 @@ Checklist de la bascule de `amgdecorationdinterieur.com` (WordPress) vers le nou
 
 ## 1. Contenus à obtenir d'Amandine
 
-`npm run check:prod` liste les points **bloquants** (pages légales, ADR-0015)  ; le build de production Vercel qui sert le vrai domaine échoue tant qu’il en reste. Les autres `TODO(contenu)` (`grep -rn "TODO(contenu)" src`) n'empêchent pas la mise en ligne mais dégradent le site.
+`npm run check:prod` liste les points **bloquants** (pages légales, ADR-0015) ; le build de production Vercel qui sert le vrai domaine échoue tant qu’il en reste. Les autres `TODO(contenu)` (`grep -rn "TODO(contenu)" src`) n'empêchent pas la mise en ligne mais dégradent le site.
 
 ### Bloquant (légal)
 
