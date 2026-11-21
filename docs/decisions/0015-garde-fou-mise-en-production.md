@@ -1,6 +1,6 @@
 # ADR-0015 — Garde-fou de mise en production des pages légales
 
-- **Statut** : acceptée
+- **Statut** : acceptée, révisée le 2026-11-21 (voir « Révision »)
 - **Date** : 2026-11-20
 
 ## Contexte
@@ -38,3 +38,16 @@ Une simple note de maintenance qui ne signale pas d'information manquante ne doi
 - Positif : une page légale incomplète ne peut plus partir en production par inadvertance ; le message d'échec, lisible dans les journaux de build Vercel, liste le travail restant en `fichier:ligne` ; `check:prod` donne la même liste en local.
 - Négatif : le premier merge `dev → main` échouera tant qu'Amandine n'a pas fourni les informations (comportement voulu, mais à savoir : la production précédente reste servie).
 - À surveiller : selon la documentation, Vercel n'expose les variables système que si la case « Automatically expose System Environment Variables » est cochée (_Settings → Environment Variables_) ; la vérifier en rattachant le domaine, sinon le garde-fou est muet. Lancer `npm run check:prod` avant le premier merge reste la vérification de référence. Un fichier légal ajouté (ex. CGV) doit rejoindre `RELEASE_BLOCKING_FILES`. Ne jamais écrire le marqueur `TODO(contenu)` dans un commentaire explicatif de ces fichiers : il serait compté.
+
+## Révision du 2026-11-21 : production `vercel.app` autorisée, vrai domaine protégé
+
+**Contexte.** Au merge de la PR #3, le build de production a échoué comme prévu (23 `TODO(contenu)`). L'humain demande de déployer la production **sans attendre** les informations d'Amandine, pour disposer du site en ligne sur son adresse Vercel. Le domaine `amgdecorationdinterieur.com` n'est pas rattaché au projet : il sert toujours l'ancien site WordPress.
+
+**Décision.** Le garde-fou ne bloque plus que le build de production qui **servirait le vrai domaine** : `isReleaseGuarded(env, SITE)` (`src/lib/release-guard.ts`) vaut vrai si `VERCEL_ENV === 'production'` et que `VERCEL_PROJECT_PRODUCTION_URL` (variable système Vercel : domaine de production personnalisé le plus court, sinon l'adresse `vercel.app`, sans protocole, [documentation](https://vercel.com/docs/environment-variables/system-environment-variables)) désigne `amgdecorationdinterieur.com` (avec ou sans `www.`). Variable absente alors que `VERCEL_ENV` est fourni : blocage par prudence. `npm run check:prod` est inchangé.
+
+**Pourquoi c'est acceptable.** Sur `*.vercel.app`, toutes les réponses portent `X-Robots-Tag: noindex` (`vercel.json`) : la production provisoire n'est pas indexée, les URL canoniques désignent le vrai domaine, et aucun visiteur n'y arrive par la recherche ou par l'ancien domaine. Les obligations légales visent le site exploité sous le domaine de l'entreprise.
+
+**Risque à connaître, et parade.** Rattacher un domaine sur Vercel **ne relance pas de build** : le domaine sert aussitôt le dernier déploiement de production, construit sans garde-fou. Avant de rattacher le domaine (`docs/MISE-EN-LIGNE.md` §3) :
+
+1. `npm run check:prod` doit être vert (aucun `TODO(contenu)` légal) ;
+2. après le rattachement, **redéployer** la production : le build revérifie alors les pages légales avec le vrai domaine, et tout build ultérieur reste protégé.

@@ -4,6 +4,10 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ## [Non publié]
 
+### Production provisoire sur Vercel
+
+- Le garde-fou des pages légales ne bloque plus que le build de production qui sert le vrai domaine (`VERCEL_PROJECT_PRODUCTION_URL`) : la production se déploie sur son adresse `*.vercel.app` (en `noindex`) sans attendre les informations d'Amandine ; rattacher le domaine exige `check:prod` vert puis un redéploiement (ADR-0015 révisée, `docs/MISE-EN-LIGNE.md`).
+
 ### Images de l'ancien site
 
 - Plus aucun placeholder sur les pages publiques : portrait d'Amandine (accueil, `/a-propos/`), rendus 3D en 2560 px pour les héros de l'accueil et de `/visualisation-3d/` et pour l'image Open Graph par défaut, vraie paire rendu 3D / photo du résultat pour le comparateur (chambre d'enfant sous combles, points de vue proches mais pas identiques, signalé dans le chapeau).
