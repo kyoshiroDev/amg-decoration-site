@@ -67,7 +67,7 @@ Déjà tranchés par l'ancien site (relevé du 2026-11-20) : formation (cursus d
 - [ ] Merge de la PR `dev → main` par l'humain.
 - [ ] `npm run check:prod` vert **avant** de toucher aux domaines, lancé sur `main` à jour (même SHA que le déploiement de production en cours, pas sur `dev`) : le rattachement sert immédiatement la dernière production, construite sans garde-fou.
 - [ ] Vercel → Domains : ajouter `amgdecorationdinterieur.com` (production) et `www.amgdecorationdinterieur.com` **servi par le projet, sans l'option « Redirect to … »** : la redirection www → domaine nu est faite en un saut par `vercel.json` (`docs/SEO-STRATEGIE.md` §6).
-- [ ] **Redéployer la production** (Deployments → Redeploy) **avant la bascule DNS** : tant que le DNS pointe vers WordPress, rien n'est exposé. Vérifier dans le journal de build que `VERCEL_PROJECT_PRODUCTION_URL` vaut bien `amgdecorationdinterieur.com` (le garde-fou revérifie alors les pages légales) ; si le build échoue, ne pas toucher au DNS et compléter les pages.
+- [ ] **Redéployer la production** (Deployments → Redeploy) **avant la bascule DNS** : tant que le DNS pointe vers WordPress, rien n'est exposé. Vérifier dans le journal de build la ligne « Garde-fou légal : actif (domaine de production amgdecorationdinterieur.com) » (le garde-fou revérifie alors les pages légales) ; si le build échoue, ne pas toucher au DNS et compléter les pages.
 - [ ] DNS chez le registrar : enregistrement `A` du domaine nu et `CNAME` de `www` vers les valeurs indiquées par Vercel ; baisser le TTL la veille.
 - [ ] HTTPS : certificat émis par Vercel pour les deux hôtes.
 - [ ] Contrôles :

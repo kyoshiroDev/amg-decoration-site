@@ -79,6 +79,18 @@ export function isReleaseGuarded(env: BuildEnv, siteUrl: string): boolean {
   return bareHost(productionHost) === bareHost(siteUrl);
 }
 
+/**
+ * Ligne du journal de build de production : état du garde-fou et domaine lu dans
+ * `VERCEL_PROJECT_PRODUCTION_URL`, pour vérifier au rattachement du domaine qu'il est bien actif
+ * (un build vert ne le dit pas : docs/MISE-EN-LIGNE.md §3).
+ */
+export function describeReleaseGuard(env: BuildEnv, siteUrl: string): string {
+  const host = env['VERCEL_PROJECT_PRODUCTION_URL'] || '(absent)';
+  return isReleaseGuarded(env, siteUrl)
+    ? `Garde-fou légal : actif (domaine de production ${host}).`
+    : `Garde-fou légal : inactif (domaine de production ${host}).`;
+}
+
 /** Message d'erreur listant chaque `TODO(contenu)` restant en `fichier:ligne`. */
 export function formatReleaseBlockers(todos: readonly FileContentTodo[]): string {
   const lines = todos.map(({ file, line, text }) => `  - ${file}:${line}  ${text}`);

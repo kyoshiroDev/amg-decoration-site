@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  describeReleaseGuard,
   findContentTodos,
   formatReleaseBlockers,
   isProductionBuild,
@@ -75,6 +76,30 @@ describe('isReleaseGuarded', () => {
     };
     expect(isReleaseGuarded(preview, SITE)).toBe(false);
     expect(isReleaseGuarded({}, SITE)).toBe(false);
+  });
+});
+
+describe('describeReleaseGuard', () => {
+  const SITE = 'https://amgdecorationdinterieur.com';
+  it('indique l’état et le domaine lu', () => {
+    expect(
+      describeReleaseGuard(
+        { VERCEL_ENV: 'production', VERCEL_PROJECT_PRODUCTION_URL: 'amgdecorationdinterieur.com' },
+        SITE,
+      ),
+    ).toBe('Garde-fou légal : actif (domaine de production amgdecorationdinterieur.com).');
+    expect(
+      describeReleaseGuard(
+        {
+          VERCEL_ENV: 'production',
+          VERCEL_PROJECT_PRODUCTION_URL: 'amg-decoration-site.vercel.app',
+        },
+        SITE,
+      ),
+    ).toBe('Garde-fou légal : inactif (domaine de production amg-decoration-site.vercel.app).');
+    expect(describeReleaseGuard({ VERCEL_ENV: 'production' }, SITE)).toBe(
+      'Garde-fou légal : actif (domaine de production (absent)).',
+    );
   });
 });
 
