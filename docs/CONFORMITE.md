@@ -156,7 +156,7 @@ Toutes ces microcopies (libellés et aides des champs, options, mention, erreurs
 
 ## 7. Informations à fournir par Amandine (pour la PR)
 
-Liste minimale au 2026-11-21 (les autres points ont été réglés sans elle, voir § 6). Les points 1 à 7 correspondent aux 10 `TODO(contenu)` restants des pages légales (`npm run check:prod`).
+Liste minimale au 2026-11-22 (les autres points ont été réglés sans elle, voir § 6). Les points 1 à 6 correspondent aux 9 `TODO(contenu)` restants des pages légales (`npm run check:prod`) ; le point 7 est un prérequis hors pages.
 
 1. Adresse postale complète du siège, ou adresse d'une société de domiciliation si elle ne veut pas publier son domicile (mentions légales, CGS art. 1, formulaire de rétractation).
 2. Formulation avec la mention « EI » ou « entrepreneur individuel ».
