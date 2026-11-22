@@ -105,6 +105,11 @@ describe('marqueur {à-préciser}', () => {
   it('retiré avec son bloc dans l’autre mode', () => {
     expect(renderContentTemplate(body, { variables, formMode: 'mailto' })).toBe('Avant.\nAprès.');
   });
+  it('toléré hors Vercel (build de test du mode service)', () => {
+    expect(
+      renderContentTemplate(body, { variables, formMode: 'service', rejectPending: false }),
+    ).toContain('{à-préciser} Prestataire.');
+  });
   it('publié, il fait échouer le rendu', () => {
     expect(() => renderContentTemplate(body, { variables, formMode: 'service' })).toThrow(
       /à préciser.*service/,
