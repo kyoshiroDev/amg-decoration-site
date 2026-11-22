@@ -24,7 +24,7 @@
 # TODO(contenu): art. 7 publication des projets et des photos transmises par le client : prévoir un accord explicite du client (photos de son logement), en particulier pour les avis et les fiches réalisations.
 # Décision (2026-11-21) : art. 12 — l’assurance RC Pro n’est pas obligatoire pour une décoratrice d’intérieur (activité non réglementée) ; la clause est reprise telle quelle. Rappel (non bloquant) : nom de l’assureur et couverture géographique facultatifs, à ajouter si Amandine le souhaite ; la référence à l’article 1240 du Code civil (responsabilité délictuelle, qui ne fonde pas une obligation d’assurance) est à faire vérifier par un juriste ; une assurance décennale ne serait requise que si elle fait de la maîtrise d’œuvre ou du suivi de chantier (à lui demander).
 # Décision (2026-11-22) : mention « EI » accolée au nom (entrepreneur individuel, imposée par le décret 2022-725), voir mentions-legales.md.
-# Décision (2026-11-22, adresse donnée par l’humain) : siège allée du Pré Lambesc, 91190 Gif-sur-Yvette, injecté par le jeton `{legalAddress}` (registration.legalAddress de src/config/site.ts, ADR-0016) : art. 1 et destinataire du formulaire de rétractation.
+# Décision (2026-11-22, adresse donnée par l’humain et confirmée par l’annuaire des entreprises, INSEE/RNE) : siège 24 allée du Pré Lambesc, 91190 Gif-sur-Yvette, injecté par le jeton `{legalAddress}` (registration.legalAddress de src/config/site.ts, ADR-0016) : art. 1 et destinataire du formulaire de rétractation.
 # Décision (2026-11-21) : aucune obligation légale de dater les CGS (bonne pratique seulement). Rappel (non bloquant) : indiquer une date d’entrée en vigueur le jour de la bascule.
 seo:
   title: 'Conditions générales de services'

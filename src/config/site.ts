@@ -78,11 +78,11 @@ export const site = {
   // Adresse du siège (registration.legalAddress) volontairement absente des données structurées :
   // activité sans accueil du public, zone desservie seulement (src/lib/jsonld.ts).
   address: { addressRegion: 'Île-de-France', addressCountry: 'FR' },
-  // SIRET publié sur le site actuel (docs/CONTENU-EXISTANT.md) ; adresse du siège donnée par l'humain
-  // le 2026-11-22 (code postal de Gif-sur-Yvette : 91190).
+  // SIRET publié sur le site actuel (docs/CONTENU-EXISTANT.md) ; adresse du siège donnée par l'humain,
+  // le 2026-11-22 et confirmée par l'annuaire des entreprises (recherche-entreprises.api.gouv.fr).
   registration: {
     siret: '531\u00A0938\u00A0868\u00A000019',
-    legalAddress: 'allée du Pré Lambesc, 91190\u00A0Gif-sur-Yvette',
+    legalAddress: '24\u00A0allée du Pré Lambesc, 91190\u00A0Gif-sur-Yvette',
   },
   openingHours: [
     {
