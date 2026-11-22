@@ -50,8 +50,11 @@ export interface SiteConfig {
   readonly email: string;
   readonly whatsapp: { readonly url: `https://wa.me/${string}` };
   readonly address: { readonly addressRegion: string; readonly addressCountry: 'FR' };
-  /** Identifiants légaux, injectés dans les pages légales par le jeton `{siret}` (ADR-0016). */
-  readonly registration: { readonly siret: string };
+  /**
+   * Identifiants légaux, injectés dans les pages légales par les jetons `{siret}` et
+   * `{legalAddress}` (ADR-0016). L'adresse du siège n'est publiée que là : ni JSON-LD, ni pied de page.
+   */
+  readonly registration: { readonly siret: string; readonly legalAddress: string };
   readonly openingHours: readonly OpeningHoursRule[];
   readonly areaServed: readonly AreaServed[];
   readonly socials: readonly SocialLink[];
@@ -72,10 +75,15 @@ export const site = {
   // TODO(contenu): canal WhatsApp confirmé par l’ancien site (« Accompagnement par WhatsApp ou email ») ;
   // numéro identique au téléphone à confirmer (aucun numéro WhatsApp distinct publié).
   whatsapp: { url: 'https://wa.me/33782358132' },
-  // TODO(contenu): adresse postale, ville et code postal inconnus (aucun streetAddress publié).
+  // Adresse du siège (registration.legalAddress) volontairement absente des données structurées :
+  // activité sans accueil du public, zone desservie seulement (src/lib/jsonld.ts).
   address: { addressRegion: 'Île-de-France', addressCountry: 'FR' },
-  // SIRET publié sur le site actuel (docs/CONTENU-EXISTANT.md).
-  registration: { siret: '531\u00A0938\u00A0868\u00A000019' },
+  // SIRET publié sur le site actuel (docs/CONTENU-EXISTANT.md) ; adresse du siège donnée par l'humain,
+  // le 2026-11-22 et confirmée par l'annuaire des entreprises (recherche-entreprises.api.gouv.fr).
+  registration: {
+    siret: '531\u00A0938\u00A0868\u00A000019',
+    legalAddress: '24\u00A0allée du Pré Lambesc, 91190\u00A0Gif-sur-Yvette',
+  },
   openingHours: [
     {
       days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],

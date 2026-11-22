@@ -29,7 +29,7 @@ const SITEMAP_FILE = new URL('../../dist/sitemap-0.xml', import.meta.url);
 const DIST_DIR = new URL('../../dist/', import.meta.url);
 
 /** Jeton ou marqueur de bloc du gabarit Markdown (ADR-0016) resté tel quel. */
-const TEMPLATE_LEFTOVER = /\{(?:email|phone|phoneE164|siret|\/?formulaire[^}]*)\}/;
+const TEMPLATE_LEFTOVER = /\{(?:email|phone|phoneE164|siret|legalAddress|\/?formulaire[^}]*)\}/;
 
 test.describe('Routes construites', () => {
   test('la liste couvre les 13 pages du lot', () => {
@@ -101,10 +101,11 @@ test.describe('Pages légales', () => {
     });
   }
 
-  test('SIRET et téléphone de site.ts dans les mentions légales', async ({ page }) => {
+  test('SIRET, adresse et téléphone de site.ts dans les mentions légales', async ({ page }) => {
     await page.goto('/mentions-legales/');
     const body = page.locator('.rich-text');
     await expect(body).toContainText(site.registration.siret);
+    await expect(body).toContainText(site.registration.legalAddress);
     await expect(body.locator(`a[href="tel:${site.phone.e164}"]`)).toHaveText(site.phone.display);
   });
 

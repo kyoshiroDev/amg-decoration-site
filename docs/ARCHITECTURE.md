@@ -70,14 +70,14 @@ Même mécanisme pour le **sprite d'icônes** `src/pages/icons.[version].svg.ts`
 
 ### Configuration (`src/config/`)
 
-| Fichier        | Contenu                                                                                                                                      |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `site.ts`      | Source de vérité unique : nom, NAP, `registration.siret`, horaires, zone, réseaux, `mainNav`, `headerCta`, `legalNav`, `pricing.showPrices`. |
-| `microcopy.ts` | Tous les libellés d'interface : lien d'évitement, `aria-label` des navigations, menu mobile, titres et textes du pied de page.               |
-| `seo.ts`       | Valeurs SEO par défaut et image OG (réservé aux composants : importe une image).                                                             |
-| `media.ts`     | Visuels de mise en page hors contenu : héros de l'accueil et de « Visualisation 3D », portrait (importe des images : jamais lu par `lib/`).  |
+| Fichier        | Contenu                                                                                                                                                                                               |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `site.ts`      | Source de vérité unique : nom, NAP, `registration.siret` et `registration.legalAddress` (pages légales seulement), horaires, zone, réseaux, `mainNav`, `headerCta`, `legalNav`, `pricing.showPrices`. |
+| `microcopy.ts` | Tous les libellés d'interface : lien d'évitement, `aria-label` des navigations, menu mobile, titres et textes du pied de page.                                                                        |
+| `seo.ts`       | Valeurs SEO par défaut et image OG (réservé aux composants : importe une image).                                                                                                                      |
+| `media.ts`     | Visuels de mise en page hors contenu : héros de l'accueil et de « Visualisation 3D », portrait (importe des images : jamais lu par `lib/`).                                                           |
 
-Les corps Markdown ne recopient pas non plus ces données : les jetons `{email}`, `{phone}`, `{phoneE164}` et `{siret}` y sont remplacés au rendu (§ Gabarit des corps Markdown).
+Les corps Markdown ne recopient pas non plus ces données : les jetons `{email}`, `{phone}`, `{phoneE164}`, `{siret}` et `{legalAddress}` y sont remplacés au rendu (§ Gabarit des corps Markdown).
 
 Aucun composant n'écrit de texte en dur : il lit l'un de ces modules ou reçoit le texte en prop. Les textes éditoriaux (y compris ceux des pages techniques : 404, styleguide) vivent dans `src/content/` (§ Collections).
 
@@ -115,7 +115,7 @@ Schémas dans `src/content.config.ts` (Content Layer API d'Astro 7, `z` importé
 
 Le corps des fichiers `.md` (pas des `.mdx`) passe par le plugin Sätteri `contentTemplatePlugin` (`src/lib/content-template.ts`, branché dans `astro.config.mjs` → `markdown.processor`) avant d'être analysé (ADR-0016) :
 
-- **Jetons** : `{email}`, `{phone}` (affichage), `{phoneE164}` (lien `tel:`), `{siret}`, valeurs de `src/config/site.ts` (`siteTemplateVariables`). Ils fonctionnent aussi dans les URL : `[{email}](mailto:{email})`. Un jeton inconnu fait échouer le build.
+- **Jetons** : `{email}`, `{phone}` (affichage), `{phoneE164}` (lien `tel:`), `{siret}`, `{legalAddress}`, valeurs de `src/config/site.ts` (`siteTemplateVariables`). Ils fonctionnent aussi dans les URL : `[{email}](mailto:{email})`. Un jeton inconnu fait échouer le build.
 - **Blocs selon le mode du formulaire** (`resolveFormTarget`, ADR-0003) : `{formulaire:service}` … `{/formulaire}` n'est publié que si `PUBLIC_FORM_ENDPOINT` est défini, `{formulaire:mailto}` … `{/formulaire}` seulement en repli `mailto:`. Marqueurs seuls sur leur ligne, entourés de lignes vides, sans imbrication. Utilisé par la politique de confidentialité.
 - Le contexte (mode, valeurs) fait partie de la configuration Astro : le changer vide le cache du Content Layer.
 

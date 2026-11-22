@@ -14,16 +14,17 @@
 # (Code de commerce L441-10 II et D441-5, vérifiés sur Légifrance le 21/11/2026).
 # Aucun autre ajout juridique : les points restants sont listés ci-dessous et dans docs/CONFORMITE.md, à trancher par Amandine
 # (idéalement avec un juriste) AVANT la mise en production.
-# Coordonnées : jetons `{email}`, `{phone}`, `{phoneE164}`, `{siret}` remplacés au rendu par les valeurs de src/config/site.ts (ADR-0016).
+# Coordonnées : jetons `{email}`, `{phone}`, `{phoneE164}`, `{siret}`, `{legalAddress}` remplacés au rendu par les valeurs de src/config/site.ts (ADR-0016).
 #
 # TODO(contenu): prix fixes affichés sur /prestations/ (189, 339, 489, 689 €, meuble 339 €) alors que les art. 1, 3 et 5 parlent de « devis personnalisé » et de tarifs « définis dans le devis » : prix catalogue, prix « à partir de » ou devis systématique ? Une fois le choix fait, aligner la page Prestations et les art. 1, 3 et 5 (information sur le prix claire et cohérente, L111-1 et L112-1).
-# TODO(contenu): art. 4 reformulé et formulaire type ajouté le 2026-11-21 : à valider par Amandine, idéalement avec un juriste, avant la mise en production (nouvelle clause contractuelle, rédigée sans elle). Bloquant parce que la clause renvoie à des pratiques qu’elle seule peut mettre en place : (1) son modèle de devis doit porter une mention distincte, non pré-cochée, par laquelle le client demande le démarrage avant la fin des 14 jours et reconnaît perdre son droit de rétractation une fois la prestation pleinement exécutée (L221-25 ; sans elle, rien n’est dû en cas de rétractation) ; (2) le formulaire de rétractation doit accompagner le devis ou la confirmation de commande envoyée par email (L221-13) ; (3) l’adresse postale devra être ajoutée dans le destinataire du formulaire quand elle sera connue (voir TODO adresse). À confirmer par le juriste : la « fonctionnalité de rétractation » en ligne (L221-21, en vigueur depuis le 19/06/2026) ne vise que les contrats conclus au moyen d’une interface en ligne, a priori pas un devis signé par email ; cas d’un devis signé chez le client (contrat hors établissement, L221-3 pour les petits professionnels).
+# TODO(contenu): art. 4 reformulé et formulaire type ajouté le 2026-11-21 : à valider par Amandine, idéalement avec un juriste, avant la mise en production (nouvelle clause contractuelle, rédigée sans elle). Bloquant parce que la clause renvoie à des pratiques qu’elle seule peut mettre en place : (1) son modèle de devis doit porter une mention distincte, non pré-cochée, par laquelle le client demande le démarrage avant la fin des 14 jours et reconnaît perdre son droit de rétractation une fois la prestation pleinement exécutée (L221-25 ; sans elle, rien n’est dû en cas de rétractation) ; (2) le formulaire de rétractation doit accompagner le devis ou la confirmation de commande envoyée par email (L221-13). À confirmer par le juriste : la « fonctionnalité de rétractation » en ligne (L221-21, en vigueur depuis le 19/06/2026) ne vise que les contrats conclus au moyen d’une interface en ligne, a priori pas un devis signé par email ; cas d’un devis signé chez le client (contrat hors établissement, L221-3 pour les petits professionnels).
 # TODO(contenu): médiateur de la consommation absent (obligatoire pour les clients particuliers, L612-1 et L616-1) : Amandine doit adhérer réellement à un médiateur (aucun nom ne peut être affiché sans adhésion), puis fournir son nom, son site et son adresse, à ajouter à l’art. 11 et aux mentions légales.
 # Décision (2026-11-21) : clients professionnels — clause légale ajoutée à l’art. 5 (pénalités de retard au taux de la BCE majoré de 10 points, exigibles sans rappel ; indemnité forfaitaire de 40 € pour frais de recouvrement), réservée aux clients professionnels (Code de commerce L441-10 II et D441-5, Légifrance, versions en vigueur au 21/11/2026). C’est le régime légal applicable à défaut d’accord : aucun engagement commercial nouveau. Rappel (non bloquant) : ces mentions doivent aussi figurer sur les factures adressées aux professionnels.
 # Décision (2026-11-21) : art. 6 — l’information précontractuelle sur le délai (L111-1 3°) est satisfaite dès lors que chaque devis indique un délai d’exécution : « délais indiqués sur le devis » est conforme, aucun délai par formule n’est à publier sur le site. Rappel (non bloquant) : chaque devis doit indiquer un délai.
 # TODO(contenu): art. 7 publication des projets et des photos transmises par le client : prévoir un accord explicite du client (photos de son logement), en particulier pour les avis et les fiches réalisations.
 # Décision (2026-11-21) : art. 12 — l’assurance RC Pro n’est pas obligatoire pour une décoratrice d’intérieur (activité non réglementée) ; la clause est reprise telle quelle. Rappel (non bloquant) : nom de l’assureur et couverture géographique facultatifs, à ajouter si Amandine le souhaite ; la référence à l’article 1240 du Code civil (responsabilité délictuelle, qui ne fonde pas une obligation d’assurance) est à faire vérifier par un juriste ; une assurance décennale ne serait requise que si elle fait de la maîtrise d’œuvre ou du suivi de chantier (à lui demander).
-# TODO(contenu): mention « EI » ou « entrepreneur individuel » à côté du nom (obligatoire depuis le 15/05/2022, formulation à valider par Amandine) et adresse postale complète à l’art. 1 et dans le destinataire du formulaire de rétractation (adresse du siège, ou adresse d’une société de domiciliation : Amandine n’est pas obligée de publier son domicile si elle se fait domicilier).
+# Décision (2026-11-22) : mention « EI » accolée au nom (entrepreneur individuel, imposée par le décret 2022-725), voir mentions-legales.md.
+# Décision (2026-11-22, adresse donnée par l’humain et confirmée par l’annuaire des entreprises, INSEE/RNE) : siège 24 allée du Pré Lambesc, 91190 Gif-sur-Yvette, injecté par le jeton `{legalAddress}` (registration.legalAddress de src/config/site.ts, ADR-0016) : art. 1 et destinataire du formulaire de rétractation.
 # Décision (2026-11-21) : aucune obligation légale de dater les CGS (bonne pratique seulement). Rappel (non bloquant) : indiquer une date d’entrée en vigueur le jour de la bascule.
 seo:
   title: 'Conditions générales de services'
@@ -43,7 +44,7 @@ Les termes employés dans les présentes Conditions générales de services ont 
 - **Site internet** : le site accessible à l’adresse [https://amgdecorationdinterieur.com](https://amgdecorationdinterieur.com).
 - **Service ou prestation** : les services de décoration d’intérieur proposés par AMG Décoration d’Intérieur et présentés sur le site internet.
 - **Client** : la personne physique ou morale qui acquiert un ou plusieurs services du Prestataire par devis signé, à des fins personnelles ou professionnelles, après avoir accepté les présentes CGS.
-- **Prestataire** : Amandine Gaury, AMG Décoration d’Intérieur, décoratrice d’intérieur.
+- **Prestataire** : Amandine Gaury EI, AMG Décoration d’Intérieur, décoratrice d’intérieur.
 
 Tout Client reconnaît avoir pris connaissance de ce document avant de signer un devis avec la mention « bon pour accord », et avoir la capacité de contracter avec AMG Décoration d’Intérieur. Toute signature du devis vaut acceptation des présentes conditions.
 
@@ -57,9 +58,9 @@ Avant toute prestation, un devis détaillé est établi et remis au Client. Il p
 
 Le Client déclare avoir pris connaissance des présentes CGS et les avoir acceptées avant de signer le devis. Le choix et l’achat d’un service relèvent de la seule responsabilité du Client. Toute signature du devis avec la mention « bon pour accord » vaut acceptation des CGS.
 
-Le site internet amgdecorationdinterieur.com est géré par Amandine Gaury, ci-après dénommée AMG Décoration d’Intérieur, micro-entrepreneur immatriculée au Registre national des entreprises (RNE) sous le numéro SIREN 531 938 868 (SIRET {siret}).
+Le site internet amgdecorationdinterieur.com est géré par Amandine Gaury EI, ci-après dénommée AMG Décoration d’Intérieur, micro-entrepreneur immatriculée au Registre national des entreprises (RNE) sous le numéro SIREN 531 938 868 (SIRET {siret}).
 
-- **Siège social** : Gif-sur-Yvette (91)
+- **Siège social** : {legalAddress}
 - **Liste des services** : [https://amgdecorationdinterieur.com](https://amgdecorationdinterieur.com)
 - **Email** : [{email}](mailto:{email})
 - **Téléphone** : [{phone}](tel:{phoneE164})
@@ -207,7 +208,7 @@ Ce formulaire reprend le modèle figurant en annexe à l’article R221-1 du Cod
 
 _(Veuillez compléter et renvoyer le présent formulaire uniquement si vous souhaitez vous rétracter du contrat.)_
 
-À l’attention d’AMG Décoration d’Intérieur, Amandine Gaury, [{email}](mailto:{email}) :
+À l’attention d’AMG Décoration d’Intérieur, Amandine Gaury EI, {legalAddress}, [{email}](mailto:{email}) :
 
 Je/nous (\*) vous notifie/notifions (\*) par la présente ma/notre (\*) rétractation du contrat portant sur la vente du bien (\*)/pour la prestation de services (\*) ci-dessous :
 
