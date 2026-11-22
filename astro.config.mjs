@@ -36,6 +36,8 @@ const { PUBLIC_FORM_ENDPOINT } = {
 const contentTemplate = {
   variables: siteTemplateVariables(site),
   formMode: resolveFormTarget(PUBLIC_FORM_ENDPOINT, site.email).kind,
+  // Texte `{à-préciser}` refusé sur Vercel seulement (production et previews publient le site).
+  rejectPending: process.env['VERCEL_ENV'] !== undefined,
 };
 
 // Configuration Astro — voir docs/ARCHITECTURE.md (§ Configuration).

@@ -11,7 +11,7 @@
  *
  * Marqueur `{à-préciser}` : texte d'attente propre à un mode du formulaire (ex. prestataire du
  * service pas encore choisi). Retiré avec son bloc dans l'autre mode ; publié, il fait échouer
- * le build, quel que soit l'environnement (obligation RGPD art. 13 encore due).
+ * tout build Vercel (obligation RGPD art. 13 encore due ; voir `rejectPending`).
  *
  * Fonctions PURES (tests/unit/content-template.test.ts) ; le plugin n'importe que des types.
  * Sans alias d'import : chargé avant la configuration de Vite.
@@ -26,6 +26,12 @@ export type TemplateVariables = Readonly<Record<string, string>>;
 export interface ContentTemplateContext {
   readonly variables: TemplateVariables;
   readonly formMode: FormMode;
+  /**
+   * Refuser un texte `{à-préciser}` publié (défaut : oui). astro.config.mjs ne l'active que pour
+   * les builds Vercel (production et previews, `VERCEL_ENV`) : les seuls qui publient le site ;
+   * le build de test du mode service (`test:e2e:service`, endpoint factice) reste possible.
+   */
+  readonly rejectPending?: boolean;
 }
 
 const FORM_MODES: readonly string[] = ['service', 'mailto'] satisfies FormMode[];
@@ -103,7 +109,7 @@ export function selectFormBlocks(text: string, formMode: FormMode): string {
 export function renderContentTemplate(text: string, context: ContentTemplateContext): string {
   const output = selectFormBlocks(fillTokens(text, context.variables), context.formMode);
   const offset = output.indexOf(PENDING_MARKER);
-  if (offset !== -1) {
+  if (offset !== -1 && context.rejectPending !== false) {
     throw new Error(
       `Texte « à préciser » publié en mode « ${context.formMode} » (ligne ${lineAt(output, offset)} du corps rendu) : complétez-le avant de publier ce mode de formulaire.`,
     );
