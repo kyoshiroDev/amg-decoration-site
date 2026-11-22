@@ -15,7 +15,7 @@ Checklist de la bascule de `amgdecorationdinterieur.com` (WordPress) vers le nou
 | Information                                                                                                                                      | Où                                          |
 | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
 | Adresse postale complète du siège, ou adresse d'une société de domiciliation (domicile non obligatoire)                                          | mentions légales, CGS art. 1, `site.ts`     |
-| Mention « Amandine Gaury EI » (ou « entrepreneur individuel ») ; inscription au RCS ou non (SIREN déjà affiché)                                  | mentions légales, CGS                       |
+| Mention « Amandine Gaury EI » (ou « entrepreneur individuel ») (SIREN déjà affiché ; pas de RCS : prestations de services seulement)             | mentions légales, CGS                       |
 | Médiateur de la consommation : adhésion, puis nom, site et adresse                                                                               | mentions légales, CGS art. 11               |
 | Validation de l'art. 4 des CGS (rétractation) et du formulaire type ajoutés le 2026-11-21 ; mention de démarrage anticipé sur le modèle de devis | CGS art. 4, annexe                          |
 | Prix : affichage ferme, « à partir de » ou devis seul                                                                                            | CGS art. 1, 3, 5 ; `site.ts` (`showPrices`) |

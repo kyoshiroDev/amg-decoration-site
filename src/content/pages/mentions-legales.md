@@ -7,7 +7,7 @@
 #
 # TODO(contenu): adresse postale complète du siège — le site actuel n’affiche que « Gif-sur-Yvette (91) », insuffisant pour l’éditrice (LCEN art. 1-1). Si Amandine ne veut pas publier son domicile, elle peut passer par une société de domiciliation et donner cette adresse (à reporter aussi dans les CGS, art. 1).
 # Décision (2026-11-21) : il n’existe pas de numéro RNE distinct ; l’identifiant au Registre national des entreprises est le SIREN (9 premiers chiffres du SIRET), affiché en clair ci-dessous (531 938 868, à garder identique à `registration.siret` de src/config/site.ts).
-# TODO(contenu): confirmer qu’Amandine n’est pas aussi inscrite au RCS (activité commerciale) ; sinon ajouter « RCS <ville du greffe> » ici et à l’art. 1 des CGS.
+# Décision (2026-11-22, confirmée par l’humain) : Amandine ne vend que des prestations de services (aucune vente de meubles ni d’objets) : activité non commerciale, pas d’inscription au RCS ; l’immatriculation au RNE (SIREN) suffit.
 # TODO(contenu): depuis le 15/05/2022, la mention « EI » ou « entrepreneur individuel » doit accompagner le nom de l’entrepreneuse individuelle : formulation à valider par Amandine.
 # Décision (2026-11-21, validée par l’humain) : Vercel ne publie aucun numéro de téléphone ; la page affiche son adresse postale et son email de contact.
 # Décision (2026-11-21) : aucune photo Pexels de l’ancien site n’est reprise (seuls les rendus et photos d’Amandine le sont, src/assets/placeholders/README.md) ; rien à créditer.

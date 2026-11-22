@@ -5,24 +5,24 @@
 
 ## 1. Checklist
 
-| Statut     | Point                                                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Fait       | Mentions légales `/mentions-legales/` : éditrice, statut, SIRET, NAF, siège tel qu'affiché, contact, directrice de publication |
-| Fait       | Hébergeur Vercel Inc. identifié et sourcé (raison sociale, adresse, contact)                                                   |
-| À faire    | Adresse de l'éditrice (ou domiciliation), mention « EI », non-inscription au RCS ; SIREN (RNE) affiché le 2026-11-21           |
-| Fait       | Politique de confidentialité `/confidentialite/` créée (le site actuel n'en a aucune)                                          |
-| Sans objet | Service de formulaire (§ 6, point 6) : repli mailto: ; un build en mode service échoue tant qu'il n'est pas nommé              |
-| Fait       | Aucun cookie ni traceur vérifié dans le code : **pas de bandeau** (§ 4)                                                        |
-| Fait       | Formulaire spécifié : champs minimaux, pas d'adresse postale, mention d'information, honeypot, aucune case pré-cochée (§ 5)    |
-| À vérifier | Formulaire implémenté conformément au § 5 (agent `designer`), test e2e « zéro cookie » (agent `qa`)                            |
-| Fait       | CGS `/conditions-generales/` reprises fidèlement (sauf art. 4 réécrit et clause pros de l'art. 5, voir ci-dessous)             |
-| À faire    | CGS : médiateur de la consommation, prix affichés ou devis (§ 6, risque élevé)                                                 |
-| À valider  | CGS art. 4 (rétractation) reformulé et formulaire type ajouté en annexe le 2026-11-21 : validation et modèle de devis (§ 6.2)  |
-| Fait       | CGS : clause légale clients professionnels (L441-10, D441-5), délais au devis, RNE (réglé le 2026-11-21)                       |
-| À faire    | Avis clients affichés : information sur leur contrôle (Code de la consommation, L111-7-2 ; § 6, point 12)                      |
-| Fait       | Pages légales liées dans le pied de page (`site.legalNav`, `FooterLegal.astro`) et indexables                                  |
-| Fait       | Ancienne URL `/politique-de-confidentialite/` (qui contenait les mentions légales) redirigée en 301 vers `/mentions-legales/`  |
-| À faire    | Hébergement Vercel sur une offre **Pro** (usage commercial, DPA) (§ 3)                                                         |
+| Statut     | Point                                                                                                                                                                |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fait       | Mentions légales `/mentions-legales/` : éditrice, statut, SIRET, NAF, siège tel qu'affiché, contact, directrice de publication                                       |
+| Fait       | Hébergeur Vercel Inc. identifié et sourcé (raison sociale, adresse, contact)                                                                                         |
+| À faire    | Adresse de l'éditrice (ou domiciliation), mention « EI » ; SIREN (RNE) affiché le 2026-11-21, pas de RCS (prestations de services seulement, confirmé le 2026-11-22) |
+| Fait       | Politique de confidentialité `/confidentialite/` créée (le site actuel n'en a aucune)                                                                                |
+| Sans objet | Service de formulaire (§ 6, point 6) : repli mailto: ; un build en mode service échoue tant qu'il n'est pas nommé                                                    |
+| Fait       | Aucun cookie ni traceur vérifié dans le code : **pas de bandeau** (§ 4)                                                                                              |
+| Fait       | Formulaire spécifié : champs minimaux, pas d'adresse postale, mention d'information, honeypot, aucune case pré-cochée (§ 5)                                          |
+| À vérifier | Formulaire implémenté conformément au § 5 (agent `designer`), test e2e « zéro cookie » (agent `qa`)                                                                  |
+| Fait       | CGS `/conditions-generales/` reprises fidèlement (sauf art. 4 réécrit et clause pros de l'art. 5, voir ci-dessous)                                                   |
+| À faire    | CGS : médiateur de la consommation, prix affichés ou devis (§ 6, risque élevé)                                                                                       |
+| À valider  | CGS art. 4 (rétractation) reformulé et formulaire type ajouté en annexe le 2026-11-21 : validation et modèle de devis (§ 6.2)                                        |
+| Fait       | CGS : clause légale clients professionnels (L441-10, D441-5), délais au devis, RNE (réglé le 2026-11-21)                                                             |
+| À faire    | Avis clients affichés : information sur leur contrôle (Code de la consommation, L111-7-2 ; § 6, point 12)                                                            |
+| Fait       | Pages légales liées dans le pied de page (`site.legalNav`, `FooterLegal.astro`) et indexables                                                                        |
+| Fait       | Ancienne URL `/politique-de-confidentialite/` (qui contenait les mentions légales) redirigée en 301 vers `/mentions-legales/`                                        |
+| À faire    | Hébergement Vercel sur une offre **Pro** (usage commercial, DPA) (§ 3)                                                                                               |
 
 ## 2. Fichiers concernés
 
@@ -160,12 +160,11 @@ Liste minimale au 2026-11-21 (les autres points ont été réglés sans elle, vo
 
 1. Adresse postale complète du siège, ou adresse d'une société de domiciliation si elle ne veut pas publier son domicile (mentions légales, CGS art. 1, formulaire de rétractation).
 2. Formulation avec la mention « EI » ou « entrepreneur individuel ».
-3. Est-elle aussi inscrite au RCS (activité commerciale) ? Si oui, ville du greffe.
-4. Adhésion à un médiateur de la consommation : nom, site internet, adresse.
-5. Choix sur les prix : prix fermes, « à partir de » ou devis seul (alignement de la page Prestations et des CGS, art. 1, 3, 5).
-6. Validation de l'article 4 des CGS (rétractation) et du formulaire type en annexe, idéalement par un juriste ; mention de demande expresse de démarrage anticipé ajoutée à son modèle de devis ; formulaire joint au devis ou à la confirmation de commande.
-7. Accord des clients pour la publication de leurs projets et photos (CGS art. 7) ; durée de conservation des demandes sans suite (3 ans après le dernier échange par défaut) et confirmation de l'absence de toute prospection.
-8. Passage du compte Vercel sur l'offre Pro (§ 3).
+3. Adhésion à un médiateur de la consommation : nom, site internet, adresse.
+4. Choix sur les prix : prix fermes, « à partir de » ou devis seul (alignement de la page Prestations et des CGS, art. 1, 3, 5).
+5. Validation de l'article 4 des CGS (rétractation) et du formulaire type en annexe, idéalement par un juriste ; mention de demande expresse de démarrage anticipé ajoutée à son modèle de devis ; formulaire joint au devis ou à la confirmation de commande.
+6. Accord des clients pour la publication de leurs projets et photos (CGS art. 7) ; durée de conservation des demandes sans suite (3 ans après le dernier échange par défaut) et confirmation de l'absence de toute prospection.
+7. Passage du compte Vercel sur l'offre Pro (§ 3).
 
 Questions non bloquantes, à poser en même temps : fait-elle de la maîtrise d'œuvre ou du suivi de chantier (assurance décennale) ? souhaite-t-elle afficher son assureur RC Pro ? ses devis indiquent-ils toujours un délai, et ses factures aux professionnels les pénalités et l'indemnité de 40 € ? d'où viennent les avis affichés et sont-ils contrôlés (point 12) ? Recommandations facultatives : messagerie professionnelle couverte par un contrat de sous-traitance ; service de formulaire un jour (Formspark recommandé, ADR-0003).
 
