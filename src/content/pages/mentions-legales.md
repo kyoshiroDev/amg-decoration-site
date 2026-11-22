@@ -3,7 +3,7 @@
 # servie à l’URL /politique-de-confidentialite/, redirigée en 301 vers /mentions-legales/).
 # Obligations : LCEN (loi n° 2004-575), art. 1-1 depuis la loi SREN n° 2024-449. Synthèse : docs/CONFORMITE.md.
 # Hébergeur : https://vercel.com/legal/privacy-policy et https://vercel.com/legal/terms (consultés le 18/11/2026).
-# Coordonnées : jetons `{email}`, `{phone}`, `{phoneE164}`, `{siret}` remplacés au rendu par les valeurs de src/config/site.ts (ADR-0016).
+# Coordonnées : jetons `{email}`, `{phone}`, `{phoneE164}`, `{siret}`, `{legalAddress}` remplacés au rendu par les valeurs de src/config/site.ts (ADR-0016).
 #
 # Décision (2026-11-22, adresse donnée par l’humain et confirmée par l’annuaire des entreprises, INSEE/RNE) : siège 24 allée du Pré Lambesc, 91190 Gif-sur-Yvette, injecté par le jeton `{legalAddress}` (registration.legalAddress de src/config/site.ts, ADR-0016).
 # Décision (2026-11-21) : il n’existe pas de numéro RNE distinct ; l’identifiant au Registre national des entreprises est le SIREN (9 premiers chiffres du SIRET), affiché en clair ci-dessous (531 938 868, à garder identique à `registration.siret` de src/config/site.ts).

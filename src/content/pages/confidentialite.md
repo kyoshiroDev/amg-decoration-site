@@ -3,7 +3,7 @@
 # Constat technique au 18/11/2026 : site statique, polices auto-hébergées (Fonts API, fournisseur Fontsource téléchargé au build),
 # aucun script tiers, aucun iframe, aucun cookie, aucun localStorage, aucune mesure d’audience.
 # Hébergeur : https://vercel.com/legal/privacy-policy (Vercel déclare adhérer au EU-U.S. Data Privacy Framework et recourir aux clauses contractuelles types).
-# Coordonnées : jetons `{email}`, `{phone}`, `{phoneE164}`, `{siret}` remplacés au rendu par les valeurs de src/config/site.ts (ADR-0016).
+# Coordonnées : jetons `{email}`, `{phone}`, `{phoneE164}`, `{siret}`, `{legalAddress}` remplacés au rendu par les valeurs de src/config/site.ts (ADR-0016).
 # Paragraphes propres au mode du formulaire : blocs `{formulaire:service}` (PUBLIC_FORM_ENDPOINT défini) et `{formulaire:mailto}` (repli mailto:),
 # fermés par `{/formulaire}` ; seul le bloc du mode du build est publié (ADR-0016).
 #
@@ -26,7 +26,7 @@ _Dernière mise à jour : novembre 2026._
 
 ## Qui est responsable de vos données ?
 
-Le responsable du traitement est **Amandine Gaury EI**, AMG Décoration d’Intérieur, micro-entrepreneur (SIRET {siret}), dont le siège est situé {legalAddress}.
+Le responsable du traitement est **Amandine Gaury EI**, AMG Décoration d’Intérieur, micro-entrepreneur (SIRET {siret}), dont le siège est situé au {legalAddress}.
 
 Pour toute question sur vos données, écrivez-moi à [{email}](mailto:{email}) ou appelez-moi au [{phone}](tel:{phoneE164}).
 
