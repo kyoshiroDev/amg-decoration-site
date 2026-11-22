@@ -6,6 +6,7 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ### Production provisoire sur Vercel
 
+- Pages légales : mention « Amandine Gaury EI » (entrepreneur individuel, imposée par le décret 2022-725) dans les mentions légales, les CGS et la confidentialité ; 8 points légaux restent bloquants.
 - Correctif : le marqueur `{à-préciser}` ne bloque plus que les builds Vercel (production et previews) ; le build de test du mode service (`test:e2e:service`, endpoint factice) refonctionne en CI.
 - Pas d'inscription au RCS : Amandine ne vend que des prestations de services (confirmé le 2026-11-22) ; 9 points légaux restent bloquants.
 - Pages légales : 7 des 23 points bloquants réglés sans attendre Amandine (« prix nets » au lieu de « TTC », définitions des CGS alignées sur le devis signé, repli `mailto:` assumé, aucune photo Pexels, pas de crédit de conception, hébergeur sans téléphone, messagerie Gmail en simple recommandation) ; 16 restent (`npm run check:prod`).
