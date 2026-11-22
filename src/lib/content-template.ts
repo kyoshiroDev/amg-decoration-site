@@ -9,6 +9,10 @@
  *   Paragraphe affiché seulement si `PUBLIC_FORM_ENDPOINT` est défini.
  *   {/formulaire}
  *
+ * Marqueur `{à-préciser}` : texte d'attente propre à un mode du formulaire (ex. prestataire du
+ * service pas encore choisi). Retiré avec son bloc dans l'autre mode ; publié, il fait échouer
+ * le build, quel que soit l'environnement (obligation RGPD art. 13 encore due).
+ *
  * Fonctions PURES (tests/unit/content-template.test.ts) ; le plugin n'importe que des types.
  * Sans alias d'import : chargé avant la configuration de Vite.
  */
@@ -27,6 +31,8 @@ export interface ContentTemplateContext {
 const FORM_MODES: readonly string[] = ['service', 'mailto'] satisfies FormMode[];
 /** `{email}`, `{phoneE164}` : un identifiant entre accolades. */
 const TOKEN = /\{([a-zA-Z][a-zA-Z0-9]*)\}/g;
+/** Texte d'attente interdit de publication (hors de `TOKEN` : accent et tiret). */
+export const PENDING_MARKER = '{à-préciser}';
 /** Bloc conditionnel, marqueurs seuls sur leur ligne. */
 const BLOCK_OPEN = /^\{formulaire:([^}]*)\}$/;
 const BLOCK_CLOSE = '{/formulaire}';
@@ -95,7 +101,14 @@ export function selectFormBlocks(text: string, formMode: FormMode): string {
 
 /** Corps Markdown final : jetons remplacés, blocs du mode courant seulement. */
 export function renderContentTemplate(text: string, context: ContentTemplateContext): string {
-  return selectFormBlocks(fillTokens(text, context.variables), context.formMode);
+  const output = selectFormBlocks(fillTokens(text, context.variables), context.formMode);
+  const offset = output.indexOf(PENDING_MARKER);
+  if (offset !== -1) {
+    throw new Error(
+      `Texte « à préciser » publié en mode « ${context.formMode} » (ligne ${lineAt(output, offset)} du corps rendu) : complétez-le avant de publier ce mode de formulaire.`,
+    );
+  }
+  return output;
 }
 
 /**

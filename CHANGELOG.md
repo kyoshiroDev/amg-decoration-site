@@ -6,6 +6,12 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ### Production provisoire sur Vercel
 
+- Pas d'inscription au RCS : Amandine ne vend que des prestations de services (confirmé le 2026-11-22) ; 9 points légaux restent bloquants.
+- Pages légales : 7 des 23 points bloquants réglés sans attendre Amandine (« prix nets » au lieu de « TTC », définitions des CGS alignées sur le devis signé, repli `mailto:` assumé, aucune photo Pexels, pas de crédit de conception, hébergeur sans téléphone, messagerie Gmail en simple recommandation) ; 16 restent (`npm run check:prod`).
+- Consolidation des pages légales : 6 points de plus levés sans Amandine, décisions tracées en commentaire (immatriculation au RNE affichée avec le SIREN, puisqu'il n'existe pas de numéro RNE distinct ; délais renvoyés au devis, conformes à L111-1 3° ; RC Pro non obligatoire pour une décoratrice ; dates d'entrée en vigueur et de mise à jour sans obligation légale ; clients professionnels) ; durée de conservation et absence de prospection regroupées en un seul point ; il reste **10** `TODO(contenu)` bloquants (adresse ou domiciliation, mention « EI », inscription au RCS à exclure, médiateur, prix, validation de l'art. 4, accord des clients pour les photos, conservation et prospection).
+- CGS : clause légale réservée aux clients professionnels dans l'article 5 (pénalités de retard au taux de la BCE majoré de 10 points, exigibles sans rappel, indemnité forfaitaire de 40 € pour frais de recouvrement, Code de commerce L441-10 et D441-5) ; définition « Client » alignée sur le devis signé ; « prix nets : TVA non applicable, article 293 B du CGI » sans doublon.
+- Docs de conformité et de mise en ligne alignées : nouveau point « avis clients » (information sur le contrôle des avis, L111-7-2 du Code de la consommation, non bloquant), service de formulaire à nommer avant de définir `PUBLIC_FORM_ENDPOINT`, liste des questions pour Amandine réduite à l'essentiel.
+- Chaque build de production écrit l'état du garde-fou légal dans son journal (« Garde-fou légal : actif / inactif »).
 - Le garde-fou des pages légales ne bloque plus que le build de production qui sert le vrai domaine (`VERCEL_PROJECT_PRODUCTION_URL`) : la production se déploie sur son adresse `*.vercel.app` (en `noindex`) sans attendre les informations d'Amandine ; rattacher le domaine exige `check:prod` vert puis un redéploiement (ADR-0015 révisée, `docs/MISE-EN-LIGNE.md`).
 
 ### Images de l'ancien site

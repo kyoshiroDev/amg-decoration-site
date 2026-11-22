@@ -7,11 +7,11 @@
 # Paragraphes propres au mode du formulaire : blocs `{formulaire:service}` (PUBLIC_FORM_ENDPOINT défini) et `{formulaire:mailto}` (repli mailto:),
 # fermés par `{/formulaire}` ; seul le bloc du mode du build est publié (ADR-0016).
 #
-# TODO(contenu): si le formulaire passe par un service (ADR-0003) : nommer le prestataire, son pays d’établissement, son pays d’hébergement et la garantie de transfert éventuelle, dans les blocs `{formulaire:service}` des sections « Qui reçoit vos données » et « Transferts ». Si le site est mis en ligne avec le repli mailto:, ce point est sans objet : supprimer ce TODO.
-# TODO(contenu): durée de conservation des demandes sans suite : 3 ans maximum après le dernier échange (repère du référentiel CNIL « gestion commerciale ») ; Amandine peut choisir plus court.
-# TODO(contenu): Amandine confirme-t-elle ne faire aucune prospection (newsletter, relances commerciales) avec les coordonnées reçues ? Sinon, prévoir une case à cocher distincte et adapter cette page.
-# TODO(contenu): messagerie Gmail grand public (am.gaury@gmail.com) : envisager une messagerie professionnelle couverte par un contrat de sous-traitance (Google Workspace ou fournisseur européen) ; adapter la section « Qui reçoit vos données ».
-# TODO(contenu): date de mise à jour à ajuster le jour de la mise en ligne.
+# Décision (2026-11-21) : mise en ligne avec le repli mailto: (aucun PUBLIC_FORM_ENDPOINT) ; seuls les blocs `{formulaire:mailto}` sont publiés.
+# Garde-fou : la phrase d’attente des « Transferts » porte le marqueur `{à-préciser}` ; tout build avec PUBLIC_FORM_ENDPOINT échoue tant que le prestataire, son pays d’établissement, son pays d’hébergement et la garantie de transfert ne la remplacent pas (blocs `{formulaire:service}`, ADR-0016).
+# TODO(contenu): à faire confirmer par Amandine (1) la durée de conservation des demandes sans suite : par défaut « 3 ans après le dernier échange », déjà publiée (repère du référentiel CNIL « gestion commerciale »), elle peut choisir plus court ; (2) l’absence de toute prospection (newsletter, relances commerciales) avec les coordonnées reçues, déjà affirmée par la page ; sinon, prévoir une case à cocher distincte, facultative et non cochée, et adapter cette page.
+# Rappel (recommandation, non bloquant) : la page déclare la messagerie Gmail (Google) parmi les destinataires ; une messagerie professionnelle couverte par un contrat de sous-traitance (Google Workspace ou fournisseur européen) serait préférable, en adaptant alors « Qui reçoit vos données ».
+# Décision (2026-11-21) : aucune obligation légale de dater la politique (bonne pratique seulement) ; « novembre 2026 » est conservé. Rappel (non bloquant) : ajuster la date de mise à jour le jour de la bascule.
 # Rappel (maintenance, non bloquant) : si un fil Instagram, une carte ou une vidéo intégrée est ajouté un jour, mettre à jour la section « Cookies » et charger l’intégration au clic.
 seo:
   title: 'Politique de confidentialité'
@@ -103,7 +103,7 @@ Vos données ne sont communiquées à personne d’autre, sauf obligation légal
 Vercel est une société américaine dont les serveurs sont répartis dans le monde. Elle déclare adhérer au cadre de protection des données UE–États-Unis (Data Privacy Framework), reconnu par la Commission européenne, et recourir aux clauses contractuelles types de la Commission européenne. Google, qui fournit ma messagerie, peut également traiter des données hors de l’Union européenne, avec ses propres garanties.
 
 {formulaire:service}
-Le service de formulaire et les garanties qui s’appliquent à lui seront précisés ici dès qu’il sera choisi.
+{à-préciser} Le service de formulaire et les garanties qui s’appliquent à lui seront précisés ici dès qu’il sera choisi.
 {/formulaire}
 
 ## Cookies et autres traceurs

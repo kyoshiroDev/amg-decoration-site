@@ -12,23 +12,17 @@ Checklist de la bascule de `amgdecorationdinterieur.com` (WordPress) vers le nou
 
 ### Bloquant (légal)
 
-| Information                                                                                                                                             | Où                                          |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| Adresse postale complète du siège ou adresse de domiciliation                                                                                           | mentions légales, CGS art. 1, `site.ts`     |
-| Mention « Amandine Gaury EI » (ou « entrepreneur individuel ») et numéro RNE                                                                            | mentions légales, CGS                       |
-| Médiateur de la consommation : adhésion, puis nom, site et adresse                                                                                      | mentions légales, CGS art. 11               |
-| Article 4 des CGS (droit de rétractation, L221-25 / L221-28) validé, idéalement par un juriste ; accord pour ajouter le formulaire type de rétractation | CGS                                         |
-| Prix : affichage ferme, « à partir de » ou devis seul ; délai indicatif par formule                                                                     | CGS art. 3, 5, 6 ; `site.ts` (`showPrices`) |
-| Clients professionnels facturés ? (pénalités de retard, indemnité de 40 €)                                                                              | CGS                                         |
-| Accord des clients pour publier les projets, photos et avis                                                                                             | CGS art. 7, réalisations, témoignages       |
-| « TTC » → « prix nets, TVA non applicable » ; commande « passée sur le site » → devis signé                                                             | CGS                                         |
-| Assureur RC Pro et couverture (facultatif)                                                                                                              | CGS art. 12                                 |
-| Date d'entrée en vigueur des CGS                                                                                                                        | CGS                                         |
-| Service de formulaire (Formspark recommandé, ADR-0003) ou maintien du repli `mailto:`                                                                   | confidentialité, `PUBLIC_FORM_ENDPOINT`     |
-| Durée de conservation des demandes sans suite ; aucune prospection confirmée                                                                            | confidentialité                             |
-| Messagerie professionnelle (facultatif, recommandé)                                                                                                     | confidentialité                             |
-| Photos Pexels de l'ancien site (à exclure ou créditer) ; crédit de conception du site (ou retrait de la ligne)                                          | mentions légales                            |
-| Affichage de l'hébergeur Vercel sans téléphone (validation)                                                                                             | mentions légales                            |
+| Information                                                                                                                                      | Où                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
+| Adresse postale complète du siège, ou adresse d'une société de domiciliation (domicile non obligatoire)                                          | mentions légales, CGS art. 1, `site.ts`     |
+| Mention « Amandine Gaury EI » (ou « entrepreneur individuel ») (SIREN déjà affiché ; pas de RCS : prestations de services seulement)             | mentions légales, CGS                       |
+| Médiateur de la consommation : adhésion, puis nom, site et adresse                                                                               | mentions légales, CGS art. 11               |
+| Validation de l'art. 4 des CGS (rétractation) et du formulaire type ajoutés le 2026-11-21 ; mention de démarrage anticipé sur le modèle de devis | CGS art. 4, annexe                          |
+| Prix : affichage ferme, « à partir de » ou devis seul                                                                                            | CGS art. 1, 3, 5 ; `site.ts` (`showPrices`) |
+| Accord des clients pour publier les projets, photos et avis                                                                                      | CGS art. 7, réalisations, témoignages       |
+| Durée de conservation des demandes sans suite (3 ans après le dernier échange par défaut) ; aucune prospection confirmée                         | confidentialité                             |
+
+Réglés sans Amandine le 2026-11-21 (décisions tracées en commentaire dans chaque page) : « TTC » → « prix nets » et définitions des CGS alignées sur le devis signé ; mise en ligne avec le repli `mailto:` (pas de service de formulaire) ; aucune photo Pexels reprise ; pas de ligne de crédit pour la conception ; hébergeur Vercel affiché avec son adresse et son email (pas de téléphone publié) ; article 4 des CGS reformulé et formulaire type de rétractation ajouté en annexe (reste à valider, voir le tableau et `docs/CONFORMITE.md` § 6, point 2). Messagerie professionnelle : simple recommandation, non bloquante. Consolidation du même jour : immatriculation au RNE affichée avec le SIREN (il n'existe pas de numéro RNE distinct ; pas d'inscription au RCS, prestations de services seulement, confirmé le 2026-11-22) ; délais de réalisation renvoyés au devis, conforme à L111-1 3° (chaque devis doit indiquer un délai) ; RC Pro non obligatoire pour une décoratrice (assureur facultatif, article 1240 du Code civil à faire vérifier par un juriste, décennale seulement en cas de maîtrise d'œuvre ou de suivi de chantier) ; dates d'entrée en vigueur des CGS et de mise à jour de la confidentialité sans obligation légale (à ajuster le jour de la bascule, section 4) ; clause légale réservée aux clients professionnels ajoutée à l'art. 5 des CGS (pénalités au taux BCE majoré de 10 points, exigibles sans rappel, indemnité forfaitaire de 40 €, Code de commerce L441-10 et D441-5 ; ces mentions doivent aussi figurer sur les factures pros) ; définition « Client » et mention « prix nets » des CGS corrigées. Il reste 9 `TODO(contenu)` bloquants (au 2026-11-22).
 
 ### Visuels (tous repris de l'ancien site, en attendant les originaux)
 
@@ -47,6 +41,7 @@ Déjà tranchés par l'ancien site (relevé du 2026-11-20) : formation (cursus d
 - Nom de la formule : « Essentiel » ou « Essentielle » ; nombre de vues 3D et de modifications incluses par formule ; prix des options.
 - Conserver l'offre « Meuble sur-mesure 3D » et l'« Offre Professionnels » ? Formule réelle de chaque réalisation.
 - Attribution des avis clients ; questions fréquentes (FAQ, collection vide aujourd'hui).
+- Avis clients affichés (témoignages) : l'article L111-7-2 du Code de la consommation impose d'informer les visiteurs sur les modalités de publication et de traitement des avis, en précisant s'ils font ou non l'objet d'un contrôle. D'où viennent les avis (Google, messages reçus) et sont-ils vérifiés ? Une courte mention près des témoignages suffira (`docs/CONFORMITE.md` § 6, point 12 ; non bloquant pour les pages légales).
 - Zone : d'autres projets hors de France acceptés (le chalet en Suisse a été mené à distance) ? déplacements sur place à Paris / Île-de-France ?
 - Chambre des enfants du chalet : texte écrit d'après les rendus, idées clés à confirmer ; WhatsApp (canal confirmé) sur le même numéro que le téléphone ; profil LinkedIn actif.
 - Robots d'IA (`GPTBot`, `Google-Extended`, `ClaudeBot`…) : autoriser (choix actuel) ou bloquer (ADR-0011).
@@ -56,7 +51,7 @@ Déjà tranchés par l'ancien site (relevé du 2026-11-20) : formation (cursus d
 - [ ] `npm run check:prod` : aucun point bloquant.
 - [ ] `npm run verify` et CI de la PR vers `main` vertes (vérifications, e2e, Lighthouse 25 URL).
 - [ ] Vercel : projet connecté au dépôt, branche de production `main` ; **Settings → Environment Variables → « Automatically expose System Environment Variables » coché** (sans quoi `VERCEL_ENV` est absent et le garde-fou est muet).
-- [ ] Si un service de formulaire est choisi : `PUBLIC_FORM_ENDPOINT` défini pour Production (et Preview pour tester), formulaire testé de bout en bout ; la page confidentialité affiche alors les paragraphes « service ».
+- [ ] Si un service de formulaire est choisi : **d'abord** nommer le prestataire, son pays d'établissement, son pays d'hébergement et la garantie de transfert dans les blocs `{formulaire:service}` de `src/content/pages/confidentialite.md`, en remplaçant la phrase marquée `{à-préciser}` (sinon tout build avec la variable échoue, `src/lib/content-template.ts`) ; **ensuite** définir `PUBLIC_FORM_ENDPOINT` pour Production (et Preview pour tester) et tester le formulaire de bout en bout ; la page confidentialité affiche alors les paragraphes « service ».
 - [ ] Vercel Pro si le site est considéré comme commercial (conditions d'usage du plan Hobby).
 - [ ] En-têtes vérifiés sur la preview : `curl -sI https://<preview>.vercel.app/` → `content-security-policy` (meta) et `x-frame-options`, `strict-transport-security`, `permissions-policy`, `cross-origin-resource-policy`, `x-robots-tag: noindex` (previews uniquement).
 - [ ] Redirections vérifiées sur la preview : quelques anciennes URL de `docs/CONTENU-EXISTANT.md` (`/services/`, `/about/`, `/projet-chalet`…) → 308 vers la page finale en un saut.
