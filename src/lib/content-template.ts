@@ -52,6 +52,7 @@ export function siteTemplateVariables(
     phone: site.phone.display,
     phoneE164: site.phone.e164,
     siret: site.registration.siret,
+    legalAddress: site.registration.legalAddress,
   };
 }
 

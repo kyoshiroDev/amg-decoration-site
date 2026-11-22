@@ -5,7 +5,7 @@
 # Hébergeur : https://vercel.com/legal/privacy-policy et https://vercel.com/legal/terms (consultés le 18/11/2026).
 # Coordonnées : jetons `{email}`, `{phone}`, `{phoneE164}`, `{siret}` remplacés au rendu par les valeurs de src/config/site.ts (ADR-0016).
 #
-# TODO(contenu): adresse postale complète du siège — le site actuel n’affiche que « Gif-sur-Yvette (91) », insuffisant pour l’éditrice (LCEN art. 1-1). Si Amandine ne veut pas publier son domicile, elle peut passer par une société de domiciliation et donner cette adresse (à reporter aussi dans les CGS, art. 1).
+# Décision (2026-11-22, adresse donnée par l’humain) : siège allée du Pré Lambesc, 91190 Gif-sur-Yvette, injecté par le jeton `{legalAddress}` (registration.legalAddress de src/config/site.ts, ADR-0016).
 # Décision (2026-11-21) : il n’existe pas de numéro RNE distinct ; l’identifiant au Registre national des entreprises est le SIREN (9 premiers chiffres du SIRET), affiché en clair ci-dessous (531 938 868, à garder identique à `registration.siret` de src/config/site.ts).
 # Décision (2026-11-22, confirmée par l’humain) : Amandine ne vend que des prestations de services (aucune vente de meubles ni d’objets) : activité non commerciale, pas d’inscription au RCS ; l’immatriculation au RNE (SIREN) suffit.
 # Décision (2026-11-22) : le site actuel la présente comme « auto-entrepreneur », donc entrepreneur individuel ; la mention « EI » accolée au nom est imposée depuis le 15/05/2022 (décret 2022-725, Code de commerce R526-27), ce n’est pas un choix : appliquée ici, dans les CGS et la confidentialité.
@@ -31,7 +31,7 @@ Le site amgdecorationdinterieur.com est édité par **Amandine Gaury EI**, AMG D
 - **Immatriculation** : Registre national des entreprises (RNE), SIREN 531 938 868
 - **Code NAF** : 7410Z (activités spécialisées de design)
 - **Activité** : conseils et services en décoration d’intérieur
-- **Siège** : Gif-sur-Yvette (91), France
+- **Siège** : {legalAddress}, France
 - **TVA** : TVA non applicable, article 293 B du Code général des impôts
 - **Email** : [{email}](mailto:{email})
 - **Téléphone** : [{phone}](tel:{phoneE164})

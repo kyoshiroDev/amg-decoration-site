@@ -454,25 +454,25 @@ Informations manquantes :
 
 ## 7. Données légales affichées (relevées telles quelles, non vérifiées)
 
-| Donnée                       | Valeur affichée                                                                             | Page                  |
-| ---------------------------- | ------------------------------------------------------------------------------------------- | --------------------- |
-| Éditrice                     | Amandine Gaury                                                                              | Mentions légales      |
-| Statut                       | « auto-entrepreneur » (mentions) / « micro-entrepreneur » (CGS)                             | Mentions légales, CGS |
-| SIRET                        | 531 938 868 00019                                                                           | Mentions légales, CGS |
-| Code NAF                     | 7410Z (Activités spécialisées de design)                                                    | Mentions légales      |
-| Activité                     | Conseils et services en décoration d'intérieur                                              | Mentions légales      |
-| Siège                        | Gif-sur-Yvette (91) — adresse complète non affichée                                         | Mentions légales, CGS |
-| Directrice de publication    | Mme Amandine Gaury                                                                          | Mentions légales      |
-| Hébergeur                    | Hostinger International Ltd., 61 Lordou Vitronos Street, Larcana 6023 (orthographe du site) | Mentions légales      |
-| TVA                          | « TVA non applicable – article 293B du CGI »                                                | CGS                   |
-| RCS / RM, TVA intracom.      | non affichés                                                                                | —                     |
-| Conception du site           | Amandine Gaury                                                                              | Mentions légales      |
-| Crédits photos               | Amandine Gaury et « Photos libres de droits sur Pexels »                                    | Mentions légales      |
-| Médiateur de la consommation | non affiché                                                                                 | —                     |
-| Politique de confidentialité | **inexistante**                                                                             | —                     |
-| Copyright                    | « 2024-2026 » (pages récentes), « Copyright 2024 © » (anciennes)                            | Pied de page          |
+| Donnée                       | Valeur affichée                                                                                                                      | Page                  |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | --------------------- |
+| Éditrice                     | Amandine Gaury                                                                                                                       | Mentions légales      |
+| Statut                       | « auto-entrepreneur » (mentions) / « micro-entrepreneur » (CGS)                                                                      | Mentions légales, CGS |
+| SIRET                        | 531 938 868 00019                                                                                                                    | Mentions légales, CGS |
+| Code NAF                     | 7410Z (Activités spécialisées de design)                                                                                             | Mentions légales      |
+| Activité                     | Conseils et services en décoration d'intérieur                                                                                       | Mentions légales      |
+| Siège                        | Gif-sur-Yvette (91) — adresse complète non affichée (donnée par l'humain le 2026-11-22 : allée du Pré Lambesc, 91190 Gif-sur-Yvette) | Mentions légales, CGS |
+| Directrice de publication    | Mme Amandine Gaury                                                                                                                   | Mentions légales      |
+| Hébergeur                    | Hostinger International Ltd., 61 Lordou Vitronos Street, Larcana 6023 (orthographe du site)                                          | Mentions légales      |
+| TVA                          | « TVA non applicable – article 293B du CGI »                                                                                         | CGS                   |
+| RCS / RM, TVA intracom.      | non affichés                                                                                                                         | —                     |
+| Conception du site           | Amandine Gaury                                                                                                                       | Mentions légales      |
+| Crédits photos               | Amandine Gaury et « Photos libres de droits sur Pexels »                                                                             | Mentions légales      |
+| Médiateur de la consommation | non affiché                                                                                                                          | —                     |
+| Politique de confidentialité | **inexistante**                                                                                                                      | —                     |
+| Copyright                    | « 2024-2026 » (pages récentes), « Copyright 2024 © » (anciennes)                                                                     | Pied de page          |
 
-- `TODO(contenu): adresse postale complète à publier dans les mentions légales (obligatoire pour l'éditeur) ou adresse de domiciliation.`
+- ~~`TODO(contenu): adresse postale complète à publier dans les mentions légales`~~ réglé le 2026-11-22 (allée du Pré Lambesc, 91190 Gif-sur-Yvette).
 - `TODO(contenu): médiateur de la consommation choisi par Amandine (obligatoire pour une prestation à des particuliers).`
 - `TODO(contenu): assureur RC Pro (nom) si Amandine souhaite l'afficher.`
 - ~~Photos Pexels de l'ancien site~~ : réglé le 2026-11-21, aucune photo Pexels n'est reprise (seuls les rendus et photos d'Amandine le sont, `src/assets/placeholders/README.md`) ; rien à créditer (décision dans `src/content/pages/mentions-legales.md`).

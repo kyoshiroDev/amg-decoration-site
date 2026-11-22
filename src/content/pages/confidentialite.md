@@ -26,7 +26,7 @@ _Dernière mise à jour : novembre 2026._
 
 ## Qui est responsable de vos données ?
 
-Le responsable du traitement est **Amandine Gaury EI**, AMG Décoration d’Intérieur, micro-entrepreneur (SIRET {siret}), dont le siège est situé à Gif-sur-Yvette (91).
+Le responsable du traitement est **Amandine Gaury EI**, AMG Décoration d’Intérieur, micro-entrepreneur (SIRET {siret}), dont le siège est situé {legalAddress}.
 
 Pour toute question sur vos données, écrivez-moi à [{email}](mailto:{email}) ou appelez-moi au [{phone}](tel:{phoneE164}).
 
