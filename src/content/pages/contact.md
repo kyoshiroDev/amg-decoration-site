@@ -53,7 +53,7 @@ form:
       label: 'Votre projet'
       hint: 'Choisissez la formule ou l’offre qui vous intéresse. Pas encore d’idée ? Gardez « Je ne sais pas encore ».'
       options:
-        - 'Formule Essentiel'
+        - 'Formule Essentielle'
         - 'Formule Confort'
         - 'Formule Signature'
         - 'Formule Studio'

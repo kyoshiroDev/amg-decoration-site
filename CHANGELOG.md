@@ -6,6 +6,10 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ### Production provisoire sur Vercel
 
+- Prix : formules et options à prix fixe, d'après l'offre officielle d'Amandine (avril 2026) ; formule « Essentielle », modifications incluses (1, 2, 3, illimitées), délais de livraison et prix des 5 options affichés ; planche d'ambiance incluse, sélection de mobilier avec liens en option (shopping-list) ; CGS art. 1, 3 et 5 alignés. 1 point légal reste bloquant (accord des clients pour les photos).
+- Médiateur de la consommation : risque accepté par l'humain (adhésion reportée pour raison de coût), le point ne bloque plus la mise en ligne et figure dans la liste d'après bascule ; aucun nom affiché sans adhésion réelle. 2 points légaux restent bloquants (prix, accord des clients pour les photos).
+- CGS, article 4 : la prestation démarre à l'expiration du délai de rétractation de 14 jours (pratique d'Amandine) ; plus de démarrage anticipé ni de montant dû en cas de rétractation, remboursement intégral sous 14 jours ; 4 points légaux restent bloquants.
+- Confidentialité : durée de conservation (3 ans) et absence de prospection passées en non bloquant (l'obligation d'indiquer une durée est déjà remplie) ; 5 points légaux restent bloquants.
 - Pied de page : sur mobile, quand les liens légaux passent sur deux lignes, chaque ligne fait 44 px ; « Mentions légales » retrouve une zone de clic complète (31 px auparavant, recouverte par le lien du dessous). Test e2e de la zone réellement cliquable.
 - Pages légales : mention « Amandine Gaury EI » (entrepreneur individuel, imposée par le décret 2022-725) et adresse du siège (24 allée du Pré Lambesc, 91190 Gif-sur-Yvette, nouveau jeton `{legalAddress}` tiré de `site.ts`) dans les mentions légales, les CGS, le formulaire de rétractation et la confidentialité ; 6 points légaux restent bloquants.
 - Correctif : le marqueur `{à-préciser}` ne bloque plus que les builds Vercel (production et previews) ; le build de test du mode service (`test:e2e:service`, endpoint factice) refonctionne en CI.

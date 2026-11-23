@@ -12,7 +12,7 @@
 # Décision (2026-11-21, validée par l’humain) : Vercel ne publie aucun numéro de téléphone ; la page affiche son adresse postale et son email de contact.
 # Décision (2026-11-21) : aucune photo Pexels de l’ancien site n’est reprise (seuls les rendus et photos d’Amandine le sont, src/assets/placeholders/README.md) ; rien à créditer.
 # Décision (2026-11-21) : pas de ligne de crédit pour la conception du site.
-# TODO(contenu): médiateur de la consommation (obligatoire, Code de la consommation L612-1) : nom, site et adresse à ajouter ici une fois qu’Amandine aura réellement adhéré à un médiateur.
+# Décision (2026-11-23, risque accepté par l’humain) : pas encore de médiateur de la consommation (adhésion reportée pour raison de coût). L’obligation (L612-1, coordonnées sur le site et dans les CGS L616-1) demeure, sanction possible jusqu’à 3 000 € (L641-1) ; risque déjà présent sur l’ancien site, qui n’en affichait aucun. À RÉGULARISER dès que possible : adhésion à un médiateur référencé par la CECMC (secteur « aménagement de l’habitat… et activités de décoration »), puis nom, site et adresse à ajouter ici et à l’art. 11 des CGS (docs/MISE-EN-LIGNE.md § 4). Aucun nom affiché sans adhésion réelle.
 seo:
   title: 'Mentions légales'
   description: 'Mentions légales du site AMG Décoration d’Intérieur : identité de l’éditrice Amandine Gaury, hébergeur, propriété intellectuelle, crédits photos et contact.'
