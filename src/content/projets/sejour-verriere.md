@@ -1,7 +1,7 @@
 ---
 # Source : ancien site, /projet-2/ (galeries sans texte ; texte rédigé d’après les images).
 # TODO(contenu): texte rédigé d’après les rendus ; demande du client, lieu et formule à confirmer par Amandine.
-# TODO(contenu): accord du client pour publier (CGS art. 7).
+# Décision (2026-11-23, confirmée par l’humain) : publication anonyme couverte par l’art. 7 des CGS (voir conditions-generales.md) ; aucun nom ni élément identifiant le client.
 title: 'Séjour lumineux avec verrière'
 summary: 'Un séjour doux et naturel, ouvert sur la cuisine par une verrière'
 roomTypes:

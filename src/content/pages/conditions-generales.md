@@ -12,8 +12,8 @@
 # du CGI » sans doublon ; art. 1 complété par l’immatriculation au RNE (SIREN = 9 premiers chiffres du SIRET, écrit en clair : à garder
 # identique à `registration.siret` de src/config/site.ts) ; art. 5 complété par la clause légale réservée aux clients professionnels
 # (Code de commerce L441-10 II et D441-5, vérifiés sur Légifrance le 21/11/2026).
-# Aucun autre ajout juridique : les points restants sont listés ci-dessous et dans docs/CONFORMITE.md, à trancher par Amandine
-# (idéalement avec un juriste) AVANT la mise en production.
+# Aucun autre ajout juridique. Les décisions ci-dessous lèvent tous les points bloquants (2026-11-23) ; une relecture des CGS
+# par un juriste reste recommandée (docs/CONFORMITE.md).
 # Coordonnées : jetons `{email}`, `{phone}`, `{phoneE164}`, `{siret}`, `{legalAddress}` remplacés au rendu par les valeurs de src/config/site.ts (ADR-0016).
 #
 # Décision (2026-11-23, confirmée par l’humain d’après l’offre officielle « Offres particuliers » du site actuel, avril 2026) : formules à prix fixe (Essentielle 189 €, Confort 339 €, Signature 489 €, Studio 689 €) et options à la carte à prix fixe (visuel 3D ou modification supplémentaire 99 €, moodboard seul 89 €, shopping-list 179 €, immersion 360° 300 €) ; meuble sur mesure 339 € (ancien site) ; offre Professionnels sur devis. Art. 1, 3 et 5 alignés : prix affichés sur /prestations/, devis récapitulatif avec prix total (L111-1, L112-1).
