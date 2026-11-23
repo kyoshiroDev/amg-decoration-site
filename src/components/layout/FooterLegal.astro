@@ -42,10 +42,18 @@ const { copyright } = Astro.props;
       font-size: var(--step--1);
     }
 
+    /* Chaque ligne fait au moins --tap-target : quand la liste passe sur deux lignes (mobile),
+       les zones de clic de 44 px des liens (Link `draw`) ne se recouvrent plus. */
     .footer-legal__list {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--space-2xs) var(--space-m);
+      column-gap: var(--space-m);
+    }
+
+    .footer-legal__list > li {
+      display: flex;
+      align-items: center;
+      min-block-size: var(--tap-target);
     }
 
     .footer-legal :global(.footer-legal__link) {

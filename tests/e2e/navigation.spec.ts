@@ -288,6 +288,32 @@ test.describe('En-tête au scroll', () => {
 });
 
 test.describe('Pied de page', () => {
+  test('liens légaux : zone de clic ≥ 44 px, sans recouvrement sur deux lignes', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/');
+    const legal = page
+      .getByRole('contentinfo')
+      .getByRole('navigation', { name: microcopy.nav.legal })
+      .getByRole('link');
+    for (const link of await legal.all()) {
+      await link.scrollIntoViewIfNeeded();
+      // Hauteur réellement cliquable (pseudo-élément compris) : points qui atteignent ce lien.
+      const hitHeight = await link.evaluate((anchor) => {
+        const box = anchor.getBoundingClientRect();
+        const x = box.left + box.width / 2;
+        let hits = 0;
+        for (let y = Math.floor(box.top - 30); y <= box.bottom + 30; y += 1) {
+          const target = document.elementFromPoint(x, y);
+          if (target !== null && anchor.contains(target)) hits += 1;
+        }
+        return hits;
+      });
+      expect(hitHeight).toBeGreaterThanOrEqual(44);
+    }
+  });
+
   test('expose coordonnées, liens légaux et réseaux', async ({ page }) => {
     await page.goto('/');
     const footer = page.getByRole('contentinfo');
