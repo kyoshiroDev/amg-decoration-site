@@ -118,7 +118,7 @@
 
 Ces points attendent une information ou un visuel d'Amandine, ou une décision humaine (`docs/MISE-EN-LIGNE.md`) :
 
-- [ ] Lever les `TODO(contenu)` bloquants des pages légales (`npm run check:prod` vert) : prix (`showPrices`, title de `/prestations/`), accord des clients pour les photos
+- [ ] Lever les `TODO(contenu)` bloquants des pages légales (`npm run check:prod` vert) : accord des clients pour les photos
 - [ ] Visuels réels (originaux HD des réalisations — les images de l'ancien site, en 1200 × 600, sont en place depuis le 2026-11-20 —, paire du comparateur, héros, couvertures, OG, portrait, logo) ; puis logo et localité dans le JSON-LD, formule réelle de chaque réalisation (champ `service`), régénération de la régression visuelle (Git LFS ou références locales)
 - [ ] 150 à 300 mots propres par fiche prestation (`redacteur`) et `serviceType` par fiche, à partir des informations d'Amandine
 - [ ] Décision sur les robots d'IA (ADR-0011)

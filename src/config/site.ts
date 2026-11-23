@@ -130,7 +130,7 @@ export const site = {
     { label: 'Confidentialité', href: '/confidentialite/' },
     { label: 'Conditions générales', href: '/conditions-generales/' },
   ],
-  // TODO(contenu): prix affichés sur le site actuel ; Amandine doit les confirmer avant la mise
-  // en production (sinon passer à false). Jamais d'`Offer` JSON-LD tant qu'ils ne sont pas validés.
+  // Prix fixes confirmés par l'humain le 2026-11-23 (offre officielle « Offres particuliers », avril 2026) :
+  // formules et options à prix fixe (CGS art. 1, 3, 5). Pas d'`Offer` JSON-LD sans ADR (ADR-0007).
   pricing: { showPrices: true },
 } as const satisfies SiteConfig;

@@ -2,7 +2,7 @@
 # Source : docs/contenu-source/services.md. Mots-clés : décoration d'intérieur en ligne, formules et tarifs.
 seo:
   title: 'Décoration d’intérieur en ligne : formules et tarifs'
-  description: 'Décoration d’intérieur en ligne avec visuels 3D : découvrez mes formules Essentiel, Confort, Signature et Studio, pour chaque pièce. Demandez votre devis.'
+  description: 'Décoration d’intérieur en ligne avec visuels 3D : découvrez mes formules Essentielle, Confort, Signature et Studio, pour chaque pièce. Demandez votre devis.'
 hero:
   eyebrow: 'Prestations'
   heading: 'Décoration d’intérieur en ligne : une formule pour chaque pièce'
@@ -16,35 +16,37 @@ sections:
     eyebrow: 'Formules déco 3D'
     heading: 'Visualisez avant de décider'
     headingEmphasis: 'avant de décider'
-    lead: 'Avec mes formules, je vous aide à concevoir un intérieur harmonieux grâce à des visuels 3D réalistes et à une sélection personnalisée de mobilier et de matériaux. Vous avancez sereinement, sans perdre de temps.'
+    lead: 'Avec mes formules, je vous aide à concevoir un intérieur harmonieux grâce à une planche d’ambiance, un plan d’aménagement et des visuels 3D réalistes. Chaque formule a un prix fixe, et vous ajoutez des options seulement si vous en avez besoin. Vous avancez sereinement, sans perdre de temps.'
   inclus:
     heading: 'Ce qui est inclus dans chaque formule'
     headingEmphasis: 'chaque formule'
-    # TODO(contenu): nombre exact de vues 3D et de modifications incluses par formule.
+    # Source : offre officielle « Offres particuliers » (avril 2026) ; rendez-vous à distance : ancien site.
     items:
       - title: 'Un rendez-vous à distance pour définir vos besoins'
+      - title: '1 planche d’ambiance'
       - title: '1 plan d’aménagement'
-      - title: 'Plusieurs vues 3D (perspectives, vues de face)'
-      - title: 'Une sélection de mobilier et de matériaux'
-      - title: '1 ou plusieurs modifications, selon la formule choisie'
+      - title: 'Des visuels 3D réalistes'
+      - title: '1 à 3 modifications, ou illimitées pour Studio, selon la formule'
       - title: 'Un accompagnement par WhatsApp ou par email'
+      - title: 'Une livraison sous 7 à 14 jours, selon la formule'
   options:
     heading: 'Pour aller plus loin, en option'
     headingEmphasis: 'en option'
-    lead: 'À ajouter à votre formule, selon vos besoins.'
-    # TODO(contenu): prix des options (non affichés sur le site actuel).
+    lead: 'Personnalisez votre projet selon vos besoins. La shopping-list, c’est ma sélection de mobilier clé en main, avec les liens.'
+    # Options à la carte de l'offre officielle (avril 2026), prix inclus dans les libellés.
     items:
-      - title: 'Liste de courses détaillée avec liens'
-      - title: 'Visuel 3D supplémentaire'
-      - title: 'Modification supplémentaire'
-      - title: 'Immersion 360°'
+      - title: 'Visuel 3D supplémentaire : +99 €'
+      - title: 'Modification supplémentaire : +99 €'
+      - title: 'Moodboard seul : 89 €'
+      - title: 'Shopping-list personnalisée : 179 €'
+      - title: 'Immersion 360° : +300 €'
   offres:
     eyebrow: 'Offres complémentaires'
     heading: 'Un meuble sur mesure ou un bien à valoriser ?'
     headingEmphasis: 'sur mesure'
     lead: 'Au-delà des formules, je conçois aussi des meubles uniques, et des visuels 3D pour les investisseurs et les agents immobiliers.'
   autres:
-    # Pages de détail (/prestations/<slug>/) : liens vers les autres formules.
+    # Pages de détail (/prestations/<slug>/) : liens vers les autres formules.
     eyebrow: 'Les autres formules'
     heading: 'Une autre pièce à imaginer ?'
     headingEmphasis: 'imaginer'

@@ -16,7 +16,7 @@
 # (idéalement avec un juriste) AVANT la mise en production.
 # Coordonnées : jetons `{email}`, `{phone}`, `{phoneE164}`, `{siret}`, `{legalAddress}` remplacés au rendu par les valeurs de src/config/site.ts (ADR-0016).
 #
-# TODO(contenu): prix fixes affichés sur /prestations/ (189, 339, 489, 689 €, meuble 339 €) alors que les art. 1, 3 et 5 parlent de « devis personnalisé » et de tarifs « définis dans le devis » : prix catalogue, prix « à partir de » ou devis systématique ? Une fois le choix fait, aligner la page Prestations et les art. 1, 3 et 5 (information sur le prix claire et cohérente, L111-1 et L112-1).
+# Décision (2026-11-23, confirmée par l’humain d’après l’offre officielle « Offres particuliers » du site actuel, avril 2026) : formules à prix fixe (Essentielle 189 €, Confort 339 €, Signature 489 €, Studio 689 €) et options à la carte à prix fixe (visuel 3D ou modification supplémentaire 99 €, moodboard seul 89 €, shopping-list 179 €, immersion 360° 300 €) ; meuble sur mesure 339 € (ancien site) ; offre Professionnels sur devis. Art. 1, 3 et 5 alignés : prix affichés sur /prestations/, devis récapitulatif avec prix total (L111-1, L112-1).
 # Décision (2026-11-23, pratique confirmée par l’humain) : Amandine démarre toujours ses projets 14 jours après la signature du devis. L’art. 4 le dit : aucun démarrage pendant le délai de rétractation, donc ni demande expresse de démarrage anticipé (L221-25), ni case sur le devis, ni montant dû en cas de rétractation (remboursement intégral, L221-24). L’ancienne clause (« pas de rétractation dès que la prestation a commencé », renonciation par la seule signature) n’était pas conforme à L221-28 1° et a été remplacée. Non bloquant, recommandé : relecture par un juriste ; joindre le formulaire de rétractation au devis ou à la confirmation de commande (L221-13) ; si un projet devait un jour démarrer plus tôt, recueillir d’abord une demande expresse et distincte du client sur le devis.
 # Décision (2026-11-23, risque accepté par l’humain) : pas encore de médiateur de la consommation (adhésion reportée pour raison de coût). L’obligation (L612-1, coordonnées sur le site et dans les CGS L616-1) demeure, sanction possible jusqu’à 3 000 € (L641-1) ; risque déjà présent sur l’ancien site, qui n’en affichait aucun. À RÉGULARISER dès que possible : adhésion à un médiateur référencé par la CECMC (secteur « aménagement de l’habitat… et activités de décoration »), puis nom, site et adresse à ajouter à l’art. 11 et aux mentions légales (docs/MISE-EN-LIGNE.md § 4). Aucun nom affiché sans adhésion réelle.
 # Décision (2026-11-21) : clients professionnels — clause légale ajoutée à l’art. 5 (pénalités de retard au taux de la BCE majoré de 10 points, exigibles sans rappel ; indemnité forfaitaire de 40 € pour frais de recouvrement), réservée aux clients professionnels (Code de commerce L441-10 II et D441-5, Légifrance, versions en vigueur au 21/11/2026). C’est le régime légal applicable à défaut d’accord : aucun engagement commercial nouveau. Rappel (non bloquant) : ces mentions doivent aussi figurer sur les factures adressées aux professionnels.
@@ -52,7 +52,7 @@ Tout Client reconnaît avoir pris connaissance de ce document avant de signer un
 
 Les présentes CGS s’appliquent sans restriction ni réserve à toutes les prestations de services conclues avec AMG Décoration d’Intérieur par devis signé ; les différentes prestations de décoration d’intérieur sont présentées sur le site internet amgdecorationdinterieur.com.
 
-Nous proposons des services de décoration d’intérieur personnalisés, comprenant notamment la conception de planches d’ambiance et de mobilier, de plans d’aménagement et de visuels 3D, ainsi que le choix des matériaux, des couleurs et du mobilier. Nos prestations sont réalisées sur devis personnalisé, établi en fonction des besoins spécifiques de chaque Client.
+Nous proposons des services de décoration d’intérieur personnalisés, comprenant notamment la conception de planches d’ambiance et de mobilier, de plans d’aménagement et de visuels 3D, ainsi que le choix des matériaux, des couleurs et du mobilier. Les formules de décoration et le meuble sur mesure sont proposés à prix fixe, affiché sur la page [Prestations](/prestations/) du site ; le Client peut y ajouter des options à la carte, elles aussi à prix fixe. Les prestations sans prix affiché, comme l’offre destinée aux professionnels, font l’objet d’un devis personnalisé, établi en fonction des besoins spécifiques du Client.
 
 Avant toute prestation, un devis détaillé est établi et remis au Client. Il précise la nature des prestations, les délais, les modalités de paiement ainsi que toute autre condition particulière.
 
@@ -83,7 +83,7 @@ Il appartient au Client de vérifier l’exactitude de sa commande et de signale
 
 ## Article 3 – Tarif
 
-Les commandes font l’objet d’un devis personnalisé.
+Chaque commande fait l’objet d’un devis qui récapitule la formule ou la prestation choisie, les options éventuelles et le prix total.
 
 Les devis établis par le Prestataire sont valables un mois à compter de leur date d’émission.
 
@@ -120,7 +120,7 @@ Le remboursement est effectué par le même moyen de paiement que celui utilisé
 
 ## Article 5 – Tarifs et modalités de paiement
 
-Nos tarifs sont définis dans le devis et peuvent varier en fonction de la complexité du projet et des prestations demandées.
+Le prix des formules, du meuble sur mesure et des options est celui affiché sur le site au jour du devis. Le prix des prestations sans prix affiché est fixé dans le devis, en fonction de la complexité du projet et des prestations demandées. Le prix total à payer figure sur le devis.
 
 Le paiement est exigible en totalité à la signature du devis et avant le démarrage de la prestation. Aucune prestation ne débute avant réception du paiement intégral.
 

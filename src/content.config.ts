@@ -154,7 +154,7 @@ const pages = defineCollection({
   }),
 });
 
-/** Formules (Essentiel, Confort, Signature, Studio) et offres complémentaires. */
+/** Formules (Essentielle, Confort, Signature, Studio) et offres complémentaires. */
 const prestations = defineCollection({
   loader: glob({ pattern: '*.md', base: './src/content/prestations' }),
   schema: ({ image }) =>
