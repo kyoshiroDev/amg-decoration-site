@@ -24,7 +24,7 @@ options:
 price:
   amount: 489
   currency: EUR
-  note: 'Livré sous 12 jours'
+  note: 'Livré sous 12 jours après le démarrage'
 order: 3
 seo:
   title: 'Formule Signature : espaces ouverts en 3D'

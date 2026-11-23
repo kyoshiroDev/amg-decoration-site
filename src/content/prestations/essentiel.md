@@ -24,7 +24,7 @@ options:
 price:
   amount: 189
   currency: EUR
-  note: 'Livré sous 7 jours'
+  note: 'Livré sous 7 jours après le démarrage'
 order: 1
 seo:
   title: 'Formule Essentielle : décorer une petite pièce en 3D'

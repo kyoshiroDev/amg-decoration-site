@@ -156,7 +156,7 @@ Toutes ces microcopies (libellés et aides des champs, options, mention, erreurs
 
 ## 7. Informations à fournir par Amandine (pour la PR)
 
-Liste minimale au 2026-11-23 (les autres points ont été réglés sans elle, voir § 6). Le point 1 correspond au dernier `TODO(contenu)` restants des pages légales (`npm run check:prod`) ; le point 2 est un prérequis hors pages.
+Liste minimale au 2026-11-23 (les autres points ont été réglés sans elle, voir § 6). Le point 1 correspond au dernier `TODO(contenu)` restant des pages légales (`npm run check:prod`) ; le point 2 est un prérequis hors pages.
 
 1. Accord des clients pour la publication de leurs projets et photos (CGS art. 7).
 2. Passage du compte Vercel sur l'offre Pro (§ 3).

@@ -28,7 +28,7 @@ sections:
       - title: 'Des visuels 3D réalistes'
       - title: '1 à 3 modifications, ou illimitées pour Studio, selon la formule'
       - title: 'Un accompagnement par WhatsApp ou par email'
-      - title: 'Une livraison sous 7 à 14 jours, selon la formule'
+      - title: 'Une livraison sous 7 à 14 jours après le démarrage, selon la formule'
   options:
     heading: 'Pour aller plus loin, en option'
     headingEmphasis: 'en option'

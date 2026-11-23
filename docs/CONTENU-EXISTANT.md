@@ -444,10 +444,10 @@ Non affichés (ne pas inventer) :
 
 Informations manquantes :
 
-- `TODO(contenu): les prix 189 / 339 / 489 / 689 € (et 339 € pour le meuble sur mesure) sont-ils toujours valables et à afficher sur le nouveau site ? Prix fixes ou « à partir de » ?`
-- `TODO(contenu): nombre exact de vues 3D et de modifications incluses par formule.`
-- `TODO(contenu): délai de livraison indicatif par formule.`
-- `TODO(contenu): prix des options (liste de courses, visuel supplémentaire, modification supplémentaire, immersion 360°).`
+- ~~`TODO(contenu): les prix 189 / 339 / 489 / 689 € (et 339 € pour le meuble sur mesure) sont-ils toujours valables et à afficher sur le nouveau site ? Prix fixes ou « à partir de » ?`~~ réglé le 2026-11-23 (offre officielle « Offres particuliers » d'avril 2026 : prix fixes, 1 / 2 / 3 / illimitées modifications, livraison sous 7 à 14 jours, options de 89 à 300 € ; voir `src/content/prestations/`).
+- ~~`TODO(contenu): nombre exact de vues 3D et de modifications incluses par formule.`~~ réglé le 2026-11-23 (offre officielle « Offres particuliers » d'avril 2026 : prix fixes, 1 / 2 / 3 / illimitées modifications, livraison sous 7 à 14 jours, options de 89 à 300 € ; voir `src/content/prestations/`).
+- ~~`TODO(contenu): délai de livraison indicatif par formule.`~~ réglé le 2026-11-23 (offre officielle « Offres particuliers » d'avril 2026 : prix fixes, 1 / 2 / 3 / illimitées modifications, livraison sous 7 à 14 jours, options de 89 à 300 € ; voir `src/content/prestations/`).
+- ~~`TODO(contenu): prix des options (liste de courses, visuel supplémentaire, modification supplémentaire, immersion 360°).`~~ réglé le 2026-11-23 (offre officielle « Offres particuliers » d'avril 2026 : prix fixes, 1 / 2 / 3 / illimitées modifications, livraison sous 7 à 14 jours, options de 89 à 300 € ; voir `src/content/prestations/`).
 - `TODO(contenu): faut-il conserver les offres « Meuble sur-mesure 3D » et « Professionnels » dans le nouveau site (non prévues dans le plan actuel des 4 formules) ?`
 
 ---

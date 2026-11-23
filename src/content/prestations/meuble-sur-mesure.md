@@ -13,8 +13,8 @@ includes:
   - 'Choix des matériaux et finitions'
   - '1 plan d’élévation détaillé avec toutes les mesures'
   - '1 visuel réaliste 4K de votre futur meuble'
-# TODO(contenu): prix affiché sur le site actuel (18/11/2026) : Amandine doit le confirmer
-# (fixe ou « à partir de ») avant la mise en production. Aucune Offer JSON-LD (ADR-0007).
+# Décision du 2026-11-23 : prix fixe, repris de l'ancien site (« Meuble sur-mesure 339 € », sans « à partir de »),
+# cohérent avec les CGS art. 1 et 5 et avec les formules à prix fixe confirmées par l'humain. Aucune Offer JSON-LD (ADR-0007).
 price:
   amount: 339
   currency: EUR

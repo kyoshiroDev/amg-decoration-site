@@ -23,7 +23,7 @@ options:
 price:
   amount: 689
   currency: EUR
-  note: 'Livré sous 14 jours'
+  note: 'Livré sous 14 jours après le démarrage'
 order: 4
 seo:
   title: 'Aménagement de studio en 3D : formule Studio'

@@ -25,7 +25,7 @@ highlight: true
 price:
   amount: 339
   currency: EUR
-  note: 'Livré sous 10 jours'
+  note: 'Livré sous 10 jours après le démarrage'
 order: 2
 seo:
   title: 'Décoration de pièce de vie en 3D : formule Confort'
