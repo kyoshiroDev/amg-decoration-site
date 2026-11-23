@@ -17,7 +17,7 @@
 # Coordonnées : jetons `{email}`, `{phone}`, `{phoneE164}`, `{siret}`, `{legalAddress}` remplacés au rendu par les valeurs de src/config/site.ts (ADR-0016).
 #
 # TODO(contenu): prix fixes affichés sur /prestations/ (189, 339, 489, 689 €, meuble 339 €) alors que les art. 1, 3 et 5 parlent de « devis personnalisé » et de tarifs « définis dans le devis » : prix catalogue, prix « à partir de » ou devis systématique ? Une fois le choix fait, aligner la page Prestations et les art. 1, 3 et 5 (information sur le prix claire et cohérente, L111-1 et L112-1).
-# TODO(contenu): art. 4 reformulé et formulaire type ajouté le 2026-11-21 : à valider par Amandine, idéalement avec un juriste, avant la mise en production (nouvelle clause contractuelle, rédigée sans elle). Bloquant parce que la clause renvoie à des pratiques qu’elle seule peut mettre en place : (1) son modèle de devis doit porter une mention distincte, non pré-cochée, par laquelle le client demande le démarrage avant la fin des 14 jours et reconnaît perdre son droit de rétractation une fois la prestation pleinement exécutée (L221-25 ; sans elle, rien n’est dû en cas de rétractation) ; (2) le formulaire de rétractation doit accompagner le devis ou la confirmation de commande envoyée par email (L221-13). À confirmer par le juriste : la « fonctionnalité de rétractation » en ligne (L221-21, en vigueur depuis le 19/06/2026) ne vise que les contrats conclus au moyen d’une interface en ligne, a priori pas un devis signé par email ; cas d’un devis signé chez le client (contrat hors établissement, L221-3 pour les petits professionnels).
+# Décision (2026-11-23, pratique confirmée par l’humain) : Amandine démarre toujours ses projets 14 jours après la signature du devis. L’art. 4 le dit : aucun démarrage pendant le délai de rétractation, donc ni demande expresse de démarrage anticipé (L221-25), ni case sur le devis, ni montant dû en cas de rétractation (remboursement intégral, L221-24). L’ancienne clause (« pas de rétractation dès que la prestation a commencé », renonciation par la seule signature) n’était pas conforme à L221-28 1° et a été remplacée. Non bloquant, recommandé : relecture par un juriste ; joindre le formulaire de rétractation au devis ou à la confirmation de commande (L221-13) ; si un projet devait un jour démarrer plus tôt, recueillir d’abord une demande expresse et distincte du client sur le devis.
 # TODO(contenu): médiateur de la consommation absent (obligatoire pour les clients particuliers, L612-1 et L616-1) : Amandine doit adhérer réellement à un médiateur (aucun nom ne peut être affiché sans adhésion), puis fournir son nom, son site et son adresse, à ajouter à l’art. 11 et aux mentions légales.
 # Décision (2026-11-21) : clients professionnels — clause légale ajoutée à l’art. 5 (pénalités de retard au taux de la BCE majoré de 10 points, exigibles sans rappel ; indemnité forfaitaire de 40 € pour frais de recouvrement), réservée aux clients professionnels (Code de commerce L441-10 II et D441-5, Légifrance, versions en vigueur au 21/11/2026). C’est le régime légal applicable à défaut d’accord : aucun engagement commercial nouveau. Rappel (non bloquant) : ces mentions doivent aussi figurer sur les factures adressées aux professionnels.
 # Décision (2026-11-21) : art. 6 — l’information précontractuelle sur le délai (L111-1 3°) est satisfaite dès lors que chaque devis indique un délai d’exécution : « délais indiqués sur le devis » est conforme, aucun délai par formule n’est à publier sur le site. Rappel (non bloquant) : chaque devis doit indiquer un délai.
@@ -108,21 +108,13 @@ Le Client informe le Prestataire de sa décision avant l’expiration du délai,
 - soit du [formulaire de rétractation](#annexe--formulaire-de-rétractation) reproduit en annexe ;
 - soit de toute autre déclaration, dénuée d’ambiguïté, exprimant sa volonté de se rétracter.
 
-### Démarrage de la prestation pendant le délai
+### Démarrage de la prestation
 
-La prestation étant payée en totalité avant son démarrage (articles 2 et 5), elle ne commence avant la fin du délai de rétractation que si le Client en fait la demande expresse. Cette demande est recueillie par une mention prévue à cet effet sur le devis, que le Client complète s’il le souhaite ; il y reconnaît également qu’il perdra son droit de rétractation une fois la prestation pleinement exécutée (article L221-25).
-
-Si le Client se rétracte après avoir demandé ce démarrage anticipé, il doit un montant correspondant au service fourni jusqu’à la communication de sa décision de se rétracter, proportionné au prix total de la prestation convenu dans le devis.
-
-Sans demande expresse du Client, aucune somme n’est due au Prestataire en cas de rétractation dans le délai.
-
-### Fin du droit de rétractation
-
-Conformément à l’article L221-28 1° du Code de la consommation, le droit de rétractation ne peut plus être exercé lorsque la prestation a été pleinement exécutée avant la fin du délai de rétractation, après la demande expresse du Client et sa reconnaissance de la perte de son droit de rétractation.
+Le Prestataire ne commence la prestation qu’à l’expiration du délai de rétractation de 14 jours. Aucun service n’est donc fourni pendant ce délai, et le Client qui se rétracte ne doit aucune somme au Prestataire.
 
 ### Remboursement
 
-En cas de rétractation, le Prestataire rembourse les sommes versées par le Client, déduction faite, le cas échéant, du montant dû pour le service déjà fourni, sans retard injustifié et au plus tard dans les 14 jours suivant le jour où il est informé de la décision de rétractation (article L221-24).
+En cas de rétractation, le Prestataire rembourse l’intégralité des sommes versées par le Client, sans retard injustifié et au plus tard dans les 14 jours suivant le jour où il est informé de la décision de rétractation (article L221-24 du Code de la consommation).
 
 Le remboursement est effectué par le même moyen de paiement que celui utilisé pour le paiement initial, sauf accord exprès du Client pour un autre moyen n’occasionnant pas de frais pour lui.
 
