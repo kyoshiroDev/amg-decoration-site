@@ -6,6 +6,7 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ### Production provisoire sur Vercel
 
+- Confidentialité : durée de conservation (3 ans) et absence de prospection passées en non bloquant (l'obligation d'indiquer une durée est déjà remplie) ; 5 points légaux restent bloquants.
 - Pied de page : sur mobile, quand les liens légaux passent sur deux lignes, chaque ligne fait 44 px ; « Mentions légales » retrouve une zone de clic complète (31 px auparavant, recouverte par le lien du dessous). Test e2e de la zone réellement cliquable.
 - Pages légales : mention « Amandine Gaury EI » (entrepreneur individuel, imposée par le décret 2022-725) et adresse du siège (24 allée du Pré Lambesc, 91190 Gif-sur-Yvette, nouveau jeton `{legalAddress}` tiré de `site.ts`) dans les mentions légales, les CGS, le formulaire de rétractation et la confidentialité ; 6 points légaux restent bloquants.
 - Correctif : le marqueur `{à-préciser}` ne bloque plus que les builds Vercel (production et previews) ; le build de test du mode service (`test:e2e:service`, endpoint factice) refonctionne en CI.
