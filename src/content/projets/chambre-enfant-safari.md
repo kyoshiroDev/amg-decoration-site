@@ -1,7 +1,7 @@
 ---
 # Source : ancien site, /projet-3/ (galeries sans texte ; texte rédigé d’après les images).
 # TODO(contenu): texte rédigé d’après les rendus ; demande du client, lieu et formule à confirmer par Amandine.
-# TODO(contenu): accord du client pour publier (CGS art. 7).
+# Décision (2026-11-23, confirmée par l’humain) : publication anonyme couverte par l’art. 7 des CGS (voir conditions-generales.md) ; aucun nom ni élément identifiant le client.
 title: 'Chambre d’enfant jungle et safari'
 summary: 'Une chambre d’enfant douce et ludique, sur le thème de la jungle'
 roomTypes:

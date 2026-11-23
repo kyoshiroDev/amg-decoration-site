@@ -1,7 +1,7 @@
 ---
 # Source : ancien site, /projet-7/ (galeries sans texte ; texte rédigé d’après les images).
 # TODO(contenu): texte rédigé d’après les rendus ; demande du client, lieu et formule à confirmer par Amandine.
-# TODO(contenu): accord du client pour publier (CGS art. 7).
+# Décision (2026-11-23, confirmée par l’humain) : publication anonyme couverte par l’art. 7 des CGS (voir conditions-generales.md) ; aucun nom ni élément identifiant le client.
 title: 'Chambre d’enfant sous combles, du rendu 3D à la réalisation'
 summary: 'Une chambre d’enfant sous combles sur le thème des dinosaures, imaginée en 3D puis réalisée'
 roomTypes:
