@@ -6,6 +6,7 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ### Production provisoire sur Vercel
 
+- CGS art. 7 : publication des projets et des photos maintenue, les publications étant totalement anonymes (confirmé par l'humain) ; plus aucun point légal bloquant, `npm run check:prod` vert.
 - Prix : formules et options à prix fixe, d'après l'offre officielle d'Amandine (avril 2026) ; formule « Essentielle », modifications incluses (1, 2, 3, illimitées), délais de livraison et prix des 5 options affichés ; planche d'ambiance incluse, sélection de mobilier avec liens en option (shopping-list) ; CGS art. 1, 3 et 5 alignés. 1 point légal reste bloquant (accord des clients pour les photos).
 - Médiateur de la consommation : risque accepté par l'humain (adhésion reportée pour raison de coût), le point ne bloque plus la mise en ligne et figure dans la liste d'après bascule ; aucun nom affiché sans adhésion réelle. 2 points légaux restent bloquants (prix, accord des clients pour les photos).
 - CGS, article 4 : la prestation démarre à l'expiration du délai de rétractation de 14 jours (pratique d'Amandine) ; plus de démarrage anticipé ni de montant dû en cas de rétractation, remboursement intégral sous 14 jours ; 4 points légaux restent bloquants.
