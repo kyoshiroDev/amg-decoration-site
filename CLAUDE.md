@@ -22,21 +22,21 @@ Le brief complet est dans `docs/BRIEF.md` et l'inventaire du contenu existant da
 
 ## 2. Stack (non négociable sans ADR)
 
-| Sujet        | Choix                                                                                                                                                   |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Framework    | **Astro, dernière version stable** (v7.x au moment du cadrage). Vérifier la version réelle avec `npm view astro version` et la doc via le MCP Context7. |
-| Langage      | TypeScript `strict` (preset `astro/tsconfigs/strictest`)                                                                                                |
-| Rendu        | **100 % statique** (`output: 'static'`), aucun SSR pour l'instant                                                                                       |
-| Hébergement  | **Vercel** (statique ; adaptateur `@astrojs/vercel` seulement si un besoin réel apparaît)                                                               |
-| Styles       | **CSS natif moderne** : tokens en custom properties, `@layer`, nesting, container queries, styles scopés Astro. Pas de Tailwind (voir ADR-0002).        |
-| JS client    | Vanilla TypeScript dans `src/scripts/`, chargé par des `<script>` Astro. **Aucun framework UI** (React/Vue…) sans ADR.                                  |
-| Contenu      | Content Layer API (`src/content.config.ts`, loaders `glob`/`file`, schémas Zod 4)                                                                       |
-| Images       | `astro:assets` (`<Image>` / `<Picture>`, AVIF + WebP)                                                                                                   |
-| Polices      | Fonts API intégrée d'Astro (auto-hébergées, `font-display: swap`, preload de la police d'affichage uniquement)                                          |
-| SEO          | `@astrojs/sitemap`, composant `SEO.astro` maison, JSON-LD typé                                                                                          |
-| Qualité      | ESLint (flat config + `eslint-plugin-astro` + `jsx-a11y-x`, voir ADR-0004), Prettier (+ `prettier-plugin-astro`), Stylelint, `astro check`              |
-| Tests        | Vitest (unitaires `src/lib`), Playwright + `@axe-core/playwright` (e2e + a11y), Lighthouse CI                                                           |
-| Gestionnaire | **npm** · Node **≥ 22.23.4**, 24 en CI (voir `.nvmrc`, ADR-0004)                                                                                        |
+| Sujet        | Choix                                                                                                                                                        |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Framework    | **Astro, dernière version stable** (v7.x au moment du cadrage). Vérifier la version réelle avec `npm view astro version` et la doc via le MCP Context7.      |
+| Langage      | TypeScript `strict` (preset `astro/tsconfigs/strictest`)                                                                                                     |
+| Rendu        | **100 % statique** (`output: 'static'`), aucun SSR pour l'instant                                                                                            |
+| Hébergement  | **Vercel** (statique ; adaptateur `@astrojs/vercel` seulement si un besoin réel apparaît) ; bascule prévue vers le VPS OVH avec les CRM (ADR-0019, ADR-0020) |
+| Styles       | **CSS natif moderne** : tokens en custom properties, `@layer`, nesting, container queries, styles scopés Astro. Pas de Tailwind (voir ADR-0002).             |
+| JS client    | Vanilla TypeScript dans `src/scripts/`, chargé par des `<script>` Astro. **Aucun framework UI** (React/Vue…) sans ADR.                                       |
+| Contenu      | Content Layer API (`src/content.config.ts`, loaders `glob`/`file`, schémas Zod 4)                                                                            |
+| Images       | `astro:assets` (`<Image>` / `<Picture>`, AVIF + WebP)                                                                                                        |
+| Polices      | Fonts API intégrée d'Astro (auto-hébergées, `font-display: swap`, preload de la police d'affichage uniquement)                                               |
+| SEO          | `@astrojs/sitemap`, composant `SEO.astro` maison, JSON-LD typé                                                                                               |
+| Qualité      | ESLint (flat config + `eslint-plugin-astro` + `jsx-a11y-x`, voir ADR-0004), Prettier (+ `prettier-plugin-astro`), Stylelint, `astro check`                   |
+| Tests        | Vitest (unitaires `src/lib`), Playwright + `@axe-core/playwright` (e2e + a11y), Lighthouse CI                                                                |
+| Gestionnaire | **npm** · Node **≥ 22.23.4**, 24 en CI (voir `.nvmrc`, ADR-0004)                                                                                             |
 
 Avant d'utiliser une API Astro, **vérifie-la dans la doc à jour** (MCP `context7` ou docs.astro.build). Ne te fie jamais à ta mémoire pour une API qui a pu changer entre v5 et v7.
 
@@ -148,6 +148,10 @@ Tu es le **chef de projet / lead dev**. Tu planifies, implémentes et **délègu
 | `performance`   | Images, polices, poids JS/CSS, Core Web Vitals, Lighthouse.                                                                                                        |
 | `qa`            | Écrit et exécute les tests (unitaires, e2e, a11y, régression visuelle), vérifie liens et build.                                                                    |
 | `conformite`    | Mentions légales, CGS, RGPD, cookies, formulaire de contact.                                                                                                       |
+| `backend`       | Projet CRM (ADR-0019) : API NestJS, Prisma, schémas Zod, authentification, droits, fichiers, messagerie, avec leurs tests.                                         |
+| `frontend`      | Projet CRM : apps Angular `admin` et `espace-client`, PWA, composants partagés, fidèles à la maquette validée.                                                     |
+| `securite`      | Projet CRM : audit OWASP obligatoire de toute livraison API, authentification, fichiers, Docker, CI/CD ou VPS, avant le `reviewer`.                                |
+| `devops`        | Projet CRM (ADR-0020) : Docker, Traefik existant du VPS, CI/CD, préproduction, sauvegardes Backblaze B2.                                                           |
 | `reviewer`      | **Gardien final.** Obligatoire avant tout `git push` et toute PR. Seul habilité à approuver.                                                                       |
 
 Les sous-agents ne peuvent pas s'appeler entre eux : **c'est toi qui orchestres**. Lance en parallèle les audits indépendants (ex. `accessibilite` + `performance` + `seo`).

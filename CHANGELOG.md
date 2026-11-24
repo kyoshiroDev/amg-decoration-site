@@ -4,6 +4,11 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ## [Non publié]
 
+### Projet CRM : cadrage
+
+- Architecture validée par l'humain : monorepo Nx (site Astro, admin et espace client Angular, API NestJS, PostgreSQL + Prisma, Zod), hébergement Docker sur son VPS OVH à côté d'un projet existant et de son Traefik, sauvegardes chiffrées sur Backblaze B2, préproduction (ADR-0019, ADR-0020). Détails d'accès au serveur hors dépôt.
+- Nouveaux agents `backend`, `frontend`, `securite` et `devops` ; 8 étapes CRM dans la ROADMAP.
+
 ### Pas de longs traits horizontaux
 
 - Préférence de l'humain pour toutes les apps : plus aucun filet horizontal pleine largeur sur le site. Séparation par l'espacement, les aplats existants, les cartes et une ombre douce ; aucune nouvelle couleur.
