@@ -8,7 +8,7 @@ Checklist de la bascule de `amgdecorationdinterieur.com` (WordPress) vers le nou
 
 ## 1. Contenus à obtenir d'Amandine
 
-`npm run check:prod` liste les points **bloquants** (pages légales, ADR-0015) ; le build de production Vercel qui sert le vrai domaine échoue tant qu'il en reste. Les autres `TODO(contenu)` (`grep -rn "TODO(contenu)" src`) n'empêchent pas la mise en ligne mais dégradent le site.
+`npm run check:prod` liste les points **bloquants** (pages légales, ADR-0015) ; le build de production Vercel qui sert le vrai domaine échoue tant qu'il en reste. Les autres `TODO(contenu)` (`grep -rn "TODO(contenu)" apps/site/src`) n'empêchent pas la mise en ligne mais dégradent le site.
 
 ### Bloquant (légal)
 
@@ -18,7 +18,7 @@ Réglés sans Amandine le 2026-11-21 (décisions tracées en commentaire dans ch
 
 ### Visuels (tous repris de l'ancien site, en attendant les originaux)
 
-Depuis le 2026-11-21, le site n'affiche plus aucun placeholder public : 12 réalisations, héros, portrait, image Open Graph et comparateur utilisent les images de l'ancien site (`src/assets/placeholders/README.md`).
+Depuis le 2026-11-21, le site n'affiche plus aucun placeholder public : 12 réalisations, héros, portrait, image Open Graph et comparateur utilisent les images de l'ancien site (`apps/site/src/assets/placeholders/README.md`).
 
 - Originaux HD des 4 réalisations récentes : les fichiers d'origine en ligne ne font que 1200 × 600 ; tant qu'ils ne font pas 1200 × 630, ces pages publient l'image Open Graph par défaut. Lieu de 3 projets ; l'esquisse de cuisine `espace-de-vie-scandinave/05` appartient-elle bien à ce projet ?
 - 8 anciens projets (`/projet-1/` à `/projet-7/`, `/projet-marine/`) publiés sans texte : textes rédigés d'après les images, à relire (demande, lieu, formule) ; publication anonyme couverte par l'art. 7 des CGS (2026-11-23).
@@ -42,8 +42,8 @@ Déjà tranchés par l'ancien site (relevé du 2026-11-20) : formation (cursus d
 
 - [ ] `npm run check:prod` : aucun point bloquant.
 - [ ] `npm run verify` et CI de la PR vers `main` vertes (vérifications, e2e, Lighthouse 25 URL).
-- [ ] Vercel : projet connecté au dépôt, branche de production `main` ; **Settings → Environment Variables → « Automatically expose System Environment Variables » coché** (sans quoi `VERCEL_ENV` est absent et le garde-fou est muet).
-- [ ] Si un service de formulaire est choisi : **d'abord** nommer le prestataire, son pays d'établissement, son pays d'hébergement et la garantie de transfert dans les blocs `{formulaire:service}` de `src/content/pages/confidentialite.md`, en remplaçant la phrase marquée `{à-préciser}` (sinon tout build Vercel avec la variable échoue, `src/lib/content-template.ts` ; les builds locaux et de CI restent possibles pour `test:e2e:service`) ; **ensuite** définir `PUBLIC_FORM_ENDPOINT` pour Production (et Preview pour tester) et tester le formulaire de bout en bout ; la page confidentialité affiche alors les paragraphes « service ».
+- [ ] Vercel : projet connecté au dépôt, branche de production `main` ; **Settings → Build and Deployment → Root Directory laissé vide** : c'est `vercel.json` à la racine du dépôt qui fixe le build (`buildCommand` du workspace `@amg/site`, `outputDirectory: apps/site/dist`, ADR-0021) ; ne pas surcharger Build Command ni Output Directory dans le tableau de bord ; **Settings → Environment Variables → « Automatically expose System Environment Variables » coché** (sans quoi `VERCEL_ENV` est absent et le garde-fou est muet).
+- [ ] Si un service de formulaire est choisi : **d'abord** nommer le prestataire, son pays d'établissement, son pays d'hébergement et la garantie de transfert dans les blocs `{formulaire:service}` de `apps/site/src/content/pages/confidentialite.md`, en remplaçant la phrase marquée `{à-préciser}` (sinon tout build Vercel avec la variable échoue, `apps/site/src/lib/content-template.ts` ; les builds locaux et de CI restent possibles pour `test:e2e:service`) ; **ensuite** définir `PUBLIC_FORM_ENDPOINT` pour Production (et Preview pour tester) et tester le formulaire de bout en bout ; la page confidentialité affiche alors les paragraphes « service ».
 - [ ] **Vercel Pro (obligatoire)** : le site est commercial, ce que le plan Hobby interdit, et Hobby n'inclut pas de contrat de sous-traitance (`docs/CONFORMITE.md` § 3).
 - [ ] En-têtes vérifiés sur la preview : `curl -sI https://<preview>.vercel.app/` → `content-security-policy` (meta) et `x-frame-options`, `strict-transport-security`, `permissions-policy`, `cross-origin-resource-policy`, `x-robots-tag: noindex` (previews uniquement).
 - [ ] Redirections vérifiées sur la preview : quelques anciennes URL de `docs/CONTENU-EXISTANT.md` (`/services/`, `/about/`, `/projet-chalet`…) → 308 vers la page finale en un saut.

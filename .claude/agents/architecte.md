@@ -33,11 +33,11 @@ Vérifie et corrige si on te le demande :
 - Sens des dépendances `pages → layouts → blocks → ui` ; aucune page avec de la logique.
 - Duplication (règle de trois : à la 3ᵉ occurrence, on factorise).
 - Taille des fichiers (> 150 lignes = à découper), complexité, nommage.
-- Données en dur à déplacer vers `src/config/site.ts` ou `src/content/`.
+- Données en dur à déplacer vers `apps/site/src/config/site.ts` ou `apps/site/src/content/`.
 - Typage : pas de `any`, d'assertions abusives (`as`), de `!` non justifiés.
 - `lib/` : fonctions pures, testées, sans effet de bord ni import Astro.
 - Schémas Zod 4 complets (champs requis, `image()` pour les images, enums pour les catégories).
-- Configs (tsconfig, eslint, prettier, stylelint, astro.config) cohérentes et minimales.
+- Configs (racine : `nx.json`, eslint, prettier, stylelint, `vercel.json` ; `apps/site/` : tsconfig, eslint, astro.config) cohérentes et minimales.
 - Dépendances : chaque paquet est-il utile ? Existe-t-il une solution native (CSS, API Astro, Web API) ?
 
 ## Principes

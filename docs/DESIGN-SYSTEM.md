@@ -1,6 +1,8 @@
 # Design system — « Atelier lumineux »
 
-> Tenu à jour par l'agent `designer`. Toute valeur visuelle du site vient d'ici, via `src/styles/tokens.css`.
+> Tenu à jour par l'agent `designer`. Toute valeur visuelle du site vient d'ici, via `libs/shared/tokens/src/tokens.css` (paquet `@amg/shared-tokens`, importé par `src/styles/global.css`).
+>
+> Chemins relatifs à `apps/site/` sauf mention contraire.
 
 ## 1. Intention
 
@@ -49,7 +51,7 @@ Fonds relevés sur l'ancien site (thème Elementor) ; son accent camel doré `#C
 | `--color-backdrop`                          | encre à 28 %          | Voile derrière le menu mobile (`::backdrop`)                            |
 | `--color-lightbox-bg`                       | crème à 97 %          | Fond plein écran de la visionneuse (Lightbox)                           |
 
-`tokens.css` est le **seul** fichier contenant des couleurs littérales (Stylelint `color-no-hex` partout ailleurs). Exception documentée : `public/favicon.svg` (fichier statique non stylé).
+`tokens.css` (`libs/shared/tokens/src/tokens.css`) est le **seul** fichier contenant des couleurs littérales (Stylelint `color-no-hex` partout ailleurs). Exception documentée : `public/favicon.svg` (fichier statique non stylé).
 
 ### Contrastes mesurés (WCAG 2.2, ratios tronqués au centième)
 
@@ -134,7 +136,7 @@ Interligne texte 1.65, titres 1.05–1.15 ; longueur de ligne 60–72 caractère
 - Grille 12 colonnes desktop, mises en page volontairement asymétriques (7/5, 5/7, image qui déborde du conteneur).
 - Rayons : `--radius-sm: 6px`, `--radius-md: 14px`, `--radius-lg: 28px`, `--radius-pill: 999px`, `--radius-arch: 999px 999px 0 0` (**arche**, signature visuelle). Épaisseurs de trait : `--border-hairline` (1 px), `--border-thin` (1.5 px), pour les contours fermés, les arches et les traits courts.
 - Ombres chaudes et diffuses : `--shadow-soft` (0 20px 50px -20px encre 18 %), `--shadow-lifted` (0 30px 70px -28px encre 26 %), `--shadow-inset-hairline` (liseré intérieur 1 px encre 8 %).
-- Grain : `--grain-image` (tuile WebP sans perte `src/assets/brand/grain.webp`, 96 px, 2,6 Ko, inlinée en data-URI par Vite ; pré-rendue depuis un bruit `feTurbulence` fractalNoise teinte encre, opacité 0.035 **intégrée à l'alpha**) répétée à `--grain-size` sur un pseudo-élément `body::after` **statique** (`position: absolute; inset: 0`, jamais `fixed`, jamais animé), `pointer-events: none`. Jamais de SVG à filtre en direct : il instancie un document SVG au calcul de style et rasterise le filtre (coût mesuré en Phase 2). Peint une fois avec la page, aucun coût au scroll ; il passe au-dessus des aplats de section pour une matière continue.
+- Grain : `--grain-image`, déclaré dans `src/styles/global.css` et non dans la lib de tokens, parce que l'image est propre au site (tuile WebP sans perte `src/assets/brand/grain.webp`, 96 px, 2,6 Ko, inlinée en data-URI par Vite ; pré-rendue depuis un bruit `feTurbulence` fractalNoise teinte encre, opacité 0.035 **intégrée à l'alpha**) répétée à `--grain-size` sur un pseudo-élément `body::after` **statique** (`position: absolute; inset: 0`, jamais `fixed`, jamais animé), `pointer-events: none`. Jamais de SVG à filtre en direct : il instancie un document SVG au calcul de style et rasterise le filtre (coût mesuré en Phase 2). Peint une fois avec la page, aucun coût au scroll ; il passe au-dessus des aplats de section pour une matière continue.
 - Ornements : fins traits terracotta clair (1 px) **courts** (≤ `--space-2xl`), petites arches/pastilles en filigrane, numéros d'étapes en Fraunces italique géante semi-transparente.
 - **Pas de longs traits horizontaux** (préférence explicite de l'humain, valable pour tout le site) : aucun filet qui traverse un bloc ou une ligne de contenu (`border-block-*` de séparation, `<hr>` pleine largeur, filets d'en-tête, de pied de page, de bandeau, de liste, de `<dl>`, de sommaire, de pied de carte). La séparation vient, dans cet ordre de préférence, de **l'espacement** (tokens `--space-*`), des **aplats de fond** existants (crème, ivoire, beige, grège, vieux rose), des **cartes** (`--radius-lg`, ivoire ou crème) ou d'une **ombre douce** (`--shadow-soft`). Restent autorisés : le trait de 24 px devant les surtitres et les titres de colonnes du pied de page, les soulignés de liens et de navigation, les contours complets (champs, boutons ghost, pastilles, cartes), les arches et pastilles, les séparateurs **verticaux** (citations, colonne d'actions de `CtaBanner`), le `Divider` (toujours court). Exception : la page interne `/styleguide/` (noindex) garde les filets de ses propres outils de démonstration (échelle typographique, durées, tableau de contrastes, étiquettes de blocs), qui ne sont pas des composants du site.
 

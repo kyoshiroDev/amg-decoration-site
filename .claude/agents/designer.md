@@ -34,7 +34,7 @@ Un site qui ressemble à un beau magazine de décoration qu'on feuillette, pas �
 
 ## Règles techniques
 
-- **Tokens uniquement** (`src/styles/tokens.css`) : aucune valeur de couleur, rayon, durée, easing ou espacement magique dans un composant.
+- **Tokens uniquement** (`libs/shared/tokens/src/tokens.css`) : aucune valeur de couleur, rayon, durée, easing ou espacement magique dans un composant.
 - N'animer que `transform`, `opacity`, `clip-path`. `will-change` seulement pendant l'animation.
 - `@media (prefers-reduced-motion: reduce)` : animations désactivées ou réduites à un fondu court.
 - Le contenu est **entièrement visible sans JavaScript** (les classes d'état d'animation sont ajoutées par JS).

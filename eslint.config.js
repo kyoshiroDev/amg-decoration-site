@@ -1,40 +1,42 @@
-// Configuration ESLint (flat config) — TypeScript strict, Astro, accessibilité (jsx-a11y-x, ADR-0004).
+// Configuration ESLint racine (flat config) : base partagée par les projets du monorepo (ADR-0019)
+// et lint des fichiers hors projets (.claude/hooks, configs racine). Chaque projet a la sienne
+// (apps/site/eslint.config.js), qui importe `sharedConfigs` et `sharedRules`.
 import { defineConfig, globalIgnores } from 'eslint/config';
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
-import astro from 'eslint-plugin-astro';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 
+/** Règles communes à tous les projets : TypeScript strict. */
+export const sharedConfigs = [js.configs.recommended, tseslint.configs.strict];
+
+/** Interdits communs (CLAUDE.md §11). */
+export const sharedRules = {
+  rules: {
+    'no-console': 'error',
+    '@typescript-eslint/no-explicit-any': 'error',
+    '@typescript-eslint/ban-ts-comment': 'error',
+    '@typescript-eslint/consistent-type-imports': 'error',
+  },
+};
+
 export default defineConfig(
   globalIgnores([
-    'dist/',
-    'dist-service/',
-    'dist-visual/',
-    '.astro/',
-    '.vercel/',
+    'apps/',
+    'libs/',
     'node_modules/',
-    'playwright-report/',
-    'test-results/',
+    '.nx/',
+    '.vercel/',
     'coverage/',
-    '.lighthouseci/',
     '.playwright-mcp/',
     '.claude/worktrees/',
   ]),
-  js.configs.recommended,
-  tseslint.configs.strict,
-  astro.configs['flat/recommended'],
-  astro.configs['flat/jsx-a11y-strict'],
+  ...sharedConfigs,
   {
     languageOptions: {
-      globals: { ...globals.browser, ...globals.node },
+      globals: { ...globals.node },
     },
-    rules: {
-      'no-console': 'error',
-      '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/ban-ts-comment': 'error',
-      '@typescript-eslint/consistent-type-imports': 'error',
-    },
+    ...sharedRules,
   },
   prettier,
 );

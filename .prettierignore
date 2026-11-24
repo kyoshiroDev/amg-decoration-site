@@ -13,3 +13,6 @@ coverage/
 .claude/reports/
 .claude/worktrees/
 .playwright-mcp/
+
+# Nx (cache et données de workspace)
+.nx/

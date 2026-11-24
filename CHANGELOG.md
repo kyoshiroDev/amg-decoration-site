@@ -4,6 +4,15 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ## [Non publié]
 
+### Monorepo Nx
+
+- Le site est déplacé dans `apps/site` (workspaces npm, paquet `@amg/site`), sans aucun changement visible : le site construit est identique octet pour octet à la référence aux étapes 1 (déplacement) et 2 (Nx), et à l'étape 3 (tokens) au déplacement de la déclaration `--grain-image` près (ADR-0019, ADR-0021).
+- Nx 24.0.6 ajouté à la main, sans plugin Astro : tâches inférées des scripts npm, cache sur `build`, `check`, `test` et `lint` (variables du build et `vercel.json` en entrées), `parallel: 1`, sans daemon ni TUI.
+- Tokens de design extraits dans `libs/shared/tokens` (`@amg/shared-tokens`), communs au site et aux futures apps du CRM ; la texture de grain, propre au site, reste déclarée dans son CSS.
+- `vercel.json` à la racine fixe le build (`buildCommand` du workspace `@amg/site`, `outputDirectory: apps/site/dist`) : le Root Directory Vercel reste vide. CI GitHub Actions alignée sur les nouveaux chemins.
+- Commandes `npm run …` inchangées, toujours lancées depuis la racine ; `npx nx show projects` liste les projets.
+- Documentation (CLAUDE.md, ARCHITECTURE, DESIGN-SYSTEM, MISE-EN-LIGNE, README, agents) mise à jour pour les nouveaux chemins.
+
 ### Projet CRM : cadrage
 
 - Architecture validée par l'humain : monorepo Nx (site Astro, admin et espace client Angular, API NestJS, PostgreSQL + Prisma, Zod), hébergement Docker sur son VPS OVH à côté d'un projet existant et de son Traefik, sauvegardes chiffrées sur Backblaze B2, préproduction (ADR-0019, ADR-0020). Détails d'accès au serveur hors dépôt.

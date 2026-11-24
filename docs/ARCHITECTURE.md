@@ -1,6 +1,32 @@
 # Architecture
 
 > Tenue à jour par l'agent `architecte`. L'arborescence de référence et les règles sont dans `CLAUDE.md` §3 ; ce document détaille le **pourquoi** et les flux.
+>
+> Chemins relatifs à `apps/site/` sauf mention contraire.
+
+## Monorepo
+
+Le dépôt est un monorepo **Nx 24.0.6 + workspaces npm** (ADR-0019 pour le choix, ADR-0021 pour l'outillage). Workspaces déclarés dans le `package.json` racine : `apps/*`, `libs/shared/*`. Scope des paquets internes : `@amg/` (privés, jamais publiés). `npx nx show projects` les liste.
+
+| Projet               | Dossier               | Rôle                                                                                                                                                        |
+| -------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@amg/site`          | `apps/site/`          | Site vitrine Astro statique. Projet à scripts npm : Nx infère les cibles de `apps/site/package.json`, sans plugin Astro ni `project.json` (propriété `nx`). |
+| `@amg/shared-tokens` | `libs/shared/tokens/` | Tokens de design en CSS seul, sans build, exposé par `exports` (`@amg/shared-tokens/tokens.css`). Cible `lint` (Stylelint).                                 |
+
+**Graphe** : `@amg/site` → `@amg/shared-tokens` (dépendance `"*"` du site). Le site l'importe en CSS (`@import url('@amg/shared-tokens/tokens.css')` dans `src/styles/global.css`), en texte brut pour le styleguide (`?raw`) et dans les tests (résolution du paquet). La texture de grain (`--grain-image`) est propre au site : elle est déclarée dans `src/styles/global.css`, pas dans la lib.
+
+**Répartition** : l'outillage commun vit à la racine, une seule version par outil (ESLint et plugins, Prettier, Stylelint, TypeScript, Vitest, Playwright, axe, LHCI, Nx) ; les dépendances propres au site (Astro, intégrations, Sätteri, `schema-dts`, `@astrojs/check`) dans `apps/site/package.json`. ESLint : base partagée à la racine (`sharedConfigs`, `sharedRules` de `eslint.config.js`), config du site dans `apps/site/eslint.config.js`. Stylelint (`stylelint.config.mjs`) et Prettier sont uniques, à la racine.
+
+**Cache Nx** (`nx.json`, dossier `.nx/` ignoré par git) sur `build`, `check`, `test` et `lint`. Entrées :
+
+- `build` : entrées `production` du projet et de ses dépendances (tests, configs Playwright, Vitest, Lighthouse et ESLint exclus) **et** les variables qui changent le build : `PUBLIC_FORM_ENDPOINT`, `VERCEL_ENV`, `VERCEL_PROJECT_PRODUCTION_URL`, `NODE_ENV`. Sortie : `apps/site/dist`.
+- `test` : fichiers du projet + `vercel.json` racine (lu par les tests de redirections, d'en-têtes et de build Vercel).
+- `lint` : fichiers du projet + `eslint.config.js` et `stylelint.config.mjs` racine.
+- Toutes : version de Node (`sharedGlobals`). En cas de doute : `npx nx reset`.
+
+**Réglages mémoire** (machine de développement limitée) : `parallel: 1`, pas de daemon (`useDaemonProcess: false`), pas de TUI, `analytics: false` ; les scripts racine passent `--outputStyle=static` pour des journaux lisibles par les agents.
+
+**Commandes** : les `npm run …` racine sont inchangées. `build`, `check`, `lint` et `test` passent par `nx run-many` ; `dev`, `preview`, `test:e2e`, `lhci`… délèguent au workspace (`npm run <script> -w @amg/site`). `nx affected` est reporté à l'arrivée d'une deuxième app. **Jamais `npm ci` en local** : il effacerait le cache d'images `apps/site/node_modules/.astro`.
 
 ## Principes
 
@@ -11,7 +37,7 @@
 
 ## Styleguide interne
 
-`/styleguide/` (noindex, exclue du sitemap) est la référence visuelle du `designer` et du `reviewer`. Ses sections vivent dans `src/components/styleguide/` et ne sont jamais importées par une page publique. Elles lisent `src/styles/tokens.css` au build (`?raw`) via `src/lib/design-tokens.ts` et `src/lib/color-contrast.ts` : aucune valeur n'est recopiée (ADR-0005).
+`/styleguide/` (noindex, exclue du sitemap) est la référence visuelle du `designer` et du `reviewer`. Ses sections vivent dans `src/components/styleguide/` et ne sont jamais importées par une page publique. Elles lisent `libs/shared/tokens/src/tokens.css` au build (`@amg/shared-tokens/tokens.css?raw`) via `src/lib/design-tokens.ts` et `src/lib/color-contrast.ts` : aucune valeur n'est recopiée (ADR-0005).
 
 ## Flux de données
 
@@ -182,14 +208,17 @@ Poids total mesuré par page (gzip, audit performance de la Phase 7, hors script
 
 - `astro.config.mjs` : `site: 'https://amgdecorationdinterieur.com'`, `trailingSlash: 'always'`, `output: 'static'`, intégrations `sitemap` (filtre des pages `noindex`, `lastmod` des articles lu dans leur frontmatter par `src/lib/article-files.ts` et `src/lib/sitemap-lastmod.ts`, importés sans alias ; les mêmes fichiers donnent les routes d'articles passées à `siteRoutes()`, assemblées dans `tests/site-routes.ts`) (+ `mdx`), `prefetch`, Fonts API, `image` (formats/qualités).
 - `astro.config.mjs` → `security.csp` : Content-Security-Policy en balise meta, empreintes des scripts et styles calculées au build ; directives et empreintes des scripts `is:inline` fournies par `src/lib/csp.ts`, origine de `PUBLIC_FORM_ENDPOINT` autorisée si elle est définie ; intégration `amg:csp-par-page` (hook `astro:build:done`) qui réduit les empreintes de chaque page à celles de ses éléments inline (`pruneCspHashes`, ADR-0012).
-- `vercel.json` : redirections 301, en-têtes de sécurité (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, HSTS, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `Permissions-Policy`, CSP d'en-tête limitée à `frame-ancestors`/`base-uri`/`object-src`), vérifiés par `tests/unit/security-headers.test.ts` ; cache immuable `/_astro/*` et `/icons.<version>.svg` (URLs versionnées par empreinte, vérifié par le même test).
+- `vercel.json` (**racine du dépôt**) : `framework: astro`, `buildCommand` du workspace (`npm run build --workspace=@amg/site`, sans Nx) et `outputDirectory: apps/site/dist`, vérifiés par `tests/unit/vercel-build.test.ts` ; redirections 301, en-têtes de sécurité (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, HSTS, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `Permissions-Policy`, CSP d'en-tête limitée à `frame-ancestors`/`base-uri`/`object-src`), vérifiés par `tests/unit/security-headers.test.ts` ; cache immuable `/_astro/*` et `/icons.<version>.svg` (URLs versionnées par empreinte, vérifié par le même test).
 - `astro.config.mjs` → `markdown.processor` : Sätteri (processeur par défaut d'Astro 7) avec le plugin `contentTemplatePlugin` (§ Gabarit des corps Markdown, ADR-0016).
 - `astro.config.mjs` → intégration `amg:garde-fou-production` (hook `astro:build:start`) : si `VERCEL_ENV` vaut `production` **et** que `VERCEL_PROJECT_PRODUCTION_URL` désigne le vrai domaine (`isReleaseGuarded`), échec du build tant qu'un `TODO(contenu)` reste dans les pages légales (ADR-0015 révisée).
 - `scripts/check-prod.ts` (`npm run check:prod`, exécuté directement par Node) : le même contrôle en local, quel que soit l'environnement. Ne pas confondre avec `src/scripts/` (JS client).
 - `tsconfig.json` : `astro/tsconfigs/strictest` + alias `@/*`.
+- Racine du dépôt : `nx.json` (§ Monorepo), `eslint.config.js` (base partagée), `stylelint.config.mjs`, Prettier, `vercel.json`, `.github/workflows/ci.yml`.
 
 ## Déploiement
 
-GitHub → Vercel : chaque push sur `dev` = preview ; merge dans `main` (humain) = production. La CI GitHub Actions (`.github/workflows/ci.yml`) doit être verte avant tout merge. Le cache des images optimisées par Astro (`node_modules/.astro/assets`) est conservé entre les runs (`actions/cache`, clé : dépendances, `astro.config.mjs` et `src/assets/`) : le job `verify` l'écrit, le job `e2e` le relit. Sans lui, chaque build régénère les ~2 200 variantes (~6 min).
+GitHub → Vercel : chaque push sur `dev` = preview ; merge dans `main` (humain) = production. La CI GitHub Actions (`.github/workflows/ci.yml`) doit être verte avant tout merge. Le cache des images optimisées par Astro (`apps/site/node_modules/.astro/assets`) est conservé entre les runs (`actions/cache`, clé : `package-lock.json`, `apps/site/astro.config.mjs` et `apps/site/src/assets/`) : le job `verify` l'écrit, le job `e2e` le relit. Sans lui, chaque build régénère les ~2 200 variantes (~6 min).
+
+Vercel lit `vercel.json` **à la racine du dépôt** : le **Root Directory** du projet Vercel reste **vide**, `buildCommand` construit le workspace `@amg/site` sans passer par Nx (aucun cache Nx ne peut resservir un build fait avec d'autres variables) et `outputDirectory` pointe sur `apps/site/dist`. Installation par défaut (`npm install` à la racine, workspaces compris).
 
 **Garde-fou de mise en production** (ADR-0015) : le build de production Vercel qui sert le vrai domaine (`VERCEL_ENV=production` et `VERCEL_PROJECT_PRODUCTION_URL` = `amgdecorationdinterieur.com`) échoue tant qu'un `TODO(contenu)` reste dans `mentions-legales.md`, `conditions-generales.md` ou `confidentialite.md` ; le message liste chaque TODO en `fichier:ligne`, et la production précédente reste en ligne. Builds locaux, CI, previews et production sur `*.vercel.app` (en `noindex`) ne sont pas concernés. Rattacher le domaine ne relance pas de build : `check:prod` vert avant, redéploiement après (`docs/MISE-EN-LIGNE.md` §3). Avant de rattacher le domaine : `npm run check:prod` (même liste, code de sortie 1 s'il en reste) et vérifier dans Vercel que les variables système sont exposées.

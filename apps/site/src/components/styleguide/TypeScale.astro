@@ -2,7 +2,7 @@
 /**
  * TypeScale — échelle typographique fluide lue dans tokens.css.
  */
-import tokensCss from '@/styles/tokens.css?raw';
+import tokensCss from '@amg/shared-tokens/tokens.css?raw';
 import { clampBounds, parseCustomProperties } from '@/lib/design-tokens';
 
 const steps = parseCustomProperties(tokensCss, '--step-').reverse();

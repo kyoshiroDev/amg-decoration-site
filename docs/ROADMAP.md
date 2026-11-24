@@ -130,9 +130,9 @@ Maquette validée par l'humain le 2026-11-24 : https://claude.ai/artifact/8qrSz6
 
 ### CRM 1 — Monorepo Nx
 
-- [ ] Nx initialisé, site déplacé dans `apps/site` sans changement visible (build, tests, e2e, Lighthouse, garde-fous identiques)
-- [ ] `libs/shared/tokens` extrait de `tokens.css`, consommé par le site
-- [ ] CI GitHub Actions adaptée (cibles Nx affectées), `CLAUDE.md` et `docs/ARCHITECTURE.md` réécrits pour le monorepo
+- [x] Nx initialisé, site déplacé dans `apps/site` sans changement visible (build, tests, e2e, Lighthouse, garde-fous identiques)
+- [x] `libs/shared/tokens` extrait de `tokens.css`, consommé par le site
+- [x] CI GitHub Actions adaptée aux chemins du monorepo (`nx affected` reporté à l'arrivée d'une 2e app, ADR-0021), `CLAUDE.md` et `docs/ARCHITECTURE.md` réécrits pour le monorepo
 
 ### CRM 2 — Socle serveur et préproduction
 

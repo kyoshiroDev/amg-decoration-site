@@ -19,7 +19,7 @@ export default {
   },
   overrides: [
     {
-      files: ['src/styles/tokens.css'],
+      files: ['libs/shared/tokens/src/tokens.css'],
       rules: { 'color-no-hex': null },
     },
   ],

@@ -2,7 +2,7 @@
 /**
  * MotionTokens — durées et courbes lues dans tokens.css ; démonstration au survol.
  */
-import tokensCss from '@/styles/tokens.css?raw';
+import tokensCss from '@amg/shared-tokens/tokens.css?raw';
 import { parseCustomProperties } from '@/lib/design-tokens';
 
 const durations = parseCustomProperties(tokensCss, '--dur-');

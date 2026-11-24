@@ -1,0 +1,67 @@
+{
+  "name": "@amg/site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Site vitrine d'AMG Décoration d'Intérieur (Astro, statique).",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "check": "astro check",
+    "check:prod": "node scripts/check-prod.ts",
+    "lint": "eslint . --max-warnings 0 && stylelint \"src/**/*.{css,astro}\" --max-warnings 0 --allow-empty-input",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:service": "playwright test -c playwright.service.config.ts",
+    "test:visual": "playwright test -c playwright.visual.config.ts",
+    "test:visual:update": "playwright test -c playwright.visual.config.ts --update-snapshots",
+    "lhci": "lhci autorun"
+  },
+  "dependencies": {
+    "@amg/shared-tokens": "*",
+    "@astrojs/markdown-satteri": "^0.4.10",
+    "@astrojs/mdx": "^8.1.6",
+    "@astrojs/sitemap": "^3.7.5",
+    "astro": "^7.4.12"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "satteri": "^0.11.7",
+    "schema-dts": "^2.1.0"
+  },
+  "nx": {
+    "targets": {
+      "build": {
+        "inputs": [
+          "production",
+          "^production",
+          {
+            "env": "PUBLIC_FORM_ENDPOINT"
+          },
+          {
+            "env": "VERCEL_ENV"
+          },
+          {
+            "env": "VERCEL_PROJECT_PRODUCTION_URL"
+          },
+          {
+            "env": "NODE_ENV"
+          }
+        ],
+        "outputs": [
+          "{projectRoot}/dist"
+        ]
+      },
+      "test": {
+        "inputs": [
+          "default",
+          "^production",
+          "{workspaceRoot}/vercel.json"
+        ]
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@
 /**
  * ShapeSamples — rayons et ombres lus dans tokens.css.
  */
-import tokensCss from '@/styles/tokens.css?raw';
+import tokensCss from '@amg/shared-tokens/tokens.css?raw';
 import { parseCustomProperties } from '@/lib/design-tokens';
 
 const radii = parseCustomProperties(tokensCss, '--radius-');

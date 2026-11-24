@@ -2,7 +2,7 @@
  * Données de contraste du styleguide, calculées au build depuis tokens.css
  * (partagées par ContrastTable et ContrastPairs).
  */
-import tokensCss from '@/styles/tokens.css?raw';
+import tokensCss from '@amg/shared-tokens/tokens.css?raw';
 import {
   contrastLevel,
   contrastRatio,

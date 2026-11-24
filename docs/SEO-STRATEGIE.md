@@ -1,6 +1,8 @@
 # Stratégie SEO
 
 > Tenue à jour par l'agent `seo`.
+>
+> Chemins relatifs à `apps/site/` sauf mention contraire ; `vercel.json` est à la racine du dépôt.
 
 ## 1. Positionnement
 
