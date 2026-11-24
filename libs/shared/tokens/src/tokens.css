@@ -13,7 +13,7 @@
    * Fonds de l'ancien site d'Amandine (ADR-0017) : crème, ivoire, beige, grège, vieux rose ;
    * accent terracotta doux choisi par l'humain le 2026-11-24 (ADR-0018), à la place du camel.
    * Contrastes mesurés (WCAG 2.x, non arrondis) dans docs/DESIGN-SYSTEM.md et vérifiés par
-   * tests/unit/palette-contrast.test.ts.
+   * apps/site/tests/unit/palette-contrast.test.ts.
    */
   --color-cream: #faf8f5; /* fond principal (crème de l'ancien site) */
   --color-ivory: #fffdfa; /* cartes, surfaces, texte sur boutons */
@@ -193,7 +193,7 @@
   /*
    * Cascade d'une liste révélée (ADR-0013) : 6 rangs au plus sur une même durée partagée
    * (apparition + 5 décalages). Les pourcentages des @keyframes reveal-cascade-* de motion.css
-   * en dérivent : tests/unit/reveal-keyframes.test.ts échoue s'ils ne suivent plus ces tokens.
+   * en dérivent : apps/site/tests/unit/reveal-keyframes.test.ts échoue s'ils ne suivent plus ces tokens.
    */
   --reveal-cascade-duration: calc(var(--dur-base) + 5 * var(--stagger));
 

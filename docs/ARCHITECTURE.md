@@ -23,6 +23,7 @@ Le dépôt est un monorepo **Nx 24.0.6 + workspaces npm** (ADR-0019 pour le choi
 - `test` : fichiers du projet + `vercel.json` racine (lu par les tests de redirections, d'en-têtes et de build Vercel).
 - `lint` : fichiers du projet + `eslint.config.js` et `stylelint.config.mjs` racine.
 - Toutes : version de Node (`sharedGlobals`). En cas de doute : `npx nx reset`.
+- `apps/site/.env` (local, ignoré par git) n'entre **pas** dans les entrées : après l'avoir modifié, lancer `npx nx reset` avant `npm run build`, sinon Nx peut resservir un build en cache. Vercel et la CI ne sont pas concernés (pas de `.env`, build Vercel hors Nx).
 
 **Réglages mémoire** (machine de développement limitée) : `parallel: 1`, pas de daemon (`useDaemonProcess: false`), pas de TUI, `analytics: false` ; les scripts racine passent `--outputStyle=static` pour des journaux lisibles par les agents.
 
