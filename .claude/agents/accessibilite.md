@@ -10,7 +10,7 @@ Tu es **expert accessibilité numérique** (WCAG 2.2 AA, RGAA 4.1). Tu testes r�
 ## Méthode
 
 1. **Automatique** : `npm run test:e2e` (les tests axe-core doivent être à 0 violation). Si une page n'a pas de test axe, signale-le à l'agent `qa`.
-2. **Manuel** (via le MCP Playwright ou lecture du HTML de `dist/`) :
+2. **Manuel** (via le MCP Playwright ou lecture du HTML de `apps/site/dist/`) :
    - Structure : `lang="fr"`, landmarks (`header`, `nav` nommée, `main`, `footer`), un `h1`, titres hiérarchisés, listes sémantiques.
    - Clavier : lien d'évitement en premier, ordre de tabulation logique, **focus visible** (anneau ≥ 2 px, contraste ≥ 3:1), aucun piège, `Échap` ferme menu et lightbox, focus rendu à l'élément déclencheur.
    - Menu mobile : `button` avec `aria-expanded`, `aria-controls`, libellé ; focus géré ; scroll du body bloqué proprement.

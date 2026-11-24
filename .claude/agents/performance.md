@@ -15,9 +15,9 @@ Lighthouse Perf mobile ≥ 95 · LCP < 2,0 s · CLS < 0,05 · INP < 200 ms · JS
 
 1. `npm run build` puis mesure :
    ```bash
-   find dist -name '*.js'  -exec gzip -c {} \; | wc -c   # total JS gzip
-   find dist -name '*.css' -exec gzip -c {} \; | wc -c   # total CSS gzip
-   du -sh dist/_astro
+   find apps/site/dist -name '*.js'  -exec gzip -c {} \; | wc -c   # total JS gzip
+   find apps/site/dist -name '*.css' -exec gzip -c {} \; | wc -c   # total CSS gzip
+   du -sh apps/site/dist/_astro
    ```
    Puis `npm run lhci` (ou Lighthouse en mode mobile sur `npm run preview`).
 2. Contrôle :

@@ -37,6 +37,7 @@ Le brief complet est dans `docs/BRIEF.md` et l'inventaire du contenu existant da
 | Qualité      | ESLint (flat config + `eslint-plugin-astro` + `jsx-a11y-x`, voir ADR-0004), Prettier (+ `prettier-plugin-astro`), Stylelint, `astro check`                   |
 | Tests        | Vitest (unitaires `src/lib`), Playwright + `@axe-core/playwright` (e2e + a11y), Lighthouse CI                                                                |
 | Gestionnaire | **npm** · Node **≥ 22.23.4**, 24 en CI (voir `.nvmrc`, ADR-0004)                                                                                             |
+| Monorepo     | Nx 24.0.6 + workspaces npm (ADR-0019, ADR-0021)                                                                                                              |
 
 Avant d'utiliser une API Astro, **vérifie-la dans la doc à jour** (MCP `context7` ou docs.astro.build). Ne te fie jamais à ta mémoire pour une API qui a pu changer entre v5 et v7.
 
@@ -44,41 +45,45 @@ Avant d'utiliser une API Astro, **vérifie-la dans la doc à jour** (MCP `contex
 
 ## 3. Architecture
 
+Monorepo Nx + workspaces npm (ADR-0019, ADR-0021). L'outillage commun (ESLint, Prettier, Stylelint, TypeScript, Vitest, Playwright, Nx, `vercel.json`) vit à la racine ; la configuration propre au site (`astro.config.mjs`, `tsconfig.json`, `eslint.config.js`, configs Vitest, Playwright et Lighthouse) vit dans `apps/site/`. Ailleurs dans ce fichier, les chemins `src/…` et `tests/…` sont relatifs à `apps/site/`.
+
 ```
-src/
-├── assets/                 # images traitées par astro:assets (jamais dans public/)
-│   ├── projets/<slug>/     # une galerie par réalisation (avant / 3D / après)
-│   └── brand/              # logo, portrait, textures
-├── components/
-│   ├── ui/                 # atomes sans logique métier : Button, Link, Heading, Tag, Icon, Container, Section
-│   ├── blocks/             # sections réutilisables : Hero, ServiceCard, ProjectCard, ProjectGrid,
-│   │                       #   ProcessSteps, BeforeAfter, Testimonials, CtaBanner, FaqList, Marquee
-│   ├── layout/             # Header, Footer, MobileNav, SkipLink, Breadcrumbs
-│   ├── seo/                # SEO.astro, JsonLd.astro
-│   └── styleguide/         # sections internes de /styleguide/ (noindex, ADR-0005)
-├── config/
-│   ├── site.ts             # SOURCE DE VÉRITÉ UNIQUE : nom, NAP, horaires, réseaux, navigation
-│   └── seo.ts              # valeurs SEO par défaut, image OG par défaut
-├── content/                # contenus éditoriaux (md/mdx/yaml)
-│   ├── projets/            # réalisations
-│   ├── prestations/        # formules (Essentiel, Confort, Signature, Studio)
-│   ├── articles/           # blog "Conseils déco" (moteur SEO longue traîne)
-│   ├── temoignages.yaml
-│   └── faq.yaml
-├── content.config.ts       # schémas Zod de toutes les collections
-├── layouts/                # BaseLayout (html/head/SEO), PageLayout, ArticleLayout, ProjectLayout
-├── lib/                    # fonctions PURES et testées (jsonld.ts, seo.ts, format.ts, reading-time.ts)
-├── pages/                  # routes uniquement : assemblage de blocks, zéro logique
-├── scripts/                # JS client : reveal.ts, before-after.ts, header.ts, lightbox.ts
-└── styles/
-    ├── tokens.css          # couleurs, typo, espacements, rayons, ombres, durées, easings
-    ├── reset.css
-    ├── global.css          # @layer reset, base, components, utilities
-    └── utilities.css
-tests/
-├── unit/                   # Vitest
-└── e2e/                    # Playwright (+ axe)
-docs/                       # documentation vivante (voir §9)
+apps/site/
+├── src/
+│   ├── assets/                 # images traitées par astro:assets (jamais dans public/)
+│   │   ├── projets/<slug>/     # une galerie par réalisation (avant / 3D / après)
+│   │   └── brand/              # logo, portrait, textures
+│   ├── components/
+│   │   ├── ui/                 # atomes sans logique métier : Button, Link, Heading, Tag, Icon, Container, Section
+│   │   ├── blocks/             # sections réutilisables : Hero, ServiceCard, ProjectCard, ProjectGrid,
+│   │   │                       #   ProcessSteps, BeforeAfter, Testimonials, CtaBanner, FaqList, Marquee
+│   │   ├── layout/             # Header, Footer, MobileNav, SkipLink, Breadcrumbs
+│   │   ├── seo/                # SEO.astro, JsonLd.astro
+│   │   └── styleguide/         # sections internes de /styleguide/ (noindex, ADR-0005)
+│   ├── config/
+│   │   ├── site.ts             # SOURCE DE VÉRITÉ UNIQUE : nom, NAP, horaires, réseaux, navigation
+│   │   └── seo.ts              # valeurs SEO par défaut, image OG par défaut
+│   ├── content/                # contenus éditoriaux (md/mdx/yaml)
+│   │   ├── projets/            # réalisations
+│   │   ├── prestations/        # formules (Essentiel, Confort, Signature, Studio)
+│   │   ├── articles/           # blog "Conseils déco" (moteur SEO longue traîne)
+│   │   ├── temoignages.yaml
+│   │   └── faq.yaml
+│   ├── content.config.ts       # schémas Zod de toutes les collections
+│   ├── layouts/                # BaseLayout (html/head/SEO), PageLayout, ArticleLayout, ProjectLayout
+│   ├── lib/                    # fonctions PURES et testées (jsonld.ts, seo.ts, format.ts, reading-time.ts)
+│   ├── pages/                  # routes uniquement : assemblage de blocks, zéro logique
+│   ├── scripts/                # JS client : reveal.ts, before-after.ts, header.ts, lightbox.ts
+│   └── styles/                 # tokens.css vient de libs/shared/tokens (@amg/shared-tokens)
+│       ├── reset.css
+│       ├── global.css          # @layer reset, base, components, utilities ; --grain-image
+│       └── utilities.css
+└── tests/
+    ├── unit/                   # Vitest
+    └── e2e/                    # Playwright (+ axe)
+libs/shared/tokens/
+└── src/tokens.css              # couleurs, typo, espacements, rayons, ombres, durées, easings
+docs/                           # documentation vivante (voir §9)
 ```
 
 ### Règles d'architecture
@@ -97,7 +102,7 @@ docs/                       # documentation vivante (voir §9)
 ## 4. Design (résumé, détail dans `docs/DESIGN-SYSTEM.md`)
 
 - Direction : **"Atelier lumineux"**, éditorial et chaleureux, beaucoup d'air, grandes images, typographie serif expressive, formes en **arche**, grain de papier subtil.
-- Palette : fonds crème, beige et grège repris de l'ancien site (ADR-0017), accent terracotta doux (ADR-0018) : terracotta pour les boutons et liens, terracotta clair en décor, touche de vieux rose, texte gris-brun. **Uniquement via les tokens** `--color-*` ; aucune couleur hexadécimale hors de `tokens.css`.
+- Palette : fonds crème, beige et grège repris de l'ancien site (ADR-0017), accent terracotta doux (ADR-0018) : terracotta pour les boutons et liens, terracotta clair en décor, touche de vieux rose, texte gris-brun. **Uniquement via les tokens** `--color-*` ; aucune couleur hexadécimale hors de `libs/shared/tokens/src/tokens.css`.
 - Effets : apparitions douces au scroll, View Transitions entre pages, **slider avant/après "Rendu 3D ↔ Réalisé"** (signature du site), zoom lent des images au survol, curseur/CTA magnétiques légers, marquee de mots-clés.
 - **Toute animation respecte `prefers-reduced-motion`**, n'anime que `transform`/`opacity`, et ne bloque jamais le contenu (le contenu est visible sans JS).
 - Mobile first. Points de rupture via tokens. Cibles tactiles ≥ 44 px.
@@ -202,8 +207,8 @@ Une modification de code qui rend une doc fausse **doit** mettre à jour cette d
 
 ```bash
 npm run dev          # serveur local
-npm run build        # build statique dans dist/
-npm run preview      # prévisualiser dist/
+npm run build        # build statique dans apps/site/dist/
+npm run preview      # prévisualiser apps/site/dist/
 npm run check        # astro check (types)
 npm run lint         # eslint + stylelint + prettier --check
 npm run format       # prettier --write
@@ -211,7 +216,10 @@ npm run test         # vitest
 npm run test:e2e     # playwright (lance le build + preview)
 npm run lhci         # lighthouse ci sur le build
 npm run verify       # check + lint + test + build  ← doit être vert avant toute revue
+npx nx show projects # liste les projets du monorepo (@amg/site, @amg/shared-tokens)
 ```
+
+Toutes ces commandes se lancent **depuis la racine** du dépôt. **Jamais `npm ci` en local** : il efface le cache d'images `apps/site/node_modules/.astro`.
 
 Commandes Claude (slash) : `/demarrer` (enchaîne toute la roadmap en autonomie), `/phase <n>`, `/revue`, `/livrer`, `/audit`.
 

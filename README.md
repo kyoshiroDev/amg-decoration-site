@@ -33,20 +33,52 @@ Claude enchaîne les 9 phases de `docs/ROADMAP.md`. À chaque phase : il code, f
 
 > Plus d'autonomie : le projet est en mode `acceptEdits` (pas de confirmation pour les modifications de fichiers ; les commandes de la liste d'autorisation passent sans demander). Pour zéro interruption, tu peux lancer `claude --permission-mode bypassPermissions`. Les hooks Git restent actifs dans tous les cas.
 
+## Structure du dépôt
+
+Monorepo **Nx 24.0.6 + workspaces npm** (ADR-0019, ADR-0021) :
+
+```
+apps/site/            # site vitrine Astro (@amg/site) : src/, tests/, public/, configs Astro, Playwright, Lighthouse
+libs/shared/tokens/   # tokens de design en CSS (@amg/shared-tokens), consommés par le site
+docs/                 # documentation vivante (architecture, design system, SEO, roadmap, ADR)
+nx.json               # cache et réglages Nx (parallel 1, sans daemon)
+vercel.json           # build Vercel, redirections 301, en-têtes de sécurité
+eslint.config.js      # base ESLint partagée ; Prettier et Stylelint uniques à la racine
+```
+
+L'outillage commun vit à la racine, la configuration propre au site dans `apps/site/`. Détail : `docs/ARCHITECTURE.md` § Monorepo.
+
+## Commandes
+
+Toutes se lancent **depuis la racine** :
+
+```bash
+npm install          # installe tous les workspaces
+npm run dev          # serveur local du site
+npm run build        # build statique dans apps/site/dist/
+npm run preview      # prévisualise apps/site/dist/
+npm run verify       # check + lint + test + build (doit être vert avant toute revue)
+npm run test:e2e     # Playwright + axe sur le build de production
+npm run lhci         # Lighthouse CI
+npx nx show projects # liste les projets du monorepo
+```
+
+**Jamais `npm ci` en local** : il efface le cache d'images d'Astro (`apps/site/node_modules/.astro`), dont la régénération prend ~6 min. Liste complète des commandes : `CLAUDE.md` §10.
+
 ## Connecter Vercel (une seule fois, après la phase 0)
 
 1. Sur vercel.com : **Add New → Project**, importer le dépôt GitHub `kyoshiroDev/amg-decoration-site`.
-2. Framework : Astro (détecté automatiquement). Branche de production : `main`.
+2. Framework : Astro. **Root Directory : laisser vide** : `vercel.json` à la racine fixe le build (`buildCommand` du workspace `@amg/site`, `outputDirectory: apps/site/dist`). Branche de production : `main`. Cocher **Settings → Environment Variables → « Automatically expose System Environment Variables »** (garde-fou de production, `docs/MISE-EN-LIGNE.md` §2).
 3. Chaque push sur `dev` produit une **preview** ; chaque merge dans `main` met en **production**.
 4. Le jour J : lancer `npm run check:prod` (pages légales complètes, ADR-0015), puis ajouter le domaine `amgdecorationdinterieur.com` dans Vercel et modifier les DNS chez le registrar actuel.
 
 ## Variables d’environnement
 
-| Variable               | Obligatoire | Rôle                                                                                                                                                                                                                                                                                                                    |
-| ---------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PUBLIC_FORM_ENDPOINT` | non         | URL **https** du service de formulaire (ADR-0003, Formspark recommandé). Lue au build. Absente : le formulaire de contact se replie sur un `mailto:` vers l’email de `src/config/site.ts`. Son origine est autorisée dans la CSP (`connect-src`, `form-action`, ADR-0012) : changer de service impose un nouveau build. |
+| Variable               | Obligatoire | Rôle                                                                                                                                                                                                                                                                                                                              |
+| ---------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PUBLIC_FORM_ENDPOINT` | non         | URL **https** du service de formulaire (ADR-0003, Formspark recommandé). Lue au build. Absente : le formulaire de contact se replie sur un `mailto:` vers l’email de `apps/site/src/config/site.ts`. Son origine est autorisée dans la CSP (`connect-src`, `form-action`, ADR-0012) : changer de service impose un nouveau build. |
 
-À définir dans Vercel (_Settings → Environment Variables_) pour Production et Preview. En local, un fichier `.env` (ignoré par git) suffit : `PUBLIC_FORM_ENDPOINT=https://…`.
+À définir dans Vercel (_Settings → Environment Variables_) pour Production et Preview. En local, un fichier `apps/site/.env` (ignoré par git) suffit : `PUBLIC_FORM_ENDPOINT=https://…`.
 
 ## Commandes Claude
 

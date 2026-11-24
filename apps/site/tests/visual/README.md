@@ -1,5 +1,7 @@
 # Régression visuelle (`tests/visual/`)
 
+> Chemins relatifs à `apps/site/` sauf mention contraire. Commandes `npm run …` à lancer depuis la racine du dépôt.
+
 Captures pleine page de référence (`toHaveScreenshot`) des pages clés, en mobile (390×844) et
 desktop (1440×900) : accueil, prestations, une fiche prestation, visualisation 3D, réalisations,
 une fiche projet, à propos, conseils déco, un article, contact et 404. Les références sont dans
@@ -23,7 +25,7 @@ nouveau build.
 2. Lancer `npm run test:visual:update`, puis `npm run test:visual` deux fois : 0 diff attendu.
    `--update-snapshots` ne réécrit que les captures en échec : un changement de teinte léger (fonds,
    palette) reste sous le seuil par pixel de Playwright et laisserait des références périmées. Dans ce
-   cas, régénérer tout : `npx playwright test -c playwright.visual.config.ts --update-snapshots=all`.
+   cas, régénérer tout : `npm run test:visual -- --update-snapshots=all`.
 3. Committer les PNG avec un message qui nomme le changement visuel, par exemple
    `test(visuel): met à jour les références après la refonte du pied de page`.
 

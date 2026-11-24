@@ -2,6 +2,8 @@
 
 > Tenu par l'agent `conformite`. Dernière mise à jour : 23/11/2026 (CGS art. 4 : démarrage après le délai de rétractation ; conservation non bloquante ; avant : adresse du siège et mention « EI » appliquées ; avant : consolidation des pages légales : RNE, délais, RC Pro, dates, clause pros ; avant : CGS art. 4 et formulaire de rétractation).
 > L'agent n'est pas avocat : il applique les obligations standard (LCEN, RGPD, loi Informatique et Libertés, recommandations CNIL, Code de la consommation) et signale ce qui demande une validation humaine. **Les points « risque élevé » doivent être tranchés par Amandine, idéalement avec un juriste, avant la mise en production.**
+>
+> Chemins relatifs à `apps/site/` sauf mention contraire.
 
 ## 1. Checklist
 

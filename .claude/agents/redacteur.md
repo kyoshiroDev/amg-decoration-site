@@ -31,4 +31,4 @@ Tu es **rédacteur web senior** spécialisé dans l'art de vivre et la décorati
 
 ## Livrable
 
-Textes directement dans les fichiers `src/content/**` (front-matter compris) ou dans les composants si c'est de la microcopie, plus la liste des `TODO(contenu)` créés.
+Textes directement dans les fichiers `apps/site/src/content/**` (front-matter compris) ou dans les composants si c'est de la microcopie, plus la liste des `TODO(contenu)` créés.

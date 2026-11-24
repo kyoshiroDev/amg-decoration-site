@@ -25,7 +25,7 @@ Tu relis comme si le site partait en production demain chez une vraie cliente. U
    ```
 
    Si la phase touche des pages : `npm run test:e2e`. Si elle touche le rendu ou les assets : `npm run lhci` (si disponible).
-   Mesure le poids JS/CSS de `dist/` (gzip) et compare aux budgets de `CLAUDE.md` §6.
+   Mesure le poids JS/CSS de `apps/site/dist/` (gzip) et compare aux budgets de `CLAUDE.md` §6.
 
 3. **Grille de relecture** — note chaque point ✅ / ⚠️ (non bloquant) / ❌ (bloquant)
 
