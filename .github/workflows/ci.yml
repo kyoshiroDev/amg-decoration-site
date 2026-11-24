@@ -27,19 +27,19 @@ jobs:
       # les ~2 200 variantes (~6 min en CI). Restauré APRÈS `npm ci`, qui efface `node_modules/`.
       # Clé : dépendances + config Astro + images sources ; `restore-keys` réutilise un cache
       # partiel (Astro indexe chaque variante par son contenu et ses options, rien de périmé n'est servi).
-      # `verify` l'écrit, `e2e` le relit (builds `dist/` et `dist-service/`).
+      # `verify` l'écrit, `e2e` le relit (builds `apps/site/dist/` et `apps/site/dist-service/`).
       - uses: actions/cache@v6
         with:
-          path: node_modules/.astro/assets
-          key: astro-img-${{ runner.os }}-${{ hashFiles('package-lock.json', 'astro.config.mjs') }}-${{ hashFiles('src/assets/**') }}
+          path: apps/site/node_modules/.astro/assets
+          key: astro-img-${{ runner.os }}-${{ hashFiles('package-lock.json', 'apps/site/astro.config.mjs') }}-${{ hashFiles('apps/site/src/assets/**') }}
           restore-keys: |
-            astro-img-${{ runner.os }}-${{ hashFiles('package-lock.json', 'astro.config.mjs') }}-
+            astro-img-${{ runner.os }}-${{ hashFiles('package-lock.json', 'apps/site/astro.config.mjs') }}-
             astro-img-${{ runner.os }}-
       - run: npm run verify
       - uses: actions/upload-artifact@v7
         with:
           name: dist
-          path: dist
+          path: apps/site/dist
           retention-days: 3
 
   e2e:
@@ -56,10 +56,10 @@ jobs:
       # Même cache que le job `verify` (voir plus haut).
       - uses: actions/cache@v6
         with:
-          path: node_modules/.astro/assets
-          key: astro-img-${{ runner.os }}-${{ hashFiles('package-lock.json', 'astro.config.mjs') }}-${{ hashFiles('src/assets/**') }}
+          path: apps/site/node_modules/.astro/assets
+          key: astro-img-${{ runner.os }}-${{ hashFiles('package-lock.json', 'apps/site/astro.config.mjs') }}-${{ hashFiles('apps/site/src/assets/**') }}
           restore-keys: |
-            astro-img-${{ runner.os }}-${{ hashFiles('package-lock.json', 'astro.config.mjs') }}-
+            astro-img-${{ runner.os }}-${{ hashFiles('package-lock.json', 'apps/site/astro.config.mjs') }}-
             astro-img-${{ runner.os }}-
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
@@ -71,7 +71,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
-          path: playwright-report
+          path: apps/site/playwright-report
           retention-days: 7
 
   lighthouse:
@@ -89,13 +89,13 @@ jobs:
       - uses: actions/download-artifact@v7
         with:
           name: dist
-          path: dist
+          path: apps/site/dist
       - run: npm run lhci
       # Rapports Lighthouse conservés pour diagnostiquer un échec (pages, métriques, traces).
       - if: always()
         uses: actions/upload-artifact@v7
         with:
           name: lighthouse-reports
-          path: .lighthouseci
+          path: apps/site/.lighthouseci
           retention-days: 7
           include-hidden-files: true

@@ -19,7 +19,13 @@ interface VercelConfig {
 }
 
 const vercel = JSON.parse(
-  readFileSync(new URL('../../vercel.json', import.meta.url), 'utf8'),
+  readFileSync(
+    new URL(
+      '../../../../vercel.json',
+      import.meta.url,
+    ) /* vercel.json reste à la racine du dépôt (ADR-0019) */,
+    'utf8',
+  ),
 ) as VercelConfig;
 const redirects = buildVercelRedirects();
 
