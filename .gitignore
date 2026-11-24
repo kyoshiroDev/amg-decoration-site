@@ -33,3 +33,6 @@ Thumbs.db
 
 # Captures du MCP Playwright (vérifications visuelles locales)
 .playwright-mcp/
+
+# Nx (cache et données de workspace)
+.nx/
