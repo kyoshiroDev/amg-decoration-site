@@ -4,6 +4,17 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ## [Non publié]
 
+### Projet CRM : cadrage
+
+- Architecture validée par l'humain : monorepo Nx (site Astro, admin et espace client Angular, API NestJS, PostgreSQL + Prisma, Zod), hébergement Docker sur son VPS OVH à côté d'un projet existant et de son Traefik, sauvegardes chiffrées sur Backblaze B2, préproduction (ADR-0019, ADR-0020). Détails d'accès au serveur hors dépôt.
+- Nouveaux agents `backend`, `frontend`, `securite` et `devops` ; 8 étapes CRM dans la ROADMAP.
+
+### Pas de longs traits horizontaux
+
+- Préférence de l'humain pour toutes les apps : plus aucun filet horizontal pleine largeur sur le site. Séparation par l'espacement, les aplats existants, les cartes et une ombre douce ; aucune nouvelle couleur.
+- En-tête au défilement : ombre douce au lieu du filet. Bandeau de mots : aplat beige au lieu de deux filets. `<hr>` : petite arche terracotta centrée. `Divider` toujours court (variante `full` supprimée).
+- Filets retirés dans les listes, sommaires, `<dl>`, cartes de formules et d'offres (prix détaché par l'espace), étapes, bénéfices, témoignages, valeurs, filtres, pager, pied de page et menu mobile. Les traits courts restent (surtitres, soulignés de liens, navigation active).
+
 ### Accent terracotta doux
 
 - L'accent camel est remplacé par le terracotta doux choisi par l'humain, commun au site et aux deux futurs CRM (ADR-0018) : boutons `#A4533A`, liens et texte d'accent `#8F4530`, décor `#D79A7C`. Les fonds crème, beige et grège de l'ancien site ne changent pas.

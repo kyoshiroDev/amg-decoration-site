@@ -87,9 +87,8 @@
     align-items: end;
     justify-content: space-between;
     gap: var(--space-xs);
-    padding-block-start: var(--space-s);
+    padding-block-start: var(--space-m);
     margin-block-start: auto;
-    border-block-start: var(--border-hairline) solid var(--color-border);
   }
 
   .service-card__price {

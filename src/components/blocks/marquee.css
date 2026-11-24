@@ -7,7 +7,7 @@
     position: relative;
     overflow: hidden;
     padding-block: var(--space-m);
-    border-block: var(--border-hairline) solid var(--color-border);
+    background-color: var(--color-beige);
   }
 
   .marquee__track {

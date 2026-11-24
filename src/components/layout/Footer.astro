@@ -87,7 +87,7 @@ const copyright = footer.copyright.replace('{year}', String(new Date().getFullYe
       }
     }
 
-    /* Arche filaire posée sur le filet qui ouvre les colonnes, comme une porte (décor). */
+    /* Arche filaire posée sur le seuil des colonnes, comme une porte ouverte (décor). */
     .site-footer__intro::after {
       @media (width >= 48rem) {
         content: '';
@@ -116,7 +116,6 @@ const copyright = footer.copyright.replace('{year}', String(new Date().getFullYe
       display: grid;
       gap: var(--space-l) var(--grid-gap);
       padding-block-start: var(--space-l);
-      border-block-start: var(--border-hairline) solid var(--color-border);
 
       @media (width >= 40rem) {
         grid-template-columns: repeat(2, minmax(0, 1fr));

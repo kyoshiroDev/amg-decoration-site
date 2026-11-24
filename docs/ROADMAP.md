@@ -123,3 +123,48 @@ Ces points attendent une information ou un visuel d'Amandine, ou une décision h
 - [ ] 150 à 300 mots propres par fiche prestation (`redacteur`) et `serviceType` par fiche, à partir des informations d'Amandine
 - [ ] Décision sur les robots d'IA (ADR-0011)
 - [ ] Améliorations non bloquantes de l'audit global : allègement de l'accueil (`content-visibility`, moins de `:has()`, styles inline vers le CSS partagé ; marge HTML de ~0,9 Ko), section accueil vers les offres Meuble / Pros ou les derniers articles, comparateur et section « Paris et à distance » sur l'accueil (reportés : marge HTML de l'accueil insuffisante, à faire après l'allègement), héros intérieurs et gabarits texte (figure, citation), `view-transition-name` sur la seule carte cliquée si le nombre de projets grandit, finitions P3 design et SEO, nom de la formule dans la navigation par titres des fiches
+
+## Projet CRM : monorepo, admin et espace client (ADR-0019, ADR-0020)
+
+Maquette validée par l'humain le 2026-11-24 : https://claude.ai/artifact/8qrSz67JD3KziATdinRuhK. Chaque étape suit le circuit : implémentation (`backend`, `frontend`, `devops`), audits (`qa`, `securite`, `accessibilite`), `reviewer`, push sur `dev` ; merge sur `main` par l'humain.
+
+### CRM 1 — Monorepo Nx
+
+- [ ] Nx initialisé, site déplacé dans `apps/site` sans changement visible (build, tests, e2e, Lighthouse, garde-fous identiques)
+- [ ] `libs/shared/tokens` extrait de `tokens.css`, consommé par le site
+- [ ] CI GitHub Actions adaptée (cibles Nx affectées), `CLAUDE.md` et `docs/ARCHITECTURE.md` réécrits pour le monorepo
+
+### CRM 2 — Socle serveur et préproduction
+
+- [ ] Images Docker (site, admin, espace client, api, worker), projet Compose `amg` branché sur le Traefik existant, Postgres et Redis propres à AMG, ClamAV
+- [ ] Préproduction `staging.` déployée depuis `dev`, production depuis `main`, sans coupure et avec retour arrière
+- [ ] Sauvegardes chiffrées base + fichiers vers Backblaze B2, test de restauration documenté (`docs/EXPLOITATION.md`)
+- [ ] Vérification du serveur avec l'humain : pare-feu, SSH par clé, fail2ban, mises à jour automatiques
+
+### CRM 3 — API et sécurité
+
+- [ ] Prisma (schéma initial, migrations), schémas Zod partagés, variables d'environnement validées
+- [ ] Authentification : Argon2id, sessions cookies, CSRF, TOTP (obligatoire admin), mot de passe provisoire à changement forcé, renvoi par Amandine, blocage, alertes, journal
+- [ ] Autorisation refus par défaut, tests d'accès croisé ; audit `securite` sans ❌
+
+### CRM 4 — Admin : contenu du site
+
+- [ ] Réalisations (galerie avant / 3D / après, textes alternatifs, ordre), formules et options (créer, modifier, archiver), brouillon et aperçu
+- [ ] « Publier » : reconstruction atomique du site depuis l'API ; le site lit réalisations, formules et options publiées
+
+### CRM 5 — Espace client et projets
+
+- [ ] Invitations, projets (étapes, tâches, notes privées, devis figés, avenants), fichiers (antivirus, liens signés), rendus commentés et demandes de modification
+
+### CRM 6 — Messagerie et notifications
+
+- [ ] Messagerie temps réel (boîte de réception admin, conversation client), PWA installables, Web Push, emails via le Gmail d'Amandine
+
+### CRM 7 — Pilotage
+
+- [ ] Activité et revenus : CA, Urssaf et revenu net par mois et par année, réglages du taux, plafond, statistiques
+
+### CRM 8 — Audit final et bascule
+
+- [ ] Audit `securite` complet et test d'intrusion de la préproduction
+- [ ] Bascule du site de Vercel vers le VPS (redirections, en-têtes, garde-fou légal transposés), domaines `admin.` et `espace.`, mise en production
