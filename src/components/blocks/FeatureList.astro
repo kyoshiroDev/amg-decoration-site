@@ -1,7 +1,7 @@
 ---
 /**
  * FeatureList — courte liste de prestations (`items` d'une section, titres seuls) :
- * - `checklist` : mise en page `split`, 2 colonnes filetées, chaque ligne ouverte par une
+ * - `checklist` : mise en page `split`, 2 colonnes aérées, chaque ligne ouverte par une
  *   petite arche terracotta (« ce qui est inclus ») ;
  * - `pills` : ouverture centrée et pastilles « + » en ligne (options à ajouter).
  */
@@ -65,7 +65,6 @@ const isPills = variant === 'pills';
         gap: var(--space-s);
         align-items: baseline;
         padding-block: var(--space-s);
-        border-block-start: var(--border-hairline) solid var(--color-border);
       }
 
       & .feature-list__title {

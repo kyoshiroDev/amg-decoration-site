@@ -1,7 +1,8 @@
 ---
 /**
  * Values — valeurs ou piliers (`items` d'une section) en lignes éditoriales : petit numéro,
- * titre Fraunces, texte, séparées par un filet. Mise en page `split` : ouverture à gauche.
+ * titre Fraunces, texte, rythmées par l'espace (aucun filet). Mise en page `split` : ouverture
+ * à gauche.
  */
 import ContentSection from './ContentSection.astro';
 import Heading from '@/components/ui/Heading.astro';
@@ -53,11 +54,6 @@ const { section, id, background = 'ivory' } = Astro.props;
       grid-template-columns: subgrid;
       gap: var(--space-2xs) var(--space-m);
       padding-block: var(--space-l);
-      border-block-start: var(--border-hairline) solid var(--color-border);
-
-      &:last-child {
-        border-block-end: var(--border-hairline) solid var(--color-border);
-      }
 
       @media (width >= 48rem) {
         align-items: baseline;

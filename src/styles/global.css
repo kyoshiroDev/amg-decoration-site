@@ -205,9 +205,14 @@
     color: var(--color-ink);
   }
 
+  /* Rupture thématique : petite arche filaire centrée, jamais un filet pleine largeur. */
   hr {
-    border: 0;
-    border-block-start: var(--border-hairline) solid var(--color-border);
+    inline-size: var(--space-s);
+    block-size: var(--space-m);
+    margin-inline: auto;
+    border: var(--border-hairline) solid var(--color-accent);
+    border-block-end: 0;
+    border-radius: var(--radius-arch);
   }
 
   /* ::backdrop n'hérite de rien et n'est pas couvert par `*` : il faut le cibler (menu mobile). */

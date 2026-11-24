@@ -96,7 +96,7 @@ const asideActions = actionsAside && !hasList;
     .cta-banner__list {
       display: grid;
       grid-template-columns: auto 1fr;
-      gap: var(--space-s);
+      gap: var(--space-m) var(--space-s);
       padding: var(--space-l);
       margin: 0;
       border-radius: var(--radius-lg);
@@ -111,14 +111,7 @@ const asideActions = actionsAside && !hasList;
       grid-template-columns: subgrid;
       gap: var(--space-3xs) var(--space-s);
       align-items: baseline;
-      padding-block-end: var(--space-s);
-      border-block-end: var(--border-hairline) solid var(--color-border);
       counter-increment: cta;
-
-      &:last-child {
-        padding-block-end: 0;
-        border-block-end: 0;
-      }
 
       /* Numéro décoratif (texte de remplacement vide). */
       &::before {

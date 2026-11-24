@@ -1,6 +1,6 @@
 /*
  * Styles du bloc OfferCards (blocks/OfferCards.astro), sortis du composant pour rester < 150 lignes.
- * Même grammaire que ServiceCard (arche filaire, titre-lien, pied fileté), en grand format.
+ * Même grammaire que ServiceCard (arche filaire, titre-lien, pied aéré), en grand format.
  */
 @layer components {
   .offer-cards {
@@ -120,9 +120,8 @@
     align-items: end;
     justify-content: space-between;
     gap: var(--space-xs);
-    padding-block-start: var(--space-s);
+    padding-block-start: var(--space-m);
     margin-block-start: auto;
-    border-block-start: var(--border-hairline) solid var(--color-border);
   }
 
   .offer-card__price {

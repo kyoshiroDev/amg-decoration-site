@@ -1,22 +1,19 @@
 ---
 /**
- * Divider — séparateur décoratif : trait fin terracotta, avec ornement en arche optionnel.
+ * Divider — ornement décoratif court : trait fin terracotta (largeur `--space-2xl`), ou double
+ * arche encadrée de deux traits courts. Jamais de filet pleine largeur (DESIGN-SYSTEM § 4 :
+ * pas de longs traits horizontaux, la séparation vient de l'espace et des aplats).
  * Purement décoratif (aria-hidden) : ne pas l'utiliser pour structurer le contenu.
  */
 interface Props {
   ornament?: boolean;
-  /** Largeur : pleine ou courte (trait d'accent sous un titre). */
-  width?: 'full' | 'short';
   class?: string | undefined;
 }
 
-const { ornament = false, width = 'full', class: className } = Astro.props;
+const { ornament = false, class: className } = Astro.props;
 ---
 
-<div
-  class:list={['divider', `divider--${width}`, { 'divider--ornament': ornament }, className]}
-  aria-hidden="true"
->
+<div class:list={['divider', { 'divider--ornament': ornament }, className]} aria-hidden="true">
   {ornament && (
     <svg
       class="divider__arch"
@@ -43,6 +40,7 @@ const { ornament = false, width = 'full', class: className } = Astro.props;
       display: flex;
       align-items: center;
       gap: var(--space-s);
+      inline-size: var(--space-2xl);
       color: var(--color-accent);
     }
 
@@ -54,12 +52,8 @@ const { ornament = false, width = 'full', class: className } = Astro.props;
       background-color: currentcolor;
     }
 
-    .divider--short {
-      inline-size: var(--space-2xl);
-    }
-
-    .divider--short.divider--ornament {
-      inline-size: calc(var(--space-2xl) * 3);
+    .divider--ornament {
+      inline-size: calc(var(--space-2xl) * 2);
     }
 
     .divider__arch {
