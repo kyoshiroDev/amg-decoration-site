@@ -1,6 +1,6 @@
 # ADR-0017 — Palette de l'ancien site : beige, grège et camel doré
 
-- **Statut** : acceptée
+- **Statut** : acceptée ; couleur d'accent remplacée par le terracotta doux ([ADR-0018](0018-accent-terracotta-doux.md), 2026-11-24)
 - **Date** : 2026-11-21
 
 ## Contexte

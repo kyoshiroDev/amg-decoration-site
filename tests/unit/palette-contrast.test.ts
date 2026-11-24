@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { contrastRatio, normalizeHex } from '@/lib/color-contrast';
 import { parseCustomProperties } from '@/lib/design-tokens';
 
-// ADR-0017 : la palette de l'ancien site (beige, grège, camel doré) doit tenir WCAG 2.2 AA
+// ADR-0017 et ADR-0018 : fonds de l'ancien site (crème, beige, grège) et accent terracotta doux doivent tenir WCAG 2.2 AA
 // sur CHAQUE fond de section. Le test lit tokens.css et résout les rôles (var(--…)) :
 // changer une valeur ou un rôle sans tenir les seuils le fait échouer.
 
@@ -49,7 +49,7 @@ describe('palette : texte des boutons et pastilles pleines ≥ 4.5:1', () => {
     ['--color-on-action', '--color-action'],
     ['--color-on-action', '--color-action-hover'],
     ['--color-ivory', '--color-error'],
-    ['--color-ink', '--color-camel-300'],
+    ['--color-ink', '--color-terracotta-300'],
   ])('%s sur %s', (fg, bg) => {
     expect(contrastRatio(hex(fg), hex(bg))).toBeGreaterThanOrEqual(4.5);
   });
@@ -65,13 +65,13 @@ describe('palette : filets de contrôle et focus ≥ 3:1 (WCAG 1.4.11, 2.4.13)',
   }
 });
 
-describe('palette : le camel décoratif ne sert jamais au texte', () => {
+describe('palette : le terracotta décoratif ne sert jamais au texte', () => {
   it('--color-accent reste sous 4.5:1 sur le fond principal (rôle décor documenté)', () => {
-    expect(hex('--color-accent')).toBe(hex('--color-camel-300'));
+    expect(hex('--color-accent')).toBe(hex('--color-terracotta-300'));
     expect(contrastRatio(hex('--color-accent'), hex('--color-bg'))).toBeLessThan(4.5);
   });
 
-  it('aucun token terracotta ne subsiste', () => {
-    expect(tokens.some((token) => token.name.includes('terracotta'))).toBe(false);
+  it('aucun token camel ne subsiste (remplacé par le terracotta, ADR-0018)', () => {
+    expect(tokens.some((token) => token.name.includes('camel'))).toBe(false);
   });
 });

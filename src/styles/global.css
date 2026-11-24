@@ -199,9 +199,9 @@
     border-radius: var(--radius-sm);
   }
 
-  /* Surlignage camel doré : encre ≥ 4.5:1 dessus, visible sur tous les fonds de section. */
+  /* Surlignage terracotta clair : encre ≥ 4.5:1 dessus, visible sur tous les fonds de section. */
   ::selection {
-    background-color: var(--color-camel-300);
+    background-color: var(--color-terracotta-300);
     color: var(--color-ink);
   }
 
