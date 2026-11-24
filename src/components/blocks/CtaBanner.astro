@@ -3,7 +3,7 @@
  * CtaBanner — appel à l'action de fin de page : titre, chapeau et actions (7/12) ; à droite,
  * une carte crème qui liste ce qui attend le visiteur (`items` de la section, titres seuls).
  * `actionsAside` (sans `items` seulement, ex. zone d'intervention de /contact/ et ses trois
- * actions) : les actions prennent la colonne de droite, empilées derrière un filet camel.
+ * actions) : les actions prennent la colonne de droite, empilées derrière un filet terracotta.
  */
 import Section from '@/components/ui/Section.astro';
 import Container from '@/components/ui/Container.astro';
@@ -79,7 +79,7 @@ const asideActions = actionsAside && !hasList;
     }
 
     /*
-     * Actions en colonne de droite, empilées et alignées sur un filet camel.
+     * Actions en colonne de droite, empilées et alignées sur un filet terracotta.
      * Sélecteur renforcé : l'emporte sur le style scopé d'ActionGroup (rangée centrée).
      */
     :global(.cta-banner__grid > .action-group.cta-banner__aside-actions) {

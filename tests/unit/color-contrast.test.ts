@@ -33,8 +33,8 @@ describe('contrastRatio', () => {
   });
 
   it('retrouve les valeurs documentées du design system', () => {
-    expect(formatRatio(contrastRatio('#6b5636', '#faf8f5'))).toBe('6.58');
-    expect(formatRatio(contrastRatio('#fffdfa', '#7a6440'))).toBe('5.55');
+    expect(formatRatio(contrastRatio('#8f4530', '#faf8f5'))).toBe('6.47');
+    expect(formatRatio(contrastRatio('#fffdfa', '#a4533a'))).toBe('5.33');
   });
 });
 

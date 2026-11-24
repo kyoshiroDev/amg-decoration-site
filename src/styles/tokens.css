@@ -10,7 +10,8 @@
 
   /*
    * ---------- Couleurs : palette ----------
-   * Reprise de l'ancien site d'Amandine (ADR-0017) : beige, grège, camel doré.
+   * Fonds de l'ancien site d'Amandine (ADR-0017) : crème, ivoire, beige, grège, vieux rose ;
+   * accent terracotta doux choisi par l'humain le 2026-11-24 (ADR-0018), à la place du camel.
    * Contrastes mesurés (WCAG 2.x, non arrondis) dans docs/DESIGN-SYSTEM.md et vérifiés par
    * tests/unit/palette-contrast.test.ts.
    */
@@ -19,9 +20,9 @@
   --color-beige: #eee3d6; /* sections alternées, pied de page */
   --color-greige: #dedad4; /* sections alternées (aplat plus minéral) */
   --color-rose-100: #f3e4e0; /* vieux rose très clair (dérivé de #da9393) : une touche par page */
-  --color-camel-300: #c4a882; /* camel doré de l'ancien site : décor seulement (~2:1, jamais de texte) */
-  --color-camel-600: #7a6440; /* fond des boutons primaires (ivoire dessus ≥ 4.5:1) */
-  --color-camel-700: #6b5636; /* texte d'accent, liens, survol, focus : ≥ 4.5:1 sur tous les fonds */
+  --color-terracotta-300: #d79a7c; /* terracotta clair : décor seulement (~2:1, jamais de texte) */
+  --color-terracotta-600: #a4533a; /* fond des boutons primaires (ivoire dessus ≥ 4.5:1) */
+  --color-terracotta-700: #8f4530; /* texte d'accent, liens, survol, focus : ≥ 4.5:1 sur tous les fonds */
   --color-rose-700: #9a4343; /* erreurs de formulaire : ≥ 4.5:1 sur tous les fonds */
   --color-ink: #3a3530; /* texte : gris-brun profond */
   --color-ink-soft: #5c544c;
@@ -32,10 +33,10 @@
   --color-surface: var(--color-ivory);
   --color-text: var(--color-ink);
   --color-text-soft: var(--color-ink-soft);
-  --color-accent: var(--color-camel-300); /* décoratif uniquement : traits, icônes, formes */
-  --color-accent-text: var(--color-camel-700); /* texte d'accent et liens sur fonds clairs */
-  --color-action: var(--color-camel-600); /* fond des boutons primaires */
-  --color-action-hover: var(--color-camel-700);
+  --color-accent: var(--color-terracotta-300); /* décoratif uniquement : traits, icônes, formes */
+  --color-accent-text: var(--color-terracotta-700); /* texte d'accent et liens sur fonds clairs */
+  --color-action: var(--color-terracotta-600); /* fond des boutons primaires */
+  --color-action-hover: var(--color-terracotta-700);
   --color-on-action: var(--color-ivory);
   --color-border: rgb(58 53 48 / 14%); /* encre à 14 % : bordures fines neutres */
   --color-border-strong: rgb(58 53 48 / 32%);
@@ -212,7 +213,7 @@
   --opacity-ornament: 0.4; /* numéros d'étapes géants (décor) */
 
   /* ---------- Focus ---------- */
-  --focus-ring-color: var(--color-camel-700); /* ≥ 3:1 sur tous les fonds (WCAG 2.4.13) */
+  --focus-ring-color: var(--color-terracotta-700); /* ≥ 3:1 sur tous les fonds (WCAG 2.4.13) */
   --focus-ring-width: 2px;
   --focus-ring-offset: 3px;
   --focus-ring: var(--focus-ring-width) solid var(--focus-ring-color);
