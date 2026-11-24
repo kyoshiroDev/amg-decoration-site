@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
 import { parseCustomProperties } from '@/lib/design-tokens';
 
@@ -6,7 +7,11 @@ import { parseCustomProperties } from '@/lib/design-tokens';
 // reveal-cascade-* (motion.css), qui ne peuvent pas lire les tokens. Ce test les recalcule à
 // partir de --dur-base et --stagger : changer un token sans les @keyframes le fait échouer.
 
-const tokens = readFileSync('src/styles/tokens.css', 'utf8');
+// Tokens partagés du monorepo (libs/shared/tokens, ADR-0019), lus via la résolution du paquet.
+const tokens = readFileSync(
+  createRequire(import.meta.url).resolve('@amg/shared-tokens/tokens.css'),
+  'utf8',
+);
 const motion = readFileSync('src/styles/motion.css', 'utf8');
 const RANKS = 6;
 

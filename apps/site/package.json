@@ -21,6 +21,7 @@
     "lhci": "lhci autorun"
   },
   "dependencies": {
+    "@amg/shared-tokens": "*",
     "@astrojs/markdown-satteri": "^0.4.10",
     "@astrojs/mdx": "^8.1.6",
     "@astrojs/sitemap": "^3.7.5",

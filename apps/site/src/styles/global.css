@@ -5,11 +5,16 @@
  */
 @layer reset, base, components, utilities;
 
-@import url('./tokens.css');
+@import url('@amg/shared-tokens/tokens.css');
 @import url('./font-fallbacks.css');
 @import url('./reset.css');
 @import url('./utilities.css');
 @import url('./motion.css');
+
+/* Texture de grain du site : image propre à l'app, hors de la lib de tokens partagés. */
+:root {
+  --grain-image: url('../assets/brand/grain.webp');
+}
 
 @layer base {
   html {

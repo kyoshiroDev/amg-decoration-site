@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
 import { contrastRatio, normalizeHex } from '@/lib/color-contrast';
 import { parseCustomProperties } from '@/lib/design-tokens';
@@ -7,7 +8,12 @@ import { parseCustomProperties } from '@/lib/design-tokens';
 // sur CHAQUE fond de section. Le test lit tokens.css et résout les rôles (var(--…)) :
 // changer une valeur ou un rôle sans tenir les seuils le fait échouer.
 
-const tokens = parseCustomProperties(readFileSync('src/styles/tokens.css', 'utf8'), '--');
+// Tokens partagés du monorepo (libs/shared/tokens, ADR-0019), lus via la résolution du paquet.
+const tokensCss = readFileSync(
+  createRequire(import.meta.url).resolve('@amg/shared-tokens/tokens.css'),
+  'utf8',
+);
+const tokens = parseCustomProperties(tokensCss, '--');
 
 /** Valeur hexadécimale d'un token, en suivant les alias `var(--…)`. */
 function hex(name: string, depth = 0): string {

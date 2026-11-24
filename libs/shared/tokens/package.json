@@ -1,0 +1,12 @@
+{
+  "name": "@amg/shared-tokens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tokens de design communs (couleurs, typographie, espacements) du site et des futures apps Angular (ADR-0019).",
+  "exports": {
+    "./tokens.css": "./src/tokens.css"
+  },
+  "scripts": {
+    "lint": "stylelint \"src/**/*.css\" --max-warnings 0"
+  }
+}

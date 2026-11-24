@@ -2,7 +2,7 @@
 /**
  * SpaceScale — espacements Utopia lus dans tokens.css, visualisés en barres.
  */
-import tokensCss from '@/styles/tokens.css?raw';
+import tokensCss from '@amg/shared-tokens/tokens.css?raw';
 import { clampBounds, parseCustomProperties } from '@/lib/design-tokens';
 
 const spaces = parseCustomProperties(tokensCss, '--space-');
