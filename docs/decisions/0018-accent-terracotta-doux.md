@@ -8,7 +8,7 @@
 
 L'ADR-0017 a repris la palette de l'ancien site d'Amandine : fonds crème, beige et grège, accent camel doré (`#C4A882` en décor, `#7A6440` pour les boutons, `#6B5636` pour les liens et le texte d'accent).
 
-Le 2026-11-24, en validant la maquette des deux CRM (Atelier et Espace client), **l'humain a jugé le camel « pas joli »** et a demandé du terracotta, ce qui rejoint le souhait initial du brief (`docs/BRIEF.md` : Amandine aime le terracotta). Trois terracottas ont été comparés en direct sur la maquette (doux, brique, terre cuite rosée). L'humain a retenu le **terracotta doux, partout** : site public, Atelier et Espace client.
+Le 2026-11-24, en validant la maquette des deux CRM (Atelier et Espace client), **l'humain a jugé le camel « pas joli »** et a demandé du terracotta, ce qui rejoint le souhait initial du brief (`docs/BRIEF.md` : Amandine aime le terracotta). Trois terracottas ont été comparés en direct sur la maquette (doux, brique, terre cuite rosée). L'humain a retenu le **terracotta doux, partout** : site public, Atelier et Espace client (« on valide le terracotta doux partout », 2026-11-24).
 
 Contrainte bloquante inchangée : WCAG 2.2 AA (CLAUDE.md §6), vérifiée en test sur les cinq fonds de section.
 
@@ -38,5 +38,5 @@ Les deux CRM (maquette validée, futur monorepo Nx) reprennent exactement ces tr
 
 - `src/styles/tokens.css`, `public/favicon.svg`, le styleguide, les tests de contraste (`tests/unit/palette-contrast.test.ts`, `tests/unit/color-contrast.test.ts`), `docs/DESIGN-SYSTEM.md` et CLAUDE.md §1 et §4 sont mis à jour dans le même commit.
 - Un test vérifie qu'aucun token `camel` ne subsiste.
-- Les captures de régression visuelle (`npm run test:visual:update`) sont à régénérer.
+- Les captures de régression visuelle (`npm run test:visual:update`, hors CI) sont à régénérer : point déjà suivi dans `docs/MISE-EN-LIGNE.md` § 2.
 - La vieille palette camel reste documentée dans l'ADR-0017 pour l'historique.

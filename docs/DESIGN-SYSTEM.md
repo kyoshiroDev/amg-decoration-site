@@ -8,7 +8,7 @@ Un site qui se feuillette comme un magazine de décoration : lumineux, doux, cha
 
 Mots-clés : douceur · lumière naturelle · beige et grège · terracotta doux · éditorial · artisanal · serein · précis.
 
-Fonds repris de l'**ancien site d'Amandine** (décision de l'humain du 2026-11-21, [ADR-0017](decisions/0017-palette-ancien-site.md)) ; accent **terracotta doux** choisi par l'humain le 2026-11-24 à la place du terracotta ([ADR-0018](decisions/0018-accent-terracotta-doux.md)), commun au site et aux deux CRM.
+Fonds repris de l'**ancien site d'Amandine** (décision de l'humain du 2026-11-21, [ADR-0017](decisions/0017-palette-ancien-site.md)) ; accent **terracotta doux** choisi par l'humain le 2026-11-24 à la place du camel ([ADR-0018](decisions/0018-accent-terracotta-doux.md)), commun au site et aux deux CRM.
 
 Inspirations de principe (sans jamais copier un site existant) : magazines déco (mise en page asymétrique, grandes photos plein cadre, légendes fines), studios d'architecture intérieure haut de gamme (beaucoup d'air, typographie serif expressive), céramique et laiton (arches, filets dorés, grain).
 
@@ -281,7 +281,7 @@ Atomes ajoutés à `ui/` : `Emphasis` (titre avec fragment en `<em>`, rendu en u
 
 #### Accueil (`src/pages/index.astro`)
 
-Hero (crème) → Marquee (crème, filets) → Missions `Values` (ivoire) → Prestations `ServicesGrid` (beige) → Présentation `MediaText` (crème) → Projets `ProjectGrid` (ivoire) → Méthode `ProcessSteps summary` (grège, titres seuls) → Citation `Quote` (crème) → Avantages `Benefits3D summary` (vieux rose, titres seuls ; détail sur `/visualisation-3d/`) → Témoignages (crème) → `CtaBanner` (grège) → pied de page (beige). Terracotta limité aux CTA (terracotta), italiques, filets et ornements (terracotta clair).
+Hero (crème) → Marquee (crème, filets) → Missions `Values` (ivoire) → Prestations `ServicesGrid` (beige) → Présentation `MediaText` (crème) → Projets `ProjectGrid` (ivoire) → Méthode `ProcessSteps summary` (grège, titres seuls) → Citation `Quote` (crème) → Avantages `Benefits3D summary` (vieux rose, titres seuls ; détail sur `/visualisation-3d/`) → Témoignages (crème) → `CtaBanner` (grège) → pied de page (beige). Terracotta limité aux CTA (terracotta-600), aux liens et italiques (terracotta-700), filets et ornements (terracotta-300).
 
 ### `blocks/` — Prestations, 3D, À propos, Contact, légal (Phase 4, lot 2A)
 
