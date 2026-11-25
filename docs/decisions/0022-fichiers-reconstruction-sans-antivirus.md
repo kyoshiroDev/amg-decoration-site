@@ -26,6 +26,18 @@ Un antivirus à signatures ne reconnaît que les menaces déjà connues. Pour de
 5. **Isolement du traitement** : les décodeurs (images, PDF, vidéo) sont la surface d'attaque. Ils tournent dans un conteneur de traitement dédié, sans réseau, système de fichiers en lecture seule, sans capacités, non root, avec limites de mémoire, de CPU, de processus et de durée, dans le budget AMG. L'original n'est jamais servi ; il est supprimé après reconstruction (ou mis en quarantaine en cas de refus, puis supprimé).
 6. **Distribution** : stockage hors de toute racine web, accès par lien temporaire signé après contrôle des droits, `Content-Disposition: attachment` (sauf aperçu d'image reconstruite), `X-Content-Type-Options: nosniff`, CSP `sandbox` sur les réponses de fichiers.
 
+### Exigences de mise en œuvre (audit `securite` du 2026-11-25)
+
+- **Jamais de socket Docker dans le worker** (équivalent root sur l'hôte partagé) : le conteneur de traitement est un service permanent qui reçoit ses tâches par un volume dédié (entrée / sortie), pas un conteneur lancé par le worker.
+- **Un processus par fichier**, avec durée maximale : un décodeur compromis ne survit pas d'un fichier à l'autre. Aucun secret monté dans le conteneur de traitement.
+- **Images** : dimensions lues dans l'en-tête et contrôlées **avant** le décodage (bombes de décompression, limite de pixels).
+- **Vidéos** : démultiplexeur imposé d'après la signature, seul le protocole « fichier » autorisé ; listes de lecture (HLS) et concaténation refusées (lecture de fichiers locaux incrustés dans la sortie). Mémoire réelle du transcodage mesurée avant de fixer la limite.
+- **PDF** : la normalisation reconstruit la structure mais garde polices et flux d'images, principaux vecteurs contre les lecteurs PDF. Le PDF normalisé n'est proposé qu'en téléchargement (`attachment`) ; l'aperçu dans l'interface se fait à partir d'une version rastérisée (images des pages).
+- **Bibliothèques de décodage** (dont HEIC/H.265, à failles fréquentes) tenues à jour et analysées par Trivy à chaque build.
+- **Quarantaine** : durée courte fixée, jamais sauvegardée.
+- **Distribution** depuis un sous-domaine distinct sans cookie, en plus de `nosniff` et de la CSP `sandbox`.
+- Le conteneur de traitement est dans le plafond mémoire d'AMG, et c'est lui que le noyau sacrifie en premier en cas de manque (priorité d'OOM élevée).
+
 ## Alternatives écartées
 
 - **ClamAV en démon** : environ 3 Gio de mémoire, hors budget.

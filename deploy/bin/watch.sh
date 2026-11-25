@@ -11,10 +11,17 @@
 #     Seconde ligne de défense : deploy.sh refuse déjà toute image qui porte un label traefik.* ;
 #   - les adresses publiques listées répondent le code attendu (Traefik → réseau d'entrée → site) ;
 #   - l'espace disque et les inodes de la racine et du dossier Docker restent sous le seuil ;
-#   - la slice amg.slice (plafond mémoire commun de tout AMG, deploy/systemd/amg.slice) est chargée
-#     avec MemoryMax <= 4 Gio et sans swap, sa mémoire reste sous SLICE_MAX_PCT % de memory.max,
-#     aucun nouvel oom_kill dans memory.events (hiérarchique : un conteneur AMG à sa propre limite
-#     compte aussi), et chaque conteneur AMG (projets amg-prod, amg-staging, label org.amg.role) y est.
+#   - les slices AMG (amg.slice : plafond commun de tout AMG, 3 800 Mio ; amg-prod.slice ;
+#     amg-staging.slice : 1 Gio ; deploy/systemd/) sont chargées depuis leur fichier, avec MemoryMax
+#     <= plafond et sans swap, ET le noyau applique bien ces limites (memory.max, memory.swap.max) ;
+#     la mémoire non récupérable (memory.stat : anon + shmem + kernel + sock) de amg.slice et de
+#     amg-staging.slice reste sous SLICE_MAX_PCT % de memory.max ; la pression mémoire (PSI, full
+#     avg300) de amg.slice reste sous MEM_PRESSURE_PCT % ; aucun nouvel oom_kill dans memory.events
+#     (hiérarchique : un conteneur AMG à sa propre limite compte aussi) ;
+#   - chaque conteneur AMG (projets amg-prod, amg-staging, label org.amg.role) ET tout conteneur
+#     branché sur un réseau ou un volume AMG (amg_edge_*, amg-*), sauf le Traefik partagé, est dans
+#     la slice attendue (amg-<env>.slice pour un projet, une slice AMG pour un ponctuel) et porte un
+#     label AMG.
 # Puis signale à Healthchecks.io : succès, ou /fail avec la liste des problèmes. Healthchecks.io
 # n'alerte qu'au changement d'état (pas de rafale) et alerte aussi si le signal n'arrive plus
 # (serveur arrêté, cron cassé). Un environnement en cours de déploiement (verrou de deploy.sh) est
@@ -24,18 +31,21 @@
 #   HC_WATCH_URL=https://hc-ping.com/<uuid>              (obligatoire)
 #   DISK_MAX_PCT=80                                       (facultatif, défaut 80)
 #   SLICE_MAX_PCT=85                                      (facultatif, défaut 85)
+#   MEM_PRESSURE_PCT=5                                    (facultatif, défaut 5)
+#   TRAEFIK_CONTAINER=<nom>     (facultatif : Traefik partagé ; défaut : le conteneur qui publie
+#                                les ports 80 et 443 de l'hôte)
 #   WATCH_URLS=https://exemple.fr/healthz=200 https://staging.exemple.fr/healthz=200   (facultatif)
 # Identifiants de la préproduction (basic auth) : /opt/amg/secrets/watch.netrc (600, format netrc).
 set -euo pipefail
 
 AMG_ROOT=${AMG_ROOT:-/opt/amg}
+# shellcheck source=deploy/bin/amg-common.sh
+source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/amg-common.sh"
 WATCH_ENV=$AMG_ROOT/secrets/watch.env
 WATCH_NETRC=$AMG_ROOT/secrets/watch.netrc
 RESTARTS_STATE=$AMG_ROOT/logs/.watch-restarts # « id nombre_de_redémarrages » du passage précédent
 OOM_STATE=$AMG_ROOT/logs/.watch-oom           # compteur oom_kill de la slice au passage précédent
-SLICE=amg.slice
-SLICE_CGROUP=${AMG_CGROUP_ROOT:-/sys/fs/cgroup}/$SLICE
-SLICE_MAX_BYTES=$((4 * 1024 * 1024 * 1024)) # budget AMG (ADR-0020)
+SLICE_CGROUP=$(amg_slice_cgroup "$AMG_SLICE")
 ENVIRONMENTS=(prod staging)
 
 conf() { sed -n "s/^$1=//p" "$WATCH_ENV" | tail -n 1; }
@@ -46,7 +56,11 @@ DISK_MAX_PCT=$(conf DISK_MAX_PCT)
 DISK_MAX_PCT=${DISK_MAX_PCT:-80}
 SLICE_MAX_PCT=$(conf SLICE_MAX_PCT)
 SLICE_MAX_PCT=${SLICE_MAX_PCT:-85}
-[[ "$SLICE_MAX_PCT" =~ ^[0-9]+$ ]] || SLICE_MAX_PCT=85
+[[ "$SLICE_MAX_PCT" =~ ^[0-9]{1,2}$ ]] || SLICE_MAX_PCT=85
+MEM_PRESSURE_PCT=$(conf MEM_PRESSURE_PCT)
+[[ "$MEM_PRESSURE_PCT" =~ ^[0-9]{1,2}$ ]] || MEM_PRESSURE_PCT=5
+TRAEFIK_CONTAINER=$(conf TRAEFIK_CONTAINER)
+[[ "$TRAEFIK_CONTAINER" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]] || TRAEFIK_CONTAINER=''
 WATCH_URLS=$(conf WATCH_URLS)
 
 problems=()
@@ -199,8 +213,8 @@ check_environment() { # $1 prod|staging
   local -a files services ids
   [ -f "$dir/amg.env" ] || return 0 # environnement pas encore installé
   # Verrou testé puis relâché aussitôt : la surveillance ne doit jamais bloquer un déploiement.
-  if ! flock -n "$dir/.deploy.lock" true; then
-    notes+=("$env_name : déploiement en cours, contrôle reporté")
+  if ! flock -n "$(amg_env_lock "$env_name")" true; then
+    notes+=("$env_name : déploiement, sauvegarde ou restauration en cours, contrôle reporté")
     return 0
   fi
 
@@ -286,64 +300,118 @@ check_disk() {
   done
 }
 
-# Plafond mémoire commun (slice systemd) : unité, consommation, OOM, appartenance des conteneurs.
+# Mémoire non récupérable d'un cgroup (memory.stat) : anon + shmem + kernel + sock. Le cache de
+# fichiers (file hors shmem) est exclu : le noyau le récupère avant tout OOM, et memory.current,
+# qui l'inclut, approche normalement memory.max dès qu'un conteneur lit beaucoup (sauvegarde).
+unreclaimable_bytes() { # $1 dossier cgroup
+  awk '
+    $1 == "anon" || $1 == "shmem" || $1 == "sock" { sum += $2 }
+    $1 == "kernel" { kernel = $2; has_kernel = 1 }
+    $1 == "slab" || $1 == "kernel_stack" || $1 == "pagetables" || $1 == "percpu" { old += $2 }
+    END { if (NR == 0) exit 1; printf "%d\n", sum + (has_kernel ? kernel : old) }
+  ' "$1/memory.stat" 2>/dev/null
+}
+
+check_memory_use() { # $1 slice
+  local slice=$1 dir cg_max used
+  dir=$(amg_slice_cgroup "$slice")
+  [ -d "$dir" ] || return 0
+  cg_max=$(cat "$dir/memory.max" 2>/dev/null || echo '?')
+  if ! used=$(unreclaimable_bytes "$dir") || ! [[ "$cg_max" =~ ^[0-9]{1,18}$ ]]; then
+    problem "slice $slice : memory.stat ou memory.max illisibles (memory.max=$cg_max)"
+    return 0
+  fi
+  [ $((used * 100)) -lt $((cg_max * SLICE_MAX_PCT)) ] \
+    || problem "slice $slice : $((used / AMG_MIB)) Mio non récupérables sur $((cg_max / AMG_MIB)) Mio (seuil $SLICE_MAX_PCT %)"
+}
+
+# Traefik partagé : seul conteneur hors AMG admis sur les réseaux d'entrée AMG. Désigné par
+# TRAEFIK_CONTAINER (watch.env), sinon reconnu comme le conteneur qui publie les ports 80 et 443.
+is_shared_traefik() { # $1 identifiant
+  local name ports
+  read -r name ports < <(docker inspect -f '{{.Name}} {{range $p, $b := .HostConfig.PortBindings}}{{$p}} {{end}}' "$1" 2>/dev/null \
+    || echo '- -')
+  if [ -n "$TRAEFIK_CONTAINER" ]; then
+    [ "$name" = "/$TRAEFIK_CONTAINER" ]
+  else
+    [[ " $ports " == *" 80/tcp "* && " $ports " == *" 443/tcp "* ]]
+  fi
+}
+
+# Plafond mémoire commun (slices systemd) : unités, limites du noyau, consommation, OOM, appartenance.
 check_slice() {
-  local installed=0 env_name props load fragment max swap id short parent state
-  local cg_max cg_current oom previous_oom
-  local -a ids=()
+  local installed=0 env_name id short parent state project role expected dir line oom previous_oom pressure
+  local -a ids=() resources=()
+  local -A seen=()
   for env_name in "${ENVIRONMENTS[@]}"; do [ -f "$AMG_ROOT/$env_name/amg.env" ] && installed=1; done
   [ "$installed" = 1 ] || return 0
 
-  props=$(systemctl show "$SLICE" -p LoadState -p FragmentPath -p MemoryMax -p MemorySwapMax 2>/dev/null) || props=''
-  load=$(sed -n 's/^LoadState=//p' <<<"$props")
-  fragment=$(sed -n 's/^FragmentPath=//p' <<<"$props")
-  max=$(sed -n 's/^MemoryMax=//p' <<<"$props")
-  swap=$(sed -n 's/^MemorySwapMax=//p' <<<"$props")
-  if [ "$load" != loaded ] || [ -z "$fragment" ]; then
-    problem "slice $SLICE absente ou sans fichier d'unité (LoadState=${load:-?}, FragmentPath=${fragment:-aucun}) : AMG n'a plus de plafond mémoire commun"
-  else
-    { [[ "$max" =~ ^[0-9]+$ ]] && [ "$max" -le "$SLICE_MAX_BYTES" ]; } \
-      || problem "slice $SLICE : MemoryMax=${max:-?} (attendu <= 4 Gio)"
-    [ "$swap" = 0 ] || problem "slice $SLICE : MemorySwapMax=${swap:-?} (attendu 0)"
-  fi
+  while IFS= read -r line; do
+    [ -n "$line" ] && problem "$line : AMG n'a plus de plafond mémoire fiable"
+  done < <(amg_all_slices_problems)
 
+  check_memory_use "$AMG_SLICE"
+  check_memory_use "$(amg_env_slice staging)"
   if [ -d "$SLICE_CGROUP" ]; then
-    cg_max=$(cat "$SLICE_CGROUP/memory.max" 2>/dev/null || echo '?')
-    cg_current=$(cat "$SLICE_CGROUP/memory.current" 2>/dev/null || echo '?')
-    if [[ "$cg_max" =~ ^[0-9]+$ ]] && [[ "$cg_current" =~ ^[0-9]+$ ]]; then
-      [ $((cg_current * 100)) -lt $((cg_max * SLICE_MAX_PCT)) ] \
-        || problem "slice $SLICE : $((cg_current / 1048576)) Mio sur $((cg_max / 1048576)) Mio (seuil $SLICE_MAX_PCT %)"
-    else
-      problem "slice $SLICE : memory.max=$cg_max, memory.current=$cg_current illisibles ou sans limite"
+    # Pression mémoire (PSI) : part du temps où tous les processus AMG attendaient de la mémoire.
+    pressure=$(sed -n 's/^full .*avg300=\([0-9]*\)\..*/\1/p' "$SLICE_CGROUP/memory.pressure" 2>/dev/null)
+    if [[ "$pressure" =~ ^[0-9]+$ ]]; then
+      [ "$pressure" -lt "$MEM_PRESSURE_PCT" ] \
+        || problem "slice $AMG_SLICE : pression mémoire $pressure % sur 5 min (seuil $MEM_PRESSURE_PCT %), AMG manque de mémoire"
     fi
     oom=$(sed -n 's/^oom_kill //p' "$SLICE_CGROUP/memory.events" 2>/dev/null)
     if [[ "$oom" =~ ^[0-9]+$ ]]; then
       previous_oom=$(cat "$OOM_STATE" 2>/dev/null || echo "$oom")
       [[ "$previous_oom" =~ ^[0-9]+$ ]] || previous_oom=$oom
       [ "$oom" -le "$previous_oom" ] \
-        || problem "slice $SLICE : $((oom - previous_oom)) processus tués par manque de mémoire depuis le passage précédent (conteneur à sa limite ou slice pleine)"
+        || problem "slice $AMG_SLICE : $((oom - previous_oom)) processus tués par manque de mémoire depuis le passage précédent (conteneur à sa limite ou slice pleine)"
       printf '%s\n' "$oom" >"$OOM_STATE.tmp" && mv "$OOM_STATE.tmp" "$OOM_STATE"
     else
-      problem "slice $SLICE : memory.events illisible"
+      problem "slice $AMG_SLICE : memory.events illisible"
     fi
   fi
 
-  # Conteneurs AMG : projets Compose et conteneurs ponctuels (label org.amg.role, ex. sauvegarde).
+  # Conteneurs AMG : projets Compose, conteneurs ponctuels (label org.amg.role), et tout conteneur
+  # branché sur un réseau ou un volume AMG (un `docker run` oublié ou lancé à la main).
   for env_name in "${ENVIRONMENTS[@]}"; do
     mapfile -t -O "${#ids[@]}" ids < <(docker ps -aq --no-trunc --filter "label=com.docker.compose.project=amg-$env_name")
   done
   mapfile -t -O "${#ids[@]}" ids < <(docker ps -aq --no-trunc --filter label=org.amg.role)
+  mapfile -t resources < <({
+    docker network ls --format 'network={{.Name}}'
+    docker volume ls --format 'volume={{.Name}}'
+  } 2>/dev/null | grep -E '^(network|volume)=amg[-_]' || true)
+  for line in "${resources[@]}"; do
+    mapfile -t -O "${#ids[@]}" ids < <(docker ps -aq --no-trunc --filter "$line")
+  done
   for id in "${ids[@]}"; do
-    [ -n "$id" ] || continue
+    [ -n "$id" ] && [ -z "${seen[$id]:-}" ] || continue
+    seen[$id]=1
     short=${id:0:12}
-    parent=''
-    read -r state parent < <(docker inspect -f '{{.State.Status}} {{.HostConfig.CgroupParent}}' "$id" 2>/dev/null \
-      || echo absent)
+    parent='' project='' role=''
+    # Séparateur non blanc : un champ vide (label absent) ne décale pas les suivants.
+    IFS='|' read -r state parent project role < <(docker inspect -f \
+      '{{.State.Status}}|{{.HostConfig.CgroupParent}}|{{index .Config.Labels "com.docker.compose.project"}}|{{index .Config.Labels "org.amg.role"}}' \
+      "$id" 2>/dev/null || echo absent)
     [ "$state" = absent ] && continue
-    if [ "$parent" != "$SLICE" ]; then
-      problem "conteneur AMG $short hors de $SLICE (cgroup parent : ${parent:-défaut}) : hors du plafond de 4 Gio"
-    elif [ "$state" = running ] && [ ! -d "$SLICE_CGROUP/docker-$id.scope" ]; then
-      problem "conteneur AMG $short absent de $SLICE_CGROUP (pilote cgroup de Docker changé ?)"
+    case "$project" in
+      amg-prod | amg-staging) expected="$project.slice" ;;
+      *)
+        if [ -z "$role" ]; then
+          is_shared_traefik "$id" && continue
+          problem "conteneur $short sans label AMG branché sur un réseau ou un volume AMG (cgroup parent : ${parent:-défaut})"
+          continue
+        fi
+        expected=$parent
+        [[ "$parent" =~ ^amg(-(prod|staging))?\.slice$ ]] || expected=$AMG_SLICE
+        ;;
+    esac
+    if [ "$parent" != "$expected" ]; then
+      problem "conteneur AMG $short hors de $expected (cgroup parent : ${parent:-défaut}) : hors du plafond mémoire AMG"
+    elif [ "$state" = running ]; then
+      dir=$(amg_slice_cgroup "$parent")
+      [ -d "$dir/docker-$id.scope" ] \
+        || problem "conteneur AMG $short absent de $dir (pilote cgroup de Docker changé ?)"
     fi
   done
 }

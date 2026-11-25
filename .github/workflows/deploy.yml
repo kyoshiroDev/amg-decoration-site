@@ -42,10 +42,10 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      # Budget mémoire AMG (ADR-0020) : 4 Gio au plus, tous conteneurs confondus, bascule et
-      # sauvegarde comprises ; chaque conteneur dans la slice amg.slice. Avant tout le reste : un
-      # fichier Compose hors budget ne doit produire aucune image.
-      - name: Budget mémoire AMG (slice amg.slice, 4 Gio)
+      # Budget mémoire AMG (ADR-0020) : 4 Gio au total, dont 3 800 Mio dans la slice amg.slice,
+      # tous conteneurs confondus, bascule et ponctuels compris ; chaque conteneur dans sa slice.
+      # Avant tout le reste : un fichier Compose hors budget ne doit produire aucune image.
+      - name: Budget mémoire AMG (slice amg.slice, 3 800 Mio)
         run: deploy/ci/check-budget.sh
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:

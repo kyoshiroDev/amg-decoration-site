@@ -13,13 +13,27 @@
 #    du bucket (daysFromHidingToDeleting: 14) les efface. Un serveur compromis ne peut pas effacer
 #    l'historique des sauvegardes, seulement le masquer.
 #    restic tourne sans aucune capacité sauf DAC_READ_SEARCH (lecture des fichiers de l'API),
-#    racine en lecture seule, cache dans un volume nommé, fichiers temporaires en tmpfs, dans la
-#    slice amg.slice (plafond mémoire commun de tout AMG, compté par deploy/ci/check-budget.sh).
+#    racine en lecture seule, cache dans un volume nommé, fichiers temporaires en tmpfs, lancé par
+#    amg_run (amg-common.sh) : slice amg-prod.slice (plafond mémoire commun de tout AMG), 512 Mio
+#    sans swap, un seul conteneur ponctuel à la fois sur le serveur (compté par
+#    deploy/ci/check-budget.sh).
 # 3. Signal « vivant » à Healthchecks.io : succès, ou échec avec la fin du journal. Pas de signal =
 #    alerte au bout de 25 h (ping manquant).
+#
+# Verrou de la production (le même que deploy.sh et restore-gate.sh) tenu de bout en bout : pas de
+# déploiement (donc pas de réplique de bascule ni de migration) pendant la sauvegarde, et
+# inversement. Attente bornée (30 min), puis échec signalé.
+# pg_dump tourne DANS le conteneur postgres (limite PG_MEM_LIMIT, 512 Mio en production) : il
+# garde en mémoire le catalogue (quelques Mio pour le schéma du CRM), pas les données, qui sont
+# envoyées en flux vers age sur l'hôte ; les fichiers clients ne sont pas dans la base (ADR-0020).
+# Besoin estimé : shared_buffers (128 Mio) + connexions de l'API + pg_dump et son processus serveur
+# (quelques dizaines de Mio) : < 300 Mio. Un manque de mémoire ferait échouer la sauvegarde (alerte
+# Healthchecks.io) et apparaîtrait dans watch.sh (oom_kill), sans toucher au voisin.
 set -Eeuo pipefail
 
 AMG_ROOT=${AMG_ROOT:-/opt/amg}
+# shellcheck source=deploy/bin/amg-common.sh
+source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/amg-common.sh"
 ENV_NAME=prod
 WORK=$AMG_ROOT/backups/$ENV_NAME
 RESTIC_ENV=$AMG_ROOT/secrets/restic.env      # 600 : RESTIC_REPOSITORY, RESTIC_PASSWORD, AWS_* (clé B2), HC_BACKUP_URL
@@ -36,6 +50,8 @@ trap 'fail "ligne $LINENO"' ERR
 exec > >(tee -a "$LOG_TAIL") 2>&1
 
 ping_hc /start </dev/null
+exec 8>"$(amg_env_lock "$ENV_NAME")"
+flock -w 1800 8 || fail "verrou de $ENV_NAME tenu depuis 30 min (déploiement ou restauration en cours)"
 mkdir -p "$WORK"; chmod 700 "$WORK"
 DUMP=$WORK/amg-$ENV_NAME.dump.age
 
@@ -55,15 +71,14 @@ docker volume inspect "amg-${ENV_NAME}_files" >/dev/null 2>&1 \
   && FILES_MOUNT=(-v "amg-${ENV_NAME}_files:/backup/files:ro")
 
 restic() {
-  docker run --rm --env-file "$RESTIC_ENV" --hostname "amg-$ENV_NAME" \
-    --cgroup-parent amg.slice --label org.amg.role=backup \
-    --memory 512m --memory-swap 512m --cpus 1 --pids-limit 100 \
+  amg_run prod backup 512m --env-file "$RESTIC_ENV" --hostname "amg-$ENV_NAME" \
+    --cpus 1 --pids-limit 100 \
     --security-opt no-new-privileges:true --cap-drop ALL --cap-add DAC_READ_SEARCH \
     --read-only --tmpfs /tmp:rw,noexec,nosuid,size=192m \
     -v "$WORK:/backup/db:ro" \
     "${FILES_MOUNT[@]}" \
     -v "$RESTIC_CACHE_VOLUME:/cache" -e RESTIC_CACHE_DIR=/cache \
-    "$RESTIC_IMAGE" "$@"
+    -- "$RESTIC_IMAGE" "$@"
 }
 
 echo "$(date -Is) restic backup"

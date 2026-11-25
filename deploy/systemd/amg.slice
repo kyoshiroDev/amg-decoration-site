@@ -1,25 +1,29 @@
-# Plafond de ressources de TOUS les conteneurs AMG (ADR-0020, budget 4 Gio), imposé par le noyau.
-# Installé par l'humain AVANT le premier conteneur AMG (docs/EXPLOITATION.md, §9, étape 1) :
-#   sudo install -o root -g root -m 644 amg.slice /etc/systemd/system/amg.slice
+# Plafond de ressources de TOUS les conteneurs AMG (ADR-0020), imposé par le noyau.
+# Budget : 4 Gio (4 096 Mio) au total, coûts hors slice compris : 3 800 Mio dans cette slice, le
+# reste (~296 Mio) pour ce que le noyau compte hors d'elle (shims containerd, part AMG de dockerd
+# et containerd, CLI docker et scripts, age pendant la sauvegarde, pull d'images). Constantes
+# reprises dans deploy/bin/amg-common.sh et contrôlées par deploy/ci/check-budget.sh.
+# Installé par l'humain AVANT le premier conteneur AMG, avec amg-prod.slice et amg-staging.slice
+# (docs/EXPLOITATION.md, §9, étape 1) :
+#   sudo install -o root -g root -m 644 amg.slice amg-prod.slice amg-staging.slice /etc/systemd/system/
 #   sudo systemctl daemon-reload
-#   systemctl show amg.slice -p MemoryMax -p MemoryHigh -p MemorySwapMax -p CPUQuotaPerSecUSec -p CPUWeight
-# Docker (pilote cgroup systemd, cgroup v2) place chaque conteneur dans un scope
-# docker-<id>.scope enfant de cette slice : `cgroup_parent: amg.slice` dans deploy/compose.yaml,
-# `--cgroup-parent amg.slice` sur chaque `docker run` des scripts du serveur. Les limites d'une
-# slice s'appliquent à l'ensemble de ses enfants (prod + préproduction + conteneurs ponctuels).
+# Docker (pilote cgroup systemd, cgroup v2) place chaque conteneur dans un scope docker-<id>.scope
+# de la slice demandée : amg-prod.slice ou amg-staging.slice (enfants de celle-ci : un tiret dans
+# un nom de slice marque un niveau, systemd.slice(5)), amg.slice pour les conteneurs jetables de
+# l'humain. Les limites d'une slice s'appliquent à l'ensemble de ses descendants.
 # Sans ce fichier, systemd créerait la slice à la volée SANS limite : deploy.sh refuse alors de
 # déployer et watch.sh alerte.
 # Référence : systemd.resource-control(5), systemd.slice(5).
 
 [Unit]
-Description=Conteneurs AMG (production, préproduction, sauvegardes) : 4 Gio au plus
+Description=Conteneurs AMG (production, préproduction, ponctuels) : 3 800 Mio au plus
 Before=slices.target
 
 [Slice]
 # Plafond dur : au-delà, le noyau déclenche l'OOM killer DANS la slice, jamais chez le voisin.
-MemoryMax=4G
-# Freinage (récupération forcée de mémoire) un peu avant le plafond dur.
-MemoryHigh=3840M
+MemoryMax=3800M
+# Freinage (récupération forcée de mémoire) avant le plafond dur.
+MemoryHigh=3584M
 # Pas de swap : la mémoire AMG ne peut pas déborder sur le disque partagé.
 MemorySwapMax=0
 MemoryZSwapMax=0

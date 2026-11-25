@@ -18,6 +18,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Budget mémoire AMG (ADR-0020, docs/EXPLOITATION.md, 10) : pire cas sous le seuil, chaque
+  # conteneur dans sa slice, aucun conteneur ponctuel hors de amg_run. Nom du job exigé vert sur le
+  # commit installé sur le serveur (EXPLOITATION.md, 3.3) : ne pas le renommer sans mettre la doc à jour.
+  budget:
+    name: Budget mémoire AMG
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # docker compose et jq sont fournis par l'image ubuntu-latest ; aucune dépendance npm.
+      - run: deploy/ci/check-budget.sh
+
   verify:
     name: Vérifications (types, lint, tests, build)
     runs-on: ubuntu-latest

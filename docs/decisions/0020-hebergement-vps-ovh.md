@@ -65,3 +65,18 @@ Décisions de l'humain : fichiers stockés sur le disque du VPS ; sauvegardes ch
 - **ClamAV exclu de fait** (≈ 3 Gio) : remplacé par la reconstruction du contenu (ADR-0022), dont le traitement (images, PDF, vidéos) est provisionné à environ 512 Mio dans la marge (`docs/EXPLOITATION.md`, 10).
 
 **Conséquences.** Le tableau du budget (`docs/EXPLOITATION.md`, 10) est tenu à jour à chaque service ajouté ; un service qui ne tient pas dans la marge impose de réduire une autre limite (préproduction d'abord) ou une nouvelle décision avec l'humain. Une slice absente ou sans limite est un incident : systemd la créerait à la volée sans plafond.
+
+## Révision du 2026-11-25 (3) : 4 Gio tout compris, sous-slices par environnement
+
+**Contexte.** Audit de sécurité de la révision (2) et précision de l'humain : « ne jamais dépasser 4 Go » vaut pour **tout** ce qu'AMG coûte, y compris hors de ses conteneurs (shims containerd, part de `dockerd`, scripts, `age`, pulls), que la slice ne plafonne pas.
+
+**Décision.**
+
+- `amg.slice` passe à `MemoryMax=3800M` et `MemoryHigh=3584M` ; environ 296 Mio restent pour les coûts hors slice (total 4 096 Mio). Constantes uniques dans `deploy/bin/amg-common.sh`, contrôlées par la CI contre les fichiers de slice.
+- Deux sous-slices (le tiret marque un niveau dans systemd) : `amg-prod.slice` et `amg-staging.slice` (`MemoryMax=1024M`) ; `cgroup_parent: amg-${AMG_ENV}.slice` dans Compose. La préproduction ne peut plus prendre la mémoire de la production ; scores OOM : préproduction 900, ponctuels 700, production 500, `postgres` de production 200.
+- Seuil de la CI : 3 800 − 512 = **3 288 Mio** ; réservations de la préproduction réduites (`docs/EXPLOITATION.md`, 10). Le job « Budget mémoire AMG » tourne aussi sur chaque PR (`ci.yml`) et doit être vert sur le commit installé.
+- Conteneurs ponctuels uniquement par `amg_run` (slice, mémoire sans swap, label, verrou commun : un seul à la fois sur le serveur) ; la CI refuse toute autre création de conteneur dans les scripts du serveur. La sauvegarde tient le verrou de la production.
+- `deploy.sh` et `watch.sh` relisent aussi les limites réellement appliquées par le noyau (`memory.max`, `memory.swap.max`) ; `watch.sh` alerte sur la mémoire non récupérable (`memory.stat`) et la pression mémoire, plus sur `memory.current`, et repère tout conteneur sans label sur un réseau ou un volume AMG.
+- Aucun `docker build` sur le VPS (rappel) : il tournerait hors de toute slice.
+
+**Conséquences.** Les trois fichiers de slice sont installés ensemble par l'humain (`docs/EXPLOITATION.md`, §9 étape 1) ; `amg.env` gagne `AMG_ENV` et `SITE_MEM_LIMIT`.

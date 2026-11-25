@@ -7,8 +7,9 @@
 # Principe (même idée que docker-rollout) : démarrer une 2e réplique sur la nouvelle image, attendre
 # qu'elle soit « healthy » (Traefik ignore les conteneurs non sains), drainer l'ancienne, la retirer.
 # En cas d'échec, la nouvelle réplique est supprimée et l'ancienne n'a jamais cessé de servir.
-# Refus de déployer si la slice systemd amg.slice (plafond mémoire commun de tout AMG, 4 Gio,
-# deploy/systemd/amg.slice) n'est pas installée avec ses limites, ou si la nouvelle réplique n'y est pas.
+# Refus de déployer si les slices systemd AMG (amg.slice : plafond mémoire commun de tout AMG,
+# 3 800 Mio ; amg-prod.slice, amg-staging.slice ; deploy/systemd/) ne sont pas installées avec leurs
+# limites, ou si la nouvelle réplique n'est pas dans la slice de son environnement.
 # Lancé par deploy-gate.sh (environnement vidé) ou par l'humain avec le compte de déploiement.
 set -euo pipefail
 
@@ -24,6 +25,8 @@ case "$ENV_NAME" in
 esac
 
 AMG_ROOT=${AMG_ROOT:-/opt/amg}
+# shellcheck source=deploy/bin/amg-common.sh
+source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/amg-common.sh"
 AMG_DIR=$AMG_ROOT/$ENV_NAME
 COMPOSE_DIR=$AMG_DIR/compose # installé par l'humain après relecture (EXPLOITATION.md, 3.3), jamais de secret
 ENV_FILE=$AMG_DIR/amg.env
@@ -35,8 +38,7 @@ compose() { docker compose -p "amg-$ENV_NAME" --env-file "$ENV_FILE" "${FILES[@]
 HEALTH_TIMEOUT=90 # s, attente de « healthy » de la nouvelle réplique
 DRAIN_WAIT=15     # s, > intervalle × essais du HEALTHCHECK (5 s × 2) + requêtes en cours
 DIGEST_RE='^sha256:[0-9a-f]{64}$'
-SLICE=amg.slice
-SLICE_MAX_BYTES=$((4 * 1024 * 1024 * 1024)) # budget AMG (ADR-0020) : jamais plus de 4 Gio
+SLICE=$(amg_env_slice "$ENV_NAME") # amg-prod.slice ou amg-staging.slice, enfant de amg.slice
 
 log() { printf '%s [%s] %s\n' "$(date -Is)" "$ENV_NAME" "$*"; }
 
@@ -62,27 +64,15 @@ wait_healthy() { # $1 identifiant de conteneur
   return 1
 }
 
-# La slice doit venir de son fichier d'unité (sans lui, systemd la créerait à la volée SANS limite),
-# avec MemoryMax <= 4 Gio et sans swap. Lecture seule, sans sudo.
+# Slices AMG (amg-common.sh) : chargées depuis leur fichier d'unité (sans lui, systemd les créerait
+# à la volée SANS limite), MemoryMax <= plafond, sans swap, et limites réellement appliquées par le
+# noyau (memory.max, memory.swap.max) si leur cgroup existe. Lecture seule, sans sudo.
 check_slice() {
-  local props load fragment max swap
-  props=$(systemctl show "$SLICE" -p LoadState -p FragmentPath -p MemoryMax -p MemorySwapMax 2>/dev/null) || props=''
-  load=$(sed -n 's/^LoadState=//p' <<<"$props")
-  fragment=$(sed -n 's/^FragmentPath=//p' <<<"$props")
-  max=$(sed -n 's/^MemoryMax=//p' <<<"$props")
-  swap=$(sed -n 's/^MemorySwapMax=//p' <<<"$props")
-  if [ "$load" != loaded ] || [ -z "$fragment" ]; then
-    log "REFUS : slice $SLICE absente ou sans fichier d'unité (LoadState=${load:-?}, FragmentPath=${fragment:-aucun}) : l'installer d'abord (EXPLOITATION.md, 9, étape 1)"
-    return 1
-  fi
-  if ! [[ "$max" =~ ^[0-9]+$ ]] || [ "$max" -gt "$SLICE_MAX_BYTES" ]; then
-    log "REFUS : $SLICE MemoryMax=${max:-?} (attendu <= $SLICE_MAX_BYTES octets)"
-    return 1
-  fi
-  if [ "$swap" != 0 ]; then
-    log "REFUS : $SLICE MemorySwapMax=${swap:-?} (attendu 0)"
-    return 1
-  fi
+  local problems p
+  problems=$(amg_all_slices_problems)
+  [ -z "$problems" ] && return 0
+  while IFS= read -r p; do log "REFUS : $p (EXPLOITATION.md, 9, étape 1)"; done <<<"$problems"
+  return 1
 }
 
 in_slice() { # $1 identifiant de conteneur
@@ -175,10 +165,11 @@ rollout() { # $1 digest cible
 # Un seul déploiement à la fois par environnement, donc une seule réplique en surplus : hypothèse
 # du budget mémoire (deploy/ci/check-budget.sh). Un futur déploiement de plusieurs services les
 # basculera l'un après l'autre sous ce même verrou.
+# Même verrou que backup.sh et restore-gate.sh : jamais de bascule pendant une sauvegarde.
 lock() {
-  exec 9>"$AMG_DIR/.deploy.lock"
+  exec 9>"$(amg_env_lock "$ENV_NAME")"
   flock -n 9 || {
-    echo "déploiement déjà en cours" >&2
+    echo "déploiement, sauvegarde ou restauration déjà en cours, réessayer plus tard" >&2
     exit 3
   }
 }
@@ -208,7 +199,9 @@ case "$ACTION" in
     ;;
   status)
     echo "en ligne : $(current_digest)"
-    systemctl show "$SLICE" -p LoadState -p MemoryMax -p MemorySwapMax -p MemoryCurrent 2>/dev/null || true
+    systemctl show "$AMG_SLICE" "$SLICE" -p Id -p LoadState -p MemoryMax -p MemorySwapMax -p MemoryCurrent 2>/dev/null || true
+    amg_budget_summary
+    amg_all_slices_problems
     tail -n 5 "$HISTORY" 2>/dev/null || true
     compose ps --format '{{.Name}}\t{{.Image}}\t{{.Status}}'
     ;;
