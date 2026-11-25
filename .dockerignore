@@ -1,0 +1,7 @@
+# BROUILLON CRM 2 (plan devops, non committé). Contexte de build = racine du dépôt :
+# on n'envoie que ce que les Dockerfile copient (liste blanche).
+*
+!vercel.json
+!apps/site/dist/
+!apps/site/nginx/
+!apps/site/scripts/nginx-redirects.ts
