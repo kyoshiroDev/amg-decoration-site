@@ -44,7 +44,7 @@ service_ids() { # $1 service Compose
 }
 
 exec 9>"$LOCK"
-flock -n 9 || refuse "déploiement en cours"
+flock -n 9 || refuse "déploiement ou sauvegarde en cours"
 
 PG=$(service_ids postgres)
 [ -n "$PG" ] && [ "$(wc -l <<<"$PG")" -eq 1 ] || refuse "conteneur postgres de production introuvable ou multiple"

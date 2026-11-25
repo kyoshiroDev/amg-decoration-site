@@ -153,16 +153,20 @@ amg_clean_path() {
   [[ "$1" =~ ^(/[A-Za-z0-9_.-]+)+$ ]] && [[ "$1/" != */./* && "$1/" != */../* ]]
 }
 
-# Source d'un montage -v : volume nommé AMG (amg-…, amg_…), ou chemin sous AMG_ROOT (hors
-# secrets/), qui reste sous AMG_ROOT une fois les liens résolus et n'est pas une socket. Le socket
-# Docker, la racine et les chemins du système sont donc tous refusés (liste blanche).
+# Source d'un montage -v : volume nommé AMG (amg-…, amg_…), ou dossier de travail des sauvegardes
+# (AMG_ROOT/backups/…) qui y reste une fois les liens résolus, ne contient aucun composant secrets
+# et n'est pas une socket. Tout le reste est refusé (liste blanche) : secrets/ de chaque
+# environnement, amg.env, bin/, compose/, le socket Docker, la racine et les chemins du système.
 amg_run_source_ok() {
   local src=$1 root=${AMG_ROOT:-/opt/amg} real
   if [[ "$src" =~ ^amg[-_][A-Za-z0-9_.-]{1,100}$ ]]; then return 0; fi
+  # Liste blanche de dossiers : seuls les dossiers de travail des sauvegardes (<racine>/backups/…),
+  # demandés comme résolus. Jamais secrets/ (d'aucun environnement), amg.env, bin/ ni compose/.
   amg_clean_path "$root" && amg_clean_path "$src" || return 1
-  [[ "$src" == "$root"/* && "$src" != "$root"/secrets && "$src" != "$root"/secrets/* ]] || return 1
+  [[ "$src" == "$root"/backups || "$src" == "$root"/backups/* ]] || return 1
   real=$(readlink -m -- "$src") || return 1
-  [[ "$real" == "$root"/* && "$real" != "$root"/secrets && "$real" != "$root"/secrets/* ]] || return 1
+  [[ "$real" == "$root"/backups || "$real" == "$root"/backups/* ]] || return 1
+  [[ "/$real/" != */secrets/* ]] || return 1
   [ ! -S "$real" ]
 }
 
@@ -173,7 +177,14 @@ amg_run_value_ok() {
     --env-file) amg_clean_path "$v" && [[ "$v" == "$root"/* ]] && [ -f "$v" ] ;;
     -e) [[ "$v" =~ ^[A-Za-z_][A-Za-z0-9_]*=.*$ ]] ;;
     --hostname) [[ "$v" =~ ^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$ ]] ;;
-    --cpus) [[ "$v" =~ ^[0-9](\.[0-9]{1,2})?$ && "$v" =~ [1-9] ]] && ((${v%%.*} <= AMG_SLICE_CPUS)) ;;
+    --cpus)
+      local whole frac
+      [[ "$v" =~ ^([0-9])(\.([0-9]{1,2}))?$ ]] || return 1
+      whole=${BASH_REMATCH[1]} frac=${BASH_REMATCH[3]:-0}
+      [[ "$v" =~ [1-9] ]] || return 1
+      [ "${#frac}" -eq 1 ] && frac="${frac}0"
+      ((10#$whole * 100 + 10#$frac <= AMG_SLICE_CPUS * 100))
+      ;;
     --pids-limit) [[ "$v" =~ ^[1-9][0-9]{0,3}$ ]] ;;
     --cap-drop) [ "$v" = ALL ] ;;
     --cap-add) [[ " $AMG_RUN_CAPS " == *" $v "* ]] ;;

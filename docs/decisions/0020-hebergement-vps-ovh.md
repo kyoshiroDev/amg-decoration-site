@@ -1,6 +1,6 @@
 # ADR-0020 — Hébergement sur le VPS OVH, à côté du projet existant
 
-- **Statut** : acceptée, révisée deux fois le 2026-11-25 (voir les sections « Révision »)
+- **Statut** : acceptée, révisée trois fois le 2026-11-25 (voir les sections « Révision » ; en cas d’écart, la plus récente l’emporte)
 - **Date** : 2026-11-24
 
 ## Contexte
@@ -62,7 +62,7 @@ Décisions de l'humain : fichiers stockés sur le disque du VPS ; sauvegardes ch
 - **Tous les conteneurs AMG sont enfants de la slice** : `cgroup_parent: amg.slice` sur chaque service Compose (ancre commune), `--cgroup-parent amg.slice` sur chaque `docker run` des scripts du serveur. Avec le pilote systemd, la valeur est un nom de slice (documentation de `dockerd`, `--cgroup-parent`).
 - **Garde-fou en CI** (`deploy/ci/check-budget.sh`, job `build`) : somme des `mem_limit` de la production et de la préproduction, plus, par environnement, une réplique du plus gros service routé par Traefik (bascule : `deploy.sh` ne bascule qu'un service à la fois sous le verrou de l'environnement), plus le plus gros conteneur ponctuel ; échec au-delà de **3,5 Gio** (marge de 512 Mio sous le plafond), ou si un service n'a pas `cgroup_parent: amg.slice` et `mem_limit` = `memswap_limit`, ou si un `docker run` du serveur n'est pas dans la slice.
 - **Sur le serveur** : `deploy.sh` refuse de déployer si la slice n'est pas chargée avec `MemoryMax` ≤ 4 Gio et `MemorySwapMax=0`, ou si la nouvelle réplique n'est pas dans la slice ; `watch.sh` alerte au-delà de 85 % de `memory.max`, à chaque nouvel `oom_kill` de la slice, et si un conteneur AMG est hors de la slice.
-- **ClamAV exclu de fait** (≈ 3 Gio) : remplacé par la reconstruction du contenu (ADR-0022), dont le traitement (images, PDF, vidéos) est provisionné à environ 512 Mio dans la marge (`docs/EXPLOITATION.md`, 10).
+- **ClamAV exclu de fait** (≈ 3 Gio) : remplacé par la reconstruction du contenu (ADR-0022), dont le traitement (images, PDF, vidéos) est provisionné à environ 512 Mio dans la marge (ramené à 384 Mio en production et 96 Mio en préproduction par la révision (3)) (`docs/EXPLOITATION.md`, 10).
 
 **Conséquences.** Le tableau du budget (`docs/EXPLOITATION.md`, 10) est tenu à jour à chaque service ajouté ; un service qui ne tient pas dans la marge impose de réduire une autre limite (préproduction d'abord) ou une nouvelle décision avec l'humain. Une slice absente ou sans limite est un incident : systemd la créerait à la volée sans plafond.
 
