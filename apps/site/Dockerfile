@@ -20,6 +20,7 @@ RUN node nginx-redirects.ts vercel.json > redirects.conf \
 
 # Étape 2 : nginx non root (UID 101, port 8080), sans Node ni outil de build.
 FROM nginx/nginx-unprivileged:1.31.10-alpine3.24-slim@sha256:f4afc48254dc77ea692ec6979d220e5b1176331c636a4d51c502ffdded6789bd
+# Valeur d'exemple : la CI la remplace par l'adresse réelle du dépôt (deploy.yml, labels de build-push).
 LABEL org.opencontainers.image.source="https://github.com/PROPRIETAIRE/DEPOT" \
       org.opencontainers.image.description="AMG Décoration : site vitrine statique"
 COPY apps/site/nginx/nginx.conf /etc/nginx/nginx.conf

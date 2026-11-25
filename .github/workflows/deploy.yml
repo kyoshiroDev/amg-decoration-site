@@ -1,4 +1,5 @@
-# push sur dev  → vérifications, image, analyse Trivy, conformité nginx, publication GHCR, préproduction.
+# push sur dev  → vérifications, image, analyse Trivy, conformité nginx ; publication GHCR et préproduction
+#                 seulement si la variable de dépôt AMG_STAGING_ON_VPS=true (serveur prêt, EXPLOITATION §9).
 # push sur main → mêmes étapes ; déploiement de production seulement quand le site quitte Vercel
 #                 (variable de dépôt AMG_PROD_SITE_ON_VPS=true, CRM 8) et après approbation humaine
 #                 (environnement GitHub « production » avec relecteur obligatoire).
@@ -48,7 +49,7 @@ jobs:
           restore-keys: |
             astro-img-${{ runner.os }}-${{ hashFiles('package-lock.json', 'apps/site/astro.config.mjs') }}-
             astro-img-${{ runner.os }}-
-      # Garde-fou légal (ADR-0015, à réviser) : la production VPS ne part pas avec un TODO(contenu).
+      # Garde-fou légal (ADR-0015, révision du 2026-11-25) : la production VPS ne part pas avec un TODO(contenu).
       - if: github.ref == 'refs/heads/main' && vars.AMG_PROD_SITE_ON_VPS == 'true'
         run: npm run check:prod
       - run: npm run verify
@@ -99,8 +100,11 @@ jobs:
 
   publish:
     name: Publication GHCR (sans npm ni code du dépôt)
-    # Droit packages: write réservé aux deux branches déployées (pas de publication depuis une autre).
-    if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
+    # Droit packages: write réservé aux deux branches déployées (pas de publication depuis une autre),
+    # et seulement quand un environnement VPS est activé.
+    if: >-
+      (github.ref == 'refs/heads/dev' && vars.AMG_STAGING_ON_VPS == 'true') ||
+      (github.ref == 'refs/heads/main' && vars.AMG_PROD_SITE_ON_VPS == 'true')
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -140,7 +144,8 @@ jobs:
 
   deploy-staging:
     name: Préproduction (staging.)
-    if: github.ref == 'refs/heads/dev'
+    # Activé par l'humain une fois le serveur prêt (docs/EXPLOITATION.md §9, étape 11).
+    if: github.ref == 'refs/heads/dev' && vars.AMG_STAGING_ON_VPS == 'true'
     needs: publish
     runs-on: ubuntu-latest
     environment:

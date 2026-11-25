@@ -99,7 +99,11 @@ rollout() { # $1 digest cible
       return 1
     }
   else
-    compose up -d --no-deps --no-recreate --scale "$SERVICE=2" "$SERVICE"
+    if ! compose up -d --no-deps --no-recreate --scale "$SERVICE=2" "$SERVICE"; then
+      log "ÉCHEC : impossible de démarrer la nouvelle réplique, retour à $previous (aucune coupure)"
+      set_digest "$previous"
+      return 1
+    fi
     new=$(comm -13 <(sort <<<"$old") <(compose ps -q "$SERVICE" | sort))
     if [ -z "$new" ] || ! wait_healthy "$new"; then
       log "ÉCHEC : la nouvelle version n'est pas saine, retour à $previous (aucune coupure)"
