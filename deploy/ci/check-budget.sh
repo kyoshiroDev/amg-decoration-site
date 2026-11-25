@@ -8,8 +8,9 @@
 #
 # Échoue si :
 #   - les slices deploy/systemd/{amg,amg-prod,amg-staging}.slice ne portent pas les plafonds de
-#     amg-common.sh, sans swap ;
-#   - un service Compose (tous profils actifs) n'a pas cgroup_parent: amg-<env>.slice, pas de
+#     amg-common.sh (mémoire, CPUQuota, TasksMax), sans swap ;
+#   - un service Compose (tous profils actifs) a une clé build: (jamais de construction sur le
+#     serveur : hors de toute slice), n'a pas cgroup_parent: amg-<env>.slice, pas de
 #     mem_limit, un memswap_limit différent (swap interdit), plus d'une réplique (deploy.replicas ou
 #     scale : la réplique de bascule est comptée à part), un tmpfs sans size=, ou, en préproduction,
 #     un oom_score_adj autre que 900 (en production : au plus 500) ;
@@ -17,7 +18,13 @@
 #     amg_run (amg-common.sh) : `docker run|create`, `docker container …`, `docker compose run|create`,
 #     options avant la sous-commande, sous-commande non littérale, docker appelé par une variable ou
 #     un chemin, transmission d'arguments à docker hors d'une fonction d'enrobage de `docker compose`,
-#     eval, `sh -c`, source d'un autre fichier que amg-common.sh ; ou un amg_run sans mémoire littérale ;
+#     eval, `sh -c`, source d'un autre fichier que amg-common.sh ; un amg_run sans mémoire littérale,
+#     ou en arrière-plan (`&` sur sa ligne ou sur celle d'une fonction qui l'appelle) ; `--scale`
+#     hors de deploy.sh ; `-f`, `--file` ou `--project-directory` entre `compose` et sa
+#     sous-commande, COMPOSE_FILE ; docker.sock, `--unix-socket`, DOCKER_HOST ou DOCKER_CONTEXT
+#     (l'API Docker appelée sans le CLI) ;
+#   - amg-common.sh appelle docker autrement que par un seul `docker run` (celui de amg_run) et
+#     `docker info`, `docker pull`, `docker image inspect` ;
 #   - le pire cas dépasse le plafond de amg.slice moins la marge interne (AMG_BUDGET_MARGIN_MIB) :
 #       production + préproduction (somme des mem_limit, plus une réplique du plus gros service
 #       routé par Traefik pour la bascule : un service à la fois sous le verrou de l'environnement ;
@@ -47,7 +54,8 @@ COMPOSE_SUBS=' config ps pull up rm stop exec logs restart '
 # Mentions de « docker » qui ne sont pas des appels (chemins de données).
 NOT_A_CALL_RE='^/var/lib/docker$'
 COMPOSE_CALL_RE='(^|[^A-Za-z0-9_.@/-])docker[[:space:]]+compose([[:space:]]|$)'
-BACKGROUND_RE='[^&]&[[:space:]]*$'
+# Accès à l'API Docker sans le CLI, ou redirection du CLI vers un autre démon.
+DAEMON_ACCESS_RE='docker\.sock|--unix-socket|DOCKER_HOST|DOCKER_CONTEXT|COMPOSE_FILE'
 FN_END_RE='^}|;[[:space:]]*}[[:space:]]*$'
 FN_DEF_RE='^[[:space:]]*(function[[:space:]]+)?([A-Za-z_][A-Za-z0-9_-]*)[[:space:]]*\(\)'
 DOCKER_WORD_RE='(^|[^A-Za-z0-9_.@-])docker($|[^A-Za-z0-9_.-])'
@@ -97,7 +105,7 @@ check_slice_file() { # $1 fichier, puis paires Clé=valeur attendues
   done
 }
 check_slice_file amg.slice "MemoryMax=${AMG_SLICE_MAX_MIB}M" "MemoryHigh=${AMG_SLICE_HIGH_MIB}M" \
-  MemorySwapMax=0 MemoryZSwapMax=0
+  MemorySwapMax=0 MemoryZSwapMax=0 "CPUQuota=$((AMG_SLICE_CPUS * 100))%" "TasksMax=$AMG_SLICE_TASKS_MAX"
 check_slice_file amg-prod.slice "MemoryMax=${AMG_SLICE_MAX_MIB}M" MemorySwapMax=0 MemoryZSwapMax=0
 check_slice_file amg-staging.slice "MemoryMax=${AMG_STAGING_MAX_MIB}M" "MemoryHigh=${AMG_STAGING_HIGH_MIB}M" \
   MemorySwapMax=0 MemoryZSwapMax=0
@@ -106,7 +114,7 @@ check_slice_file amg-staging.slice "MemoryMax=${AMG_STAGING_MAX_MIB}M" "MemoryHi
 declare -A env_total=()
 printf '%-10s %-28s %10s\n' environnement service limite
 check_env() { # $1 nom, $2 fichier d'environnement, $3… fichiers Compose
-  local env_name=$1 env_file=$2 json name svc parent mem swap routed replicas scale oom tmpfs_bad
+  local env_name=$1 env_file=$2 json name svc parent mem swap routed replicas scale oom tmpfs_bad build
   local mem_b swap_b sum=0 rollout=0 rollout_svc=- slice
   slice=$(amg_env_slice "$env_name")
   shift 2
@@ -117,7 +125,8 @@ check_env() { # $1 nom, $2 fichier d'environnement, $3… fichiers Compose
   name=$(jq -r '.name' <<<"$json")
   [ "$name" = "amg-$env_name" ] || error "$env_name : projet Compose $name (attendu amg-$env_name)"
   [ "$(jq '.services | length' <<<"$json")" -gt 0 ] || error "$env_name : aucun service"
-  while IFS=$'\t' read -r svc parent mem swap routed replicas scale oom tmpfs_bad; do
+  while IFS=$'\t' read -r svc parent mem swap routed replicas scale oom tmpfs_bad build; do
+    [ "$build" = false ] || error "$env_name/$svc : build: interdit (images construites en CI, jamais sur le serveur)"
     [ "$parent" = "$slice" ] || error "$env_name/$svc : cgroup_parent « $parent » (attendu $slice)"
     { [ "$replicas" = - ] || [ "$replicas" -le 1 ]; } \
       || error "$env_name/$svc : deploy.replicas=$replicas (au plus 1 : la bascule est comptée à part)"
@@ -151,7 +160,8 @@ check_env() { # $1 nom, $2 fichier d'environnement, $3… fichiers Compose
       (.value.deploy.replicas // "-" | tostring),
       (.value.scale // "-" | tostring),
       (.value.oom_score_adj // "-" | tostring),
-      ([(.value.tmpfs // []) | if type == "string" then [.] else . end | .[] | select(test("(^|[:,])size=") | not)] | length | tostring)
+      ([(.value.tmpfs // []) | if type == "string" then [.] else . end | .[] | select(test("(^|[:,])size=") | not)] | length | tostring),
+      (.value | has("build") | tostring)
     ] | @tsv' <<<"$json")
   printf '%-10s %-28s %6s Mio\n' "$env_name" "bascule (+1 $rollout_svc)" "$(mib "$rollout")"
   env_total[$env_name]=$((sum + rollout))
@@ -189,10 +199,11 @@ record_oneoff() { # $1 script, $2 environnement littéral ou -, $3 rôle, $4 mé
 }
 
 scan_script() { # $1 chemin
-  local file=$1 base=${1##*/} line fn='' i n t prev sub sub2 j has_sub is_call
+  local file=$1 base=${1##*/} line fn='' i n t prev sub sub2 j has_sub is_call bare
   local -a w
-  local -A wrappers=()
-  # Passe 1 : fonctions qui enrobent `docker compose` en transmettant leurs arguments.
+  local -A wrappers=() oneoff_wrappers=()
+  # Passe 1 : fonctions qui enrobent `docker compose` en transmettant leurs arguments, et fonctions
+  # qui appellent amg_run (leur appel en arrière-plan contournerait le verrou des ponctuels).
   while IFS= read -r line; do
     read -r -a w <<<"$line"
     [ "${#w[@]}" -gt 0 ] || continue
@@ -201,6 +212,9 @@ scan_script() { # $1 chemin
     fi
     if [[ "$line" =~ $COMPOSE_CALL_RE ]] && forwards "$line"; then
       if [ -n "$fn" ]; then wrappers[$fn]=1; fi
+    fi
+    if [ -n "$fn" ] && [ "$fn" != amg_run ] && [[ "$line" =~ (^|[^A-Za-z0-9_-])amg_run([[:space:]]|$) ]]; then
+      oneoff_wrappers[$fn]=1
     fi
     if [[ "$line" =~ $FN_END_RE ]]; then fn=''; fi
   done < <(logical_lines "$file")
@@ -214,6 +228,12 @@ scan_script() { # $1 chemin
       fn=${BASH_REMATCH[2]}
       [ "$fn" != amg_run ] || error "$base : redéfinit amg_run"
     fi
+    [[ ! "$line" =~ $DAEMON_ACCESS_RE ]] \
+      || error "$base : accès direct au démon Docker ou fichier Compose imposé (${BASH_REMATCH[0]}) : ${line:0:80}"
+    # « & » isolé (hors &&, >&, &>) : commande en arrière-plan.
+    bare=${line//&&/}
+    bare=${bare//>&/}
+    bare=${bare//&>/}
     for ((i = 0; i < n; i++)); do
       norm "${w[i]}"
       t=$REPLY
@@ -227,6 +247,9 @@ scan_script() { # $1 chemin
           ;;
       esac
       if [ "${w[i]}" = . ] && [ "$i" -eq 0 ]; then error "$base : « . » interdit (utiliser source amg-common.sh)"; fi
+      if [[ "${w[i]}" == --scale || "${w[i]}" == --scale=* ]] && [ "$base" != deploy.sh ]; then
+        error "$base : --scale hors de deploy.sh (seule la bascule ajoute une réplique, comptée au budget)"
+      fi
       # Mentions de docker : appel littéral `docker <sous-commande>`, ou erreur.
       if [[ "${w[i]}" =~ $DOCKER_CALL_RE ]]; then
         is_call=1
@@ -253,6 +276,14 @@ scan_script() { # $1 chemin
               case "${w[j]}" in
                 run | create) error "$base : docker compose ${w[j]} interdit : ${line:0:80}" ;;
               esac
+              # Options globales avant la sous-commande : jamais un autre fichier Compose.
+              if [ "$has_sub" = 0 ]; then
+                case "${w[j]}" in
+                  -f | -f?* | --file | --file=* | --project-directory | --project-directory=*)
+                    error "$base : ${w[j]} après docker compose interdit (fichiers Compose fixés par la fonction d'enrobage) : ${line:0:80}"
+                    ;;
+                esac
+              fi
               [[ "$COMPOSE_SUBS" == *" ${w[j]} "* ]] && has_sub=1
             done
             if [ "$has_sub" = 0 ]; then
@@ -283,8 +314,11 @@ scan_script() { # $1 chemin
           || error "$base : $t ${w[i + 1]:-} non admis (sous-commande compose littérale : $COMPOSE_SUBS)"
         continue
       fi
+      if [ -n "$t" ] && [ -n "${oneoff_wrappers[$t]:-}" ] && [[ "${w[i]}" != *'()'* ]] && [[ "$bare" == *'&'* ]]; then
+        error "$base : $t (appelle amg_run) en arrière-plan interdit : ${line:0:80}"
+      fi
       if [ "$t" = amg_run ] && [[ "${w[i]}" != *'()'* ]]; then
-        if [[ "$line" =~ $BACKGROUND_RE ]]; then error "$base : amg_run en arrière-plan interdit"; fi
+        if [[ "$bare" == *'&'* ]]; then error "$base : amg_run en arrière-plan interdit"; fi
         case "${w[i + 1]:-}" in
           prod | staging) record_oneoff "$base" "${w[i + 1]}" "${w[i + 2]:-}" "${w[i + 3]:-}" ;;
           *) record_oneoff "$base" - "${w[i + 2]:-}" "${w[i + 3]:-}" ;;
@@ -296,16 +330,29 @@ scan_script() { # $1 chemin
 }
 
 # amg_run lui-même : un seul `docker run`, verrou commun, valeurs imposées après celles de l'appelant.
-common_runs=$(logical_lines "$COMMON" | grep -cE '(^|[[:space:]])docker[[:space:]]' || true)
-run_line=$(logical_lines "$COMMON" | grep -E 'docker[[:space:]]+run' || true)
-[ "$common_runs" = 1 ] || error "amg-common.sh : $common_runs appels docker (attendu un seul, celui de amg_run)"
+# Ailleurs dans amg-common.sh : seulement docker info, docker pull, docker image inspect (un appel
+# par ligne, sous-commande littérale).
+common_runs=0
+run_line=''
+while IFS= read -r line; do
+  [[ ! "$line" =~ $DAEMON_ACCESS_RE ]] || error "amg-common.sh : accès direct au démon Docker : ${line:0:80}"
+  [[ "$line" =~ $DOCKER_WORD_RE ]] || continue
+  if [[ "$line" =~ (^|[[:space:]])docker[[:space:]]+run[[:space:]] ]]; then
+    common_runs=$((common_runs + 1))
+    run_line=$line
+  elif [ "$(grep -oE '(^|[^A-Za-z0-9_.@/-])docker($|[^A-Za-z0-9_.-])' <<<"$line" | wc -l)" != 1 ] \
+    || ! [[ "$line" =~ (^|[[:space:]\(!])docker[[:space:]]+(info|pull|image[[:space:]]+inspect)[[:space:]] ]]; then
+    error "amg-common.sh : appel docker non admis (seuls run dans amg_run, info, pull, image inspect) : ${line:0:80}"
+  fi
+done < <(logical_lines "$COMMON")
+[ "$common_runs" = 1 ] || error "amg-common.sh : $common_runs appels docker run (attendu un seul, celui de amg_run)"
 while IFS= read -r want; do
   [[ "$run_line" == *"$want"* ]] || error "amg-common.sh : amg_run ne contient plus : $want"
-done <<'EOF'
+done <<'EOF2'
 flock -w "$AMG_ONEOFF_WAIT" "${AMG_ROOT:-/opt/amg}/.oneoff.lock"
 docker run "${opts[@]}" --rm --cgroup-parent "amg-$env_name.slice" --memory "$mem" --memory-swap "$mem"
 --oom-score-adj "$AMG_ONEOFF_OOM_SCORE_ADJ" --label "org.amg.role=$role" -- "$@"
-EOF
+EOF2
 
 for script in "$DEPLOY"/bin/*.sh; do
   base=${script##*/}

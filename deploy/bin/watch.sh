@@ -18,10 +18,15 @@
 #     amg-staging.slice reste sous SLICE_MAX_PCT % de memory.max ; la pression mémoire (PSI, full
 #     avg300) de amg.slice reste sous MEM_PRESSURE_PCT % ; aucun nouvel oom_kill dans memory.events
 #     (hiérarchique : un conteneur AMG à sa propre limite compte aussi) ;
+#     Docker utilise le pilote cgroup systemd en cgroup v2 ;
 #   - chaque conteneur AMG (projets amg-prod, amg-staging, label org.amg.role) ET tout conteneur
-#     branché sur un réseau ou un volume AMG (amg_edge_*, amg-*), sauf le Traefik partagé, est dans
-#     la slice attendue (amg-<env>.slice pour un projet, une slice AMG pour un ponctuel) et porte un
-#     label AMG.
+#     branché sur un réseau ou un volume AMG (amg_edge_*, amg-*, amg_*) est dans la slice attendue
+#     (amg-<env>.slice pour un projet, une slice AMG pour un ponctuel) et porte un label AMG. Seule
+#     exception : le Traefik partagé, désigné par son nom (TRAEFIK_CONTAINER, obligatoire), et
+#     seulement s'il n'est branché que sur des réseaux d'entrée amg_edge_* (jamais un volume AMG, ni
+#     un réseau de données) ;
+#   - un conteneur ponctuel (label org.amg.role) ne porte aucun label Traefik, et un seul tourne à
+#     la fois.
 # Puis signale à Healthchecks.io : succès, ou /fail avec la liste des problèmes. Healthchecks.io
 # n'alerte qu'au changement d'état (pas de rafale) et alerte aussi si le signal n'arrive plus
 # (serveur arrêté, cron cassé). Un environnement en cours de déploiement (verrou de deploy.sh) est
@@ -32,8 +37,8 @@
 #   DISK_MAX_PCT=80                                       (facultatif, défaut 80)
 #   SLICE_MAX_PCT=85                                      (facultatif, défaut 85)
 #   MEM_PRESSURE_PCT=5                                    (facultatif, défaut 5)
-#   TRAEFIK_CONTAINER=<nom>     (facultatif : Traefik partagé ; défaut : le conteneur qui publie
-#                                les ports 80 et 443 de l'hôte)
+#   TRAEFIK_CONTAINER=<nom>                               (obligatoire : nom du conteneur du
+#                                                          Traefik partagé, docker ps --format '{{.Names}}')
 #   WATCH_URLS=https://exemple.fr/healthz=200 https://staging.exemple.fr/healthz=200   (facultatif)
 # Identifiants de la préproduction (basic auth) : /opt/amg/secrets/watch.netrc (600, format netrc).
 set -euo pipefail
@@ -60,12 +65,19 @@ SLICE_MAX_PCT=${SLICE_MAX_PCT:-85}
 MEM_PRESSURE_PCT=$(conf MEM_PRESSURE_PCT)
 [[ "$MEM_PRESSURE_PCT" =~ ^[0-9]{1,2}$ ]] || MEM_PRESSURE_PCT=5
 TRAEFIK_CONTAINER=$(conf TRAEFIK_CONTAINER)
-[[ "$TRAEFIK_CONTAINER" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]] || TRAEFIK_CONTAINER=''
 WATCH_URLS=$(conf WATCH_URLS)
 
 problems=()
 notes=()
 problem() { problems+=("$*"); }
+
+# Traefik partagé : désigné par son nom, sans valeur par défaut (une reconnaissance par les ports
+# publiés serait contournable : n'importe quel conteneur peut publier 80 et 443 sur une autre
+# adresse, ou les déclarer sans les obtenir). Absent ou invalide : alerte, et aucune exception.
+if ! [[ "$TRAEFIK_CONTAINER" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$ ]]; then
+  problem "TRAEFIK_CONTAINER absent ou invalide dans $WATCH_ENV : aucun conteneur hors AMG n'est admis sur les réseaux AMG (EXPLOITATION.md, 9, étape 6)"
+  TRAEFIK_CONTAINER=''
+fi
 
 declare -A previous_restarts=()
 current_restarts=()
@@ -231,8 +243,10 @@ check_environment() { # $1 prod|staging
     problem "$env_name : réseau d'entrée $edge absent (voir EXPLOITATION.md, Traefik partagé)"
   else
     [ "$internal" = true ] || problem "$env_name : réseau d'entrée $edge non interne"
-    grep -q '^traefik:' < <(docker ps --filter "network=$edge" --format '{{.Image}}') \
-      || problem "$env_name : Traefik n'est plus branché sur $edge"
+    if [ -n "$TRAEFIK_CONTAINER" ]; then
+      grep -qxF "$TRAEFIK_CONTAINER" < <(docker ps --filter "network=$edge" --format '{{.Names}}') \
+        || problem "$env_name : le Traefik partagé ($TRAEFIK_CONTAINER) n'est plus branché sur $edge"
+    fi
   fi
   check_traefik_labels "$env_name" "$project" "$edge" "$(sed -n 's/^AMG_CERTRESOLVER=//p' "$dir/amg.env" | tail -n 1)"
 
@@ -325,24 +339,25 @@ check_memory_use() { # $1 slice
     || problem "slice $slice : $((used / AMG_MIB)) Mio non récupérables sur $((cg_max / AMG_MIB)) Mio (seuil $SLICE_MAX_PCT %)"
 }
 
-# Traefik partagé : seul conteneur hors AMG admis sur les réseaux d'entrée AMG. Désigné par
-# TRAEFIK_CONTAINER (watch.env), sinon reconnu comme le conteneur qui publie les ports 80 et 443.
-is_shared_traefik() { # $1 identifiant
-  local name ports
-  read -r name ports < <(docker inspect -f '{{.Name}} {{range $p, $b := .HostConfig.PortBindings}}{{$p}} {{end}}' "$1" 2>/dev/null \
-    || echo '- -')
-  if [ -n "$TRAEFIK_CONTAINER" ]; then
-    [ "$name" = "/$TRAEFIK_CONTAINER" ]
-  else
-    [[ " $ports " == *" 80/tcp "* && " $ports " == *" 443/tcp "* ]]
-  fi
+# Traefik partagé : seul conteneur hors AMG admis, et seulement sur les réseaux d'entrée AMG.
+# $1 identifiant, $2 ressources AMG par lesquelles il a été trouvé (« network=… volume=… »).
+# Le nom vient de TRAEFIK_CONTAINER (obligatoire) ; un conteneur trouvé par un volume AMG ou par un
+# autre réseau AMG que amg_edge_* (réseau de données amg-<env>_data…) n'est jamais excusé.
+is_shared_traefik() {
+  local name resource
+  [ -n "$TRAEFIK_CONTAINER" ] || return 1
+  name=$(docker inspect -f '{{.Name}}' "$1" 2>/dev/null) || return 1
+  [ "$name" = "/$TRAEFIK_CONTAINER" ] || return 1
+  for resource in $2; do
+    [[ "$resource" =~ ^network=amg_edge_[a-z0-9]+$ ]] || return 1
+  done
 }
 
 # Plafond mémoire commun (slices systemd) : unités, limites du noyau, consommation, OOM, appartenance.
 check_slice() {
   local installed=0 env_name id short parent state project role expected dir line oom previous_oom pressure
-  local -a ids=() resources=()
-  local -A seen=()
+  local -a ids=() resources=() running_oneoffs=()
+  local -A seen=() found_by=()
   for env_name in "${ENVIRONMENTS[@]}"; do [ -f "$AMG_ROOT/$env_name/amg.env" ] && installed=1; done
   [ "$installed" = 1 ] || return 0
 
@@ -382,7 +397,11 @@ check_slice() {
     docker volume ls --format 'volume={{.Name}}'
   } 2>/dev/null | grep -E '^(network|volume)=amg[-_]' || true)
   for line in "${resources[@]}"; do
-    mapfile -t -O "${#ids[@]}" ids < <(docker ps -aq --no-trunc --filter "$line")
+    while IFS= read -r id; do
+      [ -n "$id" ] || continue
+      ids+=("$id")
+      found_by[$id]="${found_by[$id]:-} $line"
+    done < <(docker ps -aq --no-trunc --filter "$line")
   done
   for id in "${ids[@]}"; do
     [ -n "$id" ] && [ -z "${seen[$id]:-}" ] || continue
@@ -394,12 +413,18 @@ check_slice() {
       '{{.State.Status}}|{{.HostConfig.CgroupParent}}|{{index .Config.Labels "com.docker.compose.project"}}|{{index .Config.Labels "org.amg.role"}}' \
       "$id" 2>/dev/null || echo absent)
     [ "$state" = absent ] && continue
+    # Ponctuel : aucun label Traefik, quelle que soit sa casse (image comprise ; amg_run refuse déjà
+    # une telle image). Labels illisibles = alerte.
+    if [ -n "$role" ] && grep -qi traefik < <(docker inspect -f \
+      '{{range $k, $v := .Config.Labels}}{{printf "%q\n" $k}}{{end}}' "$id" 2>/dev/null || echo illisible-traefik); then
+      problem "conteneur ponctuel $short (rôle $role) avec un label Traefik (ou labels illisibles)"
+    fi
     case "$project" in
       amg-prod | amg-staging) expected="$project.slice" ;;
       *)
         if [ -z "$role" ]; then
-          is_shared_traefik "$id" && continue
-          problem "conteneur $short sans label AMG branché sur un réseau ou un volume AMG (cgroup parent : ${parent:-défaut})"
+          is_shared_traefik "$id" "${found_by[$id]:-}" && continue
+          problem "conteneur $short sans label AMG branché sur une ressource AMG :${found_by[$id]:- ?} (cgroup parent : ${parent:-défaut})"
           continue
         fi
         expected=$parent
@@ -410,10 +435,15 @@ check_slice() {
       problem "conteneur AMG $short hors de $expected (cgroup parent : ${parent:-défaut}) : hors du plafond mémoire AMG"
     elif [ "$state" = running ]; then
       dir=$(amg_slice_cgroup "$parent")
-      [ -d "$dir/docker-$id.scope" ] \
+      [ -d "$(amg_scope_dir "$parent" "$id")" ] \
         || problem "conteneur AMG $short absent de $dir (pilote cgroup de Docker changé ?)"
     fi
   done
+
+  # Un seul conteneur ponctuel à la fois (verrou de amg_run, hypothèse du budget mémoire).
+  mapfile -t running_oneoffs < <(docker ps -q --filter label=org.amg.role --filter status=running)
+  [ "${#running_oneoffs[@]}" -le 1 ] \
+    || problem "${#running_oneoffs[@]} conteneurs ponctuels (org.amg.role) en marche en même temps (budget : un seul)"
 }
 
 if docker info >/dev/null 2>&1; then
