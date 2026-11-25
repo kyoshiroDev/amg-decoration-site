@@ -2,8 +2,15 @@
 # limitation de débit par adresse IP (avant l'authentification : freine l'essai de mots de passe et
 # protège le CPU du Traefik partagé, bcrypt étant coûteux) et `noindex` sur toutes les réponses.
 # Noms préfixés par le projet (`amg-staging-`) : contrôlé par watch.sh.
+# Chaque service de compose.yaml est repris ici avec oom_score_adj: 900 (contrôlé par
+# deploy/ci/check-budget.sh) : en cas de manque de mémoire, la préproduction est tuée en premier.
 services:
+  postgres:
+    oom_score_adj: 900
+  redis:
+    oom_score_adj: 900
   site:
+    oom_score_adj: 900
     labels:
       # Rafale de 60 : une page de préproduction charge une trentaine de ressources d'un coup ;
       # 10 req/s en continu bornent le coût bcrypt imposé au Traefik partagé.

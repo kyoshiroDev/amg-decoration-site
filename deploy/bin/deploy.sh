@@ -7,6 +7,11 @@
 # Principe (même idée que docker-rollout) : démarrer une 2e réplique sur la nouvelle image, attendre
 # qu'elle soit « healthy » (Traefik ignore les conteneurs non sains), drainer l'ancienne, la retirer.
 # En cas d'échec, la nouvelle réplique est supprimée et l'ancienne n'a jamais cessé de servir.
+# Refus de déployer si amg.env n'est pas celui de l'environnement (AMG_ENV, AMG_PROJECT), si Docker
+# n'utilise pas le pilote cgroup systemd en cgroup v2, si les slices systemd AMG (amg.slice : plafond
+# mémoire commun de tout AMG, 3 800 Mio ; amg-prod.slice, amg-staging.slice ; deploy/systemd/) ne
+# sont pas installées depuis /etc/systemd/system avec leurs limites, ou si la nouvelle réplique
+# n'est pas réellement dans la slice de son environnement (scope docker-<id>.scope sous la slice).
 # Lancé par deploy-gate.sh (environnement vidé) ou par l'humain avec le compte de déploiement.
 set -euo pipefail
 
@@ -22,6 +27,8 @@ case "$ENV_NAME" in
 esac
 
 AMG_ROOT=${AMG_ROOT:-/opt/amg}
+# shellcheck source=deploy/bin/amg-common.sh
+source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/amg-common.sh"
 AMG_DIR=$AMG_ROOT/$ENV_NAME
 COMPOSE_DIR=$AMG_DIR/compose # installé par l'humain après relecture (EXPLOITATION.md, 3.3), jamais de secret
 ENV_FILE=$AMG_DIR/amg.env
@@ -33,10 +40,21 @@ compose() { docker compose -p "amg-$ENV_NAME" --env-file "$ENV_FILE" "${FILES[@]
 HEALTH_TIMEOUT=90 # s, attente de « healthy » de la nouvelle réplique
 DRAIN_WAIT=15     # s, > intervalle × essais du HEALTHCHECK (5 s × 2) + requêtes en cours
 DIGEST_RE='^sha256:[0-9a-f]{64}$'
+SLICE=$(amg_env_slice "$ENV_NAME") # amg-prod.slice ou amg-staging.slice, enfant de amg.slice
 
 log() { printf '%s [%s] %s\n' "$(date -Is)" "$ENV_NAME" "$*"; }
 
 env_value() { sed -n "s/^$1=//p" "$ENV_FILE" | tail -n 1; }
+
+# Le fichier d'environnement doit être celui de cet environnement : AMG_ENV choisit la slice
+# (cgroup_parent: amg-${AMG_ENV}.slice) et AMG_PROJECT le projet Compose. Un amg.env de production
+# copié en préproduction (ou l'inverse) placerait les conteneurs dans la mauvaise slice.
+[ -r "$ENV_FILE" ] || { echo "REFUS : $ENV_FILE illisible" >&2; exit 2; }
+if [ "$(env_value AMG_ENV)" != "$ENV_NAME" ] || [ "$(env_value AMG_PROJECT)" != "amg-$ENV_NAME" ]; then
+  echo "REFUS : $ENV_FILE annonce AMG_ENV=$(env_value AMG_ENV) AMG_PROJECT=$(env_value AMG_PROJECT)" \
+    "(attendu AMG_ENV=$ENV_NAME AMG_PROJECT=amg-$ENV_NAME)" >&2
+  exit 2
+fi
 current_digest() { env_value SITE_DIGEST; }
 
 set_digest() { # écrit le digest dans amg.env : un redémarrage du serveur relance la même version
@@ -58,12 +76,25 @@ wait_healthy() { # $1 identifiant de conteneur
   return 1
 }
 
-image_labels_safe() { # $1 image@digest ; clés sorties en chaînes Go (%q) : une ligne par label
-  local keys
-  keys=$(docker image inspect -f '{{range $k, $v := .Config.Labels}}{{printf "%q\n" $k}}{{end}}' "$1") \
-    || return 1
-  # Insensible à la casse, espaces de tête ignorés : aucune variante d'écriture ne passe.
-  ! grep -qiE '^"[[:space:]]*traefik' <<<"$keys"
+# Slices AMG (amg-common.sh) : chargées depuis leur fichier d'unité (sans lui, systemd les créerait
+# à la volée SANS limite), MemoryMax <= plafond, sans swap, et limites réellement appliquées par le
+# noyau (memory.max, memory.swap.max) si leur cgroup existe. Lecture seule, sans sudo.
+check_slice() {
+  local problems p
+  problems=$(amg_all_slices_problems)
+  [ -z "$problems" ] && return 0
+  while IFS= read -r p; do log "REFUS : $p (EXPLOITATION.md, 9, étape 1)"; done <<<"$problems"
+  return 1
+}
+
+# Nouvelle réplique dans la slice de son environnement : cgroup parent déclaré ET dossier cgroup
+# réellement créé sous la slice (amg.slice/amg-<env>.slice/docker-<id complet>.scope, comme
+# watch.sh). Le cgroup parent seul ne suffit pas : avec un autre pilote cgroup, Docker le
+# recopierait sans placer le conteneur dans la slice systemd.
+in_slice() { # $1 identifiant de conteneur
+  local parent id
+  IFS='|' read -r parent id < <(docker inspect -f '{{.HostConfig.CgroupParent}}|{{.Id}}' "$1" 2>/dev/null || echo '|')
+  [ "$parent" = "$SLICE" ] && [[ "$id" =~ ^[0-9a-f]{64}$ ]] && [ -d "$(amg_scope_dir "$SLICE" "$id")" ]
 }
 
 rollout() { # $1 digest cible
@@ -77,11 +108,8 @@ rollout() { # $1 digest cible
     log "ÉCHEC pull"
     return 1
   fi
-  # Les labels d'une image sont recopiés sur ses conteneurs, et Traefik lit ceux de tous les
-  # conteneurs du serveur : une image qui porte un label traefik.* pourrait ajouter un routeur
-  # (hôte du voisin, api@internal…) à côté de ceux de compose.yaml. Nos images n'en portent
-  # aucun (les labels Traefik viennent du seul fichier Compose) : refus avant tout démarrage.
-  # Inspection impossible = refus. watch.sh contrôle aussi les labels en marche (seconde ligne).
+  # Nos images ne portent aucun label Traefik (ils viennent du seul fichier Compose) : refus avant
+  # tout démarrage (image_labels_safe, amg-common.sh). watch.sh contrôle aussi les labels en marche.
   if ! image_labels_safe "$image@$target"; then
     set_digest "$previous"
     log "REFUS : l'image $image@$target porte des labels Traefik ou n'a pas pu être inspectée, $previous reste en ligne"
@@ -98,13 +126,28 @@ rollout() { # $1 digest cible
       set_digest "$previous"
       return 1
     }
+    new=$(compose ps -q "$SERVICE")
+    if [ -z "$new" ] || ! in_slice "$new"; then
+      log "REFUS : conteneur hors de $SLICE (cgroup_parent absent du fichier Compose installé, ou scope absent de la slice), arrêté"
+      compose rm -s -f "$SERVICE" >/dev/null || true
+      set_digest "$previous"
+      return 1
+    fi
   else
     if ! compose up -d --no-deps --no-recreate --scale "$SERVICE=2" "$SERVICE"; then
       log "ÉCHEC : impossible de démarrer la nouvelle réplique, retour à $previous (aucune coupure)"
+      partial=$(comm -13 <(sort <<<"$old") <(compose ps -aq "$SERVICE" | sort))
+      [ -z "$partial" ] || xargs -r docker rm -f <<<"$partial" >/dev/null || true
       set_digest "$previous"
       return 1
     fi
     new=$(comm -13 <(sort <<<"$old") <(compose ps -q "$SERVICE" | sort))
+    if [ -n "$new" ] && ! in_slice "$new"; then
+      log "REFUS : nouvelle réplique hors de $SLICE (cgroup_parent absent du fichier Compose installé, ou scope absent de la slice), retour à $previous"
+      docker rm -f "$new" >/dev/null
+      set_digest "$previous"
+      return 1
+    fi
     if [ -z "$new" ] || ! wait_healthy "$new"; then
       log "ÉCHEC : la nouvelle version n'est pas saine, retour à $previous (aucune coupure)"
       if [ -n "$new" ]; then
@@ -126,10 +169,14 @@ rollout() { # $1 digest cible
   log "en ligne : $target (commit $revision)"
 }
 
+# Un seul déploiement à la fois par environnement, donc une seule réplique en surplus : hypothèse
+# du budget mémoire (deploy/ci/check-budget.sh). Un futur déploiement de plusieurs services les
+# basculera l'un après l'autre sous ce même verrou.
+# Même verrou que backup.sh et restore-gate.sh : jamais de bascule pendant une sauvegarde.
 lock() {
-  exec 9>"$AMG_DIR/.deploy.lock"
+  exec 9>"$(amg_env_lock "$ENV_NAME")"
   flock -n 9 || {
-    echo "déploiement déjà en cours" >&2
+    echo "déploiement, sauvegarde ou restauration déjà en cours, réessayer plus tard" >&2
     exit 3
   }
 }
@@ -141,10 +188,12 @@ case "$ACTION" in
       echo "digest refusé : $DIGEST" >&2
       exit 2
     }
+    check_slice || exit 5
     lock
     rollout "$DIGEST"
     ;;
   rollback)
+    check_slice || exit 5
     lock
     cur=$(current_digest)
     prev=$(awk -v cur="$cur" '$2 != cur { d = $2 } END { print d }' "$HISTORY" 2>/dev/null || true)
@@ -157,6 +206,9 @@ case "$ACTION" in
     ;;
   status)
     echo "en ligne : $(current_digest)"
+    systemctl show "$AMG_SLICE" "$SLICE" -p Id -p LoadState -p MemoryMax -p MemorySwapMax -p MemoryCurrent 2>/dev/null || true
+    amg_budget_summary
+    amg_all_slices_problems
     tail -n 5 "$HISTORY" 2>/dev/null || true
     compose ps --format '{{.Name}}\t{{.Image}}\t{{.Status}}'
     ;;

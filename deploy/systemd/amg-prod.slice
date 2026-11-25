@@ -1,0 +1,15 @@
+# Production AMG : enfant de amg.slice (tiret = niveau, systemd.slice(5)), qui la plafonne.
+# Installé avec amg.slice (docs/EXPLOITATION.md, §9, étape 1). Sans ce fichier, la slice serait
+# créée à la volée sans réglage propre : deploy.sh refuse de déployer et watch.sh alerte.
+
+[Unit]
+Description=Conteneurs AMG de production
+Before=slices.target
+
+[Slice]
+# Même plafond que amg.slice (la limite effective est celle du parent) : contrôle uniforme.
+MemoryMax=3800M
+MemorySwapMax=0
+MemoryZSwapMax=0
+# Priorité CPU double de celle de la préproduction, à l'intérieur d'AMG.
+CPUWeight=100

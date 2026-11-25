@@ -7,7 +7,7 @@
 # le job qui publie sur GHCR n'exécute aucun code du dépôt ni de npm, il pousse l'image vérifiée
 # reçue en artefact. Le déploiement désigne l'image par son DIGEST (immuable), jamais par un tag.
 # Toutes les actions sont épinglées par SHA de commit (vérifié avec `gh api` sur le tag indiqué).
-# Politiques de branches des environnements `staging` et `production` : docs/EXPLOITATION.md, 9.6.
+# Politiques de branches des environnements `staging` et `production` : docs/EXPLOITATION.md, §9, étape 7.
 name: Déploiement
 
 on:
@@ -42,6 +42,11 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # Budget mémoire AMG (ADR-0020) : 4 Gio au total, dont 3 800 Mio dans la slice amg.slice,
+      # tous conteneurs confondus, bascule et ponctuels compris ; chaque conteneur dans sa slice.
+      # Avant tout le reste : un fichier Compose hors budget ne doit produire aucune image.
+      - name: Budget mémoire AMG (slice amg.slice, 3 800 Mio)
+        run: deploy/ci/check-budget.sh
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: apps/site/node_modules/.astro/assets
@@ -144,7 +149,7 @@ jobs:
 
   deploy-staging:
     name: Préproduction (staging.)
-    # Activé par l'humain une fois le serveur prêt (docs/EXPLOITATION.md §9, étape 11).
+    # Activé par l'humain une fois le serveur prêt (docs/EXPLOITATION.md §9, étape 12).
     if: github.ref == 'refs/heads/dev' && vars.AMG_STAGING_ON_VPS == 'true'
     needs: publish
     runs-on: ubuntu-latest

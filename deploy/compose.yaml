@@ -9,17 +9,27 @@
 # Jamais de `ports:` (seul Traefik expose), jamais de `container_name` (déploiement par réplique).
 # Ressources : limites dures (mémoire sans swap), priorité CPU basse, tués en premier en cas d'OOM
 # de l'hôte : le projet voisin ne doit jamais manquer de ressources.
+# Plafond commun imposé par le noyau : chaque conteneur est dans la slice de son environnement,
+# amg-prod.slice ou amg-staging.slice, toutes deux enfants de amg.slice (deploy/systemd/ : 3 800 Mio
+# pour tout AMG, 1 Gio pour la préproduction). Budget contrôlé en CI par deploy/ci/check-budget.sh :
+# chaque service DOIT avoir cgroup_parent: amg-<env>.slice, mem_limit = memswap_limit, au plus une
+# réplique, et en préproduction oom_score_adj: 900 (EXPLOITATION.md, 10).
 
 name: ${AMG_PROJECT:?AMG_PROJECT manquant}
 
 x-hardening: &hardening
   restart: unless-stopped
+  # Pilote cgroup systemd : la valeur est un nom de slice ; préfixe `amg-` littéral, donc toujours
+  # sous amg.slice (scope amg.slice/amg-<env>.slice/docker-<id>.scope).
+  cgroup_parent: amg-${AMG_ENV:?AMG_ENV manquant}.slice
   read_only: true
   security_opt:
     - no-new-privileges:true
   cap_drop:
     - ALL
   cpu_shares: 512
+  # Tués avant le voisin en cas de manque de mémoire de l'hôte ; dans la slice, la préproduction
+  # (900, compose.staging.yaml) part d'abord, la base de production (200) en dernier.
   oom_score_adj: 500
   logging:
     driver: json-file
@@ -36,8 +46,8 @@ services:
     user: '101:101'
     tmpfs:
       - /tmp:size=16m,mode=1777
-    mem_limit: 64m
-    memswap_limit: 64m
+    mem_limit: ${SITE_MEM_LIMIT:-64m}
+    memswap_limit: ${SITE_MEM_LIMIT:-64m}
     cpus: 0.5
     pids_limit: 64
     networks:
@@ -80,10 +90,12 @@ services:
       - effective_cache_size=${PG_EFFECTIVE_CACHE:-256MB}
     volumes:
       - pgdata:/var/lib/postgresql
+    # Taille explicite : un tmpfs est de la mémoire comptée dans la limite du conteneur.
     tmpfs:
-      - /tmp
-      - /var/run/postgresql
+      - /tmp:size=16m,mode=1777
+      - /var/run/postgresql:size=1m,mode=1777
     shm_size: 128mb
+    oom_score_adj: 200
     mem_limit: ${PG_MEM_LIMIT:-512m}
     memswap_limit: ${PG_MEM_LIMIT:-512m}
     cpus: 1.0
@@ -126,8 +138,8 @@ services:
       timeout: 3s
       retries: 5
 
-  # Reportés (voir le plan CRM 2) : api et worker (CRM 3), admin et espace-client (CRM 4-5),
-  # clamav (CRM 5, 3 Gio de RAM recommandés : décision de ressources à prendre avec l'humain).
+  # Reportés (voir le plan CRM 2) : api et worker (CRM 3), admin et espace-client (CRM 4-5).
+  # Pas d'antivirus : fichiers déposés reconstruits (ADR-0022), budget dans EXPLOITATION.md, 10.
 
 secrets:
   pg_password:

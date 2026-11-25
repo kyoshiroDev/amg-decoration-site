@@ -18,7 +18,7 @@ Tu es **l'auditeur sécurité** du projet AMG Décoration. Les CRM manipulent le
 2. **Sessions** : cookies `HttpOnly` / `Secure` / `SameSite`, rotation, expiration, révocation, CSRF, déconnexion des autres appareils.
 3. **Autorisation** : refus par défaut, contrôle de rôle et de **propriété** sur chaque route (IDOR) ; tente des accès croisés client A → projet B, client → routes admin.
 4. **Entrées** : schémas Zod stricts partout (API, WebSocket, jobs), aucune requête brute non paramétrée, pas de XSS stocké (messages, remarques, textes de réalisations), pas d'injection dans les en-têtes ou emails.
-5. **Fichiers** : type par signature, taille, antivirus, stockage hors racine web, liens signés courts, pas de traversée de chemin, métadonnées EXIF retirées des photos publiées.
+5. **Fichiers** : type par signature, taille, reconstruction du contenu (ADR-0022 : ré-encodage des photos et vidéos, PDF sans contenu actif, décodeurs isolés), stockage hors racine web, liens signés courts, pas de traversée de chemin, métadonnées EXIF retirées des photos publiées.
 6. **Secrets et données** : aucun secret dans Git, l'image ou les logs ; variables validées au démarrage ; données personnelles minimales, durées de conservation, export et suppression ; aucune information de reconnaissance du serveur (IP, comptes, versions, conteneurs) dans le dépôt public.
 7. **En-têtes et transport** : HTTPS forcé, HSTS, CSP stricte par app, `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy`, CORS restreint aux origines AMG.
 8. **Dépendances et images** : `npm audit` (prod), versions épinglées, images de base à jour et analysées (Trivy ou équivalent), conteneurs non root, systèmes de fichiers en lecture seule quand possible, ressources limitées.

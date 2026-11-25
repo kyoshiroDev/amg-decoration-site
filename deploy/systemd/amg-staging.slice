@@ -1,0 +1,15 @@
+# Préproduction AMG : enfant de amg.slice (tiret = niveau, systemd.slice(5)), avec son propre
+# plafond : la préproduction ne peut jamais prendre la mémoire de la production. Le pire cas de la
+# préproduction doit tenir dessous (contrôlé par deploy/ci/check-budget.sh). Installé avec
+# amg.slice (docs/EXPLOITATION.md, §9, étape 1).
+
+[Unit]
+Description=Conteneurs AMG de préproduction : 1 Gio au plus
+Before=slices.target
+
+[Slice]
+MemoryMax=1024M
+MemoryHigh=896M
+MemorySwapMax=0
+MemoryZSwapMax=0
+CPUWeight=50
