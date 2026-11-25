@@ -141,6 +141,8 @@ Maquette validée par l'humain le 2026-11-24 : https://claude.ai/artifact/8qrSz6
 - [ ] Sauvegardes chiffrées base + fichiers vers Backblaze B2, test de restauration documenté (`docs/EXPLOITATION.md`)
 - [ ] Vérification du serveur avec l'humain : pare-feu, SSH par clé, fail2ban, mises à jour automatiques
 
+Avancement (2026-11-25) : image du site (nginx non root, configuration générée depuis `vercel.json`, conformité vérifiée contre Vercel), projet Compose prod/staging, déploiement sans coupure avec retour arrière, sauvegardes restic + age, surveillance, test de restauration et `docs/EXPLOITATION.md` écrits ; Traefik partagé reconfiguré côté projet voisin (ADR-0020, révision du 2026-11-25). Restent : réglages AMG sur le serveur, actions de l'humain (`docs/EXPLOITATION.md` §9), premier déploiement de `staging.`, images admin, espace client, api et worker (à leur création), décision ClamAV.
+
 ### CRM 3 — API et sécurité
 
 - [ ] Prisma (schéma initial, migrations), schémas Zod partagés, variables d'environnement validées

@@ -1,0 +1,152 @@
+# Un seul fichier, deux projets Compose isolés sur le VPS (ADR-0020) :
+#   production    : docker compose -p amg-prod    --env-file /opt/amg/prod/amg.env    -f compose.yaml up -d
+#   préproduction : docker compose -p amg-staging --env-file /opt/amg/staging/amg.env -f compose.yaml -f compose.staging.yaml up -d
+# Installé sur le serveur par l'humain après relecture du diff (docs/EXPLOITATION.md, 3.3), jamais
+# envoyé par la CI : la clé de déploiement ne peut que choisir un digest d'image.
+# Images épinglées par digest (relevé avec `docker buildx imagetools inspect <image:tag>`) ; le site
+# par le digest publié par la CI (SITE_DIGEST, écrit par deploy.sh).
+# Chaque projet a ses volumes, son réseau de données interne et son réseau d'entrée vers Traefik.
+# Jamais de `ports:` (seul Traefik expose), jamais de `container_name` (déploiement par réplique).
+# Ressources : limites dures (mémoire sans swap), priorité CPU basse, tués en premier en cas d'OOM
+# de l'hôte : le projet voisin ne doit jamais manquer de ressources.
+
+name: ${AMG_PROJECT:?AMG_PROJECT manquant}
+
+x-hardening: &hardening
+  restart: unless-stopped
+  read_only: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  cpu_shares: 512
+  oom_score_adj: 500
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: '3'
+
+services:
+  site:
+    <<: *hardening
+    image: ${SITE_IMAGE:?SITE_IMAGE manquant}@${SITE_DIGEST:?SITE_DIGEST manquant}
+    profiles: [site]
+    # Non root imposé, quelle que soit l'image (UID de nginx-unprivileged).
+    user: '101:101'
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    mem_limit: 64m
+    memswap_limit: 64m
+    cpus: 0.5
+    pids_limit: 64
+    networks:
+      - edge
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=${AMG_EDGE_NETWORK}'
+      - 'traefik.http.routers.${AMG_PROJECT}-site.rule=${SITE_RULE:?SITE_RULE manquant}'
+      - 'traefik.http.routers.${AMG_PROJECT}-site.entrypoints=websecure'
+      - 'traefik.http.routers.${AMG_PROJECT}-site.tls.certresolver=${AMG_CERTRESOLVER:?AMG_CERTRESOLVER manquant}'
+      - 'traefik.http.routers.${AMG_PROJECT}-site.middlewares=${SITE_MIDDLEWARES:?SITE_MIDDLEWARES manquant}'
+      - 'traefik.http.services.${AMG_PROJECT}-site.loadbalancer.server.port=8080'
+      # Rejoue une requête sur l'autre réplique si un conteneur s'arrête pendant une bascule.
+      # Noms préfixés par le projet : la production et la préproduction ne partagent aucun objet Traefik.
+      - 'traefik.http.middlewares.${AMG_PROJECT}-retry.retry.attempts=3'
+      - 'traefik.http.middlewares.${AMG_PROJECT}-retry.retry.initialinterval=100ms'
+
+  postgres:
+    <<: *hardening
+    image: postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71
+    # L'entrypoint officiel a besoin de ces droits pour préparer PGDATA puis passer à l'utilisateur postgres.
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
+    environment:
+      POSTGRES_USER: amg
+      POSTGRES_DB: amg
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
+    secrets:
+      - pg_password
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${PG_SHARED_BUFFERS:-128MB}
+      - -c
+      - max_connections=40
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=32MB
+      - -c
+      - effective_cache_size=${PG_EFFECTIVE_CACHE:-256MB}
+    volumes:
+      - pgdata:/var/lib/postgresql
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+    shm_size: 128mb
+    mem_limit: ${PG_MEM_LIMIT:-512m}
+    memswap_limit: ${PG_MEM_LIMIT:-512m}
+    cpus: 1.0
+    pids_limit: 200
+    networks:
+      - data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U amg -d amg -h 127.0.0.1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    <<: *hardening
+    image: redis:8.12.0-alpine3.23@sha256:5af80107c1eeecb484a2269b80a26d12bfa6521787da4663bd9f19f60a163483
+    # Le shell (root, sans autre capacité que celles-ci) lit le secret, puis lâche ses privilèges :
+    # Redis lit sa configuration sur l'entrée standard. Le mot de passe n'apparaît jamais dans la
+    # ligne de commande (visible par `ps` sur l'hôte), et l'entrypoint officiel ne modifie pas le
+    # propriétaire du fichier monté depuis l'hôte. Modèle du fichier : deploy/env/redis.conf.example.
+    cap_add: [SETGID, SETUID, DAC_OVERRIDE]
+    entrypoint:
+      - /bin/sh
+      - -c
+      - exec /bin/setpriv --reuid redis --regid redis --clear-groups redis-server - < /run/secrets/redis_conf
+    secrets:
+      - redis_conf
+    volumes:
+      - redisdata:/data
+    mem_limit: ${REDIS_MEM_LIMIT:-128m}
+    memswap_limit: ${REDIS_MEM_LIMIT:-128m}
+    cpus: 0.25
+    pids_limit: 64
+    networks:
+      - data
+    healthcheck:
+      # REDISCLI_AUTH n'est pas défini ici : un PING sans auth renvoie NOAUTH, preuve que le serveur répond.
+      test: ['CMD-SHELL', 'redis-cli -h 127.0.0.1 ping 2>&1 | grep -qE "PONG|NOAUTH"']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Reportés (voir le plan CRM 2) : api et worker (CRM 3), admin et espace-client (CRM 4-5),
+  # clamav (CRM 5, 3 Gio de RAM recommandés : décision de ressources à prendre avec l'humain).
+
+secrets:
+  pg_password:
+    file: ${AMG_DIR}/secrets/pg_password
+  redis_conf:
+    file: ${AMG_DIR}/secrets/redis.conf
+
+volumes:
+  pgdata:
+  redisdata:
+  # files: (CRM 5) fichiers clients, monté par l'API seule, sauvegardé chaque nuit.
+
+networks:
+  # Réseau d'entrée vers Traefik, propre à l'environnement, créé une fois hors Compose
+  # (`docker network create --internal`, voir docs/EXPLOITATION.md) : amg_edge_prod / amg_edge_staging.
+  # Traefik y est branché par un docker-compose.override.yml dans son dossier ; jamais le réseau du voisin.
+  edge:
+    external: true
+    name: ${AMG_EDGE_NETWORK:?AMG_EDGE_NETWORK manquant}
+  # Base et Redis : sans passerelle, jamais joignables depuis Traefik, l'extérieur ou le projet voisin.
+  data:
+    internal: true

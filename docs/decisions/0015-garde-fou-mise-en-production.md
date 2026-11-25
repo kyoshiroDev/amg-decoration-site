@@ -1,6 +1,6 @@
 # ADR-0015 — Garde-fou de mise en production des pages légales
 
-- **Statut** : acceptée, révisée le 2026-11-21 (voir « Révision »)
+- **Statut** : acceptée, révisée le 2026-11-21 et le 2026-11-25 (voir « Révision »)
 - **Date** : 2026-11-20
 
 ## Contexte
@@ -51,3 +51,9 @@ Une simple note de maintenance qui ne signale pas d'information manquante ne doi
 
 1. `npm run check:prod` doit être vert (aucun `TODO(contenu)` légal) ;
 2. après le rattachement, **redéployer** la production : le build revérifie alors les pages légales avec le vrai domaine, et tout build ultérieur reste protégé.
+
+## Révision du 2026-11-25 : garde-fou sur le VPS
+
+**Contexte.** À la bascule du site vers le VPS (ADR-0020, CRM 8), `VERCEL_ENV` n'existe plus : l'intégration Astro devient muette.
+
+**Décision.** Le job de vérification de `.github/workflows/deploy.yml` lance `npm run check:prod` sur `main` dès que la variable de dépôt `AMG_PROD_SITE_ON_VPS` vaut `true` ; la même variable conditionne le job de déploiement en production, qui attend en plus l'approbation humaine de l'environnement GitHub `production`. Un `TODO(contenu)` restant dans une page légale empêche donc toute mise en production VPS ; la production précédente reste servie. Tant que le site est sur Vercel, l'intégration fondée sur `VERCEL_ENV` reste en place ; elle sera retirée lors de CRM 8 ; `vercel.json` reste la source des redirections et des en-têtes, dont la configuration nginx est générée.

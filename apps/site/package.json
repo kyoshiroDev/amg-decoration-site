@@ -14,6 +14,7 @@
     "lint": "eslint . --max-warnings 0 && stylelint \"src/**/*.{css,astro}\" --max-warnings 0 --allow-empty-input",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:conformance": "vitest run -c vitest.conformance.config.ts",
     "test:e2e": "playwright test",
     "test:e2e:service": "playwright test -c playwright.service.config.ts",
     "test:visual": "playwright test -c playwright.visual.config.ts",

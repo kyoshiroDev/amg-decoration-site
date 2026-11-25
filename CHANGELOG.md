@@ -4,6 +4,15 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ## [Non publié]
 
+### CRM 2 : socle serveur (en cours)
+
+- Image Docker du site : nginx non root, en lecture seule, configuration des redirections et en-têtes générée depuis `vercel.json` (`apps/site/scripts/nginx-redirects.ts`), 308 et règles sensibles à la casse dans l'ordre de Vercel, `Cache-Control` du HTML identique.
+- Tests : 40 tests unitaires du générateur, test de conformité de l'image contre Vercel (`npm run test:conformance -w @amg/site`, image construite au préalable).
+- `deploy/` : projets Compose production et préproduction (Postgres 18, Redis 8, réseaux d'entrée internes dédiés), déploiement sans coupure avec retour arrière, commande SSH forcée, sauvegardes chiffrées restic + age vers Backblaze B2 (30 jours, puis 14 jours des versions masquées), surveillance, test de restauration ; workflow `deploy.yml` (image, Trivy, GHCR, préproduction ; production derrière `AMG_PROD_SITE_ON_VPS` et approbation humaine).
+- `docs/EXPLOITATION.md` ; ADR-0020 et ADR-0015 révisées (Traefik partagé entre deux projets indépendants, garde-fou légal sur le VPS).
+- Suivi de l'audit de sécurité : la CI ne transmet plus de fichier Compose (installation par l'humain après relecture, contrôle `sha256sum`) ; déploiement et retour arrière par digest d'image ; job de publication GHCR séparé du job npm ; actions épinglées par SHA, clé SSH en `ssh-agent`, Trivy en version fixe ; images de base par digest ; restic sans capacités ; clé B2 du serveur sans droit de suppression ; test de restauration mensuel sur le poste de l'humain (`restore-prod.sh` réservé à l'incident) ; contrôle des labels Traefik dans `watch.sh` ; redirection ouverte par barre oblique inverse fermée dans nginx ; préproduction en bcrypt coût 10 et limitée en débit ; modèle `redis.conf`.
+- Suivi du contre-audit de sécurité : `deploy.sh` refuse toute image portant un label `traefik.*` (digest précédent conservé) ; `watch.sh` contrôle les labels Traefik par liste blanche stricte ; contrôle quotidien des sauvegardes hors VPS (`backup-watch.yml`, clé B2 limitée à la liste des fichiers : âge du dernier snapshot, nombre de snapshots visibles, masquages récents) ; restauration de production déchiffrée sur le poste et envoyée par SSH à une commande forcée sans clé (`restore-prod.sh` sur le poste, `restore-gate.sh` sur le serveur) ; préproduction limitée à 10 requêtes/s (rafale 60) ; CI en lecture seule avec actions épinglées par SHA ; contrôle du digest publié contre le tag ; test de restauration en `--no-lock` et Postgres jetable sans capacités superflues.
+
 ### Monorepo Nx
 
 - Le site est déplacé dans `apps/site` (workspaces npm, paquet `@amg/site`), sans aucun changement visible : le site construit est identique octet pour octet à la référence aux étapes 1 (déplacement) et 2 (Nx), et à l'étape 3 (tokens) au déplacement de la déclaration `--grain-image` près (ADR-0019, ADR-0021).
