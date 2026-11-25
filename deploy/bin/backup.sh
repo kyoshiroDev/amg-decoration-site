@@ -13,7 +13,8 @@
 #    du bucket (daysFromHidingToDeleting: 14) les efface. Un serveur compromis ne peut pas effacer
 #    l'historique des sauvegardes, seulement le masquer.
 #    restic tourne sans aucune capacité sauf DAC_READ_SEARCH (lecture des fichiers de l'API),
-#    racine en lecture seule, cache dans un volume nommé, fichiers temporaires en tmpfs.
+#    racine en lecture seule, cache dans un volume nommé, fichiers temporaires en tmpfs, dans la
+#    slice amg.slice (plafond mémoire commun de tout AMG, compté par deploy/ci/check-budget.sh).
 # 3. Signal « vivant » à Healthchecks.io : succès, ou échec avec la fin du journal. Pas de signal =
 #    alerte au bout de 25 h (ping manquant).
 set -Eeuo pipefail
@@ -55,6 +56,7 @@ docker volume inspect "amg-${ENV_NAME}_files" >/dev/null 2>&1 \
 
 restic() {
   docker run --rm --env-file "$RESTIC_ENV" --hostname "amg-$ENV_NAME" \
+    --cgroup-parent amg.slice --label org.amg.role=backup \
     --memory 512m --memory-swap 512m --cpus 1 --pids-limit 100 \
     --security-opt no-new-privileges:true --cap-drop ALL --cap-add DAC_READ_SEARCH \
     --read-only --tmpfs /tmp:rw,noexec,nosuid,size=192m \

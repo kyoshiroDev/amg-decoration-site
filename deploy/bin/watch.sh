@@ -10,7 +10,11 @@
 #     l'entrée websecure, notre émetteur, des hôtes AMG attendus, nos middlewares et notre service.
 #     Seconde ligne de défense : deploy.sh refuse déjà toute image qui porte un label traefik.* ;
 #   - les adresses publiques listées répondent le code attendu (Traefik → réseau d'entrée → site) ;
-#   - l'espace disque et les inodes de la racine et du dossier Docker restent sous le seuil.
+#   - l'espace disque et les inodes de la racine et du dossier Docker restent sous le seuil ;
+#   - la slice amg.slice (plafond mémoire commun de tout AMG, deploy/systemd/amg.slice) est chargée
+#     avec MemoryMax <= 4 Gio et sans swap, sa mémoire reste sous SLICE_MAX_PCT % de memory.max,
+#     aucun nouvel oom_kill dans memory.events (hiérarchique : un conteneur AMG à sa propre limite
+#     compte aussi), et chaque conteneur AMG (projets amg-prod, amg-staging, label org.amg.role) y est.
 # Puis signale à Healthchecks.io : succès, ou /fail avec la liste des problèmes. Healthchecks.io
 # n'alerte qu'au changement d'état (pas de rafale) et alerte aussi si le signal n'arrive plus
 # (serveur arrêté, cron cassé). Un environnement en cours de déploiement (verrou de deploy.sh) est
@@ -19,6 +23,7 @@
 # Configuration : /opt/amg/secrets/watch.env (600), lue sans être exécutée :
 #   HC_WATCH_URL=https://hc-ping.com/<uuid>              (obligatoire)
 #   DISK_MAX_PCT=80                                       (facultatif, défaut 80)
+#   SLICE_MAX_PCT=85                                      (facultatif, défaut 85)
 #   WATCH_URLS=https://exemple.fr/healthz=200 https://staging.exemple.fr/healthz=200   (facultatif)
 # Identifiants de la préproduction (basic auth) : /opt/amg/secrets/watch.netrc (600, format netrc).
 set -euo pipefail
@@ -27,6 +32,10 @@ AMG_ROOT=${AMG_ROOT:-/opt/amg}
 WATCH_ENV=$AMG_ROOT/secrets/watch.env
 WATCH_NETRC=$AMG_ROOT/secrets/watch.netrc
 RESTARTS_STATE=$AMG_ROOT/logs/.watch-restarts # « id nombre_de_redémarrages » du passage précédent
+OOM_STATE=$AMG_ROOT/logs/.watch-oom           # compteur oom_kill de la slice au passage précédent
+SLICE=amg.slice
+SLICE_CGROUP=${AMG_CGROUP_ROOT:-/sys/fs/cgroup}/$SLICE
+SLICE_MAX_BYTES=$((4 * 1024 * 1024 * 1024)) # budget AMG (ADR-0020)
 ENVIRONMENTS=(prod staging)
 
 conf() { sed -n "s/^$1=//p" "$WATCH_ENV" | tail -n 1; }
@@ -35,6 +44,9 @@ HC_WATCH_URL=$(conf HC_WATCH_URL)
 [[ "$HC_WATCH_URL" =~ ^https:// ]] || { echo "$(date -Is) HC_WATCH_URL absent ou invalide" >&2; exit 2; }
 DISK_MAX_PCT=$(conf DISK_MAX_PCT)
 DISK_MAX_PCT=${DISK_MAX_PCT:-80}
+SLICE_MAX_PCT=$(conf SLICE_MAX_PCT)
+SLICE_MAX_PCT=${SLICE_MAX_PCT:-85}
+[[ "$SLICE_MAX_PCT" =~ ^[0-9]+$ ]] || SLICE_MAX_PCT=85
 WATCH_URLS=$(conf WATCH_URLS)
 
 problems=()
@@ -274,8 +286,71 @@ check_disk() {
   done
 }
 
+# Plafond mémoire commun (slice systemd) : unité, consommation, OOM, appartenance des conteneurs.
+check_slice() {
+  local installed=0 env_name props load fragment max swap id short parent state
+  local cg_max cg_current oom previous_oom
+  local -a ids=()
+  for env_name in "${ENVIRONMENTS[@]}"; do [ -f "$AMG_ROOT/$env_name/amg.env" ] && installed=1; done
+  [ "$installed" = 1 ] || return 0
+
+  props=$(systemctl show "$SLICE" -p LoadState -p FragmentPath -p MemoryMax -p MemorySwapMax 2>/dev/null) || props=''
+  load=$(sed -n 's/^LoadState=//p' <<<"$props")
+  fragment=$(sed -n 's/^FragmentPath=//p' <<<"$props")
+  max=$(sed -n 's/^MemoryMax=//p' <<<"$props")
+  swap=$(sed -n 's/^MemorySwapMax=//p' <<<"$props")
+  if [ "$load" != loaded ] || [ -z "$fragment" ]; then
+    problem "slice $SLICE absente ou sans fichier d'unité (LoadState=${load:-?}, FragmentPath=${fragment:-aucun}) : AMG n'a plus de plafond mémoire commun"
+  else
+    { [[ "$max" =~ ^[0-9]+$ ]] && [ "$max" -le "$SLICE_MAX_BYTES" ]; } \
+      || problem "slice $SLICE : MemoryMax=${max:-?} (attendu <= 4 Gio)"
+    [ "$swap" = 0 ] || problem "slice $SLICE : MemorySwapMax=${swap:-?} (attendu 0)"
+  fi
+
+  if [ -d "$SLICE_CGROUP" ]; then
+    cg_max=$(cat "$SLICE_CGROUP/memory.max" 2>/dev/null || echo '?')
+    cg_current=$(cat "$SLICE_CGROUP/memory.current" 2>/dev/null || echo '?')
+    if [[ "$cg_max" =~ ^[0-9]+$ ]] && [[ "$cg_current" =~ ^[0-9]+$ ]]; then
+      [ $((cg_current * 100)) -lt $((cg_max * SLICE_MAX_PCT)) ] \
+        || problem "slice $SLICE : $((cg_current / 1048576)) Mio sur $((cg_max / 1048576)) Mio (seuil $SLICE_MAX_PCT %)"
+    else
+      problem "slice $SLICE : memory.max=$cg_max, memory.current=$cg_current illisibles ou sans limite"
+    fi
+    oom=$(sed -n 's/^oom_kill //p' "$SLICE_CGROUP/memory.events" 2>/dev/null)
+    if [[ "$oom" =~ ^[0-9]+$ ]]; then
+      previous_oom=$(cat "$OOM_STATE" 2>/dev/null || echo "$oom")
+      [[ "$previous_oom" =~ ^[0-9]+$ ]] || previous_oom=$oom
+      [ "$oom" -le "$previous_oom" ] \
+        || problem "slice $SLICE : $((oom - previous_oom)) processus tués par manque de mémoire depuis le passage précédent (conteneur à sa limite ou slice pleine)"
+      printf '%s\n' "$oom" >"$OOM_STATE.tmp" && mv "$OOM_STATE.tmp" "$OOM_STATE"
+    else
+      problem "slice $SLICE : memory.events illisible"
+    fi
+  fi
+
+  # Conteneurs AMG : projets Compose et conteneurs ponctuels (label org.amg.role, ex. sauvegarde).
+  for env_name in "${ENVIRONMENTS[@]}"; do
+    mapfile -t -O "${#ids[@]}" ids < <(docker ps -aq --no-trunc --filter "label=com.docker.compose.project=amg-$env_name")
+  done
+  mapfile -t -O "${#ids[@]}" ids < <(docker ps -aq --no-trunc --filter label=org.amg.role)
+  for id in "${ids[@]}"; do
+    [ -n "$id" ] || continue
+    short=${id:0:12}
+    parent=''
+    read -r state parent < <(docker inspect -f '{{.State.Status}} {{.HostConfig.CgroupParent}}' "$id" 2>/dev/null \
+      || echo absent)
+    [ "$state" = absent ] && continue
+    if [ "$parent" != "$SLICE" ]; then
+      problem "conteneur AMG $short hors de $SLICE (cgroup parent : ${parent:-défaut}) : hors du plafond de 4 Gio"
+    elif [ "$state" = running ] && [ ! -d "$SLICE_CGROUP/docker-$id.scope" ]; then
+      problem "conteneur AMG $short absent de $SLICE_CGROUP (pilote cgroup de Docker changé ?)"
+    fi
+  done
+}
+
 if docker info >/dev/null 2>&1; then
   for env_name in "${ENVIRONMENTS[@]}"; do check_environment "$env_name"; done
+  check_slice
 else
   problem "démon Docker injoignable"
 fi

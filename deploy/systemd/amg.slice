@@ -1,0 +1,31 @@
+# Plafond de ressources de TOUS les conteneurs AMG (ADR-0020, budget 4 Gio), imposé par le noyau.
+# Installé par l'humain AVANT le premier conteneur AMG (docs/EXPLOITATION.md, §9, étape 1) :
+#   sudo install -o root -g root -m 644 amg.slice /etc/systemd/system/amg.slice
+#   sudo systemctl daemon-reload
+#   systemctl show amg.slice -p MemoryMax -p MemoryHigh -p MemorySwapMax -p CPUQuotaPerSecUSec -p CPUWeight
+# Docker (pilote cgroup systemd, cgroup v2) place chaque conteneur dans un scope
+# docker-<id>.scope enfant de cette slice : `cgroup_parent: amg.slice` dans deploy/compose.yaml,
+# `--cgroup-parent amg.slice` sur chaque `docker run` des scripts du serveur. Les limites d'une
+# slice s'appliquent à l'ensemble de ses enfants (prod + préproduction + conteneurs ponctuels).
+# Sans ce fichier, systemd créerait la slice à la volée SANS limite : deploy.sh refuse alors de
+# déployer et watch.sh alerte.
+# Référence : systemd.resource-control(5), systemd.slice(5).
+
+[Unit]
+Description=Conteneurs AMG (production, préproduction, sauvegardes) : 4 Gio au plus
+Before=slices.target
+
+[Slice]
+# Plafond dur : au-delà, le noyau déclenche l'OOM killer DANS la slice, jamais chez le voisin.
+MemoryMax=4G
+# Freinage (récupération forcée de mémoire) un peu avant le plafond dur.
+MemoryHigh=3840M
+# Pas de swap : la mémoire AMG ne peut pas déborder sur le disque partagé.
+MemorySwapMax=0
+MemoryZSwapMax=0
+# Processeur : 3 vCPU au plus pour tout AMG, et priorité moitié de celle de system.slice (où
+# tournent les services du système et les autres conteneurs) en cas de contention.
+CPUQuota=300%
+CPUWeight=50
+# Nombre de tâches : somme des pids_limit des services (deploy/compose.yaml) avec de la marge.
+TasksMax=2048

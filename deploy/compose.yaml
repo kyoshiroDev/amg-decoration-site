@@ -9,11 +9,17 @@
 # Jamais de `ports:` (seul Traefik expose), jamais de `container_name` (déploiement par réplique).
 # Ressources : limites dures (mémoire sans swap), priorité CPU basse, tués en premier en cas d'OOM
 # de l'hôte : le projet voisin ne doit jamais manquer de ressources.
+# Plafond commun imposé par le noyau : chaque conteneur est enfant de la slice systemd amg.slice
+# (deploy/systemd/amg.slice : 4 Gio au plus pour tout AMG, prod + préproduction + conteneurs
+# ponctuels). Budget contrôlé en CI par deploy/ci/check-budget.sh : chaque service DOIT avoir
+# cgroup_parent: amg.slice et mem_limit = memswap_limit (EXPLOITATION.md, 10).
 
 name: ${AMG_PROJECT:?AMG_PROJECT manquant}
 
 x-hardening: &hardening
   restart: unless-stopped
+  # Pilote cgroup systemd : la valeur est un nom de slice (scope docker-<id>.scope dans amg.slice).
+  cgroup_parent: amg.slice
   read_only: true
   security_opt:
     - no-new-privileges:true
@@ -126,8 +132,8 @@ services:
       timeout: 3s
       retries: 5
 
-  # Reportés (voir le plan CRM 2) : api et worker (CRM 3), admin et espace-client (CRM 4-5),
-  # clamav (CRM 5, 3 Gio de RAM recommandés : décision de ressources à prendre avec l'humain).
+  # Reportés (voir le plan CRM 2) : api et worker (CRM 3), admin et espace-client (CRM 4-5).
+  # Pas d'antivirus : fichiers déposés reconstruits (ADR-0022), budget dans EXPLOITATION.md, 10.
 
 secrets:
   pg_password:
