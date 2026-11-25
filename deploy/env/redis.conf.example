@@ -1,0 +1,31 @@
+# Modèle de /opt/amg/<env>/secrets/redis.conf (droits 600), lu par Redis sur l'entrée standard
+# (deploy/compose.yaml). Le mot de passe est généré et saisi par l'humain sur le serveur :
+#   openssl rand -base64 36    # puis remplacer <MOT_DE_PASSE_REDIS> ci-dessous
+# Jamais versionné rempli.
+
+# Réseau : Redis n'est joignable que par le réseau interne `data` du projet (sans passerelle).
+bind * -::*
+port 6379
+protected-mode yes
+requirepass <MOT_DE_PASSE_REDIS>
+
+# Commandes destructrices ou d'administration désactivées pour les clients (API, worker).
+# `rename-command` est marqué obsolète par Redis au profit des ACL : à remplacer par une ligne
+# `user default on >… ~* &* +@all -flushall -flushdb -config -debug` quand l'API (CRM 3) aura fixé
+# ses besoins. Une rotation du mot de passe se fait alors dans le fichier, plus par CONFIG SET.
+rename-command FLUSHALL ""
+rename-command FLUSHDB ""
+rename-command CONFIG ""
+rename-command DEBUG ""
+enable-debug-command no
+enable-module-command no
+
+# Mémoire : sous la limite du conteneur (REDIS_MEM_LIMIT), sans éviction (exigée par les files
+# de tâches BullMQ du worker, CRM 3). Production (REDIS_MEM_LIMIT=128m) : 96mb ;
+# préproduction (64m) : 48mb. Pas de commentaire en fin de ligne : Redis le refuse.
+maxmemory 96mb
+maxmemory-policy noeviction
+
+# Persistance dans le volume nommé `redisdata`.
+dir /data
+appendonly yes

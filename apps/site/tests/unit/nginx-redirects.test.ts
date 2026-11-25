@@ -61,8 +61,12 @@ const returns = [...locationRoot.matchAll(/return (\d+) (\S+);/g)].map((match) =
   status: Number(match[1]),
   target: match[2] ?? '',
 }));
+/** Chaîne nginx entre guillemets : `\\`, `\"` et `\'` sont désechappés, les autres `\x` gardés. */
+const unquoteNginx = (text: string): string => text.replace(/\\(["'\\])/g, '$1');
 const trailingSlash = new RegExp(
-  /if \(\$request_uri ~ "([^"]+)"\)/.exec(locationRoot)?.[1] ?? 'absent de nginx.conf',
+  unquoteNginx(
+    /if \(\$request_uri ~ "((?:[^"\\]|\\.)+)"\)/.exec(locationRoot)?.[1] ?? 'absent de nginx.conf',
+  ),
 );
 const origins = new Map(
   [...mapBlock('$amg_origin').matchAll(/^\s+(\S+)\s+(https:\/\/\S+);$/gm)].map((match) => [
@@ -217,6 +221,13 @@ describe('nginx-redirects : même réponse que Vercel', () => {
       expect(expected?.location, path).toMatch(new RegExp(`^${CANONICAL_ORIGIN}/`));
       expect(nginxRedirect(path, WWW_HOST), path).toEqual(expected);
     }
+  });
+
+  it('barre oblique inverse : jamais de redirection (`/\\evil.com/x` serait lu `//evil.com/x/`)', () => {
+    for (const path of ['/\\evil.com/x', '/\\evil.com', '/a/\\evil.com/x', '/\\evil.com/x?y=1']) {
+      expect(nginxRedirect(path), path).toBeNull();
+    }
+    expect(trailingSlash.test('/prestations'), 'expression toujours valide').toBe(true);
   });
 
   it('chemin brut conservé dans Location : aucun saut de ligne décodé (injection d’en-tête)', () => {

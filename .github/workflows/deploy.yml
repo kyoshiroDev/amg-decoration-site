@@ -1,0 +1,205 @@
+# push sur dev  → vérifications, image, analyse Trivy, conformité nginx, publication GHCR, préproduction.
+# push sur main → mêmes étapes ; déploiement de production seulement quand le site quitte Vercel
+#                 (variable de dépôt AMG_PROD_SITE_ON_VPS=true, CRM 8) et après approbation humaine
+#                 (environnement GitHub « production » avec relecteur obligatoire).
+# Séparation des droits : le job qui exécute npm (dépendances tierces) n'a aucun droit d'écriture ;
+# le job qui publie sur GHCR n'exécute aucun code du dépôt ni de npm, il pousse l'image vérifiée
+# reçue en artefact. Le déploiement désigne l'image par son DIGEST (immuable), jamais par un tag.
+# Toutes les actions sont épinglées par SHA de commit (vérifié avec `gh api` sur le tag indiqué).
+# Politiques de branches des environnements `staging` et `production` : docs/EXPLOITATION.md, 9.6.
+name: Déploiement
+
+on:
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  IMAGE_TAG: sha-${{ github.sha }}
+
+jobs:
+  build:
+    name: Image du site (vérifiée et analysée, sans droit d'écriture)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      image: ${{ steps.name.outputs.image }}
+      image-id: ${{ steps.save.outputs.image-id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: apps/site/node_modules/.astro/assets
+          key: astro-img-${{ runner.os }}-${{ hashFiles('package-lock.json', 'apps/site/astro.config.mjs') }}-${{ hashFiles('apps/site/src/assets/**') }}
+          restore-keys: |
+            astro-img-${{ runner.os }}-${{ hashFiles('package-lock.json', 'apps/site/astro.config.mjs') }}-
+            astro-img-${{ runner.os }}-
+      # Garde-fou légal (ADR-0015, à réviser) : la production VPS ne part pas avec un TODO(contenu).
+      - if: github.ref == 'refs/heads/main' && vars.AMG_PROD_SITE_ON_VPS == 'true'
+        run: npm run check:prod
+      - run: npm run verify
+        env:
+          PUBLIC_FORM_ENDPOINT: ${{ vars.PUBLIC_FORM_ENDPOINT }}
+      - id: name
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/amg-site" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: apps/site/Dockerfile
+          load: true
+          push: false
+          # Image simple (un manifeste) : elle voyage en artefact jusqu'au job de publication.
+          provenance: false
+          sbom: false
+          tags: ${{ steps.name.outputs.image }}:${{ env.IMAGE_TAG }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+      - name: Analyse de vulnérabilités (bloquante sur HIGH et CRITICAL corrigeables)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.76.2
+          image-ref: ${{ steps.name.outputs.image }}:${{ env.IMAGE_TAG }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+      - name: Conformité nginx (redirections et en-têtes de vercel.json)
+        # container.ts lance l'image avec les contraintes de production, attend /healthz, la supprime.
+        run: npm run test:conformance -w @amg/site
+        env:
+          CONFORMANCE_IMAGE: ${{ steps.name.outputs.image }}:${{ env.IMAGE_TAG }}
+      - id: save
+        name: Image exportée pour la publication
+        env:
+          IMAGE: ${{ steps.name.outputs.image }}
+        run: |
+          echo "image-id=$(docker image inspect -f '{{.Id}}' "$IMAGE:$IMAGE_TAG")" >> "$GITHUB_OUTPUT"
+          docker save -o "$RUNNER_TEMP/amg-site.tar" "$IMAGE:$IMAGE_TAG"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: amg-site-image
+          path: ${{ runner.temp }}/amg-site.tar
+          retention-days: 1
+          if-no-files-found: error
+
+  publish:
+    name: Publication GHCR (sans npm ni code du dépôt)
+    # Droit packages: write réservé aux deux branches déployées (pas de publication depuis une autre).
+    if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: amg-site-image
+          path: ${{ runner.temp }}/image
+      - name: Chargement et contrôle de l'image vérifiée
+        env:
+          IMAGE: ${{ needs.build.outputs.image }}
+          EXPECTED_ID: ${{ needs.build.outputs.image-id }}
+        run: |
+          docker load -q -i "$RUNNER_TEMP/image/amg-site.tar"
+          test "$(docker image inspect -f '{{.Id}}' "$IMAGE:$IMAGE_TAG")" = "$EXPECTED_ID"
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: push
+        env:
+          IMAGE: ${{ needs.build.outputs.image }}
+        run: |
+          docker push "$IMAGE:$IMAGE_TAG" | tee "$RUNNER_TEMP/push.log"
+          digest=$(grep -oE 'digest: sha256:[0-9a-f]{64}' "$RUNNER_TEMP/push.log" | tail -n 1 | cut -d' ' -f2)
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "digest introuvable" >&2; exit 1; }
+          # Le tag tout juste publié doit désigner ce digest dans le registre (forme --format
+          # documentée : {{json .Manifest}}, champ digest).
+          registry=$(docker buildx imagetools inspect "$IMAGE:$IMAGE_TAG" --format '{{json .Manifest}}' | jq -r .digest)
+          [ "$registry" = "$digest" ] || { echo "le tag $IMAGE_TAG désigne $registry, pas $digest" >&2; exit 1; }
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "Publié : $IMAGE@$digest ($IMAGE_TAG)" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-staging:
+    name: Préproduction (staging.)
+    if: github.ref == 'refs/heads/dev'
+    needs: publish
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.amgdecorationdinterieur.com
+    permissions: {}
+    steps:
+      - name: Déploiement sans coupure (par digest)
+        env:
+          DIGEST: ${{ needs.publish.outputs.digest }}
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          TARGET: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
+        # Clé chargée dans un ssh-agent (jamais écrite sur le disque), agent tué à la sortie.
+        run: |
+          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "digest invalide" >&2; exit 1; }
+          work=$(mktemp -d)
+          trap 'ssh-agent -k >/dev/null 2>&1 || true; rm -rf "$work"' EXIT
+          eval "$(ssh-agent -s)" >/dev/null
+          ssh-add -q - <<<"$SSH_KEY"
+          printf '%s\n' "$KNOWN_HOSTS" > "$work/known_hosts"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$work/known_hosts" \
+            "$TARGET" "deploy $DIGEST"
+      - name: Contrôle après déploiement
+        env:
+          BASIC_AUTH: ${{ secrets.STAGING_BASIC_AUTH_PLAIN }}
+        # Réessais : au premier déploiement, Traefik obtient le certificat (résolveur letsencrypt-amg,
+        # TLS-ALPN-01) dans les secondes qui suivent ; avant, il présente son certificat par défaut.
+        # Identifiants passés à curl par son entrée standard (jamais dans la ligne de commande).
+        run: |
+          url=https://staging.amgdecorationdinterieur.com/
+          headers=$(printf 'user = "%s"\n' "$BASIC_AUTH" \
+            | curl -K - -fsS --retry 10 --retry-delay 6 --retry-all-errors -D - -o /dev/null "$url")
+          grep -qi '^x-robots-tag: noindex' <<<"$headers"
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$url")" = 401
+
+  deploy-production:
+    name: Production
+    if: github.ref == 'refs/heads/main' && vars.AMG_PROD_SITE_ON_VPS == 'true'
+    needs: publish
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://amgdecorationdinterieur.com
+    permissions: {}
+    steps:
+      - name: Déploiement sans coupure (par digest)
+        env:
+          DIGEST: ${{ needs.publish.outputs.digest }}
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          TARGET: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
+        run: |
+          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "digest invalide" >&2; exit 1; }
+          work=$(mktemp -d)
+          trap 'ssh-agent -k >/dev/null 2>&1 || true; rm -rf "$work"' EXIT
+          eval "$(ssh-agent -s)" >/dev/null
+          ssh-add -q - <<<"$SSH_KEY"
+          printf '%s\n' "$KNOWN_HOSTS" > "$work/known_hosts"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$work/known_hosts" \
+            "$TARGET" "deploy $DIGEST"
+      - run: curl -fsS --retry 10 --retry-delay 6 --retry-all-errors -o /dev/null https://amgdecorationdinterieur.com/

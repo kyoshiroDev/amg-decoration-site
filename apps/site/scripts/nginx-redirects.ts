@@ -1,5 +1,5 @@
 /**
- * BROUILLON CRM 2 (plan devops, non committé) : génère la table de redirections nginx à partir de
+ * Génère la table de redirections nginx à partir de
  * `vercel.json`, seule source de vérité des redirections (ADR-0008). Exécuté par Node (types effacés)
  * dans l'étape de build de l'image du site : `node apps/site/scripts/nginx-redirects.ts vercel.json`.
  *

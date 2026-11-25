@@ -1,0 +1,43 @@
+# Contrôle quotidien des sauvegardes B2, hors du VPS (docs/EXPLOITATION.md, 5.1) : dernier snapshot
+# de moins de 36 h, nombre de snapshots visibles, masquages récents, structure du dépôt restic.
+# Clé B2 listBuckets,listFiles seulement (aucun contenu lu). Un échec du job = email de GitHub à
+# l'auteur du dernier changement de `schedule` (+ ping Healthchecks.io si HC_BACKUP_WATCH_URL existe,
+# qui alerte aussi si le contrôle ne tourne plus, par exemple workflow désactivé).
+# Secrets dans l'environnement GitHub `sauvegardes`, limité à la branche main : les workflows
+# planifiés tournent sur la branche par défaut ; aucune autre branche ne peut lire la clé.
+name: Contrôle des sauvegardes
+
+on:
+  schedule:
+    - cron: '37 7 * * *' # après la sauvegarde de 4 h 15 (heure de Paris), heure peu chargée
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: backup-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    name: Snapshots restic sur B2 (liste seule)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: sauvegardes
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - name: Contrôle
+        env:
+          B2_KEY_ID: ${{ secrets.B2_WATCH_KEY_ID }}
+          B2_KEY: ${{ secrets.B2_WATCH_KEY }}
+          HC_URL: ${{ secrets.HC_BACKUP_WATCH_URL }}
+          # À relever quand la rétention est atteinte (30 snapshots quotidiens) : par exemple 25.
+          MIN_SNAPSHOTS: ${{ vars.BACKUP_MIN_SNAPSHOTS || '1' }}
+          MAX_AGE_HOURS: '36'
+          MAX_HIDES: '5'
+        run: bash .github/scripts/backup-watch.sh

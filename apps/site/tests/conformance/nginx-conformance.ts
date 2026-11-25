@@ -200,6 +200,8 @@ describe('pages et fichiers servis', () => {
     '/.well-known/security.txt',
     '/_astro/',
     '/page-inconnue/',
+    // Jamais `Location: /\evil.com/x/` (lu `//evil.com/x/` par les navigateurs : redirection ouverte).
+    '/\\evil.com/x',
   ])('%s : 404 personnalisée, sans redirection (comme Vercel)', async (path) => {
     const reply = await nginx(path, { method: 'GET' });
     expect(reply.status).toBe(404);
