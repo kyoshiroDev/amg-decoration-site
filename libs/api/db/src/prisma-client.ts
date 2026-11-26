@@ -71,10 +71,12 @@ const sessionPrivilegesSchema = z.strictObject({
 
 /**
  * Chemin de recherche de toute session de l'API (ADR-0023) : ni `public` ni `"$user"`. Une fonction ou
- * un opérateur créé dans `public` par le propriétaire des tables ne peut donc jamais être préféré à
- * celui de pg_catalog dans une requête de l'API ; Prisma qualifie tables et types
- * (`"public"."users"`). Imposé à l'ouverture de la connexion (paramètre `options`, prioritaire sur
- * `ALTER ROLE … SET`, que roles.sql pose aussi) et vérifié par `assertLeastPrivilegedSession`.
+ * un opérateur créé dans `public` par le propriétaire des tables n'est donc pas préféré à celui de
+ * pg_catalog ; Prisma qualifie tables et types (`"public"."users"`). Imposé à l'ouverture de la
+ * connexion (paramètre `options`, prioritaire sur `ALTER ROLE … SET`, que roles.sql pose aussi) et
+ * vérifié par `assertLeastPrivilegedSession`, à l'ouverture seulement : du code du propriétaire
+ * exécuté dans la session (déclencheur, conversion sur ses tables et types) peut le changer ensuite.
+ * La protection du journal n'en dépend pas ; ses lectures passeront par un pool dédié (lot 2).
  */
 export const API_SEARCH_PATH = 'pg_catalog, pg_temp';
 

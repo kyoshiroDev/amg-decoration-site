@@ -96,10 +96,13 @@ ALTER ROLE amg_app RESET ALL;
 -- aucune transaction inactive ne peut tenir une connexion indéfiniment.
 -- Chemin de recherche de l'API sans `public` ni `"$user"` (ADR-0023) : aucune fonction ni aucun
 -- opérateur créé dans `public` par `amg_migrator` (surcharge mieux assortie, `public.=(uuid, text)`
--- préféré pour un paramètre de type inconnu…) n'est jamais résolu dans une requête de l'API ;
+-- préféré pour un paramètre de type inconnu…) n'est résolu à l'ouverture d'une session de l'API ;
 -- Prisma qualifie tables et types. Imposé aussi à l'ouverture de chaque connexion par le client et
--- vérifié par lui (libs/api/db/src/prisma-client.ts, API_SEARCH_PATH). Restent globales, quel que
--- soit le chemin : les conversions (pg_cast), refusées sur les types du journal plus bas.
+-- vérifié par lui (libs/api/db/src/prisma-client.ts, API_SEARCH_PATH). Limite : du code
+-- d'amg_migrator exécuté dans la session (déclencheur, conversion, défaut sur SES tables et types)
+-- peut changer le chemin ensuite (set_config) ; la protection du journal n'en dépend pas (refus des
+-- conversions, opérateurs et fonctions sur ses types, plus bas). Restent globales, quel que soit le
+-- chemin : les conversions (pg_cast). Lectures du journal par l'API : pool dédié au lot 2 (ADR-0023).
 ALTER ROLE amg_app SET search_path = pg_catalog, pg_temp;
 ALTER ROLE amg_app SET statement_timeout = '15s';
 ALTER ROLE amg_app SET lock_timeout = '5s';
