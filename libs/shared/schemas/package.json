@@ -1,0 +1,53 @@
+{
+  "name": "@amg/shared-schemas",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Schémas Zod partagés par l'API et les apps Angular (ADR-0019, ADR-0023) : entrées et réponses de l'API, champs inconnus refusés.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.lib.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
+  },
+  "nx": {
+    "targets": {
+      "build": {
+        "inputs": [
+          "production",
+          "^production",
+          "{workspaceRoot}/tsconfig.base.json"
+        ],
+        "outputs": [
+          "{projectRoot}/dist"
+        ]
+      },
+      "check": {
+        "inputs": [
+          "default",
+          "^production",
+          "{workspaceRoot}/tsconfig.base.json"
+        ]
+      },
+      "test": {
+        "inputs": [
+          "default",
+          "^production",
+          "{workspaceRoot}/tsconfig.base.json"
+        ]
+      }
+    }
+  }
+}

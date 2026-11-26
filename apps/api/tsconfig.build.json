@@ -1,0 +1,13 @@
+{
+  // Build de l'API (src seul) vers dist/, exécuté par `node dist/main.js`. Les libs référencées sont
+  // construites avant par Nx (dependsOn ^build) et lues par leurs exports (dist/).
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": ["src/**/*.ts"],
+  "references": [{ "path": "../../libs/shared/schemas/tsconfig.lib.json" }]
+}

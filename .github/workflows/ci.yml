@@ -31,6 +31,9 @@ jobs:
       # docker compose et jq sont fournis par l'image ubuntu-latest ; aucune dépendance npm.
       - run: deploy/ci/check-budget.sh
 
+  # Site, API (@amg/api) et libs : `npm run verify` construit, contrôle, linte et teste tous les projets
+  # Nx (ADR-0023). Les tests de l'API ici sont unitaires et HTTP (app.inject), sans base ; le job
+  # d'intégration contre Postgres/Redis arrive au lot 1 du CRM 3.
   verify:
     name: Vérifications (types, lint, tests, build)
     runs-on: ubuntu-latest
