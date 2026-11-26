@@ -44,6 +44,8 @@ async function insertToken(client: pg.Client, userId: string, issuedBy?: string)
 const REVOKE_LIVE_TOKENS = `UPDATE public.activation_tokens SET revoked_at = now()
   WHERE user_id = $1 AND consumed_at IS NULL AND revoked_at IS NULL`;
 
+// Les colonnes sont en TIMESTAMPTZ(3) : la date imposée par la base est now() arrondie à la
+// milliseconde, d'où la comparaison avec `now()::timestamptz(3)`.
 describe('activation_tokens : dates de la base', () => {
   it('ignore une date de création antidatée', async () => {
     await inRolledBackTransaction(app, async () => {
@@ -51,7 +53,7 @@ describe('activation_tokens : dates de la base', () => {
       const { rows } = await app.query<{ forced: boolean }>(
         `INSERT INTO public.activation_tokens (user_id, purpose, token_hash, expires_at, created_at)
          VALUES ($1, 'INVITATION', $2, now() + interval '1 hour', '2000-01-01T00:00:00Z')
-         RETURNING created_at = now() AS forced`,
+         RETURNING created_at = now()::timestamptz(3) AS forced`,
         [userId, digest32()],
       );
       expect(rows).toEqual([{ forced: true }]);
@@ -114,7 +116,7 @@ describe('activation_tokens : dates de la base', () => {
       const id = await insertToken(app, await insertUser(app));
       const { rows } = await app.query<{ forced: boolean }>(
         `UPDATE public.activation_tokens SET ${column} = '2000-01-01T00:00:00Z' WHERE id = $1
-         RETURNING ${column} = now() AS forced`,
+         RETURNING ${column} = now()::timestamptz(3) AS forced`,
         [id],
       );
       expect(rows).toEqual([{ forced: true }]);
@@ -227,7 +229,7 @@ describe('un seul lien vivant par compte', () => {
 
 describe('enrollment_codes', () => {
   const INSERT_CODE = `INSERT INTO public.enrollment_codes (user_id, code_hmac, expires_at, created_at)
-    VALUES ($1, $2, now() + interval '30 minutes', $3) RETURNING id, created_at = now() AS forced`;
+    VALUES ($1, $2, now() + interval '30 minutes', $3) RETURNING id, created_at = now()::timestamptz(3) AS forced`;
 
   it('ignore une date de création antidatée', async () => {
     await inRolledBackTransaction(app, async () => {
