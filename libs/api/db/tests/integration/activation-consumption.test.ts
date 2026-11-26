@@ -7,9 +7,14 @@ import pg from 'pg';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { APP_ROLE, SQLSTATE, connectAs, digest32, insertUser } from './test-database.js';
 
-/** Consommation : non consommé, non révoqué, non expiré ; renvoie le compte et l'usage. */
+/**
+ * Consommation : non consommé, non révoqué, non expiré ; renvoie le compte et l'usage. Échéance
+ * comparée à l'heure de l'instruction (`statement_timestamp()`), pas au début de la transaction
+ * (`now()`), comme le fait le déclencheur.
+ */
 const CONSUME = `UPDATE activation_tokens SET consumed_at = now()
-  WHERE token_hash = $1 AND consumed_at IS NULL AND revoked_at IS NULL AND expires_at > now()
+  WHERE token_hash = $1 AND consumed_at IS NULL AND revoked_at IS NULL
+    AND expires_at > statement_timestamp()
   RETURNING user_id, purpose`;
 
 let first: pg.Client;
@@ -142,6 +147,26 @@ describe('consommation d’un lien d’activation', () => {
         ]),
       ),
     ).toBe(SQLSTATE.checkViolation);
+  });
+
+  it('refuse un lien expiré depuis le début de la transaction', async () => {
+    const hash = await committedToken('1 second');
+    await first.query('BEGIN');
+    try {
+      // now() est figé au début de la transaction, avant l'échéance ; pas statement_timestamp().
+      await first.query('SELECT now()');
+      await sleep(1_200);
+      expect((await first.query(CONSUME, [hash])).rowCount).toBe(0);
+      expect(
+        await rejectionCode(
+          first.query('UPDATE activation_tokens SET consumed_at = now() WHERE token_hash = $1', [
+            hash,
+          ]),
+        ),
+      ).toBe(SQLSTATE.checkViolation);
+    } finally {
+      await first.query('ROLLBACK');
+    }
   });
 
   it('refuse un jeton inconnu', async () => {

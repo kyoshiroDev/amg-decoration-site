@@ -1,8 +1,9 @@
 // Fabrique du client Prisma 7 sur le driver adapter `pg` (ADR-0023). Le pool est configuré champ par
 // champ (pas d'URL) et le mot de passe n'y figure que sous forme de fonction : il n'apparaît dans
 // aucun objet de configuration susceptible d'être sérialisé ou journalisé. Chaque nouvelle connexion
-// est contrôlée avant toute requête : un rôle trop privilégié (superutilisateur, propriétaire des
-// tables, droit de création) est refusé et la connexion fermée, l'API ne sert alors aucune donnée.
+// est contrôlée avant toute requête : un rôle trop privilégié (superutilisateur, attribut système,
+// membre d'un autre rôle, propriétaire des tables, droit de création) est refusé et la connexion
+// fermée, l'API ne sert alors aucune donnée.
 import { PrismaPg } from '@prisma/adapter-pg';
 import type { PoolConfig } from 'pg';
 import { z } from 'zod';
@@ -35,11 +36,17 @@ export interface CreatePrismaClientOptions {
 
 /**
  * Privilèges de la session, lus dans les catalogues (aucune donnée) : superutilisateur, contournement
- * de la RLS, appartenance au rôle propriétaire d'un objet du schéma public (c'est le cas du
- * superutilisateur et de `amg_migrator`), droit de créer dans le schéma public.
+ * de la RLS, création de rôles ou de bases, réplication, appartenance à un autre rôle (rôles
+ * prédéfinis compris : pg_read_all_data, pg_write_server_files, pg_execute_server_program…, même
+ * sans héritage, SET ROLE y donne accès), appartenance au rôle propriétaire d'un objet du schéma
+ * public (c'est le cas du superutilisateur et de `amg_migrator`), droit de créer dans le schéma public.
  */
 export const SESSION_PRIVILEGES_SQL = `SELECT r.rolsuper AS superuser,
        r.rolbypassrls AS bypass_rls,
+       r.rolcreaterole AS create_role,
+       r.rolcreatedb AS create_db,
+       r.rolreplication AS replication,
+       EXISTS (SELECT FROM pg_catalog.pg_auth_members m WHERE m.member = r.oid) AS member_of_roles,
        EXISTS (SELECT FROM pg_catalog.pg_class c
                  JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
                 WHERE n.nspname = 'public'
@@ -51,6 +58,10 @@ export const SESSION_PRIVILEGES_SQL = `SELECT r.rolsuper AS superuser,
 const sessionPrivilegesSchema = z.strictObject({
   superuser: z.boolean(),
   bypass_rls: z.boolean(),
+  create_role: z.boolean(),
+  create_db: z.boolean(),
+  replication: z.boolean(),
+  member_of_roles: z.boolean(),
   owns_objects: z.boolean(),
   can_create: z.boolean(),
 });
@@ -74,8 +85,9 @@ export interface SessionQueryable {
 }
 
 /**
- * Vérifie que la session n'est ni superutilisateur, ni propriétaire des tables, ni capable de créer
- * des objets ; lève `DatabaseRoleError` sinon. Défense en profondeur : l'API refuse déjà au
+ * Vérifie que la session n'a aucun attribut système (superutilisateur, RLS contournée, création de
+ * rôles ou de bases, réplication), n'est membre d'aucun rôle, n'est pas propriétaire des tables et
+ * ne peut pas créer d'objets ; lève `DatabaseRoleError` sinon. Défense en profondeur : l'API refuse déjà au
  * démarrage `DB_USER` = `amg`, `amg_migrator` ou `postgres`, ce contrôle attrape un rôle mal créé
  * ou un mot de passe d'un autre rôle.
  */
@@ -87,6 +99,10 @@ export async function assertLeastPrivilegedSession(client: SessionQueryable): Pr
   const reasons: string[] = [];
   if (privileges?.superuser !== false) reasons.push('superutilisateur');
   if (privileges?.bypass_rls !== false) reasons.push('contournement de la RLS');
+  if (privileges?.create_role !== false) reasons.push('création de rôles');
+  if (privileges?.create_db !== false) reasons.push('création de bases');
+  if (privileges?.replication !== false) reasons.push('réplication');
+  if (privileges?.member_of_roles !== false) reasons.push('membre d’un autre rôle');
   if (privileges?.owns_objects !== false) reasons.push('propriétaire des tables');
   if (privileges?.can_create !== false) reasons.push('création dans le schéma public');
   if (reasons.length > 0) throw new DatabaseRoleError(reasons);

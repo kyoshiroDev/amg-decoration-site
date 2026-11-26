@@ -98,8 +98,9 @@ jobs:
           POSTGRES_USER: amg
           POSTGRES_PASSWORD: ci-only-superuser-password-public
           POSTGRES_DB: amg_test
+        # Publié sur la boucle locale du runner seulement (jamais sur toutes ses interfaces).
         ports:
-          - 5432:5432
+          - 127.0.0.1:5432:5432
         options: >-
           --health-cmd "pg_isready -U amg -d amg_test -h 127.0.0.1"
           --health-interval 5s
@@ -130,6 +131,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # roles.sql est atomique (BEGIN … COMMIT dans le fichier) ; passwords.sql ouvre la connexion
+      # d'amg_migrator (créé NOLOGIN) comme une fenêtre de migration.
       - name: Rôles PostgreSQL (amg_migrator, amg_app)
         env:
           PG_CONTAINER: ${{ job.services.postgres.id }}
@@ -153,7 +156,8 @@ jobs:
           npm run migrate:deploy -w @amg/api-db
           # Base migrée = schema.prisma (code 2 si une migration manque ou diverge).
           npm run migrate:diff -w @amg/api-db
-      - name: Rôles rejoués après migration (idempotence)
+      # Idempotence, et vérification du journal de sécurité migré (fin de roles.sql).
+      - name: Rôles rejoués après migration (idempotence, journal conforme)
         env:
           PG_CONTAINER: ${{ job.services.postgres.id }}
         run: docker exec -i "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -U amg -d amg_test < libs/api/db/sql/roles.sql

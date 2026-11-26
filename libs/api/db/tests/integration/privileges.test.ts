@@ -50,6 +50,8 @@ afterAll(async () => {
 });
 
 describe('attributs des rôles', () => {
+  // rolcanlogin : amg_migrator est créé NOLOGIN par roles.sql ; sql/dev/passwords.sql (développement
+  // et CI) ouvre la connexion comme le ferait une fenêtre de migration.
   it.each([APP_ROLE, MIGRATOR_ROLE])('%s ne dispose d’aucun privilège système', async (role) => {
     const client = role === APP_ROLE ? app : migrator;
     const { rows } = await client.query<Record<string, boolean>>(
@@ -87,6 +89,26 @@ describe('attributs des rôles', () => {
       { name: 'lock_timeout', setting: '5000' },
       { name: 'statement_timeout', setting: '15000' },
     ]);
+  });
+
+  it('applique les délais côté serveur au rôle des migrations', async () => {
+    const { rows } = await migrator.query<{ name: string; setting: string }>(
+      `SELECT name, setting FROM pg_catalog.pg_settings
+        WHERE name IN ('statement_timeout', 'lock_timeout') ORDER BY name`,
+    );
+    expect(rows).toEqual([
+      { name: 'lock_timeout', setting: '5000' },
+      { name: 'statement_timeout', setting: '300000' },
+    ]);
+  });
+
+  it('le schéma amg_guard est en lecture seule pour le rôle des migrations, fermé à l’API', async () => {
+    const { rows } = await app.query<Record<string, boolean>>(
+      `SELECT pg_catalog.has_schema_privilege('amg_migrator', 'amg_guard', 'USAGE') AS migrator_usage,
+              pg_catalog.has_schema_privilege('amg_migrator', 'amg_guard', 'CREATE') AS migrator_create,
+              pg_catalog.has_schema_privilege('amg_app', 'amg_guard', 'USAGE') AS app_usage`,
+    );
+    expect(rows).toEqual([{ migrator_usage: true, migrator_create: false, app_usage: false }]);
   });
 });
 

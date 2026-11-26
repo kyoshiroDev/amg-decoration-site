@@ -1,6 +1,7 @@
 // Client Prisma réel (driver adapter pg) sous le rôle de l'API : lecture, écriture, identifiants
 // UUID v7 générés par la base, journal non modifiable, fermeture du pool ; refus de servir sous un
-// rôle trop privilégié (propriétaire des tables, superutilisateur).
+// rôle trop privilégié (propriétaire des tables, superutilisateur, attribut système, membre d'un
+// autre rôle).
 import { randomBytes } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
@@ -119,6 +120,44 @@ describe('contrôle du rôle à chaque nouvelle connexion', () => {
       expect(error).toBeInstanceOf(DatabaseRoleError);
       expect(error instanceof DatabaseRoleError ? error.reasons : []).toContain(reason);
     } finally {
+      await client.end();
+    }
+  });
+
+  it.each([
+    [
+      'membre de pg_read_all_data',
+      'GRANT pg_read_all_data TO amg_probe_role',
+      'membre d’un autre rôle',
+    ],
+    [
+      'membre de pg_execute_server_program',
+      'GRANT pg_execute_server_program TO amg_probe_role',
+      'membre d’un autre rôle',
+    ],
+    [
+      'membre de pg_write_server_files',
+      'GRANT pg_write_server_files TO amg_probe_role',
+      'membre d’un autre rôle',
+    ],
+    ['membre du rôle de l’API', 'GRANT amg_app TO amg_probe_role', 'membre d’un autre rôle'],
+    ['CREATEROLE', 'ALTER ROLE amg_probe_role CREATEROLE', 'création de rôles'],
+    ['CREATEDB', 'ALTER ROLE amg_probe_role CREATEDB', 'création de bases'],
+    ['REPLICATION', 'ALTER ROLE amg_probe_role REPLICATION', 'réplication'],
+  ] as const)('refuse un rôle %s', async (_label, sql, reason) => {
+    // Rôle jetable, créé et pris (SET LOCAL ROLE) dans une transaction annulée du superutilisateur :
+    // le contrôle lit les attributs de current_user.
+    const client = await connectAs(SUPERUSER_ROLE);
+    try {
+      await client.query('BEGIN');
+      await client.query('CREATE ROLE amg_probe_role NOLOGIN NOINHERIT');
+      await client.query(sql);
+      await client.query('SET LOCAL ROLE amg_probe_role');
+      const error: unknown = await assertLeastPrivilegedSession(client).catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(DatabaseRoleError);
+      expect(error instanceof DatabaseRoleError ? error.reasons : []).toEqual([reason]);
+    } finally {
+      await client.query('ROLLBACK');
       await client.end();
     }
   });

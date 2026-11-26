@@ -70,6 +70,10 @@ describe('buildPoolConfig', () => {
 const LEAST_PRIVILEGED = {
   superuser: false,
   bypass_rls: false,
+  create_role: false,
+  create_db: false,
+  replication: false,
+  member_of_roles: false,
   owns_objects: false,
   can_create: false,
 };
@@ -87,6 +91,13 @@ function fakeSession(rows: readonly unknown[]): SessionQueryable & { readonly qu
 }
 
 describe('assertLeastPrivilegedSession', () => {
+  it('lit chaque attribut contrôlé dans la requête sur les catalogues', () => {
+    for (const column of Object.keys(LEAST_PRIVILEGED)) {
+      expect(SESSION_PRIVILEGES_SQL).toContain(` AS ${column}`);
+    }
+    expect(SESSION_PRIVILEGES_SQL).toContain('pg_catalog.pg_auth_members');
+  });
+
   it('accepte un rôle sans privilège, après une seule requête sur les catalogues', async () => {
     const session = fakeSession([LEAST_PRIVILEGED]);
     await expect(assertLeastPrivilegedSession(session)).resolves.toBeUndefined();
@@ -106,6 +117,14 @@ describe('assertLeastPrivilegedSession', () => {
     ],
     ['un rôle qui crée dans public', { can_create: true }, 'création dans le schéma public'],
     ['un rôle qui contourne la RLS', { bypass_rls: true }, 'contournement de la RLS'],
+    ['un rôle qui crée des rôles', { create_role: true }, 'création de rôles'],
+    ['un rôle qui crée des bases', { create_db: true }, 'création de bases'],
+    ['un rôle de réplication', { replication: true }, 'réplication'],
+    [
+      'un membre d’un autre rôle (pg_read_all_data…)',
+      { member_of_roles: true },
+      'membre d’un autre rôle',
+    ],
   ])('refuse %s', async (_label, overrides, reason) => {
     const session = fakeSession([{ ...LEAST_PRIVILEGED, ...overrides }]);
     const error: unknown = await assertLeastPrivilegedSession(session).catch((e: unknown) => e);
@@ -117,7 +136,11 @@ describe('assertLeastPrivilegedSession', () => {
     ['aucune ligne', []],
     ['deux lignes', [LEAST_PRIVILEGED, LEAST_PRIVILEGED]],
     ['un champ inattendu', [{ ...LEAST_PRIVILEGED, extra: true }]],
-    ['un booléen absent', [{ superuser: false, bypass_rls: false, owns_objects: false }]],
+    ['un booléen absent', [{ ...LEAST_PRIVILEGED, member_of_roles: undefined }]],
+    [
+      'l’ancien format sans attributs système',
+      [{ superuser: false, bypass_rls: false, owns_objects: false, can_create: false }],
+    ],
     ['une valeur non booléenne', [{ ...LEAST_PRIVILEGED, superuser: 'f' }]],
   ])('refuse une réponse inattendue : %s', async (_label, rows) => {
     await expect(assertLeastPrivilegedSession(fakeSession(rows))).rejects.toThrow(

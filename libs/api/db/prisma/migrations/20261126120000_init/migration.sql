@@ -223,9 +223,15 @@ CREATE UNIQUE INDEX "enrollment_codes_one_live_per_user_key" ON "enrollment_code
 --   INSERT : `created_at` := now() (impossible d'antidater ou de post-dater, les CHECK de durée
 --            portent donc sur l'heure de la base) ; consommé ou révoqué dès l'insertion : refusé.
 --   UPDATE : seules `consumed_at` et `revoked_at` peuvent passer de NULL à une date, une seule fois,
---            fixée à now() ; un lien expiré ne peut pas être consommé ; `issued_by_id` ne peut que
---            devenir NULL (ON DELETE SET NULL à la suppression de l'admin émetteur) ; toute autre
---            colonne est figée. Le rôle de l'API n'a de toute façon l'UPDATE que sur ces deux colonnes.
+--            fixée à now() ; un lien expiré à l'heure de l'instruction (statement_timestamp(), pas
+--            now() : une transaction ouverte avant l'échéance ne consomme pas un lien expiré depuis)
+--            ne peut pas être consommé ; `issued_by_id` ne peut que devenir NULL (ON DELETE SET NULL
+--            à la suppression de l'admin émetteur) ; toute autre colonne est figée. Le rôle de l'API
+--            n'a de toute façon l'UPDATE que sur ces deux colonnes.
+-- Colonnes figées : la comparaison porte sur TOUTE la ligne (to_jsonb), sauf la liste d'exceptions
+-- ci-dessous. Une future colonne qui doit être modifiable par UPDATE (et non seulement remplie à
+-- l'insertion) devra y être ajoutée, par une nouvelle migration qui remplace cette fonction, avec
+-- ses propres règles (sinon toute mise à jour de la ligne échoue).
 CREATE FUNCTION "single_use_credential_guard"() RETURNS trigger
   LANGUAGE plpgsql
   SET search_path = pg_catalog, pg_temp
@@ -255,7 +261,7 @@ BEGIN
   END IF;
 
   IF OLD."consumed_at" IS NULL AND NEW."consumed_at" IS NOT NULL THEN
-    IF OLD."expires_at" <= now() THEN
+    IF OLD."expires_at" <= statement_timestamp() THEN
       RAISE EXCEPTION USING ERRCODE = 'check_violation',
         MESSAGE = format('%s : élément expiré, consommation refusée', TG_TABLE_NAME);
     END IF;
@@ -287,7 +293,12 @@ CREATE TRIGGER "enrollment_codes_single_use_guard"
 -- (sql/roles.sql, créé par le superutilisateur) le lui interdit. Seul un superutilisateur peut
 -- passer outre (accès SSH de l'exploitant, incident documenté).
 -- Une restauration pg_restore crée les déclencheurs après les données : les dates restaurées sont conservées.
+-- Les droits de `amg_app` sur le journal sont accordés AVANT ses déclencheurs : dès que le
+-- déclencheur de ligne existe, le déclencheur d'événement exige après chaque commande DDL que
+-- `amg_app` ait exactement SELECT et INSERT sur la table.
 -- ---------------------------------------------------------------------------------------------
+
+GRANT SELECT, INSERT ON TABLE "security_events" TO "amg_app";
 
 CREATE FUNCTION "security_events_append_only"() RETURNS trigger
   LANGUAGE plpgsql
@@ -326,4 +337,4 @@ CREATE TRIGGER "security_events_append_only_truncate"
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "users", "totp_factors", "recovery_codes" TO "amg_app";
 GRANT SELECT, INSERT, DELETE ON TABLE "activation_tokens", "enrollment_codes" TO "amg_app";
 GRANT UPDATE ("consumed_at", "revoked_at") ON TABLE "activation_tokens", "enrollment_codes" TO "amg_app";
-GRANT SELECT, INSERT ON TABLE "security_events" TO "amg_app";
+-- security_events : SELECT et INSERT, accordés en partie 2c.

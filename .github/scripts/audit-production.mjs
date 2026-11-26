@@ -94,7 +94,14 @@ const vulnerabilities = report.vulnerabilities;
 
 for (const [name, vulnerability] of Object.entries(vulnerabilities)) {
   if (!BLOCKING.has(vulnerability.severity)) continue;
-  for (const url of rootAdvisories(vulnerabilities, name)) {
+  const urls = rootAdvisories(vulnerabilities, name);
+  // Aucun avis racine identifiable (format du rapport changé, chaîne `via` cassée) : rien ne peut
+  // être rapproché d'une exception, donc échec plutôt qu'un passage silencieux.
+  if (urls.size === 0) {
+    fail(`${name} (${vulnerability.severity}) : aucun avis identifié, rapport à examiner`);
+    continue;
+  }
+  for (const url of urls) {
     const exception = exceptions.find(
       (entry) => url.endsWith(`/${entry.advisory}`) && entry.packages.includes(name),
     );

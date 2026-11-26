@@ -280,7 +280,9 @@ describe('enrollment_codes', () => {
       ]);
       await expectSqlError(
         migrator,
-        `UPDATE enrollment_codes SET expires_at = now() + interval '30 minutes' WHERE id = $1`,
+        // Échéance réellement repoussée : `now()` est figé dans la transaction, `now() + 30 min`
+        // serait la valeur déjà enregistrée (mise à jour sans changement, donc sans refus).
+        `UPDATE enrollment_codes SET expires_at = expires_at + interval '30 seconds' WHERE id = $1`,
         [rows[0]?.id],
         SQLSTATE.insufficientPrivilege,
         /seules la consommation et la révocation/,
