@@ -30,5 +30,5 @@ L'[ADR-0019](0019-monorepo-nx-et-crm.md) décide du monorepo Nx. Il faut fixer c
 ## Conséquences
 
 - Premier build froid en CI et sur Vercel plus long (~6 min) : le cache d'images change de chemin.
-- Le choix `tsconfig.base.json` (paths) ou mode « TS solution » (project references) se fera à la création de la première app Angular.
+- Le choix `tsconfig.base.json` (paths) ou mode « TS solution » (project references) se fera à la création de la première app Angular. **Tranché le 2026-11-26 à la création de l'API** : mode « TS solution » (workspaces, libs compilées vers `dist/`, références de projet, `tsconfig.base.json` sans `paths`), voir [ADR-0023](0023-outillage-api.md).
 - `npx nx show projects` liste les projets ; `npx nx reset` vide le cache en cas de doute.

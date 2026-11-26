@@ -1,0 +1,10 @@
+{
+  // Contrôle des types (src + tests + configs), sans émission ; utilisé aussi par ESLint
+  // (lint typé) et par Vitest (options de décorateurs). Le build passe par tsconfig.lib.json.
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts", "vitest.config.ts"]
+}

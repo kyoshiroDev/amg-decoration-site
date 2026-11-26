@@ -1,0 +1,80 @@
+# Postgres et Redis de DÉVELOPPEMENT LOCAL de l'API (ADR-0023), jamais utilisé sur le serveur.
+#   démarrer : docker compose -f compose.dev.yaml up -d
+#   arrêter  : docker compose -f compose.dev.yaml down        (ajouter -v pour effacer les données)
+# Mêmes images, au même digest, que deploy/compose.yaml : on développe sur les versions de production.
+# Ports publiés sur 127.0.0.1 seulement (jamais sur le réseau local). Identifiants de développement
+# publics, valables uniquement ici : ne jamais les réutiliser ailleurs. Hors de deploy/ : ce fichier
+# n'est ni installé sur le VPS ni compté dans le budget mémoire du serveur (deploy/ci/check-budget.sh).
+
+name: amg-dev
+
+x-hardening: &hardening
+  restart: 'no'
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  logging:
+    driver: json-file
+    options:
+      max-size: 5m
+      max-file: '2'
+
+services:
+  postgres:
+    <<: *hardening
+    image: postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71
+    # L'entrypoint officiel a besoin de ces droits pour préparer PGDATA puis passer à l'utilisateur postgres.
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
+    environment:
+      POSTGRES_USER: amg
+      POSTGRES_DB: amg_dev
+      POSTGRES_PASSWORD: amg_dev_password
+    command:
+      - postgres
+      - -c
+      - shared_buffers=32MB
+      - -c
+      - max_connections=20
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql
+    shm_size: 64mb
+    mem_limit: 192m
+    memswap_limit: 192m
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U amg -d amg_dev -h 127.0.0.1']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    <<: *hardening
+    image: redis:8.12.0-alpine3.23@sha256:5af80107c1eeecb484a2269b80a26d12bfa6521787da4663bd9f19f60a163483
+    cap_add: [SETGID, SETUID]
+    # Mot de passe exigé comme en production (mêmes chemins de code) ; sans persistance sur disque.
+    command:
+      - redis-server
+      - --requirepass
+      - amg_dev_password
+      - --save
+      - ''
+      - --appendonly
+      - 'no'
+      - --maxmemory
+      - 48mb
+      - --maxmemory-policy
+      - noeviction
+    ports:
+      - '127.0.0.1:6379:6379'
+    mem_limit: 64m
+    memswap_limit: 64m
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli -h 127.0.0.1 ping 2>&1 | grep -qE "PONG|NOAUTH"']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
