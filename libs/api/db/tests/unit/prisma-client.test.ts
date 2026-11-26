@@ -1,11 +1,16 @@
-// Fabrique du client, sans base : aucune connexion n'est ouverte avant la première requête.
+// Fabrique du client, sans base : aucune connexion n'est ouverte avant la première requête ; chaque
+// nouvelle connexion passe par le contrôle des privilèges de la session.
 import { describe, expect, it } from 'vitest';
 import type { DatabaseConnection } from '../../src/database-config.js';
 import {
+  DatabaseRoleError,
   POOL_TIMEOUTS,
+  SESSION_PRIVILEGES_SQL,
+  assertLeastPrivilegedSession,
   buildPoolConfig,
   createPrismaClient,
   type CreatePrismaClientOptions,
+  type SessionQueryable,
 } from '../../src/prisma-client.js';
 
 const PASSWORD = 'mot-de-passe-du-role-amg-app-0123456789';
@@ -49,9 +54,80 @@ describe('buildPoolConfig', () => {
     expect(config).not.toHaveProperty('connectionString');
   });
 
+  it('contrôle chaque nouvelle connexion avant de la confier au client', async () => {
+    const config = buildPoolConfig(options);
+    const session = fakeSession([{ ...LEAST_PRIVILEGED, owns_objects: true }]);
+    await expect(config.onConnect(session)).rejects.toThrow(DatabaseRoleError);
+    expect(session.queries).toEqual([SESSION_PRIVILEGES_SQL]);
+  });
+
   it('ne révèle le mot de passe qu’au moment de la connexion', () => {
     const config = buildPoolConfig(options);
     expect(typeof config.password === 'function' ? config.password() : undefined).toBe(PASSWORD);
+  });
+});
+
+const LEAST_PRIVILEGED = {
+  superuser: false,
+  bypass_rls: false,
+  owns_objects: false,
+  can_create: false,
+};
+
+/** Double d'une connexion : renvoie les lignes données et retient les requêtes reçues. */
+function fakeSession(rows: readonly unknown[]): SessionQueryable & { readonly queries: string[] } {
+  const queries: string[] = [];
+  return {
+    queries,
+    query: (text) => {
+      queries.push(text);
+      return Promise.resolve({ rows });
+    },
+  };
+}
+
+describe('assertLeastPrivilegedSession', () => {
+  it('accepte un rôle sans privilège, après une seule requête sur les catalogues', async () => {
+    const session = fakeSession([LEAST_PRIVILEGED]);
+    await expect(assertLeastPrivilegedSession(session)).resolves.toBeUndefined();
+    expect(session.queries).toEqual([SESSION_PRIVILEGES_SQL]);
+  });
+
+  it.each([
+    [
+      'un superutilisateur',
+      { superuser: true, owns_objects: true, can_create: true },
+      'superutilisateur',
+    ],
+    [
+      'le propriétaire des tables',
+      { owns_objects: true, can_create: true },
+      'propriétaire des tables',
+    ],
+    ['un rôle qui crée dans public', { can_create: true }, 'création dans le schéma public'],
+    ['un rôle qui contourne la RLS', { bypass_rls: true }, 'contournement de la RLS'],
+  ])('refuse %s', async (_label, overrides, reason) => {
+    const session = fakeSession([{ ...LEAST_PRIVILEGED, ...overrides }]);
+    const error: unknown = await assertLeastPrivilegedSession(session).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(DatabaseRoleError);
+    expect(error instanceof DatabaseRoleError ? error.reasons : []).toContain(reason);
+  });
+
+  it.each([
+    ['aucune ligne', []],
+    ['deux lignes', [LEAST_PRIVILEGED, LEAST_PRIVILEGED]],
+    ['un champ inattendu', [{ ...LEAST_PRIVILEGED, extra: true }]],
+    ['un booléen absent', [{ superuser: false, bypass_rls: false, owns_objects: false }]],
+    ['une valeur non booléenne', [{ ...LEAST_PRIVILEGED, superuser: 'f' }]],
+  ])('refuse une réponse inattendue : %s', async (_label, rows) => {
+    await expect(assertLeastPrivilegedSession(fakeSession(rows))).rejects.toThrow(
+      DatabaseRoleError,
+    );
+  });
+
+  it('ne cite ni hôte ni rôle dans son message', () => {
+    const error = new DatabaseRoleError(['superutilisateur']);
+    expect(error.message).not.toMatch(/amg|127\.0\.0\.1/);
   });
 });
 

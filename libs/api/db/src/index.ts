@@ -26,10 +26,15 @@ export {
   type RevealableSecret,
 } from './database-config.js';
 export {
+  DatabaseRoleError,
   POOL_TIMEOUTS,
+  SESSION_PRIVILEGES_SQL,
+  assertLeastPrivilegedSession,
   buildPoolConfig,
   createPrismaClient,
   type CreatePrismaClientOptions,
+  type GuardedPoolConfig,
+  type SessionQueryable,
 } from './prisma-client.js';
 export {
   SECRET_FILE_MAX_BYTES,

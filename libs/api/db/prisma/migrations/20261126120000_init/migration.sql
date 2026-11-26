@@ -5,9 +5,10 @@
 --
 -- Partie 1 : SQL produit par `prisma migrate diff --from-empty --to-schema` (sans `CREATE SCHEMA`,
 -- le schéma public existe et le rôle des migrations n'a pas le droit de créer de schéma).
--- Partie 2 : invariants que Prisma ne sait pas exprimer (CHECK, déclencheur du journal) et droits du
--- rôle de l'API, table par table. Toute nouvelle table doit déclarer ses droits ici de la même façon
--- (tests/integration/privileges.test.ts échoue sinon).
+-- Partie 2 : invariants que Prisma ne sait pas exprimer (CHECK, index uniques partiels, déclencheurs
+-- des liens à usage unique et du journal) et droits du rôle de l'API, table par table. Toute
+-- nouvelle table doit déclarer ses droits de la même façon (tests/integration/privileges.test.ts
+-- échoue sinon).
 
 -- CreateEnum
 CREATE TYPE "user_role" AS ENUM ('ADMIN', 'CLIENT');
@@ -199,11 +200,92 @@ ALTER TABLE "enrollment_codes"
 ALTER TABLE "security_events"
   ADD CONSTRAINT "security_events_details_check" CHECK ("details" IS NULL OR (jsonb_typeof("details") = 'object' AND octet_length("details"::text) <= 2048));
 
+
 -- ---------------------------------------------------------------------------------------------
--- Partie 2b : journal de sécurité en ajout seul, pour tous les rôles (le rôle de l'API n'a de toute
--- façon ni UPDATE ni DELETE). La date est celle de la base, jamais celle fournie par l'application.
--- Suppression admise seulement au-delà de la rétention de 12 mois (purge, lot 5). Un superutilisateur
--- peut désactiver le déclencheur : hors du périmètre de l'API (accès SSH de l'exploitant seulement).
+-- Partie 2b : liens d'activation et codes d'enrôlement (ADR-0023). Les dates sont celles de la
+-- base, jamais celles fournies par l'application ; un lien ou un code naît vivant, ne peut qu'être
+-- consommé ou révoqué, une seule fois, et rien d'autre ne change ensuite.
+-- ---------------------------------------------------------------------------------------------
+
+-- Un seul lien vivant (ni consommé, ni révoqué) par compte, et un seul code d'enrôlement vivant :
+-- l'émission révoque d'abord, dans la même transaction, tous les liens non consommés du compte, y
+-- compris expirés (lot 4). Deux émissions simultanées : la seconde échoue (23505) au lieu de laisser
+-- deux liens valides. Index partiels hors de schema.prisma : Prisma 7 les ignore à l'introspection
+-- (sans l'aperçu `partialIndexes`, qui en ferait à tort un critère unique du client), donc ni
+-- dérive ni suppression par `migrate diff`.
+CREATE UNIQUE INDEX "activation_tokens_one_live_per_user_key" ON "activation_tokens" ("user_id")
+  WHERE "consumed_at" IS NULL AND "revoked_at" IS NULL;
+
+CREATE UNIQUE INDEX "enrollment_codes_one_live_per_user_key" ON "enrollment_codes" ("user_id")
+  WHERE "consumed_at" IS NULL AND "revoked_at" IS NULL;
+
+-- Commun aux deux tables (mêmes colonnes created_at, expires_at, consumed_at, revoked_at).
+--   INSERT : `created_at` := now() (impossible d'antidater ou de post-dater, les CHECK de durée
+--            portent donc sur l'heure de la base) ; consommé ou révoqué dès l'insertion : refusé.
+--   UPDATE : seules `consumed_at` et `revoked_at` peuvent passer de NULL à une date, une seule fois,
+--            fixée à now() ; un lien expiré ne peut pas être consommé ; `issued_by_id` ne peut que
+--            devenir NULL (ON DELETE SET NULL à la suppression de l'admin émetteur) ; toute autre
+--            colonne est figée. Le rôle de l'API n'a de toute façon l'UPDATE que sur ces deux colonnes.
+CREATE FUNCTION "single_use_credential_guard"() RETURNS trigger
+  LANGUAGE plpgsql
+  SET search_path = pg_catalog, pg_temp
+AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    IF NEW."consumed_at" IS NOT NULL OR NEW."revoked_at" IS NOT NULL THEN
+      RAISE EXCEPTION USING ERRCODE = 'check_violation',
+        MESSAGE = format('%s : un élément ne peut être créé déjà consommé ou révoqué', TG_TABLE_NAME);
+    END IF;
+    NEW."created_at" := now();
+    RETURN NEW;
+  END IF;
+
+  IF (to_jsonb(NEW) - ARRAY['consumed_at', 'revoked_at', 'issued_by_id'])
+       IS DISTINCT FROM (to_jsonb(OLD) - ARRAY['consumed_at', 'revoked_at', 'issued_by_id'])
+     OR ((to_jsonb(NEW) -> 'issued_by_id') IS DISTINCT FROM (to_jsonb(OLD) -> 'issued_by_id')
+         AND (to_jsonb(NEW) -> 'issued_by_id') <> 'null'::jsonb) THEN
+    RAISE EXCEPTION USING ERRCODE = 'insufficient_privilege',
+      MESSAGE = format('%s : seules la consommation et la révocation sont modifiables', TG_TABLE_NAME);
+  END IF;
+
+  IF (OLD."consumed_at" IS NOT NULL AND NEW."consumed_at" IS DISTINCT FROM OLD."consumed_at")
+     OR (OLD."revoked_at" IS NOT NULL AND NEW."revoked_at" IS DISTINCT FROM OLD."revoked_at") THEN
+    RAISE EXCEPTION USING ERRCODE = 'insufficient_privilege',
+      MESSAGE = format('%s : consommation et révocation sont définitives', TG_TABLE_NAME);
+  END IF;
+
+  IF OLD."consumed_at" IS NULL AND NEW."consumed_at" IS NOT NULL THEN
+    IF OLD."expires_at" <= now() THEN
+      RAISE EXCEPTION USING ERRCODE = 'check_violation',
+        MESSAGE = format('%s : élément expiré, consommation refusée', TG_TABLE_NAME);
+    END IF;
+    NEW."consumed_at" := now();
+  END IF;
+  IF OLD."revoked_at" IS NULL AND NEW."revoked_at" IS NOT NULL THEN
+    NEW."revoked_at" := now();
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION "single_use_credential_guard"() FROM PUBLIC;
+
+CREATE TRIGGER "activation_tokens_single_use_guard"
+  BEFORE INSERT OR UPDATE ON "activation_tokens"
+  FOR EACH ROW EXECUTE FUNCTION "single_use_credential_guard"();
+
+CREATE TRIGGER "enrollment_codes_single_use_guard"
+  BEFORE INSERT OR UPDATE ON "enrollment_codes"
+  FOR EACH ROW EXECUTE FUNCTION "single_use_credential_guard"();
+
+-- ---------------------------------------------------------------------------------------------
+-- Partie 2c : journal de sécurité en ajout seul, pour tous les rôles non superutilisateurs (le
+-- rôle de l'API n'a de toute façon ni UPDATE ni DELETE). Date et identifiant sont ceux de la base,
+-- jamais ceux fournis par l'application. Suppression admise seulement au-delà de la rétention de
+-- 12 mois (purge, lot 5). Le propriétaire de la table (`amg_migrator`) pourrait désactiver,
+-- remplacer ou supprimer ce déclencheur : le déclencheur d'événement `amg_guard_security_events`
+-- (sql/roles.sql, créé par le superutilisateur) le lui interdit. Seul un superutilisateur peut
+-- passer outre (accès SSH de l'exploitant, incident documenté).
 -- Une restauration pg_restore crée les déclencheurs après les données : les dates restaurées sont conservées.
 -- ---------------------------------------------------------------------------------------------
 
@@ -213,6 +295,7 @@ CREATE FUNCTION "security_events_append_only"() RETURNS trigger
 AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
+    NEW."id" := uuidv7();
     NEW."occurred_at" := now();
     RETURN NEW;
   ELSIF TG_OP = 'DELETE' THEN
@@ -236,8 +319,11 @@ CREATE TRIGGER "security_events_append_only_truncate"
   FOR EACH STATEMENT EXECUTE FUNCTION "security_events_append_only"();
 
 -- ---------------------------------------------------------------------------------------------
--- Partie 2c : droits du rôle de l'API `amg_app` (ni DDL, ni TRUNCATE, ni accès à _prisma_migrations).
+-- Partie 2d : droits du rôle de l'API `amg_app` (ni DDL, ni TRUNCATE, ni accès à _prisma_migrations).
+-- Liens d'activation et codes d'enrôlement : UPDATE limité aux colonnes de fin de vie.
 -- ---------------------------------------------------------------------------------------------
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "users", "activation_tokens", "totp_factors", "recovery_codes", "enrollment_codes" TO "amg_app";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "users", "totp_factors", "recovery_codes" TO "amg_app";
+GRANT SELECT, INSERT, DELETE ON TABLE "activation_tokens", "enrollment_codes" TO "amg_app";
+GRANT UPDATE ("consumed_at", "revoked_at") ON TABLE "activation_tokens", "enrollment_codes" TO "amg_app";
 GRANT SELECT, INSERT ON TABLE "security_events" TO "amg_app";

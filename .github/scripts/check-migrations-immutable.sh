@@ -3,10 +3,14 @@
 # libs/api/db/prisma/migrations/ déjà présent sur la référence de base (main) ne peut être ni
 # modifié, ni supprimé, ni renommé. Une migration fusionnée a peut-être déjà été appliquée en
 # production : la changer désynchroniserait la base et l'historique `_prisma_migrations`. Tout
-# changement de schéma passe par une NOUVELLE migration.
+# changement de schéma passe par une NOUVELLE migration, horodatée APRÈS la dernière migration de
+# la base : Prisma applique les migrations dans l'ordre de leur nom, une migration intercalée avant
+# une migration déjà appliquée en production serait jouée dans un ordre différent de celui de la CI
+# (ou signalée comme manquante par `migrate deploy`).
 #
 # Usage : check-migrations-immutable.sh <référence de base>   (ex. FETCH_HEAD après `git fetch origin main`)
-# Compare les empreintes Git (blobs) de chaque fichier de la base à celles de HEAD.
+# Compare les empreintes Git (blobs) de chaque fichier de la base à celles de HEAD, puis l'horodatage
+# de chaque nouveau dossier de migration à celui du dernier dossier de la base.
 set -Eeuo pipefail
 
 readonly MIGRATIONS_DIR='libs/api/db/prisma/migrations'
@@ -35,8 +39,28 @@ for path in "${base_files[@]}"; do
   fi
 done
 
+# Dossiers de migration (AAAAMMJJhhmmss_nom) : ceux de la base, puis les nouveaux de HEAD.
+readonly MIGRATION_NAME='^[0-9]{14}_[a-z0-9_]+$'
+migration_dirs() {
+  git ls-tree -d --name-only "$1:$MIGRATIONS_DIR" | sort
+}
+latest_base=$(migration_dirs "$base_commit" | tail -n 1)
+while IFS= read -r dir; do
+  [ -n "$dir" ] || continue
+  if git cat-file -e "${base_commit}:${MIGRATIONS_DIR}/${dir}" 2>/dev/null; then
+    continue
+  fi
+  if ! [[ "$dir" =~ $MIGRATION_NAME ]]; then
+    echo "::error file=${MIGRATIONS_DIR}/${dir}::nom de migration invalide (AAAAMMJJhhmmss_nom attendu)"
+    failures=$((failures + 1))
+  elif [[ -n "$latest_base" && ! "$dir" > "$latest_base" ]]; then
+    echo "::error file=${MIGRATIONS_DIR}/${dir}::nouvelle migration horodatée avant ${latest_base} (dernière de la base) : la renommer"
+    failures=$((failures + 1))
+  fi
+done < <(migration_dirs HEAD)
+
 if [ "$failures" -gt 0 ]; then
-  echo "${failures} fichier(s) de migration déjà fusionné(s) altéré(s)."
+  echo "${failures} anomalie(s) dans les migrations (fichier déjà fusionné altéré ou nouvelle migration mal placée)."
   exit 1
 fi
-echo "${#base_files[@]} fichier(s) de migration de la base inchangé(s)."
+echo "${#base_files[@]} fichier(s) de migration de la base inchangé(s) ; nouvelles migrations après ${latest_base:-(aucune)}."

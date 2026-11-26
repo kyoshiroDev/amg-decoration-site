@@ -78,6 +78,9 @@ enum ActivationPurpose {
 /// Lien d'activation à usage unique (remplace le mot de passe provisoire, ADR-0023) : le jeton
 /// (256 bits aléatoires) n'existe en clair que dans l'email ; la base n'en garde que le SHA-256.
 /// Consommation atomique : un seul UPDATE conditionnel (non consommé, non révoqué, non expiré).
+/// Hors de ce schéma, dans la migration : un seul lien vivant par compte (index unique partiel
+/// `activation_tokens_one_live_per_user_key`, ignoré par Prisma), dates fixées par la base et
+/// consommation ou révocation définitives (déclencheur), UPDATE de l'API limité à ces deux colonnes.
 model ActivationToken {
   id         String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
   userId     String            @map("user_id") @db.Uuid
@@ -139,7 +142,8 @@ model RecoveryCode {
 
 /// Code d'enrôlement délivré par `reset-mfa` (aléa ≥ 80 bits, 30 minutes au plus, remis en personne
 /// ou lors du rappel vérifié), exigé pour enrôler le nouveau TOTP. HMAC-SHA-256 poivré comme les
-/// codes de secours.
+/// codes de secours. Mêmes garanties que les liens d'activation (un seul vivant par compte, dates de
+/// la base, consommation ou révocation définitives), écrites dans la migration.
 model EnrollmentCode {
   id         String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
   userId     String    @map("user_id") @db.Uuid
@@ -184,9 +188,11 @@ enum SecurityEventType {
 
 /// Journal de sécurité, en ajout seul : le rôle de l'API n'a que INSERT et SELECT ; un déclencheur
 /// refuse toute modification, tout vidage et toute suppression d'un événement de moins de 12 mois,
-/// quel que soit le rôle (la purge de rétention, lot 5, ne supprime que les plus anciens). Pas de clé
-/// étrangère vers users : le journal survit à la suppression d'un compte (identifiant pseudonyme,
-/// rétention 12 mois, docs/CONFORMITE.md). La date est fixée par la base à l'insertion.
+/// pour tout rôle non superutilisateur (la purge de rétention, lot 5, ne supprime que les plus
+/// anciens), et un déclencheur d'événement (sql/roles.sql) empêche le propriétaire de la table de le
+/// désactiver ou de le remplacer. Pas de clé étrangère vers users : le journal survit à la
+/// suppression d'un compte (identifiant pseudonyme, rétention 12 mois, docs/CONFORMITE.md). Date et
+/// identifiant sont fixés par la base à l'insertion.
 model SecurityEvent {
   id         String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
   occurredAt DateTime          @default(now()) @map("occurred_at") @db.Timestamptz(3)

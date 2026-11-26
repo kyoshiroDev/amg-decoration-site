@@ -1,7 +1,9 @@
 // Accès à la base des tests d'intégration (job CI « API (intégration) », ou compose.dev.yaml en
 // local). Variables exigées : DB_HOST, DB_PORT, DB_NAME, TEST_DB_APP_PASSWORD,
-// TEST_DB_MIGRATOR_PASSWORD (mots de passe publics de sql/dev/passwords.sql). Absentes : échec
-// immédiat et explicite, jamais une suite qui passe à vide.
+// TEST_DB_MIGRATOR_PASSWORD (mots de passe publics de sql/dev/passwords.sql) et
+// TEST_DB_SUPERUSER_PASSWORD (superutilisateur `amg` de la base jetable : ci.yml ou compose.dev.yaml,
+// pour les seuls tests qui éprouvent ce que lui seul peut faire). Absentes : échec immédiat et
+// explicite, jamais une suite qui passe à vide.
 import { randomBytes } from 'node:crypto';
 import pg from 'pg';
 import { expect } from 'vitest';
@@ -10,7 +12,8 @@ import { databaseEnvShape } from '../../src/database-config.js';
 
 export const APP_ROLE = 'amg_app';
 export const MIGRATOR_ROLE = 'amg_migrator';
-export type Role = typeof APP_ROLE | typeof MIGRATOR_ROLE;
+export const SUPERUSER_ROLE = 'amg';
+export type Role = typeof APP_ROLE | typeof MIGRATOR_ROLE | typeof SUPERUSER_ROLE;
 
 const testEnvSchema = z.strictObject({
   DB_HOST: databaseEnvShape.DB_HOST,
@@ -18,6 +21,7 @@ const testEnvSchema = z.strictObject({
   DB_NAME: databaseEnvShape.DB_NAME,
   TEST_DB_APP_PASSWORD: z.string().min(1),
   TEST_DB_MIGRATOR_PASSWORD: z.string().min(1),
+  TEST_DB_SUPERUSER_PASSWORD: z.string().min(1),
 });
 
 export type TestDatabaseEnv = z.output<typeof testEnvSchema>;
@@ -36,6 +40,19 @@ export function testDatabaseEnv(): TestDatabaseEnv {
   return parsed.data;
 }
 
+/** Mot de passe de test d'un rôle. */
+export function testPassword(role: Role): string {
+  const env = testDatabaseEnv();
+  switch (role) {
+    case APP_ROLE:
+      return env.TEST_DB_APP_PASSWORD;
+    case MIGRATOR_ROLE:
+      return env.TEST_DB_MIGRATOR_PASSWORD;
+    case SUPERUSER_ROLE:
+      return env.TEST_DB_SUPERUSER_PASSWORD;
+  }
+}
+
 /** Connexion directe (pg) sous un rôle donné, éventuellement à une autre base. */
 export async function connectAs(role: Role, database?: string): Promise<pg.Client> {
   const env = testDatabaseEnv();
@@ -44,7 +61,7 @@ export async function connectAs(role: Role, database?: string): Promise<pg.Clien
     port: env.DB_PORT,
     database: database ?? env.DB_NAME,
     user: role,
-    password: role === APP_ROLE ? env.TEST_DB_APP_PASSWORD : env.TEST_DB_MIGRATOR_PASSWORD,
+    password: testPassword(role),
     connectionTimeoutMillis: 5_000,
   });
   await client.connect();

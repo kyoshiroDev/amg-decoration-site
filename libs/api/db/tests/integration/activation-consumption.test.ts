@@ -1,9 +1,11 @@
 // Consommation atomique d'un lien d'activation (ADR-0023) : un seul UPDATE conditionnel, dont la
 // condition est réévaluée par PostgreSQL après le verrou de ligne. Deux requêtes simultanées avec le
-// même jeton : une seule réussit. C'est le motif que le service d'activation (lot 4) devra employer.
-import type pg from 'pg';
+// même jeton : une seule réussit. Émission : révocation de tous les liens non consommés du compte
+// (expirés compris), puis insertion ; deux émissions simultanées : une seule réussit. Ce sont les
+// motifs que le service d'activation (lot 4) devra employer.
+import pg from 'pg';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { APP_ROLE, connectAs, digest32, insertUser } from './test-database.js';
+import { APP_ROLE, SQLSTATE, connectAs, digest32, insertUser } from './test-database.js';
 
 /** Consommation : non consommé, non révoqué, non expiré ; renvoie le compte et l'usage. */
 const CONSUME = `UPDATE activation_tokens SET consumed_at = now()
@@ -12,11 +14,14 @@ const CONSUME = `UPDATE activation_tokens SET consumed_at = now()
 
 let first: pg.Client;
 let second: pg.Client;
+/** Hors des transactions des tests : pg_stat_activity est figé pour la durée d'une transaction. */
+let observer: pg.Client;
 const createdUsers: string[] = [];
 
 beforeAll(async () => {
   first = await connectAs(APP_ROLE);
   second = await connectAs(APP_ROLE);
+  observer = await connectAs(APP_ROLE);
 });
 
 afterEach(async () => {
@@ -27,18 +32,64 @@ afterEach(async () => {
 afterAll(async () => {
   await first.end();
   await second.end();
+  await observer.end();
 });
 
-async function committedToken(lifetime = '72 hours', revoked = false): Promise<Buffer> {
+/** Révocation des liens non consommés du compte, expirés compris (première étape de l'émission). */
+const REVOKE_LIVE_TOKENS = `UPDATE activation_tokens SET revoked_at = now()
+  WHERE user_id = $1 AND consumed_at IS NULL AND revoked_at IS NULL`;
+
+const INSERT_TOKEN = `INSERT INTO activation_tokens (user_id, purpose, token_hash, expires_at)
+  VALUES ($1, 'PASSWORD_RESET', $2, now() + $3::interval)`;
+
+async function committedUser(): Promise<string> {
   const userId = await insertUser(first);
   createdUsers.push(userId);
+  return userId;
+}
+
+async function committedToken(
+  lifetime = '72 hours',
+  revoked = false,
+  userId?: string,
+): Promise<Buffer> {
+  const owner = userId ?? (await committedUser());
   const hash = digest32();
-  await first.query(
-    `INSERT INTO activation_tokens (user_id, purpose, token_hash, expires_at, revoked_at)
-     VALUES ($1, 'PASSWORD_RESET', $2, now() + $3::interval, $4)`,
-    [userId, hash, lifetime, revoked ? new Date() : null],
-  );
+  await first.query(INSERT_TOKEN, [owner, hash, lifetime]);
+  if (revoked) await first.query(REVOKE_LIVE_TOKENS, [owner]);
   return hash;
+}
+
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function backendPid(client: pg.Client): Promise<number> {
+  const { rows } = await client.query<{ pid: number }>('SELECT pg_backend_pid() AS pid');
+  const row = rows[0];
+  if (row === undefined) throw new Error('pid de la connexion introuvable');
+  return row.pid;
+}
+
+/** Attend (5 s au plus) que la connexion `pid` soit bloquée sur un verrou ; observée par `observer`. */
+async function waitUntilWaitingForLock(pid: number): Promise<void> {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const { rows } = await observer.query<{ waiting: boolean }>(
+      `SELECT wait_event_type = 'Lock' AS waiting FROM pg_catalog.pg_stat_activity WHERE pid = $1`,
+      [pid],
+    );
+    if (rows[0]?.waiting === true) return;
+    await sleep(50);
+  }
+  throw new Error('la seconde transaction n’a jamais attendu de verrou');
+}
+
+/** Code SQLSTATE d'un rejet, pour les requêtes lancées hors de `expectSqlError`. */
+async function rejectionCode(promise: Promise<unknown>): Promise<string | undefined> {
+  try {
+    await promise;
+    return undefined;
+  } catch (error: unknown) {
+    return error instanceof pg.DatabaseError ? error.code : 'erreur inattendue';
+  }
 }
 
 describe('consommation d’un lien d’activation', () => {
@@ -77,12 +128,69 @@ describe('consommation d’un lien d’activation', () => {
 
   it('refuse un lien expiré', async () => {
     const hash = await committedToken('1 second');
-    await new Promise((resolve) => setTimeout(resolve, 1_200));
+    await sleep(1_200);
     expect((await first.query(CONSUME, [hash])).rowCount).toBe(0);
+  });
+
+  it('la base refuse elle-même de consommer un lien expiré, même sans condition d’échéance', async () => {
+    const hash = await committedToken('1 second');
+    await sleep(1_200);
+    expect(
+      await rejectionCode(
+        first.query('UPDATE activation_tokens SET consumed_at = now() WHERE token_hash = $1', [
+          hash,
+        ]),
+      ),
+    ).toBe(SQLSTATE.checkViolation);
   });
 
   it('refuse un jeton inconnu', async () => {
     await committedToken();
     expect((await first.query(CONSUME, [digest32()])).rowCount).toBe(0);
+  });
+});
+
+describe('émission d’un lien', () => {
+  it('un lien expiré mais non révoqué empêche l’émission tant qu’il n’est pas révoqué', async () => {
+    const userId = await committedUser();
+    await committedToken('1 second', false, userId);
+    await sleep(1_200);
+    expect(await rejectionCode(first.query(INSERT_TOKEN, [userId, digest32(), '72 hours']))).toBe(
+      SQLSTATE.uniqueViolation,
+    );
+    const revoked = await first.query(REVOKE_LIVE_TOKENS, [userId]);
+    expect(revoked.rowCount).toBe(1);
+    await first.query(INSERT_TOKEN, [userId, digest32(), '72 hours']);
+  });
+
+  it('deux émissions simultanées pour le même compte : une seule réussit', async () => {
+    const userId = await committedUser();
+    await committedToken('72 hours', false, userId);
+    const secondPid = await backendPid(second);
+    await first.query('BEGIN');
+    await first.query(REVOKE_LIVE_TOKENS, [userId]);
+    await first.query(INSERT_TOKEN, [userId, digest32(), '72 hours']);
+    await second.query('BEGIN');
+    // La seconde émission bloque sur le lien que la première vient de révoquer…
+    const concurrent = (async (): Promise<void> => {
+      try {
+        await second.query(REVOKE_LIVE_TOKENS, [userId]);
+        await second.query(INSERT_TOKEN, [userId, digest32(), '72 hours']);
+        await second.query('COMMIT');
+      } catch (error: unknown) {
+        await second.query('ROLLBACK');
+        throw error;
+      }
+    })();
+    await waitUntilWaitingForLock(secondPid);
+    await first.query('COMMIT');
+    // … puis ne voit pas le nouveau lien (instantané de sa requête) et se heurte à l'index unique.
+    expect(await rejectionCode(concurrent)).toBe(SQLSTATE.uniqueViolation);
+    const { rows } = await first.query<{ n: string }>(
+      `SELECT count(*) AS n FROM activation_tokens
+        WHERE user_id = $1 AND consumed_at IS NULL AND revoked_at IS NULL`,
+      [userId],
+    );
+    expect(rows).toEqual([{ n: '1' }]);
   });
 });

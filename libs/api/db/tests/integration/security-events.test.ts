@@ -1,11 +1,14 @@
-// Journal de sécurité en ajout seul (ADR-0023) : l'API insère et lit, rien d'autre ; même le
-// propriétaire des tables ne peut ni modifier, ni vider, ni supprimer un événement de moins de 12 mois.
+// Journal de sécurité en ajout seul (ADR-0023) : l'API insère et lit, rien d'autre ; le propriétaire
+// des tables (`amg_migrator`) ne peut ni modifier, ni vider, ni supprimer un événement de moins de
+// 12 mois (déclencheur de la migration), ni désactiver, remplacer ou supprimer ce déclencheur
+// (déclencheur d'événement du superutilisateur, sql/roles.sql). Seul le superutilisateur passe outre.
 import type pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   APP_ROLE,
   MIGRATOR_ROLE,
   SQLSTATE,
+  SUPERUSER_ROLE,
   connectAs,
   expectSqlError,
   inRolledBackTransaction,
@@ -13,15 +16,18 @@ import {
 
 let app: pg.Client;
 let migrator: pg.Client;
+let superuser: pg.Client;
 
 beforeAll(async () => {
   app = await connectAs(APP_ROLE);
   migrator = await connectAs(MIGRATOR_ROLE);
+  superuser = await connectAs(SUPERUSER_ROLE);
 });
 
 afterAll(async () => {
   await app.end();
   await migrator.end();
+  await superuser.end();
 });
 
 async function insertEvent(client: pg.Client, occurredAt?: string): Promise<string> {
@@ -56,6 +62,20 @@ describe('rôle de l’API', () => {
         [id],
       );
       expect(rows).toEqual([{ recent: true }]);
+    });
+  });
+
+  it('ne choisit pas l’identifiant : UUID v7 généré par la base', async () => {
+    await inRolledBackTransaction(app, async () => {
+      const forged = '00000000-0000-4000-8000-000000000000';
+      const { rows } = await app.query<{ id: string; version: number }>(
+        `INSERT INTO security_events (id, type) VALUES ($1, 'LOGIN_FAILED')
+         RETURNING id, uuid_extract_version(id) AS version`,
+        [forged],
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.id).not.toBe(forged);
+      expect(rows[0]?.version).toBe(7);
     });
   });
 
@@ -113,17 +133,127 @@ describe('propriétaire des tables (rôle des migrations)', () => {
   });
 
   it('peut supprimer un événement plus ancien que la rétention de 12 mois (purge)', async () => {
+    await inRolledBackTransaction(superuser, async () => {
+      // Seul moyen de créer un événement ancien : le superutilisateur insère en mode réplique (les
+      // déclencheurs ordinaires ne s'exécutent pas), puis la suppression est faite sous le rôle des
+      // migrations, déclencheur actif. Le tout dans cette transaction annulée.
+      await superuser.query(`SET LOCAL session_replication_role = 'replica'`);
+      const id = await insertEvent(
+        superuser,
+        new Date(Date.now() - 400 * 86_400_000).toISOString(),
+      );
+      await superuser.query(`SET LOCAL session_replication_role = 'origin'`);
+      await superuser.query(`SET LOCAL ROLE ${MIGRATOR_ROLE}`);
+      const result = await superuser.query('DELETE FROM security_events WHERE id = $1', [id]);
+      expect(result.rowCount).toBe(1);
+    });
+  });
+});
+
+describe('propriétaire des tables : protection du déclencheur (déclencheur d’événement)', () => {
+  it('les déclencheurs d’événement appartiennent au superutilisateur et sont actifs', async () => {
+    const { rows } = await migrator.query<{
+      name: string;
+      event: string;
+      enabled: string;
+      superuser: boolean;
+    }>(
+      `SELECT e.evtname AS name, e.evtevent AS event, e.evtenabled AS enabled, r.rolsuper AS superuser
+         FROM pg_catalog.pg_event_trigger e JOIN pg_catalog.pg_roles r ON r.oid = e.evtowner
+        WHERE e.evtname LIKE 'amg\\_guard\\_%' ORDER BY e.evtname`,
+    );
+    expect(rows).toEqual([
+      {
+        name: 'amg_guard_security_events',
+        event: 'ddl_command_end',
+        enabled: 'O',
+        superuser: true,
+      },
+      { name: 'amg_guard_security_events_drop', event: 'sql_drop', enabled: 'O', superuser: true },
+    ]);
+  });
+
+  it.each([
+    [
+      'désactiver le déclencheur de ligne',
+      'ALTER TABLE security_events DISABLE TRIGGER security_events_append_only_row',
+    ],
+    ['désactiver tous les déclencheurs', 'ALTER TABLE security_events DISABLE TRIGGER ALL'],
+    [
+      'réserver le déclencheur au mode réplique',
+      'ALTER TABLE security_events ENABLE REPLICA TRIGGER security_events_append_only_row',
+    ],
+    [
+      'supprimer le déclencheur de ligne',
+      'DROP TRIGGER security_events_append_only_row ON security_events',
+    ],
+    [
+      'supprimer le déclencheur TRUNCATE',
+      'DROP TRIGGER security_events_append_only_truncate ON security_events',
+    ],
+    [
+      'renommer le déclencheur',
+      'ALTER TRIGGER security_events_append_only_row ON security_events RENAME TO renamed',
+    ],
+    [
+      'remplacer la fonction du déclencheur',
+      'CREATE OR REPLACE FUNCTION security_events_append_only() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$',
+    ],
+    [
+      'renommer la fonction du déclencheur',
+      'ALTER FUNCTION security_events_append_only() RENAME TO renamed',
+    ],
+    ['supprimer la fonction du déclencheur', 'DROP FUNCTION security_events_append_only() CASCADE'],
+    [
+      'conditionner le déclencheur (WHEN)',
+      'CREATE OR REPLACE TRIGGER security_events_append_only_row BEFORE INSERT OR UPDATE OR DELETE ON security_events FOR EACH ROW WHEN (false) EXECUTE FUNCTION security_events_append_only()',
+    ],
+    [
+      'ajouter un déclencheur qui réécrit la date',
+      `CREATE FUNCTION public.forge() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.occurred_at := '2000-01-01'; RETURN NEW; END $$;
+       CREATE TRIGGER zz_forge BEFORE INSERT ON security_events FOR EACH ROW EXECUTE FUNCTION public.forge()`,
+    ],
+    ['renommer la table', 'ALTER TABLE security_events RENAME TO old_events'],
+    [
+      'réécrire une colonne',
+      `ALTER TABLE security_events ALTER COLUMN device TYPE text USING 'falsifié'`,
+    ],
+    ['supprimer une colonne', 'ALTER TABLE security_events DROP COLUMN details'],
+    ['activer la RLS', 'ALTER TABLE security_events ENABLE ROW LEVEL SECURITY'],
+    ['ajouter une règle', 'CREATE RULE swallow AS ON INSERT TO security_events DO INSTEAD NOTHING'],
+    ['hériter de la table', 'CREATE TABLE child_events () INHERITS (security_events)'],
+    ['supprimer la table', 'DROP TABLE security_events'],
+    ['supprimer tous ses objets', 'DROP OWNED BY amg_migrator'],
+  ])('ne peut pas %s', async (_label, sql) => {
     await inRolledBackTransaction(migrator, async () => {
-      // Seul moyen de créer un événement ancien : suspendre le déclencheur, dans cette transaction annulée.
-      await migrator.query(
+      await expectSqlError(
+        migrator,
+        sql,
+        [],
+        SQLSTATE.insufficientPrivilege,
+        /journal de sécurité/,
+      );
+    });
+  });
+
+  it.each([
+    [
+      'ajouter une valeur au type d’événement',
+      `ALTER TYPE security_event_type ADD VALUE 'TEST_ONLY_VALUE'`,
+    ],
+    ['créer un index sur le journal', 'CREATE INDEX probe_idx ON security_events (device)'],
+    ['créer une autre table', 'CREATE TABLE public.probe_table (id int)'],
+  ])('peut encore %s (migrations futures)', async (_label, sql) => {
+    await inRolledBackTransaction(migrator, async () => {
+      await migrator.query(sql);
+    });
+  });
+
+  it('le superutilisateur passe outre (incident documenté)', async () => {
+    await inRolledBackTransaction(superuser, async () => {
+      await superuser.query(
         'ALTER TABLE security_events DISABLE TRIGGER security_events_append_only_row',
       );
-      const id = await insertEvent(migrator, new Date(Date.now() - 400 * 86_400_000).toISOString());
-      await migrator.query(
-        'ALTER TABLE security_events ENABLE TRIGGER security_events_append_only_row',
-      );
-      const result = await migrator.query('DELETE FROM security_events WHERE id = $1', [id]);
-      expect(result.rowCount).toBe(1);
     });
   });
 });

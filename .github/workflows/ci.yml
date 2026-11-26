@@ -65,6 +65,21 @@ jobs:
           path: apps/site/dist
           retention-days: 3
 
+  # Dépendances installées en production (`npm audit --omit=dev`, ADR-0023) : aucune vulnérabilité
+  # élevée ou critique, sauf exception datée et justifiée de .github/audit-exceptions.json (échue :
+  # le job échoue). Lit le seul package-lock.json, sans installation.
+  audit:
+    name: Audit des dépendances de production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - run: node .github/scripts/audit-production.mjs
+
   # API contre un PostgreSQL réel (CRM 3, lot 1 ; ADR-0023) : même image, au même digest, que la
   # production (contrôlé par check-postgres-image.sh). Rôles créés par libs/api/db/sql/roles.sql,
   # migrations appliquées par `prisma migrate deploy` sous le rôle des migrations, dérive schéma ↔
@@ -90,13 +105,15 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 20
+    # DB_HOST, DB_PORT et DB_NAME ne sont PAS posées au niveau du job : prisma.config.ts exige alors
+    # toutes les variables de connexion (loadCliDatabaseConnection, strict), ce qui ferait échouer
+    # `prisma generate` à l'étape de build. Elles sont données aux seules étapes qui parlent à la base.
     env:
-      DB_HOST: 127.0.0.1
-      DB_PORT: '5432'
-      DB_NAME: amg_test
-      # Mots de passe publics de libs/api/db/sql/dev/passwords.sql (base jetable du job).
+      # Mots de passe publics de libs/api/db/sql/dev/passwords.sql (base jetable du job) et
+      # superutilisateur du service ci-dessus (tests de ce que lui seul peut faire).
       TEST_DB_APP_PASSWORD: dev-only-amg-app-password-not-secret
       TEST_DB_MIGRATOR_PASSWORD: dev-only-amg-migrator-password-public
+      TEST_DB_SUPERUSER_PASSWORD: ci-only-superuser-password-public
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -123,6 +140,9 @@ jobs:
         run: npx nx run-many -t build -p @amg/shared-schemas,@amg/api-db --outputStyle=static
       - name: Migrations (rôle des migrations) et absence de dérive
         env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: '5432'
+          DB_NAME: amg_test
           DB_USER: amg_migrator
         run: |
           umask 077
@@ -137,7 +157,12 @@ jobs:
         env:
           PG_CONTAINER: ${{ job.services.postgres.id }}
         run: docker exec -i "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -U amg -d amg_test < libs/api/db/sql/roles.sql
+      # npm run (pas nx) : aucune dépendance de cible, donc pas de `prisma generate` avec DB_* partielles.
       - name: Tests d'intégration (rôle de l'API)
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: '5432'
+          DB_NAME: amg_test
         run: |
           npm run test:integration -w @amg/api-db
           npm run test:integration -w @amg/api

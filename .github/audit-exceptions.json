@@ -1,0 +1,10 @@
+{
+  "exceptions": [
+    {
+      "advisory": "GHSA-7589-6fvf-x4pw",
+      "packages": ["effect", "@prisma/config", "prisma"],
+      "expires": "2027-01-31",
+      "reason": "effect 3.20.0 épinglé exactement par @prisma/config 7.10.1 (override npm sans effet). Chargé seulement par le CLI Prisma pour lire prisma.config.ts (entrée de confiance), jamais par l'API ; prisma est en devDependency de @amg/api-db mais reste installé par --omit=dev (pair optionnel de @prisma/client) : l'image du lot 2 doit l'exclure. À lever à la prochaine version de Prisma (ADR-0023, Conséquences)."
+    }
+  ]
+}

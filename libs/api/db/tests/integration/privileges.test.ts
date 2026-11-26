@@ -1,6 +1,8 @@
 // Moindre privilège (ADR-0023) : attributs des rôles, droits exacts du rôle de l'API table par
-// table, et refus de tout DDL. Une nouvelle table sans droits déclarés, ou avec des droits en trop,
-// fait échouer `EXPECTED_APP_PRIVILEGES`.
+// table et colonne par colonne, aucune fonction exécutable sans droit déclaré, et refus de tout DDL.
+// Une nouvelle table sans droits déclarés, ou avec des droits en trop, fait échouer
+// `EXPECTED_APP_PRIVILEGES` ; une fonction exécutable par l'API sans être déclarée fait échouer
+// `EXPECTED_APP_FUNCTIONS`.
 import type pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -15,13 +17,24 @@ import {
 /** Droits attendus du rôle de l'API sur chaque relation du schéma public (ordre alphabétique). */
 const EXPECTED_APP_PRIVILEGES: Readonly<Record<string, readonly string[]>> = {
   _prisma_migrations: [],
-  activation_tokens: ['DELETE', 'INSERT', 'SELECT', 'UPDATE'],
-  enrollment_codes: ['DELETE', 'INSERT', 'SELECT', 'UPDATE'],
+  activation_tokens: ['DELETE', 'INSERT', 'SELECT'],
+  enrollment_codes: ['DELETE', 'INSERT', 'SELECT'],
   recovery_codes: ['DELETE', 'INSERT', 'SELECT', 'UPDATE'],
   security_events: ['INSERT', 'SELECT'],
   totp_factors: ['DELETE', 'INSERT', 'SELECT', 'UPDATE'],
   users: ['DELETE', 'INSERT', 'SELECT', 'UPDATE'],
 };
+
+/** UPDATE limité à des colonnes : `table.colonne` (ordre alphabétique). */
+const EXPECTED_APP_COLUMN_UPDATES: readonly string[] = [
+  'activation_tokens.consumed_at',
+  'activation_tokens.revoked_at',
+  'enrollment_codes.consumed_at',
+  'enrollment_codes.revoked_at',
+];
+
+/** Fonctions du schéma public exécutables par le rôle de l'API (aucune à ce jour). */
+const EXPECTED_APP_FUNCTIONS: readonly string[] = [];
 
 let app: pg.Client;
 let migrator: pg.Client;
@@ -104,6 +117,44 @@ describe('propriété et droits sur les objets', () => {
     );
   });
 
+  it('n’accorde l’UPDATE des liens et codes que sur les colonnes de fin de vie', async () => {
+    const { rows } = await app.query<{ column: string }>(
+      `SELECT c.relname || '.' || a.attname AS column
+         FROM pg_catalog.pg_class c
+         JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+         JOIN pg_catalog.pg_attribute a ON a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped
+        WHERE n.nspname = 'public' AND c.relkind = 'r'
+          AND pg_catalog.has_column_privilege('amg_app', c.oid, a.attnum, 'UPDATE')
+          AND NOT pg_catalog.has_table_privilege('amg_app', c.oid, 'UPDATE')
+        ORDER BY 1`,
+    );
+    expect(rows.map((row) => row.column)).toEqual(EXPECTED_APP_COLUMN_UPDATES);
+  });
+
+  it('aucune fonction du schéma public n’est exécutable par l’API sans droit déclaré', async () => {
+    const { rows } = await app.query<{ signature: string }>(
+      `SELECT p.oid::regprocedure::text AS signature
+         FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = 'public' AND pg_catalog.has_function_privilege('amg_app', p.oid, 'EXECUTE')
+        ORDER BY 1`,
+    );
+    expect(rows.map((row) => row.signature)).toEqual(EXPECTED_APP_FUNCTIONS);
+  });
+
+  it('une fonction créée par le rôle des migrations n’est pas exécutable par PUBLIC', async () => {
+    await inRolledBackTransaction(migrator, async () => {
+      await migrator.query(
+        'CREATE FUNCTION public.default_privileges_probe() RETURNS int LANGUAGE sql AS $$ SELECT 1 $$',
+      );
+      const { rows } = await migrator.query<{ app: boolean; acl: string | null }>(
+        `SELECT pg_catalog.has_function_privilege('amg_app', 'public.default_privileges_probe()', 'EXECUTE') AS app,
+                p.proacl::text AS acl
+           FROM pg_catalog.pg_proc p WHERE p.oid = 'public.default_privileges_probe()'::regprocedure`,
+      );
+      expect(rows).toEqual([{ app: false, acl: '{amg_migrator=X/amg_migrator}' }]);
+    });
+  });
+
   it('aucun droit sur une colonne isolée ne contourne les droits de table', async () => {
     const { rows } = await app.query<{ update_journal: boolean; read_migrations: boolean }>(
       `SELECT pg_catalog.has_any_column_privilege('amg_app', 'public.security_events', 'UPDATE') AS update_journal,
@@ -141,11 +192,14 @@ describe('le rôle de l’API ne fait aucun DDL', () => {
     });
   });
 
-  it('ne peut pas se connecter à la base « postgres » de l’image', async () => {
-    await expect(connectAs(APP_ROLE, 'postgres')).rejects.toMatchObject({
-      code: SQLSTATE.insufficientPrivilege,
-    });
-  });
+  it.each(['postgres', 'template1'])(
+    'ne peut pas se connecter à la base « %s » de l’image',
+    async (database) => {
+      await expect(connectAs(APP_ROLE, database)).rejects.toMatchObject({
+        code: SQLSTATE.insufficientPrivilege,
+      });
+    },
+  );
 });
 
 describe('le rôle des migrations reste confiné à sa base', () => {
@@ -158,6 +212,15 @@ describe('le rôle des migrations reste confiné à sa base', () => {
       await expectSqlError(migrator, sql, [], SQLSTATE.insufficientPrivilege);
     });
   });
+
+  it.each(['postgres', 'template1'])(
+    'ne peut pas se connecter à la base « %s » de l’image',
+    async (database) => {
+      await expect(connectAs(MIGRATOR_ROLE, database)).rejects.toMatchObject({
+        code: SQLSTATE.insufficientPrivilege,
+      });
+    },
+  );
 
   it('n’ouvre aucune table temporaire', async () => {
     await inRolledBackTransaction(migrator, async () => {

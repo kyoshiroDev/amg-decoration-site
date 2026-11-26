@@ -118,7 +118,7 @@ describe('users', () => {
       const id = await insertUser(app);
       await app.query(
         `INSERT INTO activation_tokens (user_id, purpose, token_hash, expires_at)
-         VALUES ($1, 'INVITATION', $2, now() + interval '7 days')`,
+         VALUES ($1, 'INVITATION', $2, now() + interval '168 hours')`,
         [id, digest32()],
       );
       await app.query(`INSERT INTO recovery_codes (user_id, code_hmac) VALUES ($1, $2)`, [
@@ -141,7 +141,7 @@ const INSERT_TOKEN = `INSERT INTO activation_tokens (user_id, purpose, token_has
 
 describe('activation_tokens', () => {
   it.each([
-    ['INVITATION', '7 days'],
+    ['INVITATION', '168 hours'],
     ['INVITATION_RESEND', '72 hours'],
     ['PASSWORD_RESET', '72 hours'],
     ['MFA_RESET', '72 hours'],
@@ -185,28 +185,40 @@ describe('activation_tokens', () => {
     });
   });
 
-  it('refuse un jeton à la fois consommé et révoqué', async () => {
+  it.each([
+    ['consommé', new Date(), null],
+    ['révoqué', null, new Date()],
+    ['consommé et révoqué', new Date(), new Date()],
+  ])('refuse un jeton créé déjà %s', async (_label, consumedAt, revokedAt) => {
     await inRolledBackTransaction(app, async () => {
       const id = await insertUser(app);
       await expectSqlError(
         app,
         INSERT_TOKEN,
-        [id, 'INVITATION', digest32(), '1 hour', new Date(), new Date()],
+        [id, 'INVITATION', digest32(), '1 hour', consumedAt, revokedAt],
         SQLSTATE.checkViolation,
+        /déjà consommé ou révoqué/,
       );
     });
   });
 
-  it('refuse deux jetons de même empreinte', async () => {
+  it('refuse deux jetons de même empreinte, même pour deux comptes', async () => {
     await inRolledBackTransaction(app, async () => {
-      const id = await insertUser(app);
       const hash = digest32();
-      await app.query(INSERT_TOKEN, [id, 'INVITATION', hash, '1 hour', null, null]);
+      await app.query(INSERT_TOKEN, [
+        await insertUser(app),
+        'INVITATION',
+        hash,
+        '1 hour',
+        null,
+        null,
+      ]);
       await expectSqlError(
         app,
         INSERT_TOKEN,
-        [id, 'PASSWORD_RESET', hash, '1 hour', null, null],
+        [await insertUser(app), 'PASSWORD_RESET', hash, '1 hour', null, null],
         SQLSTATE.uniqueViolation,
+        /activation_tokens_token_hash_key/,
       );
     });
   });

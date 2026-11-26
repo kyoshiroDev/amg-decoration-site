@@ -1,11 +1,25 @@
 // Client Prisma réel (driver adapter pg) sous le rôle de l'API : lecture, écriture, identifiants
-// UUID v7 générés par la base, journal non modifiable, fermeture du pool.
+// UUID v7 générés par la base, journal non modifiable, fermeture du pool ; refus de servir sous un
+// rôle trop privilégié (propriétaire des tables, superutilisateur).
 import { randomBytes } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { createPrismaClient } from '../../src/prisma-client.js';
+import {
+  DatabaseRoleError,
+  assertLeastPrivilegedSession,
+  createPrismaClient,
+} from '../../src/prisma-client.js';
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
-import { APP_ROLE, testDatabaseEnv, uniqueEmail } from './test-database.js';
+import {
+  APP_ROLE,
+  MIGRATOR_ROLE,
+  SUPERUSER_ROLE,
+  connectAs,
+  testDatabaseEnv,
+  testPassword,
+  uniqueEmail,
+  type Role,
+} from './test-database.js';
 
 let prisma: PrismaClient;
 const poolErrors: Error[] = [];
@@ -83,4 +97,55 @@ describe('client Prisma', () => {
     const unchanged = await prisma.securityEvent.findUnique({ where: { id: event.id } });
     expect(unchanged?.type).toBe('LOGIN_FAILED');
   });
+});
+
+describe('contrôle du rôle à chaque nouvelle connexion', () => {
+  it('accepte le rôle de l’API', async () => {
+    const client = await connectAs(APP_ROLE);
+    try {
+      await expect(assertLeastPrivilegedSession(client)).resolves.toBeUndefined();
+    } finally {
+      await client.end();
+    }
+  });
+
+  it.each([
+    [MIGRATOR_ROLE, 'propriétaire des tables'],
+    [SUPERUSER_ROLE, 'superutilisateur'],
+  ] as const)('refuse %s (%s)', async (role, reason) => {
+    const client = await connectAs(role);
+    try {
+      const error: unknown = await assertLeastPrivilegedSession(client).catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(DatabaseRoleError);
+      expect(error instanceof DatabaseRoleError ? error.reasons : []).toContain(reason);
+    } finally {
+      await client.end();
+    }
+  });
+
+  it.each([MIGRATOR_ROLE, SUPERUSER_ROLE] as const)(
+    'un client Prisma sous %s ne sert aucune donnée',
+    async (role: Role) => {
+      const env = testDatabaseEnv();
+      const errors: Error[] = [];
+      const privileged = createPrismaClient({
+        connection: {
+          host: env.DB_HOST,
+          port: env.DB_PORT,
+          database: env.DB_NAME,
+          user: role,
+          password: { reveal: () => testPassword(role) },
+        },
+        maxConnections: 1,
+        applicationName: 'amg-api-db-tests',
+        onPoolError: (error) => errors.push(error),
+      });
+      try {
+        await expect(privileged.user.count()).rejects.toThrow();
+        await expect(privileged.$queryRaw`SELECT 1`).rejects.toThrow();
+      } finally {
+        await privileged.$disconnect();
+      }
+    },
+  );
 });
