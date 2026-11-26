@@ -288,8 +288,8 @@ CREATE TRIGGER "enrollment_codes_single_use_guard"
 -- Partie 2c : journal de sécurité en ajout seul, pour tous les rôles non superutilisateurs (le
 -- rôle de l'API n'a de toute façon ni UPDATE ni DELETE). Date et identifiant sont ceux de la base,
 -- jamais ceux fournis par l'application. Suppression admise seulement au-delà de la rétention de
--- 12 mois (purge, lot 5). Le propriétaire de la table (`amg_migrator`) pourrait désactiver,
--- remplacer ou supprimer ce déclencheur : le déclencheur d'événement `amg_guard_security_events`
+-- 12 mois (purge, lot 5). Le propriétaire de la table (`amg_migrator`) pourrait désactiver ou
+-- supprimer ces déclencheurs : le déclencheur d'événement `amg_guard_security_events`
 -- (sql/roles.sql, créé par le superutilisateur) le lui interdit. Seul un superutilisateur peut
 -- passer outre (accès SSH de l'exploitant, incident documenté).
 -- Une restauration pg_restore crée les déclencheurs après les données : les dates restaurées sont conservées.
@@ -300,34 +300,17 @@ CREATE TRIGGER "enrollment_codes_single_use_guard"
 
 GRANT SELECT, INSERT ON TABLE "security_events" TO "amg_app";
 
-CREATE FUNCTION "security_events_append_only"() RETURNS trigger
-  LANGUAGE plpgsql
-  SET search_path = pg_catalog, pg_temp
-AS $$
-BEGIN
-  IF TG_OP = 'INSERT' THEN
-    NEW."id" := uuidv7();
-    NEW."occurred_at" := now();
-    RETURN NEW;
-  ELSIF TG_OP = 'DELETE' THEN
-    IF OLD."occurred_at" > now() - interval '12 months' THEN
-      RAISE EXCEPTION 'journal de sécurité : suppression interdite avant 12 mois';
-    END IF;
-    RETURN OLD;
-  END IF;
-  RAISE EXCEPTION 'journal de sécurité : % interdit', TG_OP;
-END;
-$$;
-
-REVOKE ALL ON FUNCTION "security_events_append_only"() FROM PUBLIC;
-
+-- Fonction des déclencheurs : `amg_guard.security_events_append_only()`, créée et possédée par le
+-- superutilisateur (sql/roles.sql, joué avant cette migration) : `amg_migrator` peut l'utiliser
+-- (EXECUTE accordé pour CREATE TRIGGER) mais ni la remplacer, ni la supprimer. Hors du schéma public
+-- géré par Prisma : aucune dérive pour `prisma migrate diff`.
 CREATE TRIGGER "security_events_append_only_row"
   BEFORE INSERT OR UPDATE OR DELETE ON "security_events"
-  FOR EACH ROW EXECUTE FUNCTION "security_events_append_only"();
+  FOR EACH ROW EXECUTE FUNCTION "amg_guard"."security_events_append_only"();
 
 CREATE TRIGGER "security_events_append_only_truncate"
   BEFORE TRUNCATE ON "security_events"
-  FOR EACH STATEMENT EXECUTE FUNCTION "security_events_append_only"();
+  FOR EACH STATEMENT EXECUTE FUNCTION "amg_guard"."security_events_append_only"();
 
 -- ---------------------------------------------------------------------------------------------
 -- Partie 2d : droits du rôle de l'API `amg_app` (ni DDL, ni TRUNCATE, ni accès à _prisma_migrations).

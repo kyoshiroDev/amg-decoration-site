@@ -2,8 +2,10 @@
 // des tables (`amg_migrator`) ne peut ni modifier, ni vider, ni supprimer un événement de moins de
 // 12 mois (déclencheur de la migration), ni désactiver, remplacer ou supprimer ce déclencheur, ni
 // bâillonner l'API (droits), censurer des événements (index) ou réécrire l'historique (valeurs du
-// type) : déclencheur d'événement du superutilisateur, sql/roles.sql. Seul le superutilisateur passe
-// outre, et le rejeu de roles.sql (amg_guard.security_events_violation) le révèle.
+// type) : déclencheur d'événement du superutilisateur, sql/roles.sql, et fonction du déclencheur
+// possédée par lui. Seul le superutilisateur passe outre, et le rejeu de roles.sql
+// (amg_guard.security_events_violation) le révèle. Le superutilisateur n'a pas `public` dans son
+// chemin de recherche (roles.sql) : ses requêtes nomment `public.` explicitement.
 import type pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -35,8 +37,8 @@ afterAll(async () => {
 async function insertEvent(client: pg.Client, occurredAt?: string): Promise<string> {
   const { rows } = await client.query<{ id: string }>(
     occurredAt === undefined
-      ? `INSERT INTO security_events (type, ip, device) VALUES ('LOGIN_FAILED', '203.0.113.7', 'Firefox, Linux') RETURNING id`
-      : `INSERT INTO security_events (type, occurred_at) VALUES ('LOGIN_FAILED', $1) RETURNING id`,
+      ? `INSERT INTO public.security_events (type, ip, device) VALUES ('LOGIN_FAILED', '203.0.113.7', 'Firefox, Linux') RETURNING id`
+      : `INSERT INTO public.security_events (type, occurred_at) VALUES ('LOGIN_FAILED', $1) RETURNING id`,
     occurredAt === undefined ? [] : [occurredAt],
   );
   const row = rows[0];
@@ -146,7 +148,9 @@ describe('propriétaire des tables (rôle des migrations)', () => {
       );
       await superuser.query(`SET LOCAL session_replication_role = 'origin'`);
       await superuser.query(`SET LOCAL ROLE ${MIGRATOR_ROLE}`);
-      const result = await superuser.query('DELETE FROM security_events WHERE id = $1', [id]);
+      const result = await superuser.query('DELETE FROM public.security_events WHERE id = $1', [
+        id,
+      ]);
       expect(result.rowCount).toBe(1);
     });
   });
@@ -198,17 +202,8 @@ describe('propriétaire des tables : protection du déclencheur (déclencheur d�
       'ALTER TRIGGER security_events_append_only_row ON security_events RENAME TO renamed',
     ],
     [
-      'remplacer la fonction du déclencheur',
-      'CREATE OR REPLACE FUNCTION security_events_append_only() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$',
-    ],
-    [
-      'renommer la fonction du déclencheur',
-      'ALTER FUNCTION security_events_append_only() RENAME TO renamed',
-    ],
-    ['supprimer la fonction du déclencheur', 'DROP FUNCTION security_events_append_only() CASCADE'],
-    [
       'conditionner le déclencheur (WHEN)',
-      'CREATE OR REPLACE TRIGGER security_events_append_only_row BEFORE INSERT OR UPDATE OR DELETE ON security_events FOR EACH ROW WHEN (false) EXECUTE FUNCTION security_events_append_only()',
+      'CREATE OR REPLACE TRIGGER security_events_append_only_row BEFORE INSERT OR UPDATE OR DELETE ON security_events FOR EACH ROW WHEN (false) EXECUTE FUNCTION amg_guard.security_events_append_only()',
     ],
     [
       'ajouter un déclencheur qui réécrit la date',
@@ -222,6 +217,14 @@ describe('propriétaire des tables : protection du déclencheur (déclencheur d�
     ],
     ['supprimer une colonne', 'ALTER TABLE security_events DROP COLUMN details'],
     ['activer la RLS', 'ALTER TABLE security_events ENABLE ROW LEVEL SECURITY'],
+    [
+      'ajouter une contrainte CHECK non validée',
+      `ALTER TABLE security_events ADD CONSTRAINT hush CHECK (type <> 'CSRF_REJECTED') NOT VALID`,
+    ],
+    [
+      'rendre une colonne facultative obligatoire',
+      'ALTER TABLE security_events ALTER COLUMN user_id SET NOT NULL',
+    ],
     ['ajouter une règle', 'CREATE RULE swallow AS ON INSERT TO security_events DO INSTEAD NOTHING'],
     ['hériter de la table', 'CREATE TABLE child_events () INHERITS (security_events)'],
     ['supprimer la table', 'DROP TABLE security_events'],
@@ -279,6 +282,11 @@ describe('propriétaire des tables : protection du déclencheur (déclencheur d�
     ],
     ['renommer le type d’événement', 'ALTER TYPE security_event_type RENAME TO other_type'],
     ['ajouter une politique RLS', 'CREATE POLICY hide ON security_events USING (false)'],
+    // Clé étrangère vers le journal : ses déclencheurs internes bloqueraient la purge.
+    [
+      'référencer le journal par une clé étrangère',
+      'CREATE TABLE public.pinned_events (event_id uuid REFERENCES security_events (id))',
+    ],
   ])('ne peut pas %s (état contrôlé après toute commande DDL)', async (_label, sql) => {
     await inRolledBackTransaction(migrator, async () => {
       await expectSqlError(
@@ -291,21 +299,32 @@ describe('propriétaire des tables : protection du déclencheur (déclencheur d�
     });
   });
 
-  it('ne peut ni modifier ni remplacer les fonctions de contrôle du superutilisateur', async () => {
+  it.each([
+    [
+      'remplacer une fonction de contrôle',
+      `CREATE OR REPLACE FUNCTION amg_guard.security_events_violation() RETURNS text
+         LANGUAGE sql AS $$ SELECT NULL::text $$`,
+    ],
+    [
+      'désactiver le déclencheur d’événement',
+      'ALTER EVENT TRIGGER amg_guard_security_events DISABLE',
+    ],
+    [
+      'remplacer la fonction du déclencheur du journal',
+      'CREATE OR REPLACE FUNCTION amg_guard.security_events_append_only() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$',
+    ],
+    [
+      'renommer la fonction du déclencheur du journal',
+      'ALTER FUNCTION amg_guard.security_events_append_only() RENAME TO renamed',
+    ],
+    [
+      'supprimer la fonction du déclencheur du journal',
+      'DROP FUNCTION amg_guard.security_events_append_only() CASCADE',
+    ],
+    ['effacer le marqueur du journal scellé', 'DELETE FROM amg_guard.journal_sealed'],
+  ])('ne peut pas %s (objets du superutilisateur)', async (_label, sql) => {
     await inRolledBackTransaction(migrator, async () => {
-      await expectSqlError(
-        migrator,
-        `CREATE OR REPLACE FUNCTION amg_guard.security_events_violation() RETURNS text
-           LANGUAGE sql AS $$ SELECT NULL::text $$`,
-        [],
-        SQLSTATE.insufficientPrivilege,
-      );
-      await expectSqlError(
-        migrator,
-        'ALTER EVENT TRIGGER amg_guard_security_events DISABLE',
-        [],
-        SQLSTATE.insufficientPrivilege,
-      );
+      await expectSqlError(migrator, sql, [], SQLSTATE.insufficientPrivilege);
     });
   });
 
@@ -334,7 +353,7 @@ describe('propriétaire des tables : protection du déclencheur (déclencheur d�
   it('le superutilisateur passe outre (incident documenté)', async () => {
     await inRolledBackTransaction(superuser, async () => {
       await superuser.query(
-        'ALTER TABLE security_events DISABLE TRIGGER security_events_append_only_row',
+        'ALTER TABLE public.security_events DISABLE TRIGGER security_events_append_only_row',
       );
     });
   });
@@ -349,24 +368,69 @@ async function violation(client: pg.Client): Promise<string | null> {
 }
 
 describe('vérification de l’état du journal (rejeu de roles.sql)', () => {
-  it('le journal migré est conforme', async () => {
+  it('le journal migré est conforme et marqué scellé', async () => {
     expect(await violation(superuser)).toBeNull();
+    const { rows } = await superuser.query<{ sealed: boolean }>(
+      'SELECT sealed FROM amg_guard.journal_sealed',
+    );
+    expect(rows).toEqual([{ sealed: true }]);
+  });
+
+  it('le journal migré n’a ni déclencheur interne ni contrainte en dehors de celles attendues', async () => {
+    const { rows } = await superuser.query<{ internal: number; triggers: number; others: number }>(
+      `SELECT (SELECT count(*)::int FROM pg_catalog.pg_trigger t
+                WHERE t.tgrelid = 'public.security_events'::regclass AND t.tgisinternal) AS internal,
+              (SELECT count(*)::int FROM pg_catalog.pg_trigger t
+                WHERE t.tgrelid = 'public.security_events'::regclass) AS triggers,
+              (SELECT count(*)::int FROM pg_catalog.pg_constraint k
+                WHERE k.conrelid = 'public.security_events'::regclass AND k.contype NOT IN ('p', 'c', 'n')) AS others`,
+    );
+    expect(rows).toEqual([{ internal: 0, triggers: 2, others: 0 }]);
   });
 
   it.each([
-    ['droits modifiés', 'REVOKE INSERT ON security_events FROM amg_app'],
+    ['droits modifiés', 'REVOKE INSERT ON public.security_events FROM amg_app'],
     [
       'déclencheurs modifiés',
-      'ALTER TABLE security_events DISABLE TRIGGER security_events_append_only_row',
+      'ALTER TABLE public.security_events DISABLE TRIGGER security_events_append_only_row',
     ],
     [
       'index unique, partiel',
-      `CREATE UNIQUE INDEX censor ON security_events ((true)) WHERE type = 'CSRF_REJECTED'`,
+      `CREATE UNIQUE INDEX censor ON public.security_events ((true)) WHERE type = 'CSRF_REJECTED'`,
     ],
     [
       'valeurs de security_event_type renommées',
-      `ALTER TYPE security_event_type RENAME VALUE 'LOGIN_FAILED' TO 'LOGIN_FAILED_OLD'`,
+      `ALTER TYPE public.security_event_type RENAME VALUE 'LOGIN_FAILED' TO 'LOGIN_FAILED_OLD'`,
     ],
+    [
+      'contraintes modifiées',
+      `ALTER TABLE public.security_events ADD CONSTRAINT hush CHECK (type <> 'CSRF_REJECTED') NOT VALID`,
+    ],
+    [
+      'contraintes modifiées',
+      'ALTER TABLE public.security_events DROP CONSTRAINT security_events_details_check',
+    ],
+    [
+      'contraintes modifiées',
+      'ALTER TABLE public.security_events ALTER COLUMN user_id SET NOT NULL',
+    ],
+    [
+      'clé étrangère vers le journal',
+      'CREATE TABLE public.pinned_events (event_id uuid REFERENCES public.security_events (id))',
+    ],
+    [
+      // Clé étrangère depuis le journal : déclencheurs internes sur la table.
+      'déclencheurs modifiés',
+      `CREATE TABLE public.probe_users (id uuid PRIMARY KEY);
+       ALTER TABLE public.security_events ADD FOREIGN KEY (user_id) REFERENCES public.probe_users (id)`,
+    ],
+    [
+      // Scellé une fois, scellé toujours : un journal descellé ou supprimé est un écart.
+      'journal supprimé, remplacé ou descellé',
+      `DROP TRIGGER security_events_append_only_row ON public.security_events;
+       DROP TRIGGER security_events_append_only_truncate ON public.security_events`,
+    ],
+    ['journal supprimé, remplacé ou descellé', 'DROP TABLE public.security_events'],
   ])('révèle ce que le superutilisateur a changé : %s', async (expected, sql) => {
     await inRolledBackTransaction(superuser, async () => {
       await superuser.query(sql);
@@ -382,10 +446,10 @@ describe('vérification de l’état du journal (rejeu de roles.sql)', () => {
       await superuser.query('ALTER EVENT TRIGGER amg_guard_security_events DISABLE');
       await superuser.query('ALTER EVENT TRIGGER amg_guard_security_events_drop DISABLE');
       await superuser.query(`SET LOCAL ROLE ${MIGRATOR_ROLE}`);
-      await superuser.query('ALTER TABLE security_events ADD COLUMN probe_column int');
+      await superuser.query('ALTER TABLE public.security_events ADD COLUMN probe_column int');
       expect(await violation(superuser)).toBeNull();
       await superuser.query(
-        'ALTER TABLE security_events DISABLE TRIGGER security_events_append_only_row',
+        'ALTER TABLE public.security_events DISABLE TRIGGER security_events_append_only_row',
       );
       expect(await violation(superuser)).toBe('déclencheurs modifiés');
     });

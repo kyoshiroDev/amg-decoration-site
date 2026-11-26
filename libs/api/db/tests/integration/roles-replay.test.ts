@@ -1,0 +1,123 @@
+// Rejeu de sql/roles.sql par le superutilisateur, base migrée (ADR-0023, EXPLOITATION.md §11) :
+// `amg_migrator` peut créer dans `public` des fonctions et opérateurs mieux assortis que ceux de
+// pg_catalog (`public.format(text, name)` est préférée à `format(text, VARIADIC "any")`). Exécutés
+// par le superutilisateur, ils pourraient faire RESET ROLE et accorder SUPERUSER. roles.sql épingle
+// le chemin de recherche de sa session et qualifie ses appels : le rejeu, lancé ici depuis une
+// session dont le chemin contient `public` (pire cas), n'exécute aucun piège. Le superutilisateur
+// reçoit en outre un chemin par défaut sans `public`.
+import { readFileSync } from 'node:fs';
+import type pg from 'pg';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { MIGRATOR_ROLE, SQLSTATE, SUPERUSER_ROLE, connectAs } from './test-database.js';
+
+const ROLES_SQL = readFileSync(new URL('../../sql/roles.sql', import.meta.url), 'utf8');
+
+/** Pièges d'amg_migrator : chaque fonction lève une erreur si elle est appelée. */
+const TRAPS: readonly (readonly [create: string, drop: string])[] = [
+  ['FUNCTION public.format(text, name) RETURNS text', 'FUNCTION public.format(text, name)'],
+  ['FUNCTION public.format(text, text) RETURNS text', 'FUNCTION public.format(text, text)'],
+  ['FUNCTION public.format(text, regclass) RETURNS text', 'FUNCTION public.format(text, regclass)'],
+  ['FUNCTION public.current_database() RETURNS name', 'FUNCTION public.current_database()'],
+  ['FUNCTION public.to_regclass(text) RETURNS regclass', 'FUNCTION public.to_regclass(text)'],
+  [
+    'FUNCTION public.to_regprocedure(text) RETURNS regprocedure',
+    'FUNCTION public.to_regprocedure(text)',
+  ],
+  [
+    'FUNCTION public.pg_terminate_backend(integer) RETURNS boolean',
+    'FUNCTION public.pg_terminate_backend(integer)',
+  ],
+  [
+    'FUNCTION public.trap_ne(name, text) RETURNS boolean',
+    'FUNCTION public.trap_ne(name, text) CASCADE',
+  ],
+  [
+    'FUNCTION public.trap_eq(name, text) RETURNS boolean',
+    'FUNCTION public.trap_eq(name, text) CASCADE',
+  ],
+];
+
+let migrator: pg.Client;
+
+async function rolsuper(client: pg.Client): Promise<boolean | undefined> {
+  const { rows } = await client.query<{ rolsuper: boolean }>(
+    `SELECT rolsuper FROM pg_catalog.pg_roles WHERE rolname = 'amg_migrator'`,
+  );
+  return rows[0]?.rolsuper;
+}
+
+beforeAll(async () => {
+  migrator = await connectAs(MIGRATOR_ROLE);
+  for (const [create] of TRAPS) {
+    await migrator.query(
+      `CREATE ${create} LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'piège exécuté'; END $$`,
+    );
+  }
+  await migrator.query(
+    'CREATE OPERATOR public.<> (LEFTARG = name, RIGHTARG = text, FUNCTION = public.trap_ne)',
+  );
+  await migrator.query(
+    'CREATE OPERATOR public.= (LEFTARG = name, RIGHTARG = text, FUNCTION = public.trap_eq)',
+  );
+});
+
+afterAll(async () => {
+  for (const [, drop] of TRAPS) await migrator.query(`DROP ${drop}`);
+  await migrator.end();
+});
+
+describe('rejeu de roles.sql face aux pièges du rôle des migrations', () => {
+  it('le piège serait appelé par une session dont le chemin contient public', async () => {
+    const exposed = await connectAs(SUPERUSER_ROLE, { searchPath: 'public' });
+    try {
+      await expect(exposed.query(`SELECT format('%I', current_database())`)).rejects.toThrow(
+        /piège exécuté/,
+      );
+    } finally {
+      await exposed.end();
+    }
+  });
+
+  it('roles.sql réussit sans exécuter aucun piège et laisse amg_migrator sans SUPERUSER', async () => {
+    const exposed = await connectAs(SUPERUSER_ROLE, { searchPath: 'public' });
+    try {
+      await exposed.query(ROLES_SQL);
+      expect(await rolsuper(exposed)).toBe(false);
+    } finally {
+      await exposed.end();
+    }
+  });
+});
+
+describe('sessions du superutilisateur', () => {
+  let superuser: pg.Client;
+
+  beforeAll(async () => {
+    superuser = await connectAs(SUPERUSER_ROLE);
+  });
+
+  afterAll(async () => {
+    await superuser.end();
+  });
+
+  it('ont par défaut un chemin de recherche sans public', async () => {
+    const { rows } = await superuser.query<{ search_path: string }>('SHOW search_path');
+    expect(rows).toEqual([{ search_path: 'pg_catalog, pg_temp' }]);
+  });
+
+  it('ferment une fenêtre de migration sans appeler la fonction homonyme de public', async () => {
+    // PID factice : aucune session n'est interrompue ; seule compte la fonction résolue.
+    const { rows } = await superuser.query<{ terminated: boolean }>(
+      'SELECT pg_terminate_backend(pid) AS terminated FROM (SELECT 2147483647 AS pid) AS s',
+    );
+    expect(rows).toEqual([{ terminated: false }]);
+  });
+
+  it('ne trouvent pas une table de public citée sans schéma', async () => {
+    const error: unknown = await superuser
+      .query('SELECT count(*) FROM _prisma_migrations')
+      .catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: SQLSTATE.undefinedTable });
+    expect(await rolsuper(superuser)).toBe(false);
+  });
+});

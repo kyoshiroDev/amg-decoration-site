@@ -94,12 +94,43 @@ describe('attributs des rôles', () => {
   it('applique les délais côté serveur au rôle des migrations', async () => {
     const { rows } = await migrator.query<{ name: string; setting: string }>(
       `SELECT name, setting FROM pg_catalog.pg_settings
-        WHERE name IN ('statement_timeout', 'lock_timeout') ORDER BY name`,
+        WHERE name IN ('statement_timeout', 'lock_timeout', 'idle_in_transaction_session_timeout')
+        ORDER BY name`,
     );
     expect(rows).toEqual([
+      { name: 'idle_in_transaction_session_timeout', setting: '60000' },
       { name: 'lock_timeout', setting: '5000' },
       { name: 'statement_timeout', setting: '300000' },
     ]);
+  });
+
+  it('une transaction abandonnée du rôle des migrations est fermée par le serveur', async () => {
+    // Délai raccourci pour cette seule session : le mécanisme est celui du réglage d'une minute.
+    const client = await connectAs(MIGRATOR_ROLE);
+    const closed = new Promise<void>((resolve) => {
+      client.on('error', () => {
+        resolve();
+      });
+      client.on('end', () => {
+        resolve();
+      });
+    });
+    try {
+      await client.query(`SET idle_in_transaction_session_timeout = '200ms'`);
+      await client.query('BEGIN');
+      await closed;
+      await expect(client.query('SELECT 1')).rejects.toThrow();
+    } finally {
+      await client.end().catch(() => undefined);
+    }
+  });
+
+  it('le superutilisateur n’a pas le schéma public dans son chemin par défaut', async () => {
+    const { rows } = await migrator.query<{ config: string[] | null }>(
+      `SELECT s.setconfig AS config FROM pg_catalog.pg_db_role_setting s
+        WHERE s.setrole = 'amg'::regrole AND s.setdatabase = 0`,
+    );
+    expect(rows).toEqual([{ config: ['search_path=pg_catalog, pg_temp'] }]);
   });
 
   it('le schéma amg_guard est en lecture seule pour le rôle des migrations, fermé à l’API', async () => {
@@ -185,11 +216,42 @@ describe('propriété et droits sur les objets', () => {
     expect(rows).toEqual([{ update_journal: false, read_migrations: false }]);
   });
 
-  it('le rôle de l’API ne peut pas appeler la fonction du déclencheur', async () => {
-    const { rows } = await app.query<{ allowed: boolean }>(
-      `SELECT pg_catalog.has_function_privilege('amg_app', 'public.security_events_append_only()', 'EXECUTE') AS allowed`,
+  it('la fonction du déclencheur du journal appartient au superutilisateur, hors du schéma public', async () => {
+    // Requête du rôle des migrations : seul à avoir l'usage du schéma amg_guard.
+    const { rows } = await migrator.query<{
+      superuser_owner: boolean;
+      security_definer: boolean;
+      config: string[] | null;
+      app_execute: boolean;
+      migrator_execute: boolean;
+      in_public: boolean;
+    }>(
+      `SELECT r.rolsuper AS superuser_owner, p.prosecdef AS security_definer, p.proconfig AS config,
+              pg_catalog.has_function_privilege('amg_app', p.oid, 'EXECUTE') AS app_execute,
+              pg_catalog.has_function_privilege('amg_migrator', p.oid, 'EXECUTE') AS migrator_execute,
+              pg_catalog.to_regprocedure('public.security_events_append_only()') IS NOT NULL AS in_public
+         FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_roles r ON r.oid = p.proowner
+        WHERE p.oid = 'amg_guard.security_events_append_only()'::regprocedure`,
     );
-    expect(rows).toEqual([{ allowed: false }]);
+    expect(rows).toEqual([
+      {
+        superuser_owner: true,
+        security_definer: false,
+        config: ['search_path=pg_catalog, pg_temp'],
+        app_execute: false,
+        migrator_execute: true,
+        in_public: false,
+      },
+    ]);
+  });
+
+  it('le marqueur du journal scellé est en lecture seule pour le rôle des migrations', async () => {
+    const { rows } = await migrator.query<Record<string, boolean>>(
+      `SELECT pg_catalog.has_table_privilege('amg_migrator', 'amg_guard.journal_sealed', 'SELECT') AS migrator_select,
+              pg_catalog.has_table_privilege('amg_migrator', 'amg_guard.journal_sealed', 'INSERT, UPDATE, DELETE, TRUNCATE') AS migrator_write,
+              pg_catalog.has_table_privilege('amg_app', 'amg_guard.journal_sealed', 'SELECT') AS app_select`,
+    );
+    expect(rows).toEqual([{ migrator_select: true, migrator_write: false, app_select: false }]);
   });
 });
 
@@ -217,7 +279,7 @@ describe('le rôle de l’API ne fait aucun DDL', () => {
   it.each(['postgres', 'template1'])(
     'ne peut pas se connecter à la base « %s » de l’image',
     async (database) => {
-      await expect(connectAs(APP_ROLE, database)).rejects.toMatchObject({
+      await expect(connectAs(APP_ROLE, { database })).rejects.toMatchObject({
         code: SQLSTATE.insufficientPrivilege,
       });
     },
@@ -238,7 +300,7 @@ describe('le rôle des migrations reste confiné à sa base', () => {
   it.each(['postgres', 'template1'])(
     'ne peut pas se connecter à la base « %s » de l’image',
     async (database) => {
-      await expect(connectAs(MIGRATOR_ROLE, database)).rejects.toMatchObject({
+      await expect(connectAs(MIGRATOR_ROLE, { database })).rejects.toMatchObject({
         code: SQLSTATE.insufficientPrivilege,
       });
     },

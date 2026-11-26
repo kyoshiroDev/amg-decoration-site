@@ -53,16 +53,30 @@ export function testPassword(role: Role): string {
   }
 }
 
-/** Connexion directe (pg) sous un rôle donné, éventuellement à une autre base. */
-export async function connectAs(role: Role, database?: string): Promise<pg.Client> {
+/** Réglages facultatifs d'une connexion de test. */
+export interface ConnectionSettings {
+  /** Autre base que celle des tests. */
+  readonly database?: string;
+  /**
+   * Chemin de recherche imposé à l'ouverture de la session (`-c search_path=…`, prioritaire sur
+   * `ALTER ROLE … SET`) : un seul schéma, sans espace.
+   */
+  readonly searchPath?: 'public';
+}
+
+/** Connexion directe (pg) sous un rôle donné. */
+export async function connectAs(role: Role, settings: ConnectionSettings = {}): Promise<pg.Client> {
   const env = testDatabaseEnv();
   const client = new pg.Client({
     host: env.DB_HOST,
     port: env.DB_PORT,
-    database: database ?? env.DB_NAME,
+    database: settings.database ?? env.DB_NAME,
     user: role,
     password: testPassword(role),
     connectionTimeoutMillis: 5_000,
+    ...(settings.searchPath === undefined
+      ? {}
+      : { options: `-c search_path=${settings.searchPath}` }),
   });
   await client.connect();
   return client;
@@ -120,6 +134,7 @@ export const SQLSTATE = Object.freeze({
   foreignKeyViolation: '23503',
   stringTooLong: '22001',
   raiseException: 'P0001',
+  undefinedTable: '42P01',
 });
 
 export function uniqueEmail(): string {
