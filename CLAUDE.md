@@ -216,7 +216,7 @@ npm run test         # vitest
 npm run test:e2e     # playwright (lance le build + preview)
 npm run lhci         # lighthouse ci sur le build
 npm run verify       # check + lint + test + build  ← doit être vert avant toute revue
-npx nx show projects # liste les projets du monorepo (@amg/site, @amg/shared-tokens)
+npx nx show projects # liste les projets du monorepo (@amg/site, @amg/api, @amg/shared-tokens, @amg/shared-schemas)
 ```
 
 Toutes ces commandes se lancent **depuis la racine** du dépôt. **Jamais `npm ci` en local** : il efface le cache d'images `apps/site/node_modules/.astro`.

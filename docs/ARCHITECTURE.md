@@ -8,12 +8,14 @@
 
 Le dépôt est un monorepo **Nx 24.0.6 + workspaces npm** (ADR-0019 pour le choix, ADR-0021 pour l'outillage). Workspaces déclarés dans le `package.json` racine : `apps/*`, `libs/shared/*`. Scope des paquets internes : `@amg/` (privés, jamais publiés). `npx nx show projects` les liste.
 
-| Projet               | Dossier               | Rôle                                                                                                                                                        |
-| -------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@amg/site`          | `apps/site/`          | Site vitrine Astro statique. Projet à scripts npm : Nx infère les cibles de `apps/site/package.json`, sans plugin Astro ni `project.json` (propriété `nx`). |
-| `@amg/shared-tokens` | `libs/shared/tokens/` | Tokens de design en CSS seul, sans build, exposé par `exports` (`@amg/shared-tokens/tokens.css`). Cible `lint` (Stylelint).                                 |
+| Projet                | Dossier                | Rôle                                                                                                                                                                          |
+| --------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@amg/site`           | `apps/site/`           | Site vitrine Astro statique. Projet à scripts npm : Nx infère les cibles de `apps/site/package.json`, sans plugin Astro ni `project.json` (propriété `nx`).                   |
+| `@amg/shared-tokens`  | `libs/shared/tokens/`  | Tokens de design en CSS seul, sans build, exposé par `exports` (`@amg/shared-tokens/tokens.css`). Cible `lint` (Stylelint).                                                   |
+| `@amg/api`            | `apps/api/`            | API des CRM : NestJS 12 sur Fastify, ESM, compilée par `tsc` (`dist/main.js`). Cibles `build`, `check`, `lint`, `test` (Vitest) ; dépend de `@amg/shared-schemas` (ADR-0023). |
+| `@amg/shared-schemas` | `libs/shared/schemas/` | Schémas Zod partagés par l'API et les futures apps Angular, compilés vers `dist/` (`exports`). Cibles `build`, `check`, `lint`, `test`.                                       |
 
-**Graphe** : `@amg/site` → `@amg/shared-tokens` (dépendance `"*"` du site). Le site l'importe en CSS (`@import url('@amg/shared-tokens/tokens.css')` dans `src/styles/global.css`), en texte brut pour le styleguide (`?raw`) et dans les tests (résolution du paquet). La texture de grain (`--grain-image`) est propre au site : elle est déclarée dans `src/styles/global.css`, pas dans la lib.
+**Graphe** : `@amg/site` → `@amg/shared-tokens` (dépendance `"*"` du site) ; `@amg/api` → `@amg/shared-schemas`. Le site ne dépend d'aucun projet du CRM : son graphe, ses entrées de cache et son build Vercel sont inchangés. Le site l'importe en CSS (`@import url('@amg/shared-tokens/tokens.css')` dans `src/styles/global.css`), en texte brut pour le styleguide (`?raw`) et dans les tests (résolution du paquet). La texture de grain (`--grain-image`) est propre au site : elle est déclarée dans `src/styles/global.css`, pas dans la lib.
 
 **Répartition** : l'outillage commun vit à la racine, une seule version par outil (ESLint et plugins, Prettier, Stylelint, TypeScript, Vitest, Playwright, axe, LHCI, Nx) ; les dépendances propres au site (Astro, intégrations, Sätteri, `schema-dts`, `@astrojs/check`) dans `apps/site/package.json`. ESLint : base partagée à la racine (`sharedConfigs`, `sharedRules` de `eslint.config.js`), config du site dans `apps/site/eslint.config.js`. Stylelint (`stylelint.config.mjs`) et Prettier sont uniques, à la racine.
 
@@ -27,7 +29,18 @@ Le dépôt est un monorepo **Nx 24.0.6 + workspaces npm** (ADR-0019 pour le choi
 
 **Réglages mémoire** (machine de développement limitée) : `parallel: 1`, pas de daemon (`useDaemonProcess: false`), pas de TUI, `analytics: false` ; les scripts racine passent `--outputStyle=static` pour des journaux lisibles par les agents.
 
-**Commandes** : les `npm run …` racine sont inchangées. `build`, `check`, `lint` et `test` passent par `nx run-many` ; `dev`, `preview`, `test:e2e`, `lhci`… délèguent au workspace (`npm run <script> -w @amg/site`). `nx affected` est reporté à l'arrivée d'une deuxième app. **Jamais `npm ci` en local** : il effacerait le cache d'images `apps/site/node_modules/.astro`.
+**Commandes** : les `npm run …` racine sont inchangées. `build`, `check`, `lint` et `test` passent par `nx run-many` ; `dev`, `preview`, `test:e2e`, `lhci`… délèguent au workspace (`npm run <script> -w @amg/site`). `nx affected` reste reporté malgré l'arrivée de l'API (deuxième app) : `run-many` reste simple et la PR vers `main` vérifie tout ; à réexaminer à l'arrivée des apps Angular si la durée de la CI devient gênante. **Jamais `npm ci` en local** : il effacerait le cache d'images `apps/site/node_modules/.astro`.
+
+## API des CRM (`apps/api`, ADR-0023)
+
+Chemins relatifs à la racine du dépôt dans cette section.
+
+- **TypeScript « solution »** : `tsconfig.base.json` (racine, API et libs seulement, sans `paths`) ; chaque lib a un `tsconfig.lib.json` (`composite`, `src/` → `dist/`) et un `tsconfig.json` de contrôle (src + tests, sans émission, lu aussi par ESLint et Vitest). L'API référence les libs (`references`) et les importe par leur nom de paquet (`@amg/shared-schemas` → `dist/index.js`). Nx construit les libs avant `build`, `check`, `lint` et `test` de l'API (`dependsOn: ["^build"]` dans `apps/api/package.json`).
+- **Lint typé** : `typedTsConfigs(import.meta.dirname)` exporté par `eslint.config.js` racine (`strictTypeChecked`, `stylisticTypeChecked`, base partagée), repris par `apps/api/eslint.config.js` et `libs/shared/schemas/eslint.config.js`.
+- **Arborescence de `apps/api/src/`** : `main.ts` (point d'entrée : configuration, journal JSON, écoute), `app.factory.ts` (`createApp`, partagée par `main.ts` et les tests : préfixe `api`, Fastify, en-têtes, pas de CORS), `app.module.ts`, `config/` (`env.schema.ts` liste blanche des variables, `load-env.ts` fonction pure avec secrets `*_FILE`, `secrets.ts` déclaration des secrets par lot, `secret-value.ts` enveloppe masquée, `read-secret-file.ts` seul accès disque), `http/security-headers.ts` (en-têtes de toute réponse), `health/` (`GET /api/health`).
+- **Tests** (`apps/api/tests/`) : `unit/` (configuration, secrets, métadonnées de décorateurs) et `http/` (application complète par `createApp`, requêtes par `app.inject()`, sans réseau) ; l'intégration contre Postgres/Redis (`test:integration`) arrive au lot 1.
+- **Base locale** : `compose.dev.yaml` (racine) lance Postgres et Redis aux digests de `deploy/compose.yaml`, sur `127.0.0.1` seulement : `docker compose -f compose.dev.yaml up -d`, puis `down` après usage.
+- **Démarrage local** : `npx nx run @amg/api:build`, puis `NODE_ENV=development AMG_ENV=dev npm run start -w @amg/api` (écoute `127.0.0.1:3000`).
 
 ## Principes
 
@@ -216,7 +229,7 @@ Poids total mesuré par page (gzip, audit performance de la Phase 7, hors script
 - `astro.config.mjs` → intégration `amg:garde-fou-production` (hook `astro:build:start`) : si `VERCEL_ENV` vaut `production` **et** que `VERCEL_PROJECT_PRODUCTION_URL` désigne le vrai domaine (`isReleaseGuarded`), échec du build tant qu'un `TODO(contenu)` reste dans les pages légales (ADR-0015 révisée).
 - `scripts/check-prod.ts` (`npm run check:prod`, exécuté directement par Node) : le même contrôle en local, quel que soit l'environnement. Ne pas confondre avec `src/scripts/` (JS client).
 - `tsconfig.json` : `astro/tsconfigs/strictest` + alias `@/*`.
-- Racine du dépôt : `nx.json` (§ Monorepo), `eslint.config.js` (base partagée), `stylelint.config.mjs`, Prettier, `vercel.json`, `.github/workflows/ci.yml`.
+- Racine du dépôt : `nx.json` (§ Monorepo), `eslint.config.js` (base partagée, dont `typedTsConfigs` pour l'API et les libs), `tsconfig.base.json` (API et libs, § API des CRM), `compose.dev.yaml` (base locale de l'API), `stylelint.config.mjs`, Prettier, `vercel.json`, `.github/workflows/ci.yml`.
 
 ## Déploiement
 

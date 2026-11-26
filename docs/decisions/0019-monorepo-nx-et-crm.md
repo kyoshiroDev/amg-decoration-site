@@ -1,6 +1,6 @@
 # ADR-0019 — Monorepo Nx : site, admin, espace client et API
 
-- **Statut** : acceptée
+- **Statut** : acceptée, révisée le 2026-11-26 (ligne Notifications : Resend, ADR-0023)
 - **Date** : 2026-11-24
 
 ## Contexte
@@ -39,7 +39,7 @@ Principes :
 - **Authentification** (décisions de l'humain) : email + mot de passe ; à l'invitation, mot de passe provisoire généré par le serveur, jamais vu par Amandine, valable 7 jours, à usage unique, changement obligatoire à la première connexion ; Amandine peut en renvoyer un (72 h). Vérification en deux étapes TOTP **obligatoire pour l'admin**, facultative pour les clients (pas de SMS). Argon2id, sessions en cookies `HttpOnly` `Secure` `SameSite=Strict`, CSRF, blocage progressif, alertes de connexion, journal de sécurité.
 - **Autorisation** : rôle (admin / client) et propriété vérifiés à chaque requête ; un client n'accède qu'à son projet. Tests automatiques de tentatives d'accès croisé.
 - **Catalogue** : formules et options modifiables, supprimées par archivage ; chaque devis garde une copie figée des prix et contenus signés.
-- **Notifications** : PWA installables, Web Push (VAPID), email en relais via le Gmail d'Amandine (SMTP, mot de passe d'application qu'elle crée elle-même).
+- **Notifications** : PWA installables, Web Push (VAPID), emails automatiques envoyés par l'API HTTPS de **Resend** depuis le worker seul, réponses dirigées vers le Gmail d'Amandine (révision du 2026-11-26, [ADR-0023](0023-outillage-api.md) ; remplace le relais SMTP Gmail initialement prévu).
 - **Pilotage** : CA, Urssaf et revenu net par mois et par année ; taux de cotisation, formation professionnelle, versement libératoire et dépenses réglables par Amandine (estimation indicative).
 
 Hébergement, déploiement et sauvegardes : [ADR-0020](0020-hebergement-vps-ovh.md).

@@ -149,6 +149,8 @@ Avancement (2026-11-25) : image du site (nginx non root, configuration généré
 - [ ] Authentification : Argon2id, sessions cookies, CSRF, TOTP (obligatoire admin), mot de passe provisoire à changement forcé, renvoi par Amandine, blocage, alertes, journal
 - [ ] Autorisation refus par défaut, tests d'accès croisé ; audit `securite` sans ❌
 
+Avancement (2026-11-26) : lot 0 « socle » fait (ADR-0023) : `apps/api` (NestJS 12 sur Fastify, ESM, `tsc`, Vitest), `libs/shared/schemas`, `tsconfig.base.json` sans `paths` (références de projet), lint typé commun, `GET /api/health` avec en-têtes de sécurité et sans CORS, configuration validée par Zod avec secrets `*_FILE` obligatoires en production, `compose.dev.yaml` (Postgres et Redis aux digests de production, 127.0.0.1). Décisions consignées : API sous `admin.…/api/` et `espace.…/api/` (même origine, cookies `__Host-`, CSRF en `X-CSRF-Token`), durées de session, codes de secours et `reset-mfa`, emails par Resend depuis le worker. Lots suivants : 1 base (Prisma 7.10.1), 2 image et préproduction, 3 sessions et accès, 4 TOTP et mot de passe provisoire, 5 worker et emails, 6 clôture.
+
 ### CRM 4 — Admin : contenu du site
 
 - [ ] Réalisations (galerie avant / 3D / après, textes alternatifs, ordre), formules et options (créer, modifier, archiver), brouillon et aperçu

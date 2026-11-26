@@ -4,6 +4,16 @@ Toutes les évolutions notables du site, par phase. Format inspiré de [Keep a C
 
 ## [Non publié]
 
+### CRM 3 : API et sécurité (en cours)
+
+- Lot 0 « socle » (ADR-0023) : API `apps/api` (`@amg/api`, NestJS 12.6.2 sur Fastify 5, ESM, compilée par `tsc`, sans plugin Nx ni CLI Nest) et lib `libs/shared/schemas` (`@amg/shared-schemas`, Zod 4) ; mode TypeScript « solution » (`tsconfig.base.json` sans `paths`, libs compilées vers `dist/`, références de projet) ; base ESLint typée commune (`strictTypeChecked`, aucune règle désactivée).
+- `GET /api/health` (vivacité seule) ; en-têtes de sécurité sur toute réponse (`no-store`, CSP `default-src 'none'`, `nosniff`, `DENY`…), aucun en-tête CORS, corps JSON limité à 64 Kio.
+- Configuration validée au démarrage par une fonction pure (liste blanche, erreurs sans valeur, refus de démarrer) ; secrets lus depuis des fichiers `*_FILE`, forme directe interdite en production, valeurs masquées dans toute sérialisation.
+- Tests Vitest : configuration et secrets, métadonnées de décorateurs sous Vitest (sans SWC), application complète par `app.inject()` ; `npm run verify` couvre désormais l'API et la lib.
+- `compose.dev.yaml` : Postgres et Redis de développement aux digests de production, ports sur `127.0.0.1` seulement.
+- Décisions consignées dans l'ADR-0023 : API à la même origine que chaque CRM (cookies `__Host-amg_admin_sid` et `__Host-amg_client_sid`, CSRF en `X-CSRF-Token`), durées de session, 10 codes de secours et commande `reset-mfa`, contact de sécurité facultatif de l'exploitant, emails automatiques par Resend depuis le worker (ADR-0019 révisée).
+- Site inchangé : aucun fichier de `apps/site/` modifié.
+
 ### CRM 2 : socle serveur (en cours)
 
 - Image Docker du site : nginx non root, en lecture seule, configuration des redirections et en-têtes générée depuis `vercel.json` (`apps/site/scripts/nginx-redirects.ts`), 308 et règles sensibles à la casse dans l'ordre de Vercel, `Cache-Control` du HTML identique.
