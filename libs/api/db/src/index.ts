@@ -26,6 +26,8 @@ export {
   type RevealableSecret,
 } from './database-config.js';
 export {
+  API_CONNECTION_OPTIONS,
+  API_SEARCH_PATH,
   DatabaseRoleError,
   POOL_TIMEOUTS,
   SESSION_PRIVILEGES_SQL,

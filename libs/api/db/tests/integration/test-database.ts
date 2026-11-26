@@ -82,6 +82,29 @@ export async function connectAs(role: Role, settings: ConnectionSettings = {}): 
   return client;
 }
 
+/** Contenu exact de pg_db_role_setting pour les deux rôles après roles.sql (ordre : rôle). */
+export const EXPECTED_ROLE_SETTINGS = [
+  {
+    role: 'amg_app',
+    per_database: false,
+    config: [
+      'search_path=pg_catalog, pg_temp',
+      'statement_timeout=15s',
+      'lock_timeout=5s',
+      'idle_in_transaction_session_timeout=15s',
+    ],
+  },
+  {
+    role: 'amg_migrator',
+    per_database: false,
+    config: [
+      'lock_timeout=5s',
+      'statement_timeout=5min',
+      'idle_in_transaction_session_timeout=1min',
+    ],
+  },
+] as const;
+
 /** Exécute `run` dans une transaction toujours annulée : aucun test ne laisse de données. */
 export async function inRolledBackTransaction(
   client: pg.Client,
@@ -152,7 +175,7 @@ export async function insertUser(
   values: { readonly email?: string; readonly role?: 'ADMIN' | 'CLIENT' } = {},
 ): Promise<string> {
   const result = await client.query<{ id: string }>(
-    `INSERT INTO users (email, role, display_name, updated_at)
+    `INSERT INTO public.users (email, role, display_name, updated_at)
      VALUES ($1, $2, 'Client de test', now()) RETURNING id`,
     [values.email ?? uniqueEmail(), values.role ?? 'CLIENT'],
   );

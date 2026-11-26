@@ -7,6 +7,7 @@ import type pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   APP_ROLE,
+  EXPECTED_ROLE_SETTINGS,
   MIGRATOR_ROLE,
   SQLSTATE,
   connectAs,
@@ -133,6 +134,17 @@ describe('attributs des rôles', () => {
     expect(rows).toEqual([{ config: ['search_path=pg_catalog, pg_temp'] }]);
   });
 
+  it('les rôles n’ont que leurs réglages par défaut, communs à toutes les bases', async () => {
+    // roles.sql purge puis repose ces réglages : aucun `ALTER ROLE <soi> [IN DATABASE …] SET` ne
+    // survit au rejeu (tests/integration/roles-replay.test.ts).
+    const { rows } = await app.query<{ role: string; per_database: boolean; config: string[] }>(
+      `SELECT r.rolname AS role, s.setdatabase <> 0 AS per_database, s.setconfig AS config
+         FROM pg_catalog.pg_db_role_setting s JOIN pg_catalog.pg_roles r ON r.oid = s.setrole
+        WHERE r.rolname IN ('amg_app', 'amg_migrator') ORDER BY 1, 2`,
+    );
+    expect(rows).toEqual(EXPECTED_ROLE_SETTINGS);
+  });
+
   it('le schéma amg_guard est en lecture seule pour le rôle des migrations, fermé à l’API', async () => {
     const { rows } = await app.query<Record<string, boolean>>(
       `SELECT pg_catalog.has_schema_privilege('amg_migrator', 'amg_guard', 'USAGE') AS migrator_usage,
@@ -192,6 +204,54 @@ describe('propriété et droits sur les objets', () => {
         ORDER BY 1`,
     );
     expect(rows.map((row) => row.signature)).toEqual(EXPECTED_APP_FUNCTIONS);
+  });
+
+  it('aucune conversion, aucun opérateur ni aucune fonction sur les types du journal', async () => {
+    // Types du journal : security_event_type, le type ligne de security_events et leurs tableaux.
+    // Une conversion s'appliquerait à toutes les sessions ; un opérateur ou une fonction de public
+    // l'emporterait sur pg_catalog dans les sessions de l'API (roles.sql, contrôle du journal). Même
+    // chose pour un opérateur ou une fonction polymorphe d'un rôle non superutilisateur.
+    const { rows } = await app.query<Record<string, number>>(
+      `WITH journal AS (
+         SELECT ARRAY[et.oid, et.typarray, rt.oid, rt.typarray] AS types
+           FROM pg_catalog.pg_type et, pg_catalog.pg_class c
+           JOIN pg_catalog.pg_type rt ON rt.oid = c.reltype
+          WHERE et.oid = 'public.security_event_type'::pg_catalog.regtype
+            AND c.oid = 'public.security_events'::pg_catalog.regclass),
+       polymorphic AS (
+         SELECT array_agg(t.oid) AS types FROM pg_catalog.pg_type t
+          WHERE t.typtype = 'p' AND t.typname IN ('any', 'anyelement', 'anyarray', 'anynonarray',
+                'anyenum', 'anyrange', 'anymultirange', 'anycompatible', 'anycompatiblearray',
+                'anycompatiblenonarray', 'anycompatiblerange', 'anycompatiblemultirange', 'record',
+                '_record', 'unknown'))
+       SELECT (SELECT count(*)::int FROM pg_catalog.pg_cast k
+                WHERE k.castsource = ANY (j.types) OR k.casttarget = ANY (j.types)) AS casts,
+              (SELECT count(*)::int FROM pg_catalog.pg_operator o
+                WHERE o.oprleft = ANY (j.types) OR o.oprright = ANY (j.types)
+                   OR o.oprresult = ANY (j.types)) AS operators,
+              (SELECT count(*)::int FROM pg_catalog.pg_proc p
+                WHERE p.prorettype = ANY (j.types) OR p.proargtypes::oid[] && j.types
+                   OR coalesce(p.proallargtypes, '{}') && j.types) AS functions,
+              (SELECT count(*)::int FROM pg_catalog.pg_type t WHERE t.typbasetype = ANY (j.types)) AS domains,
+              (SELECT count(*)::int FROM pg_catalog.pg_operator o
+                 JOIN pg_catalog.pg_roles r ON r.oid = o.oprowner
+                WHERE NOT r.rolsuper
+                  AND (o.oprleft = ANY (y.types) OR o.oprright = ANY (y.types))) AS polymorphic_operators,
+              (SELECT count(*)::int FROM pg_catalog.pg_proc p
+                 JOIN pg_catalog.pg_roles r ON r.oid = p.proowner
+                WHERE NOT r.rolsuper AND p.proargtypes::oid[] && y.types) AS polymorphic_functions
+         FROM journal j, polymorphic y`,
+    );
+    expect(rows).toEqual([
+      {
+        casts: 0,
+        operators: 0,
+        functions: 0,
+        domains: 0,
+        polymorphic_operators: 0,
+        polymorphic_functions: 0,
+      },
+    ]);
   });
 
   it('une fonction créée par le rôle des migrations n’est pas exécutable par PUBLIC', async () => {
@@ -264,12 +324,15 @@ describe('le rôle de l’API ne fait aucun DDL', () => {
       'créer une fonction',
       'CREATE FUNCTION public.intrusion() RETURNS int LANGUAGE sql AS $$ SELECT 1 $$',
     ],
-    ['modifier une table', 'ALTER TABLE users ADD COLUMN intrusion int'],
-    ['désactiver le déclencheur du journal', 'ALTER TABLE security_events DISABLE TRIGGER ALL'],
-    ['supprimer une table', 'DROP TABLE recovery_codes'],
-    ['vider une table', 'TRUNCATE users'],
-    ['lire l’historique des migrations', 'SELECT * FROM _prisma_migrations'],
-    ['écrire l’historique des migrations', 'DELETE FROM _prisma_migrations'],
+    ['modifier une table', 'ALTER TABLE public.users ADD COLUMN intrusion int'],
+    [
+      'désactiver le déclencheur du journal',
+      'ALTER TABLE public.security_events DISABLE TRIGGER ALL',
+    ],
+    ['supprimer une table', 'DROP TABLE public.recovery_codes'],
+    ['vider une table', 'TRUNCATE public.users'],
+    ['lire l’historique des migrations', 'SELECT * FROM public._prisma_migrations'],
+    ['écrire l’historique des migrations', 'DELETE FROM public._prisma_migrations'],
   ])('refuse de %s', async (_label, sql) => {
     await inRolledBackTransaction(app, async () => {
       await expectSqlError(app, sql, [], SQLSTATE.insufficientPrivilege);

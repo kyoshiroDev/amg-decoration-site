@@ -39,7 +39,8 @@ export interface CreatePrismaClientOptions {
  * de la RLS, création de rôles ou de bases, réplication, appartenance à un autre rôle (rôles
  * prédéfinis compris : pg_read_all_data, pg_write_server_files, pg_execute_server_program…, même
  * sans héritage, SET ROLE y donne accès), appartenance au rôle propriétaire d'un objet du schéma
- * public (c'est le cas du superutilisateur et de `amg_migrator`), droit de créer dans le schéma public.
+ * public (c'est le cas du superutilisateur et de `amg_migrator`), droit de créer dans le schéma public,
+ * chemin de recherche effectif (`API_SEARCH_PATH` exactement).
  */
 export const SESSION_PRIVILEGES_SQL = `SELECT r.rolsuper AS superuser,
        r.rolbypassrls AS bypass_rls,
@@ -51,7 +52,8 @@ export const SESSION_PRIVILEGES_SQL = `SELECT r.rolsuper AS superuser,
                  JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
                 WHERE n.nspname = 'public'
                   AND pg_catalog.pg_has_role(current_user, c.relowner, 'MEMBER')) AS owns_objects,
-       pg_catalog.has_schema_privilege('public', 'CREATE') AS can_create
+       pg_catalog.has_schema_privilege('public', 'CREATE') AS can_create,
+       pg_catalog.current_setting('search_path') AS search_path
   FROM pg_catalog.pg_roles r
  WHERE r.rolname = current_user`;
 
@@ -64,7 +66,24 @@ const sessionPrivilegesSchema = z.strictObject({
   member_of_roles: z.boolean(),
   owns_objects: z.boolean(),
   can_create: z.boolean(),
+  search_path: z.string().max(1024),
 });
+
+/**
+ * Chemin de recherche de toute session de l'API (ADR-0023) : ni `public` ni `"$user"`. Une fonction ou
+ * un opérateur créé dans `public` par le propriétaire des tables ne peut donc jamais être préféré à
+ * celui de pg_catalog dans une requête de l'API ; Prisma qualifie tables et types
+ * (`"public"."users"`). Imposé à l'ouverture de la connexion (paramètre `options`, prioritaire sur
+ * `ALTER ROLE … SET`, que roles.sql pose aussi) et vérifié par `assertLeastPrivilegedSession`.
+ */
+export const API_SEARCH_PATH = 'pg_catalog, pg_temp';
+
+/**
+ * Paramètre de démarrage `options` : l'espace du chemin est échappé par une barre oblique inverse
+ * (découpage des options par le serveur), pour que `current_setting('search_path')` vaille
+ * exactement `API_SEARCH_PATH`.
+ */
+export const API_CONNECTION_OPTIONS = `-c search_path=${API_SEARCH_PATH.replaceAll(' ', '\\ ')}`;
 
 /** Rôle de connexion trop privilégié pour l'API : les messages ne citent ni hôte, ni rôle. */
 export class DatabaseRoleError extends Error {
@@ -105,6 +124,7 @@ export async function assertLeastPrivilegedSession(client: SessionQueryable): Pr
   if (privileges?.member_of_roles !== false) reasons.push('membre d’un autre rôle');
   if (privileges?.owns_objects !== false) reasons.push('propriétaire des tables');
   if (privileges?.can_create !== false) reasons.push('création dans le schéma public');
+  if (privileges?.search_path !== API_SEARCH_PATH) reasons.push('chemin de recherche');
   if (reasons.length > 0) throw new DatabaseRoleError(reasons);
 }
 
@@ -127,6 +147,7 @@ export function buildPoolConfig(options: CreatePrismaClientOptions): GuardedPool
     password: () => connection.password.reveal(),
     max: options.maxConnections,
     application_name: options.applicationName,
+    options: API_CONNECTION_OPTIONS,
     connectionTimeoutMillis: POOL_TIMEOUTS.connectionTimeoutMillis,
     idleTimeoutMillis: POOL_TIMEOUTS.idleTimeoutMillis,
     statement_timeout: POOL_TIMEOUTS.statementTimeoutMillis,

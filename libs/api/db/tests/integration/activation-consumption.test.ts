@@ -12,7 +12,7 @@ import { APP_ROLE, SQLSTATE, connectAs, digest32, insertUser } from './test-data
  * comparée à l'heure de l'instruction (`statement_timestamp()`), pas au début de la transaction
  * (`now()`), comme le fait le déclencheur.
  */
-const CONSUME = `UPDATE activation_tokens SET consumed_at = now()
+const CONSUME = `UPDATE public.activation_tokens SET consumed_at = now()
   WHERE token_hash = $1 AND consumed_at IS NULL AND revoked_at IS NULL
     AND expires_at > statement_timestamp()
   RETURNING user_id, purpose`;
@@ -31,7 +31,9 @@ beforeAll(async () => {
 
 afterEach(async () => {
   // Données validées (nécessaires à la concurrence entre connexions) : supprimées après chaque test.
-  await first.query('DELETE FROM users WHERE id = ANY($1::uuid[])', [createdUsers.splice(0)]);
+  await first.query('DELETE FROM public.users WHERE id = ANY($1::uuid[])', [
+    createdUsers.splice(0),
+  ]);
 });
 
 afterAll(async () => {
@@ -41,10 +43,10 @@ afterAll(async () => {
 });
 
 /** Révocation des liens non consommés du compte, expirés compris (première étape de l'émission). */
-const REVOKE_LIVE_TOKENS = `UPDATE activation_tokens SET revoked_at = now()
+const REVOKE_LIVE_TOKENS = `UPDATE public.activation_tokens SET revoked_at = now()
   WHERE user_id = $1 AND consumed_at IS NULL AND revoked_at IS NULL`;
 
-const INSERT_TOKEN = `INSERT INTO activation_tokens (user_id, purpose, token_hash, expires_at)
+const INSERT_TOKEN = `INSERT INTO public.activation_tokens (user_id, purpose, token_hash, expires_at)
   VALUES ($1, 'PASSWORD_RESET', $2, now() + $3::interval)`;
 
 async function committedUser(): Promise<string> {
@@ -142,9 +144,10 @@ describe('consommation d’un lien d’activation', () => {
     await sleep(1_200);
     expect(
       await rejectionCode(
-        first.query('UPDATE activation_tokens SET consumed_at = now() WHERE token_hash = $1', [
-          hash,
-        ]),
+        first.query(
+          'UPDATE public.activation_tokens SET consumed_at = now() WHERE token_hash = $1',
+          [hash],
+        ),
       ),
     ).toBe(SQLSTATE.checkViolation);
   });
@@ -159,9 +162,10 @@ describe('consommation d’un lien d’activation', () => {
       expect((await first.query(CONSUME, [hash])).rowCount).toBe(0);
       expect(
         await rejectionCode(
-          first.query('UPDATE activation_tokens SET consumed_at = now() WHERE token_hash = $1', [
-            hash,
-          ]),
+          first.query(
+            'UPDATE public.activation_tokens SET consumed_at = now() WHERE token_hash = $1',
+            [hash],
+          ),
         ),
       ).toBe(SQLSTATE.checkViolation);
     } finally {
@@ -212,7 +216,7 @@ describe('émission d’un lien', () => {
     // … puis ne voit pas le nouveau lien (instantané de sa requête) et se heurte à l'index unique.
     expect(await rejectionCode(concurrent)).toBe(SQLSTATE.uniqueViolation);
     const { rows } = await first.query<{ n: string }>(
-      `SELECT count(*) AS n FROM activation_tokens
+      `SELECT count(*) AS n FROM public.activation_tokens
         WHERE user_id = $1 AND consumed_at IS NULL AND revoked_at IS NULL`,
       [userId],
     );

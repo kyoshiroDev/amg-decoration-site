@@ -137,8 +137,8 @@ jobs:
         env:
           PG_CONTAINER: ${{ job.services.postgres.id }}
         run: |
-          docker exec -i -e PGOPTIONS='-c search_path=pg_catalog,pg_temp' "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -U amg -d amg_test < libs/api/db/sql/roles.sql
-          docker exec -i -e PGOPTIONS='-c search_path=pg_catalog,pg_temp' "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -U amg -d amg_test < libs/api/db/sql/dev/passwords.sql
+          docker exec -i -e PGOPTIONS='-c search_path=pg_catalog,pg_temp' "$PG_CONTAINER" psql -X -v ON_ERROR_STOP=1 -U amg -d amg_test < libs/api/db/sql/roles.sql
+          docker exec -i -e PGOPTIONS='-c search_path=pg_catalog,pg_temp' "$PG_CONTAINER" psql -X -v ON_ERROR_STOP=1 -U amg -d amg_test < libs/api/db/sql/dev/passwords.sql
       - name: Build des libs (client Prisma généré)
         run: npx nx run-many -t build -p @amg/shared-schemas,@amg/api-db --outputStyle=static
       - name: Migrations (rôle des migrations) et absence de dérive
@@ -160,7 +160,7 @@ jobs:
       - name: Rôles rejoués après migration (idempotence, journal conforme)
         env:
           PG_CONTAINER: ${{ job.services.postgres.id }}
-        run: docker exec -i -e PGOPTIONS='-c search_path=pg_catalog,pg_temp' "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -U amg -d amg_test < libs/api/db/sql/roles.sql
+        run: docker exec -i -e PGOPTIONS='-c search_path=pg_catalog,pg_temp' "$PG_CONTAINER" psql -X -v ON_ERROR_STOP=1 -U amg -d amg_test < libs/api/db/sql/roles.sql
       # npm run (pas nx) : aucune dépendance de cible, donc pas de `prisma generate` avec DB_* partielles.
       - name: Tests d'intégration (rôle de l'API)
         env:

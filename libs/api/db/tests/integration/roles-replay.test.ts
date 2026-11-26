@@ -8,7 +8,14 @@
 import { readFileSync } from 'node:fs';
 import type pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { MIGRATOR_ROLE, SQLSTATE, SUPERUSER_ROLE, connectAs } from './test-database.js';
+import {
+  APP_ROLE,
+  EXPECTED_ROLE_SETTINGS,
+  MIGRATOR_ROLE,
+  SQLSTATE,
+  SUPERUSER_ROLE,
+  connectAs,
+} from './test-database.js';
 
 const ROLES_SQL = readFileSync(new URL('../../sql/roles.sql', import.meta.url), 'utf8');
 
@@ -85,6 +92,42 @@ describe('rejeu de roles.sql face aux pièges du rôle des migrations', () => {
       expect(await rolsuper(exposed)).toBe(false);
     } finally {
       await exposed.end();
+    }
+  });
+});
+
+describe('rejeu de roles.sql face aux réglages qu’un rôle se donne lui-même', () => {
+  it('purge les réglages communs et propres à la base, puis repose les délais', async () => {
+    const app = await connectAs(APP_ROLE);
+    const superuser = await connectAs(SUPERUSER_ROLE);
+    try {
+      const { rows } = await app.query<{ database: string }>(
+        'SELECT pg_catalog.current_database() AS database',
+      );
+      const database = `"${(rows[0]?.database ?? '').replaceAll('"', '""')}"`;
+      // Chacun peut modifier ses propres réglages : plus aucun délai côté serveur.
+      await migrator.query(
+        `ALTER ROLE amg_migrator IN DATABASE ${database} SET idle_in_transaction_session_timeout = 0`,
+      );
+      await migrator.query('ALTER ROLE amg_migrator SET lock_timeout = 0');
+      await app.query(`ALTER ROLE amg_app IN DATABASE ${database} SET statement_timeout = 0`);
+      await app.query('ALTER ROLE amg_app RESET ALL');
+      await superuser.query(ROLES_SQL);
+      const settings = await superuser.query<{
+        role: string;
+        per_database: boolean;
+        config: string[];
+      }>(
+        `SELECT r.rolname AS role, s.setdatabase OPERATOR(pg_catalog.<>) 0 AS per_database,
+                s.setconfig AS config
+           FROM pg_catalog.pg_db_role_setting s JOIN pg_catalog.pg_roles r ON r.oid = s.setrole
+          WHERE r.rolname OPERATOR(pg_catalog.=) ANY (ARRAY['amg_app', 'amg_migrator']::name[])
+          ORDER BY 1, 2`,
+      );
+      expect(settings.rows).toEqual(EXPECTED_ROLE_SETTINGS);
+    } finally {
+      await app.end();
+      await superuser.end();
     }
   });
 });

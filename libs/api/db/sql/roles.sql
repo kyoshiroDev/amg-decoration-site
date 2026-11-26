@@ -2,7 +2,7 @@
 -- `amg` (créé par l'image postgres), dans la base de l'environnement, AVANT la première migration :
 --
 --   docker exec -i -e PGOPTIONS='-c search_path=pg_catalog,pg_temp' <conteneur postgres> \
---     psql -v ON_ERROR_STOP=1 -U amg -d amg < libs/api/db/sql/roles.sql
+--     psql -X -v ON_ERROR_STOP=1 -U amg -d amg < libs/api/db/sql/roles.sql
 --
 -- Atomique (BEGIN … COMMIT ci-dessous : une erreur n'applique rien, même sans ON_ERROR_STOP, et
 -- même exécuté par l'entrypoint de l'image en développement) et idempotent : peut être rejoué sans
@@ -27,8 +27,8 @@
 --                 _prisma_migrations ; sur security_events : INSERT et SELECT seulement ; aucune
 --                 fonction exécutable sans GRANT explicite.
 --
--- Plus un garde-fou du superutilisateur : le déclencheur d'événement `amg_guard_security_events`
--- (schéma `amg_guard`, en lecture seule pour les autres rôles) interdit au propriétaire des tables
+-- Plus un garde-fou du superutilisateur : les déclencheurs d'événement `amg_guard_security_events*`
+-- (schéma `amg_guard`, en lecture seule pour les autres rôles) interdisent au propriétaire des tables
 -- de désactiver, remplacer ou contourner la protection du journal de sécurité (fin de fichier).
 --
 -- Chemin de recherche épinglé pour toute la session, AVANT la transaction (la vérification finale
@@ -69,8 +69,38 @@ ALTER ROLE amg_app WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NORE
 -- sous `amg` n'est donc pas trouvée, au lieu d'exécuter du code d'`amg_migrator`.
 ALTER ROLE amg SET search_path = pg_catalog, pg_temp;
 
+-- Réglages par défaut des deux rôles : purgés avant d'être reposés, communs comme propres à une
+-- base. Chaque rôle peut modifier ses propres réglages (`ALTER ROLE <soi> [IN DATABASE …] SET` :
+-- `statement_timeout = 0` pour `amg_app`, plus aucun délai pour `amg_migrator`…) ; un réglage
+-- propre à la base l'emporte sur le réglage commun. Après le rejeu, pg_db_role_setting ne contient
+-- pour eux que les lignes ci-dessous (tests/integration/roles-replay.test.ts).
+DO $$
+DECLARE
+  setting record;
+BEGIN
+  FOR setting IN
+    SELECT r.rolname, d.datname
+      FROM pg_catalog.pg_db_role_setting s
+      JOIN pg_catalog.pg_roles r ON r.oid OPERATOR(pg_catalog.=) s.setrole
+      JOIN pg_catalog.pg_database d ON d.oid OPERATOR(pg_catalog.=) s.setdatabase
+     WHERE r.rolname OPERATOR(pg_catalog.=) ANY (ARRAY['amg_migrator', 'amg_app']::name[])
+  LOOP
+    EXECUTE pg_catalog.format('ALTER ROLE %I IN DATABASE %I RESET ALL', setting.rolname, setting.datname);
+  END LOOP;
+END
+$$;
+ALTER ROLE amg_migrator RESET ALL;
+ALTER ROLE amg_app RESET ALL;
+
 -- Garde-fous côté serveur, en plus de ceux du pool de l'API : aucune requête, aucun verrou ni
 -- aucune transaction inactive ne peut tenir une connexion indéfiniment.
+-- Chemin de recherche de l'API sans `public` ni `"$user"` (ADR-0023) : aucune fonction ni aucun
+-- opérateur créé dans `public` par `amg_migrator` (surcharge mieux assortie, `public.=(uuid, text)`
+-- préféré pour un paramètre de type inconnu…) n'est jamais résolu dans une requête de l'API ;
+-- Prisma qualifie tables et types. Imposé aussi à l'ouverture de chaque connexion par le client et
+-- vérifié par lui (libs/api/db/src/prisma-client.ts, API_SEARCH_PATH). Restent globales, quel que
+-- soit le chemin : les conversions (pg_cast), refusées sur les types du journal plus bas.
+ALTER ROLE amg_app SET search_path = pg_catalog, pg_temp;
 ALTER ROLE amg_app SET statement_timeout = '15s';
 ALTER ROLE amg_app SET lock_timeout = '5s';
 ALTER ROLE amg_app SET idle_in_transaction_session_timeout = '15s';
@@ -143,18 +173,43 @@ ALTER DEFAULT PRIVILEGES FOR ROLE amg_migrator REVOKE EXECUTE ON FUNCTIONS FROM 
 --         (un REVOKE INSERT … FROM amg_app ferait taire le journal) ;
 --       index : aucun index unique autre que la clé primaire, aucun index partiel, sur expression ou
 --         d'exclusion (un index unique partiel, ou une fonction d'index qui lève une erreur,
---         censurerait des événements choisis) ;
+--         censurerait des événements choisis), aucun index invalide ou inachevé (reste d'un
+--         CREATE INDEX CONCURRENTLY interrompu, toujours maintenu donc toujours censeur) ; aucune
+--         statistique étendue sur expression ;
 --       type : la colonne `type` est toujours de type public.security_event_type, dont les valeurs
 --         de la migration initiale restent présentes, sous leur nom et dans leur ordre
 --         (ALTER TYPE … ADD VALUE reste permis ; RENAME VALUE, qui permettrait d'échanger deux
 --         valeurs et donc de réécrire l'historique, est refusé dès le premier renommage) ;
---   - la suppression de la table, de l'une de ses colonnes ou de ses déclencheurs.
+--       conversions et résolution de noms : aucune conversion (CREATE CAST), aucun opérateur,
+--         aucune fonction, aucun domaine, intervalle, classe d'opérateurs ni transformation qui
+--         prenne ou rende un « type du journal » (security_event_type, le type ligne de la table,
+--         et leurs tableaux). Une conversion s'applique dans toutes les sessions, quel que soit le
+--         chemin de recherche : `CREATE CAST (text AS security_event_type) WITH FUNCTION …`
+--         réécrirait chaque événement inséré par Prisma (`CAST($2::text AS …)`), et une conversion
+--         vers text chaque lecture (`"type"::text`). Un opérateur ou une fonction de `public`
+--         mieux assorti que celui de pg_catalog (`public.=(security_event_type,
+--         security_event_type)` sur `anyenum = anyenum`) l'emporterait dans toute session dont le
+--         chemin contient `public` ; celles de l'API ne l'ont plus (chemin épinglé ci-dessus et par
+--         le client) : défense en profondeur, comme le refus de tout opérateur ou fonction
+--         polymorphe (anyelement, anyenum, "any", record…) d'un rôle non superutilisateur, qui
+--         rendrait sinon l'opérateur ou la fonction ambigus. Ni Prisma ni les migrations n'en créent ;
+--       déclencheurs d'événement : les trois de ce fichier, présents, actifs, possédés par un
+--         superutilisateur, sur leur événement et leur fonction (un rejeu ou watch.sh repère ainsi
+--         un garde-fou resté désactivé après une fenêtre) ;
+--   - la suppression de la table, de l'une de ses colonnes ou de ses déclencheurs ;
+--   - avant leur exécution (ddl_command_start), CREATE INDEX, REINDEX et DROP INDEX CONCURRENTLY,
+--     quelle que soit la table : hors transaction, un refus après coup (ddl_command_end)
+--     n'annulerait que la dernière des transactions internes de la commande et laisserait un index
+--     invalide mais maintenu (censeur), qu'un DROP INDEX CONCURRENTLY effacerait ensuite. Prisma
+--     n'émet jamais CONCURRENTLY ; le mot est cherché dans le texte de la requête
+--     (current_query(), donc aussi dans un commentaire d'une migration : à ne pas y écrire).
 -- La table protégée est repérée par ses déclencheurs (nom canonique ou fonction), pas seulement par
 -- son nom : la renommer ne la soustrait pas au contrôle. Tant que le déclencheur de ligne n'existe
 -- pas (migration initiale), rien n'est vérifié. Une migration qui doit modifier le journal lui-même
 -- (nouvelle colonne, renommage d'une valeur…) s'applique dans une fenêtre où le superutilisateur
--- désactive ce déclencheur d'événement, puis rejoue ce fichier, qui le réactive et vérifie l'état
--- final, présence du journal comprise (docs/EXPLOITATION.md §11). Même chose pour une restauration
+-- désactive les déclencheurs d'événement de ddl_command_end et sql_drop (celui de CONCURRENTLY
+-- reste actif), puis rejoue ce fichier, qui les réactive et vérifie l'état final, présence du
+-- journal comprise (docs/EXPLOITATION.md §11). Même chose pour une restauration
 -- (droits restaurés après les déclencheurs). Nouvelles valeurs d'énumération : rien à changer ici.
 -- ---------------------------------------------------------------------------------------------
 
@@ -235,6 +290,17 @@ DECLARE
   -- PostgreSQL 18 enregistre les NOT NULL dans pg_constraint (contype 'n'), pas les versions
   -- antérieures.
   not_null_constraints CONSTANT boolean := current_setting('server_version_num')::integer >= 180000;
+  guard oid := to_regprocedure('amg_guard.protect_security_events()');
+  -- Pseudo-types polymorphes ou génériques : un opérateur ou une fonction qui les prend s'applique
+  -- aussi aux types du journal.
+  polymorphic CONSTANT oid[] := ARRAY(
+    SELECT t.oid FROM pg_catalog.pg_type t
+     WHERE t.typnamespace = 'pg_catalog'::regnamespace AND t.typtype = 'p'
+       AND t.typname IN ('any', 'anyelement', 'anyarray', 'anynonarray', 'anyenum', 'anyrange',
+                         'anymultirange', 'anycompatible', 'anycompatiblearray',
+                         'anycompatiblenonarray', 'anycompatiblerange', 'anycompatiblemultirange',
+                         'record', '_record', 'unknown'));
+  journal_types oid[];
   journal oid;
   label text;
   matched integer;
@@ -243,6 +309,26 @@ BEGIN
      OR NOT EXISTS (SELECT FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_roles r ON r.oid = p.proowner
                      WHERE p.oid = append_only AND r.rolsuper AND NOT p.prosecdef) THEN
     RETURN 'fonction du déclencheur du journal absente ou altérée';
+  END IF;
+
+  -- Les trois déclencheurs d'événement de ce fichier : présents, actifs (O : session d'origine ;
+  -- A : toujours), possédés par un superutilisateur, sur leur événement, leurs étiquettes et leur
+  -- fonction (elle-même possédée par un superutilisateur, sans SECURITY DEFINER).
+  IF guard IS NULL
+     OR NOT EXISTS (SELECT FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_roles r ON r.oid = p.proowner
+                     WHERE p.oid = guard AND r.rolsuper AND NOT p.prosecdef)
+     OR (SELECT count(*) FROM pg_catalog.pg_event_trigger e
+           JOIN pg_catalog.pg_roles r ON r.oid = e.evtowner
+          WHERE e.evtfoid = guard AND r.rolsuper AND e.evtenabled IN ('O', 'A')
+            AND ((e.evtname = 'amg_guard_security_events' AND e.evtevent = 'ddl_command_end'
+                  AND e.evttags IS NULL)
+                 OR (e.evtname = 'amg_guard_security_events_drop' AND e.evtevent = 'sql_drop'
+                     AND e.evttags IS NULL)
+                 OR (e.evtname = 'amg_guard_security_events_concurrently'
+                     AND e.evtevent = 'ddl_command_start'
+                     AND ARRAY(SELECT unnest(e.evttags) ORDER BY 1)
+                         = ARRAY['CREATE INDEX', 'DROP INDEX', 'REINDEX']))) <> 3 THEN
+    RETURN 'déclencheurs d''événement absents, désactivés ou altérés';
   END IF;
 
   -- Scellé une fois, scellé toujours.
@@ -338,6 +424,14 @@ BEGIN
       RETURN 'droits modifiés';
     END IF;
 
+    -- Index invalide, pas encore prêt ou en cours de suppression : reste d'une commande
+    -- CONCURRENTLY interrompue (refusée en amont, mais possible sous le superutilisateur).
+    IF EXISTS (
+         SELECT FROM pg_catalog.pg_index i
+          WHERE i.indrelid = journal AND NOT (i.indisvalid AND i.indisready AND i.indislive)) THEN
+      RETURN 'index invalide ou inachevé';
+    END IF;
+
     IF EXISTS (
          SELECT FROM pg_catalog.pg_index i
           WHERE i.indrelid = journal
@@ -346,11 +440,65 @@ BEGIN
       RETURN 'index unique, partiel, sur expression ou d''exclusion';
     END IF;
 
+    IF EXISTS (SELECT FROM pg_catalog.pg_statistic_ext s
+                WHERE s.stxrelid = journal AND s.stxexprs IS NOT NULL) THEN
+      RETURN 'statistiques étendues sur expression';
+    END IF;
+
     IF event_type IS NULL OR NOT EXISTS (
          SELECT FROM pg_catalog.pg_attribute a
           WHERE a.attrelid = journal AND a.attname = 'type' AND NOT a.attisdropped
             AND a.atttypid = event_type) THEN
       RETURN 'type de la colonne « type » modifié';
+    END IF;
+
+    -- Types du journal : l'énumération, le type ligne de la table, et leurs tableaux.
+    SELECT ARRAY[et.oid, et.typarray, rt.oid, rt.typarray] INTO journal_types
+      FROM pg_catalog.pg_type et, pg_catalog.pg_class c
+      JOIN pg_catalog.pg_type rt ON rt.oid = c.reltype
+     WHERE et.oid = event_type AND c.oid = journal;
+
+    -- Conversions : appliquées dans toutes les sessions, quel que soit le chemin de recherche (y
+    -- compris WITH INOUT ou WITHOUT FUNCTION). Aucune n'existe à l'origine sur ces types.
+    IF EXISTS (SELECT FROM pg_catalog.pg_cast k
+                WHERE k.castsource = ANY (journal_types) OR k.casttarget = ANY (journal_types)) THEN
+      RETURN 'conversion sur un type du journal';
+    END IF;
+
+    -- Opérateurs sur ces types (préférés à anyenum = anyenum, anyarray = anyarray, record =
+    -- record), ou polymorphes hors de ceux du système (ambiguïté).
+    IF EXISTS (SELECT FROM pg_catalog.pg_operator o JOIN pg_catalog.pg_roles r ON r.oid = o.oprowner
+                WHERE o.oprleft = ANY (journal_types) OR o.oprright = ANY (journal_types)
+                   OR o.oprresult = ANY (journal_types)
+                   OR (NOT r.rolsuper
+                       AND (o.oprleft = ANY (polymorphic) OR o.oprright = ANY (polymorphic)))) THEN
+      RETURN 'opérateur sur un type du journal ou polymorphe';
+    END IF;
+
+    -- Fonctions (agrégats et procédures compris) qui prennent ou rendent un type du journal : base
+    -- d'une conversion, fonction de même nom que le type (`security_event_type(text)`), surcharge
+    -- de `public` (`public.text(security_event_type)`) ; ou polymorphes hors de celles du système.
+    IF EXISTS (SELECT FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_roles r ON r.oid = p.proowner
+                WHERE p.prorettype = ANY (journal_types)
+                   OR p.proargtypes::oid[] && journal_types
+                   OR coalesce(p.proallargtypes, '{}') && journal_types
+                   OR (NOT r.rolsuper
+                       AND (p.proargtypes::oid[] && polymorphic
+                            OR coalesce(p.proallargtypes, '{}') && polymorphic))) THEN
+      RETURN 'fonction sur un type du journal ou polymorphe';
+    END IF;
+
+    -- Domaines, intervalles, classes et familles d'opérateurs, transformations sur ces types (les
+    -- classes et familles exigent le superutilisateur : contrôle du rejeu).
+    IF EXISTS (SELECT FROM pg_catalog.pg_type t WHERE t.typbasetype = ANY (journal_types))
+       OR EXISTS (SELECT FROM pg_catalog.pg_range g WHERE g.rngsubtype = ANY (journal_types))
+       OR EXISTS (SELECT FROM pg_catalog.pg_opclass o WHERE o.opcintype = ANY (journal_types))
+       OR EXISTS (SELECT FROM pg_catalog.pg_amop a
+                   WHERE a.amoplefttype = ANY (journal_types) OR a.amoprighttype = ANY (journal_types))
+       OR EXISTS (SELECT FROM pg_catalog.pg_amproc a
+                   WHERE a.amproclefttype = ANY (journal_types) OR a.amprocrighttype = ANY (journal_types))
+       OR EXISTS (SELECT FROM pg_catalog.pg_transform x WHERE x.trftype = ANY (journal_types)) THEN
+      RETURN 'domaine, intervalle, classe d''opérateurs ou transformation sur un type du journal';
     END IF;
     -- Valeurs de la migration initiale : sous-suite ordonnée des valeurs actuelles.
     matched := 1;
@@ -378,6 +526,17 @@ DECLARE
   violation text;
 BEGIN
   IF (SELECT r.rolsuper FROM pg_catalog.pg_roles r WHERE r.rolname = current_user) THEN
+    RETURN;
+  END IF;
+
+  -- ddl_command_start (CREATE INDEX, REINDEX, DROP INDEX seulement) : CONCURRENTLY refusé avant
+  -- toute exécution, journal scellé ou non. Insensible à la casse ; « \m » et « \M » : début et
+  -- fin de mot (`INDEX/**/CONCURRENTLY` compris).
+  IF TG_EVENT = 'ddl_command_start' THEN
+    IF current_query() ~* E'\\mconcurrently\\M' THEN
+      RAISE EXCEPTION USING ERRCODE = 'insufficient_privilege',
+        MESSAGE = 'journal de sécurité : CONCURRENTLY réservé au superutilisateur';
+    END IF;
     RETURN;
   END IF;
 
@@ -426,24 +585,43 @@ GRANT EXECUTE ON FUNCTION amg_guard.sealed_journals() TO amg_migrator;
 GRANT EXECUTE ON FUNCTION amg_guard.security_events_violation() TO amg_migrator;
 GRANT SELECT ON TABLE amg_guard.journal_sealed TO amg_migrator;
 
--- Créés s'ils manquent (sans fenêtre où la protection disparaît au rejeu), puis réactivés (fin
--- d'une fenêtre de migration du journal ou d'une restauration).
+-- Créés s'ils manquent, recréés si leur définition (événement, étiquettes, fonction) diffère, dans
+-- cette transaction (sans fenêtre où la protection disparaît au rejeu), puis réactivés (fin d'une
+-- fenêtre de migration du journal ou d'une restauration). Définitions contrôlées aussi par
+-- amg_guard.security_events_violation().
 DO $$
+DECLARE
+  expected record;
 BEGIN
-  IF NOT EXISTS (SELECT FROM pg_catalog.pg_event_trigger
-                  WHERE evtname OPERATOR(pg_catalog.=) 'amg_guard_security_events') THEN
-    CREATE EVENT TRIGGER amg_guard_security_events ON ddl_command_end
-      EXECUTE FUNCTION amg_guard.protect_security_events();
-  END IF;
-  IF NOT EXISTS (SELECT FROM pg_catalog.pg_event_trigger
-                  WHERE evtname OPERATOR(pg_catalog.=) 'amg_guard_security_events_drop') THEN
-    CREATE EVENT TRIGGER amg_guard_security_events_drop ON sql_drop
-      EXECUTE FUNCTION amg_guard.protect_security_events();
-  END IF;
+  FOR expected IN
+    SELECT * FROM (VALUES
+      ('amg_guard_security_events'::name, 'ddl_command_end'::name, NULL::text[]),
+      ('amg_guard_security_events_drop'::name, 'sql_drop'::name, NULL::text[]),
+      ('amg_guard_security_events_concurrently'::name, 'ddl_command_start'::name,
+       ARRAY['CREATE INDEX', 'DROP INDEX', 'REINDEX'])) AS v(name, event, tags)
+  LOOP
+    IF EXISTS (SELECT FROM pg_catalog.pg_event_trigger e
+                WHERE e.evtname OPERATOR(pg_catalog.=) expected.name
+                  AND (e.evtevent OPERATOR(pg_catalog.<>) expected.event
+                       OR e.evtfoid OPERATOR(pg_catalog.<>)
+                          'amg_guard.protect_security_events()'::pg_catalog.regprocedure
+                       OR e.evttags IS DISTINCT FROM expected.tags)) THEN
+      EXECUTE pg_catalog.format('DROP EVENT TRIGGER %I', expected.name);
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_event_trigger e
+                    WHERE e.evtname OPERATOR(pg_catalog.=) expected.name) THEN
+      EXECUTE pg_catalog.format('CREATE EVENT TRIGGER %I ON %I %s EXECUTE FUNCTION amg_guard.protect_security_events()',
+        expected.name, expected.event,
+        CASE WHEN expected.tags IS NULL THEN ''
+             ELSE pg_catalog.format('WHEN TAG IN (%s)',
+                    pg_catalog.array_to_string(ARRAY(SELECT pg_catalog.quote_literal(t)
+                                                       FROM pg_catalog.unnest(expected.tags) AS t), ', '))
+        END);
+    END IF;
+    EXECUTE pg_catalog.format('ALTER EVENT TRIGGER %I ENABLE', expected.name);
+  END LOOP;
 END
 $$;
-ALTER EVENT TRIGGER amg_guard_security_events ENABLE;
-ALTER EVENT TRIGGER amg_guard_security_events_drop ENABLE;
 
 COMMIT;
 

@@ -3,9 +3,12 @@
 // rôle trop privilégié (propriétaire des tables, superutilisateur, attribut système, membre d'un
 // autre rôle).
 import { randomBytes } from 'node:crypto';
+import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import {
+  API_CONNECTION_OPTIONS,
+  API_SEARCH_PATH,
   DatabaseRoleError,
   assertLeastPrivilegedSession,
   createPrismaClient,
@@ -97,6 +100,49 @@ describe('client Prisma', () => {
     await expect(prisma.securityEvent.delete({ where: { id: event.id } })).rejects.toThrow();
     const unchanged = await prisma.securityEvent.findUnique({ where: { id: event.id } });
     expect(unchanged?.type).toBe('LOGIN_FAILED');
+  });
+});
+
+describe('chemin de recherche des sessions de l’API', () => {
+  it('les requêtes Prisma s’exécutent sous le chemin épinglé, sans public', async () => {
+    const rows = await prisma.$queryRaw<{ path: string }[]>`
+      SELECT pg_catalog.current_setting('search_path') AS path`;
+    expect(rows).toEqual([{ path: API_SEARCH_PATH }]);
+  });
+
+  it('le paramètre de connexion l’impose même à un rôle dont le défaut contient public', async () => {
+    // amg_migrator garde `"$user", public` par défaut : seul le paramètre `options` change son chemin.
+    const env = testDatabaseEnv();
+    const client = new pg.Client({
+      host: env.DB_HOST,
+      port: env.DB_PORT,
+      database: env.DB_NAME,
+      user: MIGRATOR_ROLE,
+      password: testPassword(MIGRATOR_ROLE),
+      options: API_CONNECTION_OPTIONS,
+    });
+    await client.connect();
+    try {
+      const { rows } = await client.query<{ path: string }>(
+        `SELECT pg_catalog.current_setting('search_path') AS path`,
+      );
+      expect(rows).toEqual([{ path: API_SEARCH_PATH }]);
+    } finally {
+      await client.end();
+    }
+  });
+
+  it('une session sous un autre chemin est refusée', async () => {
+    const client = await connectAs(APP_ROLE, { searchPath: 'public' });
+    try {
+      const error: unknown = await assertLeastPrivilegedSession(client).catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(DatabaseRoleError);
+      expect(error instanceof DatabaseRoleError ? error.reasons : []).toEqual([
+        'chemin de recherche',
+      ]);
+    } finally {
+      await client.end();
+    }
   });
 });
 

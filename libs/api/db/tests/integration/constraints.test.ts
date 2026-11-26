@@ -23,7 +23,7 @@ afterAll(async () => {
   await app.end();
 });
 
-const INSERT_USER = `INSERT INTO users (email, role, status, display_name, password_hash, failed_login_count, updated_at)
+const INSERT_USER = `INSERT INTO public.users (email, role, status, display_name, password_hash, failed_login_count, updated_at)
   VALUES ($1, 'CLIENT', $2, $3, $4, $5, now())`;
 const ARGON2ID = '$argon2id$v=19$m=19456,t=2,p=1$c2VsLWRlLXRlc3Q$aGFjaGUtZGUtdGVzdA';
 
@@ -32,7 +32,7 @@ describe('users', () => {
     await inRolledBackTransaction(app, async () => {
       const id = await insertUser(app);
       const { rows } = await app.query<{ version: number; status: string; failed: number }>(
-        `SELECT uuid_extract_version(id) AS version, status, failed_login_count AS failed FROM users WHERE id = $1`,
+        `SELECT uuid_extract_version(id) AS version, status, failed_login_count AS failed FROM public.users WHERE id = $1`,
         [id],
       );
       expect(rows).toEqual([{ version: 7, status: 'INVITED', failed: 0 }]);
@@ -117,18 +117,18 @@ describe('users', () => {
     await inRolledBackTransaction(app, async () => {
       const id = await insertUser(app);
       await app.query(
-        `INSERT INTO activation_tokens (user_id, purpose, token_hash, expires_at)
+        `INSERT INTO public.activation_tokens (user_id, purpose, token_hash, expires_at)
          VALUES ($1, 'INVITATION', $2, now() + interval '168 hours')`,
         [id, digest32()],
       );
-      await app.query(`INSERT INTO recovery_codes (user_id, code_hmac) VALUES ($1, $2)`, [
+      await app.query(`INSERT INTO public.recovery_codes (user_id, code_hmac) VALUES ($1, $2)`, [
         id,
         digest32(),
       ]);
-      await app.query('DELETE FROM users WHERE id = $1', [id]);
+      await app.query('DELETE FROM public.users WHERE id = $1', [id]);
       const { rows } = await app.query<{ n: string }>(
-        `SELECT (SELECT count(*) FROM activation_tokens WHERE user_id = $1)
-              + (SELECT count(*) FROM recovery_codes WHERE user_id = $1) AS n`,
+        `SELECT (SELECT count(*) FROM public.activation_tokens WHERE user_id = $1)
+              + (SELECT count(*) FROM public.recovery_codes WHERE user_id = $1) AS n`,
         [id],
       );
       expect(rows).toEqual([{ n: '0' }]);
@@ -136,7 +136,7 @@ describe('users', () => {
   });
 });
 
-const INSERT_TOKEN = `INSERT INTO activation_tokens (user_id, purpose, token_hash, expires_at, consumed_at, revoked_at)
+const INSERT_TOKEN = `INSERT INTO public.activation_tokens (user_id, purpose, token_hash, expires_at, consumed_at, revoked_at)
   VALUES ($1, $2, $3, now() + $4::interval, $5, $6)`;
 
 describe('activation_tokens', () => {
@@ -236,7 +236,7 @@ describe('activation_tokens', () => {
 });
 
 describe('totp_factors', () => {
-  const INSERT_TOTP = `INSERT INTO totp_factors (user_id, secret_ciphertext, secret_iv, secret_auth_tag, key_version, last_used_step, updated_at)
+  const INSERT_TOTP = `INSERT INTO public.totp_factors (user_id, secret_ciphertext, secret_iv, secret_auth_tag, key_version, last_used_step, updated_at)
     VALUES ($1, $2, $3, $4, $5, $6, now())`;
 
   it('accepte un secret chiffré AES-256-GCM bien formé', async () => {
@@ -286,13 +286,13 @@ describe('recovery_codes et enrollment_codes', () => {
     await inRolledBackTransaction(app, async () => {
       const id = await insertUser(app);
       const hmac = digest32();
-      await app.query('INSERT INTO recovery_codes (user_id, code_hmac) VALUES ($1, $2)', [
+      await app.query('INSERT INTO public.recovery_codes (user_id, code_hmac) VALUES ($1, $2)', [
         id,
         hmac,
       ]);
       await expectSqlError(
         app,
-        'INSERT INTO recovery_codes (user_id, code_hmac) VALUES ($1, $2)',
+        'INSERT INTO public.recovery_codes (user_id, code_hmac) VALUES ($1, $2)',
         [id, hmac],
         SQLSTATE.uniqueViolation,
       );
@@ -304,14 +304,14 @@ describe('recovery_codes et enrollment_codes', () => {
       const id = await insertUser(app);
       await expectSqlError(
         app,
-        'INSERT INTO recovery_codes (user_id, code_hmac) VALUES ($1, $2)',
+        'INSERT INTO public.recovery_codes (user_id, code_hmac) VALUES ($1, $2)',
         [id, Buffer.alloc(20)],
         SQLSTATE.checkViolation,
       );
     });
   });
 
-  const INSERT_ENROLLMENT = `INSERT INTO enrollment_codes (user_id, code_hmac, expires_at)
+  const INSERT_ENROLLMENT = `INSERT INTO public.enrollment_codes (user_id, code_hmac, expires_at)
     VALUES ($1, $2, now() + $3::interval)`;
 
   it('accepte un code d’enrôlement valable 30 minutes', async () => {

@@ -51,7 +51,7 @@ describe('rôle de l’API', () => {
     await inRolledBackTransaction(app, async () => {
       const id = await insertEvent(app);
       const { rows } = await app.query<{ type: string; ip: string; version: number }>(
-        `SELECT type, host(ip) AS ip, uuid_extract_version(id) AS version FROM security_events WHERE id = $1`,
+        `SELECT type, host(ip) AS ip, uuid_extract_version(id) AS version FROM public.security_events WHERE id = $1`,
         [id],
       );
       expect(rows).toEqual([{ type: 'LOGIN_FAILED', ip: '203.0.113.7', version: 7 }]);
@@ -62,7 +62,7 @@ describe('rôle de l’API', () => {
     await inRolledBackTransaction(app, async () => {
       const id = await insertEvent(app, '2000-01-01T00:00:00Z');
       const { rows } = await app.query<{ recent: boolean }>(
-        `SELECT occurred_at > now() - interval '1 minute' AS recent FROM security_events WHERE id = $1`,
+        `SELECT occurred_at > now() - interval '1 minute' AS recent FROM public.security_events WHERE id = $1`,
         [id],
       );
       expect(rows).toEqual([{ recent: true }]);
@@ -73,7 +73,7 @@ describe('rôle de l’API', () => {
     await inRolledBackTransaction(app, async () => {
       const forged = '00000000-0000-4000-8000-000000000000';
       const { rows } = await app.query<{ id: string; version: number }>(
-        `INSERT INTO security_events (id, type) VALUES ($1, 'LOGIN_FAILED')
+        `INSERT INTO public.security_events (id, type) VALUES ($1, 'LOGIN_FAILED')
          RETURNING id, uuid_extract_version(id) AS version`,
         [forged],
       );
@@ -84,9 +84,9 @@ describe('rôle de l’API', () => {
   });
 
   it.each([
-    ['modifier', `UPDATE security_events SET type = 'LOGIN_SUCCEEDED'`],
-    ['supprimer', 'DELETE FROM security_events'],
-    ['vider', 'TRUNCATE security_events'],
+    ['modifier', `UPDATE public.security_events SET type = 'LOGIN_SUCCEEDED'`],
+    ['supprimer', 'DELETE FROM public.security_events'],
+    ['vider', 'TRUNCATE public.security_events'],
   ])('ne peut pas %s le journal', async (_label, sql) => {
     await inRolledBackTransaction(app, async () => {
       await insertEvent(app);
@@ -101,7 +101,7 @@ describe('rôle de l’API', () => {
     await inRolledBackTransaction(app, async () => {
       await expectSqlError(
         app,
-        `INSERT INTO security_events (type, details) VALUES ('LOGIN_FAILED', ${details}::jsonb)`,
+        `INSERT INTO public.security_events (type, details) VALUES ('LOGIN_FAILED', ${details}::jsonb)`,
         [],
         SQLSTATE.checkViolation,
       );
@@ -112,7 +112,7 @@ describe('rôle de l’API', () => {
     await inRolledBackTransaction(app, async () => {
       await expectSqlError(
         app,
-        `INSERT INTO security_events (type, ip) VALUES ('LOGIN_FAILED', $1)`,
+        `INSERT INTO public.security_events (type, ip) VALUES ('LOGIN_FAILED', $1)`,
         ['999.0.0.1'],
         '22P02',
       );
@@ -124,11 +124,15 @@ describe('propriétaire des tables (rôle des migrations)', () => {
   it.each([
     [
       'modifier',
-      `UPDATE security_events SET type = 'LOGIN_SUCCEEDED'`,
+      `UPDATE public.security_events SET type = 'LOGIN_SUCCEEDED'`,
       /modification|UPDATE interdit/,
     ],
-    ['supprimer un événement récent', 'DELETE FROM security_events', /suppression interdite/],
-    ['vider', 'TRUNCATE security_events', /TRUNCATE interdit/],
+    [
+      'supprimer un événement récent',
+      'DELETE FROM public.security_events',
+      /suppression interdite/,
+    ],
+    ['vider', 'TRUNCATE public.security_events', /TRUNCATE interdit/],
   ])('ne peut pas %s le journal (déclencheur)', async (_label, sql, message) => {
     await inRolledBackTransaction(migrator, async () => {
       await insertEvent(migrator);
@@ -175,6 +179,12 @@ describe('propriétaire des tables : protection du déclencheur (déclencheur d�
         enabled: 'O',
         superuser: true,
       },
+      {
+        name: 'amg_guard_security_events_concurrently',
+        event: 'ddl_command_start',
+        enabled: 'O',
+        superuser: true,
+      },
       { name: 'amg_guard_security_events_drop', event: 'sql_drop', enabled: 'O', superuser: true },
     ]);
   });
@@ -182,52 +192,55 @@ describe('propriétaire des tables : protection du déclencheur (déclencheur d�
   it.each([
     [
       'désactiver le déclencheur de ligne',
-      'ALTER TABLE security_events DISABLE TRIGGER security_events_append_only_row',
+      'ALTER TABLE public.security_events DISABLE TRIGGER security_events_append_only_row',
     ],
-    ['désactiver tous les déclencheurs', 'ALTER TABLE security_events DISABLE TRIGGER ALL'],
+    ['désactiver tous les déclencheurs', 'ALTER TABLE public.security_events DISABLE TRIGGER ALL'],
     [
       'réserver le déclencheur au mode réplique',
-      'ALTER TABLE security_events ENABLE REPLICA TRIGGER security_events_append_only_row',
+      'ALTER TABLE public.security_events ENABLE REPLICA TRIGGER security_events_append_only_row',
     ],
     [
       'supprimer le déclencheur de ligne',
-      'DROP TRIGGER security_events_append_only_row ON security_events',
+      'DROP TRIGGER security_events_append_only_row ON public.security_events',
     ],
     [
       'supprimer le déclencheur TRUNCATE',
-      'DROP TRIGGER security_events_append_only_truncate ON security_events',
+      'DROP TRIGGER security_events_append_only_truncate ON public.security_events',
     ],
     [
       'renommer le déclencheur',
-      'ALTER TRIGGER security_events_append_only_row ON security_events RENAME TO renamed',
+      'ALTER TRIGGER security_events_append_only_row ON public.security_events RENAME TO renamed',
     ],
     [
       'conditionner le déclencheur (WHEN)',
-      'CREATE OR REPLACE TRIGGER security_events_append_only_row BEFORE INSERT OR UPDATE OR DELETE ON security_events FOR EACH ROW WHEN (false) EXECUTE FUNCTION amg_guard.security_events_append_only()',
+      'CREATE OR REPLACE TRIGGER security_events_append_only_row BEFORE INSERT OR UPDATE OR DELETE ON public.security_events FOR EACH ROW WHEN (false) EXECUTE FUNCTION amg_guard.security_events_append_only()',
     ],
     [
       'ajouter un déclencheur qui réécrit la date',
       `CREATE FUNCTION public.forge() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.occurred_at := '2000-01-01'; RETURN NEW; END $$;
-       CREATE TRIGGER zz_forge BEFORE INSERT ON security_events FOR EACH ROW EXECUTE FUNCTION public.forge()`,
+       CREATE TRIGGER zz_forge BEFORE INSERT ON public.security_events FOR EACH ROW EXECUTE FUNCTION public.forge()`,
     ],
-    ['renommer la table', 'ALTER TABLE security_events RENAME TO old_events'],
+    ['renommer la table', 'ALTER TABLE public.security_events RENAME TO old_events'],
     [
       'réécrire une colonne',
-      `ALTER TABLE security_events ALTER COLUMN device TYPE text USING 'falsifié'`,
+      `ALTER TABLE public.security_events ALTER COLUMN device TYPE text USING 'falsifié'`,
     ],
-    ['supprimer une colonne', 'ALTER TABLE security_events DROP COLUMN details'],
-    ['activer la RLS', 'ALTER TABLE security_events ENABLE ROW LEVEL SECURITY'],
+    ['supprimer une colonne', 'ALTER TABLE public.security_events DROP COLUMN details'],
+    ['activer la RLS', 'ALTER TABLE public.security_events ENABLE ROW LEVEL SECURITY'],
     [
       'ajouter une contrainte CHECK non validée',
-      `ALTER TABLE security_events ADD CONSTRAINT hush CHECK (type <> 'CSRF_REJECTED') NOT VALID`,
+      `ALTER TABLE public.security_events ADD CONSTRAINT hush CHECK (type <> 'CSRF_REJECTED') NOT VALID`,
     ],
     [
       'rendre une colonne facultative obligatoire',
-      'ALTER TABLE security_events ALTER COLUMN user_id SET NOT NULL',
+      'ALTER TABLE public.security_events ALTER COLUMN user_id SET NOT NULL',
     ],
-    ['ajouter une règle', 'CREATE RULE swallow AS ON INSERT TO security_events DO INSTEAD NOTHING'],
-    ['hériter de la table', 'CREATE TABLE child_events () INHERITS (security_events)'],
-    ['supprimer la table', 'DROP TABLE security_events'],
+    [
+      'ajouter une règle',
+      'CREATE RULE swallow AS ON INSERT TO public.security_events DO INSTEAD NOTHING',
+    ],
+    ['hériter de la table', 'CREATE TABLE child_events () INHERITS (public.security_events)'],
+    ['supprimer la table', 'DROP TABLE public.security_events'],
     ['supprimer tous ses objets', 'DROP OWNED BY amg_migrator'],
   ])('ne peut pas %s', async (_label, sql) => {
     await inRolledBackTransaction(migrator, async () => {
@@ -243,49 +256,104 @@ describe('propriétaire des tables : protection du déclencheur (déclencheur d�
 
   it.each([
     // Droits : bâillonner l'API (plus aucun événement écrit) ou élargir ses droits.
-    ['retirer l’INSERT au rôle de l’API', 'REVOKE INSERT ON security_events FROM amg_app'],
-    ['retirer tous les droits au rôle de l’API', 'REVOKE ALL ON security_events FROM amg_app'],
-    ['donner l’UPDATE au rôle de l’API', 'GRANT UPDATE ON security_events TO amg_app'],
-    ['donner un droit de colonne', 'GRANT UPDATE (device) ON security_events TO amg_app'],
-    ['ouvrir le journal à PUBLIC', 'GRANT INSERT ON security_events TO PUBLIC'],
+    ['retirer l’INSERT au rôle de l’API', 'REVOKE INSERT ON public.security_events FROM amg_app'],
+    [
+      'retirer tous les droits au rôle de l’API',
+      'REVOKE ALL ON public.security_events FROM amg_app',
+    ],
+    ['donner l’UPDATE au rôle de l’API', 'GRANT UPDATE ON public.security_events TO amg_app'],
+    ['donner un droit de colonne', 'GRANT UPDATE (device) ON public.security_events TO amg_app'],
+    ['ouvrir le journal à PUBLIC', 'GRANT INSERT ON public.security_events TO PUBLIC'],
     [
       'donner l’option de transmission',
-      'GRANT INSERT ON security_events TO amg_app WITH GRANT OPTION',
+      'GRANT INSERT ON public.security_events TO amg_app WITH GRANT OPTION',
     ],
     // Index : censurer des événements choisis (doublon refusé, ou fonction qui lève une erreur).
     // Valeur visée jamais insérée par les tests : l'index se crée, puis le contrôle le refuse.
     [
       'créer un index unique partiel de censure',
-      `CREATE UNIQUE INDEX censor ON security_events ((true)) WHERE type = 'CSRF_REJECTED'`,
+      `CREATE UNIQUE INDEX censor ON public.security_events ((true)) WHERE type = 'CSRF_REJECTED'`,
     ],
-    ['créer un index unique', 'CREATE UNIQUE INDEX censor ON security_events (id, device)'],
+    ['créer un index unique', 'CREATE UNIQUE INDEX censor ON public.security_events (id, device)'],
     [
       'créer un index sur une fonction qui lève une erreur',
-      `CREATE FUNCTION public.censor(t security_event_type) RETURNS int LANGUAGE plpgsql IMMUTABLE
+      `CREATE FUNCTION public.censor(t public.security_event_type) RETURNS int LANGUAGE plpgsql IMMUTABLE
          AS $$ BEGIN IF t = 'CSRF_REJECTED' THEN RAISE EXCEPTION 'censuré'; END IF; RETURN 1; END $$;
-       CREATE INDEX censor ON security_events (public.censor(type))`,
+       CREATE INDEX censor ON public.security_events (public.censor(type))`,
     ],
     [
       'créer un index partiel',
-      'CREATE INDEX censor ON security_events (device) WHERE device IS NOT NULL',
+      'CREATE INDEX censor ON public.security_events (device) WHERE device IS NOT NULL',
     ],
     // Type : réécrire l'historique sans toucher aux lignes.
     [
       'renommer une valeur du type d’événement',
-      `ALTER TYPE security_event_type RENAME VALUE 'LOGIN_FAILED' TO 'LOGIN_FAILED_OLD'`,
+      `ALTER TYPE public.security_event_type RENAME VALUE 'LOGIN_FAILED' TO 'LOGIN_FAILED_OLD'`,
     ],
     [
       'échanger deux valeurs du type par trois renommages',
-      `ALTER TYPE security_event_type RENAME VALUE 'LOGIN_FAILED' TO 'swap_tmp';
-       ALTER TYPE security_event_type RENAME VALUE 'LOGIN_SUCCEEDED' TO 'LOGIN_FAILED';
-       ALTER TYPE security_event_type RENAME VALUE 'swap_tmp' TO 'LOGIN_SUCCEEDED'`,
+      `ALTER TYPE public.security_event_type RENAME VALUE 'LOGIN_FAILED' TO 'swap_tmp';
+       ALTER TYPE public.security_event_type RENAME VALUE 'LOGIN_SUCCEEDED' TO 'LOGIN_FAILED';
+       ALTER TYPE public.security_event_type RENAME VALUE 'swap_tmp' TO 'LOGIN_SUCCEEDED'`,
     ],
-    ['renommer le type d’événement', 'ALTER TYPE security_event_type RENAME TO other_type'],
-    ['ajouter une politique RLS', 'CREATE POLICY hide ON security_events USING (false)'],
+    ['renommer le type d’événement', 'ALTER TYPE public.security_event_type RENAME TO other_type'],
+    ['ajouter une politique RLS', 'CREATE POLICY hide ON public.security_events USING (false)'],
     // Clé étrangère vers le journal : ses déclencheurs internes bloqueraient la purge.
     [
       'référencer le journal par une clé étrangère',
-      'CREATE TABLE public.pinned_events (event_id uuid REFERENCES security_events (id))',
+      'CREATE TABLE public.pinned_events (event_id uuid REFERENCES public.security_events (id))',
+    ],
+    // Conversions : appliquées dans toutes les sessions, quel que soit le chemin de recherche.
+    // Prisma insère par `CAST($2::text AS "public"."security_event_type")` et lit `"type"::text`.
+    [
+      'convertir text en type d’événement (CREATE CAST)',
+      'CREATE CAST (text AS public.security_event_type) WITH INOUT AS ASSIGNMENT',
+    ],
+    [
+      'convertir le type d’événement en text (CREATE CAST)',
+      'CREATE CAST (public.security_event_type AS text) WITH INOUT',
+    ],
+    [
+      'convertir le type ligne du journal en text (CREATE CAST)',
+      'CREATE CAST (public.security_events AS text) WITH INOUT',
+    ],
+    [
+      'convertir un tableau du type d’événement (CREATE CAST)',
+      'CREATE CAST (public.security_event_type[] AS text) WITH INOUT',
+    ],
+    [
+      'créer la fonction d’une conversion qui réécrit les événements',
+      `CREATE FUNCTION public.rewrite(t text) RETURNS public.security_event_type LANGUAGE sql IMMUTABLE
+         AS $$ SELECT (CASE WHEN t = 'LOGIN_FAILED' THEN 'LOGOUT' ELSE t END)::public.security_event_type $$`,
+    ],
+    // Résolution de noms dans les sessions de l'API (chemin `"$user", public`).
+    [
+      'redéfinir = sur le type d’événement (CREATE OPERATOR)',
+      `CREATE FUNCTION public.always_true(public.security_event_type, public.security_event_type)
+         RETURNS boolean LANGUAGE sql IMMUTABLE AS $$ SELECT true $$;
+       CREATE OPERATOR public.= (LEFTARG = public.security_event_type,
+         RIGHTARG = public.security_event_type, FUNCTION = public.always_true)`,
+    ],
+    [
+      'redéfinir = sur anyenum par une fonction du système (CREATE OPERATOR)',
+      'CREATE OPERATOR public.= (LEFTARG = anyenum, RIGHTARG = anyenum, FUNCTION = pg_catalog.enum_ne)',
+    ],
+    [
+      'créer une fonction polymorphe',
+      'CREATE FUNCTION public.shadow(anyelement) RETURNS int LANGUAGE sql AS $$ SELECT 1 $$',
+    ],
+    [
+      'créer une surcharge de text() sur le type d’événement',
+      `CREATE FUNCTION public.text(public.security_event_type) RETURNS text LANGUAGE sql
+         AS $$ SELECT 'falsifié' $$`,
+    ],
+    [
+      'créer un domaine sur le type d’événement',
+      'CREATE DOMAIN public.hush AS public.security_event_type',
+    ],
+    [
+      'créer des statistiques étendues sur expression',
+      'CREATE STATISTICS public.probe_stats ON (lower(device)) FROM public.security_events',
     ],
   ])('ne peut pas %s (état contrôlé après toute commande DDL)', async (_label, sql) => {
     await inRolledBackTransaction(migrator, async () => {
@@ -331,23 +399,88 @@ describe('propriétaire des tables : protection du déclencheur (déclencheur d�
   it.each([
     [
       'ajouter une valeur au type d’événement',
-      `ALTER TYPE security_event_type ADD VALUE 'TEST_ONLY_VALUE'`,
+      `ALTER TYPE public.security_event_type ADD VALUE 'TEST_ONLY_VALUE'`,
     ],
     [
       'insérer une valeur avant une valeur existante',
-      `ALTER TYPE security_event_type ADD VALUE 'TEST_ONLY_VALUE' BEFORE 'LOGIN_FAILED'`,
+      `ALTER TYPE public.security_event_type ADD VALUE 'TEST_ONLY_VALUE' BEFORE 'LOGIN_FAILED'`,
     ],
-    ['créer un index sur le journal', 'CREATE INDEX probe_idx ON security_events (device)'],
+    ['créer un index sur le journal', 'CREATE INDEX probe_idx ON public.security_events (device)'],
     [
       'créer un index composé sur le journal',
-      'CREATE INDEX probe_idx ON security_events (type, user_id) INCLUDE (ip)',
+      'CREATE INDEX probe_idx ON public.security_events (type, user_id) INCLUDE (ip)',
     ],
-    ['réaccorder les mêmes droits', 'GRANT SELECT, INSERT ON security_events TO amg_app'],
+    ['réaccorder les mêmes droits', 'GRANT SELECT, INSERT ON public.security_events TO amg_app'],
     ['créer une autre table', 'CREATE TABLE public.probe_table (id int)'],
+    ['reconstruire un index du journal', 'REINDEX INDEX public.security_events_pkey'],
+    [
+      'créer des statistiques étendues sur des colonnes',
+      'CREATE STATISTICS public.probe_stats ON device, ip FROM public.security_events',
+    ],
+    [
+      'créer une fonction et un opérateur sur d’autres types',
+      `CREATE FUNCTION public.probe_eq(int, text) RETURNS boolean LANGUAGE sql AS $$ SELECT true $$;
+       CREATE OPERATOR public.=== (LEFTARG = int, RIGHTARG = text, FUNCTION = public.probe_eq)`,
+    ],
   ])('peut encore %s (migrations futures)', async (_label, sql) => {
     await inRolledBackTransaction(migrator, async () => {
       await migrator.query(sql);
     });
+  });
+
+  // CONCURRENTLY : refusé avant exécution (ddl_command_start). Hors transaction, un refus après
+  // coup laisserait un index invalide mais maintenu (censeur). Dans une transaction, le refus
+  // précède l'erreur « cannot run inside a transaction block » : testable sans rien laisser.
+  it.each([
+    [
+      'créer un index unique partiel CONCURRENTLY',
+      `CREATE UNIQUE INDEX CONCURRENTLY censor ON public.security_events ((true)) WHERE type = 'CSRF_REJECTED'`,
+    ],
+    [
+      'créer un index simple CONCURRENTLY',
+      'CREATE INDEX CONCURRENTLY probe_idx ON public.security_events (device)',
+    ],
+    [
+      'masquer CONCURRENTLY derrière un commentaire et la casse',
+      'CREATE INDEX/**/ConCurrently probe_idx ON public.security_events (device)',
+    ],
+    [
+      'créer un index CONCURRENTLY sur une autre table',
+      'CREATE INDEX CONCURRENTLY probe_idx ON public.users (status)',
+    ],
+    ['reconstruire CONCURRENTLY', 'REINDEX INDEX CONCURRENTLY public.security_events_pkey'],
+    [
+      'supprimer un index CONCURRENTLY (effacer les traces)',
+      'DROP INDEX CONCURRENTLY public.security_events_type_occurred_at_idx',
+    ],
+  ])('ne peut pas %s', async (_label, sql) => {
+    await inRolledBackTransaction(migrator, async () => {
+      await expectSqlError(
+        migrator,
+        sql,
+        [],
+        SQLSTATE.insufficientPrivilege,
+        /journal de sécurité : CONCURRENTLY/,
+      );
+    });
+  });
+
+  it('CREATE INDEX CONCURRENTLY hors transaction est refusé sans laisser d’index', async () => {
+    const error: unknown = await migrator
+      .query(
+        `CREATE UNIQUE INDEX CONCURRENTLY concurrent_censor ON public.security_events ((true)) WHERE type = 'CSRF_REJECTED'`,
+      )
+      .catch((caught: unknown) => caught);
+    try {
+      expect(error).toMatchObject({ code: SQLSTATE.insufficientPrivilege });
+      const { rows } = await migrator.query<{ indexes: number }>(
+        `SELECT count(*)::int AS indexes FROM pg_catalog.pg_class WHERE relname = 'concurrent_censor'`,
+      );
+      expect(rows).toEqual([{ indexes: 0 }]);
+    } finally {
+      // Seulement si le refus a échoué : ne jamais laisser l'index aux suites suivantes.
+      await migrator.query('DROP INDEX IF EXISTS public.concurrent_censor');
+    }
   });
 
   it('le superutilisateur passe outre (incident documenté)', async () => {
@@ -358,6 +491,13 @@ describe('propriétaire des tables : protection du déclencheur (déclencheur d�
     });
   });
 });
+
+/** Déclencheurs d'événement de roles.sql. */
+const EVENT_TRIGGERS = [
+  'amg_guard_security_events',
+  'amg_guard_security_events_drop',
+  'amg_guard_security_events_concurrently',
+] as const;
 
 /** Écart signalé par la vérification que rejoue roles.sql (NULL : journal conforme). */
 async function violation(client: pg.Client): Promise<string | null> {
@@ -431,6 +571,40 @@ describe('vérification de l’état du journal (rejeu de roles.sql)', () => {
        DROP TRIGGER security_events_append_only_truncate ON public.security_events`,
     ],
     ['journal supprimé, remplacé ou descellé', 'DROP TABLE public.security_events'],
+    // Conversion et opérateur : appliqués aux sessions de l'API sans toucher à la table.
+    [
+      'conversion sur un type du journal',
+      `CREATE FUNCTION public.rewrite(t text) RETURNS public.security_event_type LANGUAGE sql
+         IMMUTABLE AS $$ SELECT 'LOGOUT'::public.security_event_type $$;
+       CREATE CAST (text AS public.security_event_type) WITH FUNCTION public.rewrite(text)`,
+    ],
+    [
+      'opérateur sur un type du journal ou polymorphe',
+      `CREATE FUNCTION public.always_true(public.security_event_type, public.security_event_type)
+         RETURNS boolean LANGUAGE sql IMMUTABLE AS $$ SELECT true $$;
+       CREATE OPERATOR public.= (LEFTARG = public.security_event_type,
+         RIGHTARG = public.security_event_type, FUNCTION = public.always_true)`,
+    ],
+    [
+      "classe d'opérateurs",
+      `CREATE OPERATOR CLASS public.probe_ops FOR TYPE public.security_event_type USING hash AS
+         OPERATOR 1 pg_catalog.= (anyenum, anyenum), FUNCTION 1 pg_catalog.hashenum(anyenum)`,
+    ],
+    [
+      // Reste d'un CREATE INDEX CONCURRENTLY interrompu (simulé dans le catalogue).
+      'index invalide ou inachevé',
+      `CREATE INDEX probe_idx ON public.security_events (device);
+       UPDATE pg_catalog.pg_index SET indisvalid = false
+        WHERE indexrelid = 'public.probe_idx'::pg_catalog.regclass`,
+    ],
+    [
+      "déclencheurs d'événement absents, désactivés ou altérés",
+      'ALTER EVENT TRIGGER amg_guard_security_events_concurrently DISABLE',
+    ],
+    [
+      "déclencheurs d'événement absents, désactivés ou altérés",
+      'DROP EVENT TRIGGER amg_guard_security_events_drop',
+    ],
   ])('révèle ce que le superutilisateur a changé : %s', async (expected, sql) => {
     await inRolledBackTransaction(superuser, async () => {
       await superuser.query(sql);
@@ -443,11 +617,22 @@ describe('vérification de l’état du journal (rejeu de roles.sql)', () => {
     // superutilisateur et la migration appliquée par une connexion propre d'amg_migrator (jamais
     // sous SET ROLE depuis le superutilisateur, voir le test suivant).
     await inRolledBackTransaction(superuser, async () => {
-      await superuser.query('ALTER EVENT TRIGGER amg_guard_security_events DISABLE');
-      await superuser.query('ALTER EVENT TRIGGER amg_guard_security_events_drop DISABLE');
+      for (const trigger of EVENT_TRIGGERS) {
+        await superuser.query(`ALTER EVENT TRIGGER ${trigger} DISABLE`);
+      }
       await superuser.query(`SET LOCAL ROLE ${MIGRATOR_ROLE}`);
       await superuser.query('ALTER TABLE public.security_events ADD COLUMN probe_column int');
+      // Fenêtre ouverte : signalée (watch.sh, contrôle après chaque fenêtre de deploy.sh).
+      expect(await violation(superuser)).toBe(
+        "déclencheurs d'événement absents, désactivés ou altérés",
+      );
+      // Réactivation (rejeu de roles.sql) : la nouvelle colonne est admise…
+      await superuser.query('RESET ROLE');
+      for (const trigger of EVENT_TRIGGERS) {
+        await superuser.query(`ALTER EVENT TRIGGER ${trigger} ENABLE`);
+      }
       expect(await violation(superuser)).toBeNull();
+      // … un déclencheur du journal désactivé pendant la fenêtre ne l'est pas.
       await superuser.query(
         'ALTER TABLE public.security_events DISABLE TRIGGER security_events_append_only_row',
       );

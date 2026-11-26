@@ -31,7 +31,7 @@ afterAll(async () => {
 /** Lien vivant d'une heure ; renvoie son identifiant. */
 async function insertToken(client: pg.Client, userId: string, issuedBy?: string): Promise<string> {
   const { rows } = await client.query<{ id: string }>(
-    `INSERT INTO activation_tokens (user_id, purpose, token_hash, expires_at, issued_by_id)
+    `INSERT INTO public.activation_tokens (user_id, purpose, token_hash, expires_at, issued_by_id)
      VALUES ($1, 'PASSWORD_RESET', $2, now() + interval '1 hour', $3) RETURNING id`,
     [userId, digest32(), issuedBy ?? null],
   );
@@ -41,7 +41,7 @@ async function insertToken(client: pg.Client, userId: string, issuedBy?: string)
 }
 
 /** Motif d'émission (lot 4) : révoquer tous les liens non consommés du compte, expirés compris. */
-const REVOKE_LIVE_TOKENS = `UPDATE activation_tokens SET revoked_at = now()
+const REVOKE_LIVE_TOKENS = `UPDATE public.activation_tokens SET revoked_at = now()
   WHERE user_id = $1 AND consumed_at IS NULL AND revoked_at IS NULL`;
 
 describe('activation_tokens : dates de la base', () => {
@@ -49,7 +49,7 @@ describe('activation_tokens : dates de la base', () => {
     await inRolledBackTransaction(app, async () => {
       const userId = await insertUser(app);
       const { rows } = await app.query<{ forced: boolean }>(
-        `INSERT INTO activation_tokens (user_id, purpose, token_hash, expires_at, created_at)
+        `INSERT INTO public.activation_tokens (user_id, purpose, token_hash, expires_at, created_at)
          VALUES ($1, 'INVITATION', $2, now() + interval '1 hour', '2000-01-01T00:00:00Z')
          RETURNING created_at = now() AS forced`,
         [userId, digest32()],
@@ -63,7 +63,7 @@ describe('activation_tokens : dates de la base', () => {
       const userId = await insertUser(app);
       await expectSqlError(
         app,
-        `INSERT INTO activation_tokens (user_id, purpose, token_hash, expires_at, created_at)
+        `INSERT INTO public.activation_tokens (user_id, purpose, token_hash, expires_at, created_at)
          VALUES ($1, 'INVITATION', $2, now() + interval '400 days', now() + interval '399 days')`,
         [userId, digest32()],
         SQLSTATE.checkViolation,
@@ -83,7 +83,7 @@ describe('activation_tokens : dates de la base', () => {
       const id = await insertToken(app, await insertUser(app));
       await expectSqlError(
         app,
-        `UPDATE activation_tokens SET ${assignment} WHERE id = $1`,
+        `UPDATE public.activation_tokens SET ${assignment} WHERE id = $1`,
         [id],
         SQLSTATE.insufficientPrivilege,
       );
@@ -100,7 +100,7 @@ describe('activation_tokens : dates de la base', () => {
         const id = await insertToken(migrator, await insertUser(migrator));
         await expectSqlError(
           migrator,
-          `UPDATE activation_tokens SET ${assignment} WHERE id = $1`,
+          `UPDATE public.activation_tokens SET ${assignment} WHERE id = $1`,
           [id],
           SQLSTATE.insufficientPrivilege,
           /seules la consommation et la révocation/,
@@ -113,7 +113,7 @@ describe('activation_tokens : dates de la base', () => {
     await inRolledBackTransaction(app, async () => {
       const id = await insertToken(app, await insertUser(app));
       const { rows } = await app.query<{ forced: boolean }>(
-        `UPDATE activation_tokens SET ${column} = '2000-01-01T00:00:00Z' WHERE id = $1
+        `UPDATE public.activation_tokens SET ${column} = '2000-01-01T00:00:00Z' WHERE id = $1
          RETURNING ${column} = now() AS forced`,
         [id],
       );
@@ -134,10 +134,10 @@ describe('activation_tokens : consommation et révocation définitives', () => {
   ])('refuse de %s', async (_label, first, second) => {
     await inRolledBackTransaction(app, async () => {
       const id = await insertToken(app, await insertUser(app));
-      await app.query(`UPDATE activation_tokens SET ${first} WHERE id = $1`, [id]);
+      await app.query(`UPDATE public.activation_tokens SET ${first} WHERE id = $1`, [id]);
       await expectSqlError(
         app,
-        `UPDATE activation_tokens SET ${second} WHERE id = $1`,
+        `UPDATE public.activation_tokens SET ${second} WHERE id = $1`,
         [id],
         SQLSTATE.insufficientPrivilege,
         /définitives/,
@@ -148,10 +148,12 @@ describe('activation_tokens : consommation et révocation définitives', () => {
   it('refuse de révoquer un lien déjà consommé', async () => {
     await inRolledBackTransaction(app, async () => {
       const id = await insertToken(app, await insertUser(app));
-      await app.query('UPDATE activation_tokens SET consumed_at = now() WHERE id = $1', [id]);
+      await app.query('UPDATE public.activation_tokens SET consumed_at = now() WHERE id = $1', [
+        id,
+      ]);
       await expectSqlError(
         app,
-        'UPDATE activation_tokens SET revoked_at = now() WHERE id = $1',
+        'UPDATE public.activation_tokens SET revoked_at = now() WHERE id = $1',
         [id],
         SQLSTATE.checkViolation,
         /activation_tokens_single_outcome_check/,
@@ -164,9 +166,9 @@ describe('activation_tokens : consommation et révocation définitives', () => {
       const admin = await insertUser(app, { role: 'ADMIN' });
       const client = await insertUser(app);
       const id = await insertToken(app, client, admin);
-      await app.query('DELETE FROM users WHERE id = $1', [admin]);
+      await app.query('DELETE FROM public.users WHERE id = $1', [admin]);
       const { rows } = await app.query<{ issued_by_id: string | null }>(
-        'SELECT issued_by_id FROM activation_tokens WHERE id = $1',
+        'SELECT issued_by_id FROM public.activation_tokens WHERE id = $1',
         [id],
       );
       expect(rows).toEqual([{ issued_by_id: null }]);
@@ -179,7 +181,7 @@ describe('activation_tokens : consommation et révocation définitives', () => {
       const id = await insertToken(migrator, await insertUser(migrator));
       await expectSqlError(
         migrator,
-        'UPDATE activation_tokens SET issued_by_id = $2 WHERE id = $1',
+        'UPDATE public.activation_tokens SET issued_by_id = $2 WHERE id = $1',
         [id, admin],
         SQLSTATE.insufficientPrivilege,
       );
@@ -194,7 +196,7 @@ describe('un seul lien vivant par compte', () => {
       await insertToken(app, userId);
       await expectSqlError(
         app,
-        `INSERT INTO activation_tokens (user_id, purpose, token_hash, expires_at)
+        `INSERT INTO public.activation_tokens (user_id, purpose, token_hash, expires_at)
          VALUES ($1, 'INVITATION', $2, now() + interval '1 hour')`,
         [userId, digest32()],
         SQLSTATE.uniqueViolation,
@@ -205,7 +207,7 @@ describe('un seul lien vivant par compte', () => {
 
   it.each([
     ['révoqué (émission)', REVOKE_LIVE_TOKENS],
-    ['consommé', 'UPDATE activation_tokens SET consumed_at = now() WHERE user_id = $1'],
+    ['consommé', 'UPDATE public.activation_tokens SET consumed_at = now() WHERE user_id = $1'],
   ])('accepte un nouveau lien une fois le précédent %s', async (_label, sql) => {
     await inRolledBackTransaction(app, async () => {
       const userId = await insertUser(app);
@@ -224,7 +226,7 @@ describe('un seul lien vivant par compte', () => {
 });
 
 describe('enrollment_codes', () => {
-  const INSERT_CODE = `INSERT INTO enrollment_codes (user_id, code_hmac, expires_at, created_at)
+  const INSERT_CODE = `INSERT INTO public.enrollment_codes (user_id, code_hmac, expires_at, created_at)
     VALUES ($1, $2, now() + interval '30 minutes', $3) RETURNING id, created_at = now() AS forced`;
 
   it('ignore une date de création antidatée', async () => {
@@ -242,7 +244,7 @@ describe('enrollment_codes', () => {
     await inRolledBackTransaction(app, async () => {
       await expectSqlError(
         app,
-        `INSERT INTO enrollment_codes (user_id, code_hmac, expires_at, created_at)
+        `INSERT INTO public.enrollment_codes (user_id, code_hmac, expires_at, created_at)
          VALUES ($1, $2, now() + interval '2 days', now() + interval '2 days' - interval '20 minutes')`,
         [await insertUser(app), digest32()],
         SQLSTATE.checkViolation,
@@ -264,7 +266,7 @@ describe('enrollment_codes', () => {
       ]);
       await expectSqlError(
         app,
-        `UPDATE enrollment_codes SET ${assignment} WHERE id = $1`,
+        `UPDATE public.enrollment_codes SET ${assignment} WHERE id = $1`,
         [rows[0]?.id],
         SQLSTATE.insufficientPrivilege,
       );
@@ -282,7 +284,7 @@ describe('enrollment_codes', () => {
         migrator,
         // Échéance réellement repoussée : `now()` est figé dans la transaction, `now() + 30 min`
         // serait la valeur déjà enregistrée (mise à jour sans changement, donc sans refus).
-        `UPDATE enrollment_codes SET expires_at = expires_at + interval '30 seconds' WHERE id = $1`,
+        `UPDATE public.enrollment_codes SET expires_at = expires_at + interval '30 seconds' WHERE id = $1`,
         [rows[0]?.id],
         SQLSTATE.insufficientPrivilege,
         /seules la consommation et la révocation/,
@@ -309,7 +311,7 @@ describe('enrollment_codes', () => {
       const userId = await insertUser(app);
       await app.query(INSERT_CODE, [userId, digest32(), null]);
       await app.query(
-        `UPDATE enrollment_codes SET revoked_at = now()
+        `UPDATE public.enrollment_codes SET revoked_at = now()
           WHERE user_id = $1 AND consumed_at IS NULL AND revoked_at IS NULL`,
         [userId],
       );

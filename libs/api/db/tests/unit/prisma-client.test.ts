@@ -3,6 +3,8 @@
 import { describe, expect, it } from 'vitest';
 import type { DatabaseConnection } from '../../src/database-config.js';
 import {
+  API_CONNECTION_OPTIONS,
+  API_SEARCH_PATH,
   DatabaseRoleError,
   POOL_TIMEOUTS,
   SESSION_PRIVILEGES_SQL,
@@ -44,7 +46,13 @@ describe('buildPoolConfig', () => {
       statement_timeout: POOL_TIMEOUTS.statementTimeoutMillis,
       lock_timeout: POOL_TIMEOUTS.lockTimeoutMillis,
       idle_in_transaction_session_timeout: POOL_TIMEOUTS.idleInTransactionTimeoutMillis,
+      options: API_CONNECTION_OPTIONS,
     });
+  });
+
+  it('impose à la connexion un chemin de recherche sans public, espace échappé', () => {
+    expect(API_SEARCH_PATH).toBe('pg_catalog, pg_temp');
+    expect(API_CONNECTION_OPTIONS).toBe('-c search_path=pg_catalog,\\ pg_temp');
   });
 
   it('ne garde pas le mot de passe en clair dans la configuration', () => {
@@ -76,6 +84,7 @@ const LEAST_PRIVILEGED = {
   member_of_roles: false,
   owns_objects: false,
   can_create: false,
+  search_path: 'pg_catalog, pg_temp',
 };
 
 /** Double d'une connexion : renvoie les lignes données et retient les requêtes reçues. */
@@ -125,6 +134,17 @@ describe('assertLeastPrivilegedSession', () => {
       { member_of_roles: true },
       'membre d’un autre rôle',
     ],
+    [
+      'une session dont le chemin contient public',
+      { search_path: '"$user", public' },
+      'chemin de recherche',
+    ],
+    [
+      'une session dont le chemin met public après pg_catalog',
+      { search_path: 'pg_catalog, public' },
+      'chemin de recherche',
+    ],
+    ['un chemin écrit autrement', { search_path: 'pg_catalog,pg_temp' }, 'chemin de recherche'],
   ])('refuse %s', async (_label, overrides, reason) => {
     const session = fakeSession([{ ...LEAST_PRIVILEGED, ...overrides }]);
     const error: unknown = await assertLeastPrivilegedSession(session).catch((e: unknown) => e);
@@ -142,6 +162,7 @@ describe('assertLeastPrivilegedSession', () => {
       [{ superuser: false, bypass_rls: false, owns_objects: false, can_create: false }],
     ],
     ['une valeur non booléenne', [{ ...LEAST_PRIVILEGED, superuser: 'f' }]],
+    ['un chemin de recherche absent', [{ ...LEAST_PRIVILEGED, search_path: undefined }]],
   ])('refuse une réponse inattendue : %s', async (_label, rows) => {
     await expect(assertLeastPrivilegedSession(fakeSession(rows))).rejects.toThrow(
       DatabaseRoleError,
