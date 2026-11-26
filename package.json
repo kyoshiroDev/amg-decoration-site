@@ -9,7 +9,8 @@
   },
   "workspaces": [
     "apps/*",
-    "libs/shared/*"
+    "libs/shared/*",
+    "libs/api/*"
   ],
   "scripts": {
     "dev": "npm run dev -w @amg/site --",
@@ -23,6 +24,7 @@
     "format": "prettier --write .",
     "test": "nx run-many -t test --outputStyle=static",
     "test:watch": "npm run test:watch -w @amg/site --",
+    "test:integration": "nx run-many -t test:integration --outputStyle=static",
     "test:e2e": "npm run test:e2e -w @amg/site --",
     "test:e2e:service": "npm run test:e2e:service -w @amg/site --",
     "test:visual": "npm run test:visual -w @amg/site --",

@@ -9,9 +9,11 @@
     "check": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . --max-warnings 0",
     "test": "vitest run",
-    "start": "node --enable-source-maps dist/main.js"
+    "start": "node --enable-source-maps dist/main.js",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
+    "@amg/api-db": "*",
     "@amg/shared-schemas": "*",
     "@nestjs/common": "12.6.2",
     "@nestjs/core": "12.6.2",
@@ -62,6 +64,12 @@
           "default",
           "^production",
           "{workspaceRoot}/tsconfig.base.json"
+        ]
+      },
+      "test:integration": {
+        "cache": false,
+        "dependsOn": [
+          "^build"
         ]
       }
     }

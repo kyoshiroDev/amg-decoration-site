@@ -1,6 +1,10 @@
-// Lecteur réel des fichiers secrets (seule partie de la configuration qui touche le disque).
+// Lecteur durci des fichiers secrets (secrets Docker montés en lecture seule, ADR-0023). Partagé par
+// la configuration de l'API (`loadEnv`) et par prisma.config.ts (mot de passe du rôle des
+// migrations) : un seul lecteur, éprouvé par tests/unit/secret-file.test.ts.
 import { closeSync, constants, fstatSync, openSync, readSync } from 'node:fs';
-import type { SecretFileReader } from './load-env.js';
+
+/** Lit le contenu d'un fichier secret ; lève une erreur s'il est illisible ou refusé. */
+export type SecretFileReader = (path: string) => string;
 
 /** Taille maximale d'un fichier secret : bien au-delà d'une clé ou d'un mot de passe. */
 export const SECRET_FILE_MAX_BYTES = 4096;
@@ -46,3 +50,10 @@ export const readSecretFile: SecretFileReader = (path) => {
     closeSync(fd);
   }
 };
+
+/** Retire un seul saut de ligne final (fichier écrit avec `echo` ou un éditeur). */
+export function stripFinalNewline(content: string): string {
+  if (content.endsWith('\r\n')) return content.slice(0, -2);
+  if (content.endsWith('\n')) return content.slice(0, -1);
+  return content;
+}

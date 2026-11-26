@@ -1,0 +1,130 @@
+// Accès à la base des tests d'intégration (job CI « API (intégration) », ou compose.dev.yaml en
+// local). Variables exigées : DB_HOST, DB_PORT, DB_NAME, TEST_DB_APP_PASSWORD,
+// TEST_DB_MIGRATOR_PASSWORD (mots de passe publics de sql/dev/passwords.sql). Absentes : échec
+// immédiat et explicite, jamais une suite qui passe à vide.
+import { randomBytes } from 'node:crypto';
+import pg from 'pg';
+import { expect } from 'vitest';
+import { z } from 'zod';
+import { databaseEnvShape } from '../../src/database-config.js';
+
+export const APP_ROLE = 'amg_app';
+export const MIGRATOR_ROLE = 'amg_migrator';
+export type Role = typeof APP_ROLE | typeof MIGRATOR_ROLE;
+
+const testEnvSchema = z.strictObject({
+  DB_HOST: databaseEnvShape.DB_HOST,
+  DB_PORT: databaseEnvShape.DB_PORT,
+  DB_NAME: databaseEnvShape.DB_NAME,
+  TEST_DB_APP_PASSWORD: z.string().min(1),
+  TEST_DB_MIGRATOR_PASSWORD: z.string().min(1),
+});
+
+export type TestDatabaseEnv = z.output<typeof testEnvSchema>;
+
+export function testDatabaseEnv(): TestDatabaseEnv {
+  const picked: Record<string, string> = {};
+  for (const key of Object.keys(testEnvSchema.shape)) {
+    const value = process.env[key];
+    if (value !== undefined) picked[key] = value;
+  }
+  const parsed = testEnvSchema.safeParse(picked);
+  if (!parsed.success) {
+    const names = parsed.error.issues.map((issue) => issue.path.join('.')).join(', ');
+    throw new Error(`Tests d'intégration : base de test non fournie (${names})`);
+  }
+  return parsed.data;
+}
+
+/** Connexion directe (pg) sous un rôle donné, éventuellement à une autre base. */
+export async function connectAs(role: Role, database?: string): Promise<pg.Client> {
+  const env = testDatabaseEnv();
+  const client = new pg.Client({
+    host: env.DB_HOST,
+    port: env.DB_PORT,
+    database: database ?? env.DB_NAME,
+    user: role,
+    password: role === APP_ROLE ? env.TEST_DB_APP_PASSWORD : env.TEST_DB_MIGRATOR_PASSWORD,
+    connectionTimeoutMillis: 5_000,
+  });
+  await client.connect();
+  return client;
+}
+
+/** Exécute `run` dans une transaction toujours annulée : aucun test ne laisse de données. */
+export async function inRolledBackTransaction(
+  client: pg.Client,
+  run: () => Promise<void>,
+): Promise<void> {
+  await client.query('BEGIN');
+  try {
+    await run();
+  } finally {
+    await client.query('ROLLBACK');
+  }
+}
+
+/** Code SQLSTATE d'une erreur PostgreSQL, ou `undefined`. */
+function sqlState(error: unknown): string | undefined {
+  return error instanceof pg.DatabaseError ? error.code : undefined;
+}
+
+/**
+ * Vérifie qu'une requête échoue avec le code SQLSTATE attendu, dans un point de sauvegarde : la
+ * transaction englobante reste utilisable pour la suite du test.
+ */
+export async function expectSqlError(
+  client: pg.Client,
+  sql: string,
+  params: readonly unknown[],
+  expectedCode: string,
+  expectedMessage?: RegExp,
+): Promise<void> {
+  await client.query('SAVEPOINT expect_sql_error');
+  let caught: unknown;
+  try {
+    await client.query(sql, [...params]);
+  } catch (error: unknown) {
+    caught = error;
+  }
+  await client.query('ROLLBACK TO SAVEPOINT expect_sql_error');
+  expect(caught, `la requête aurait dû échouer : ${sql}`).toBeInstanceOf(pg.DatabaseError);
+  expect(sqlState(caught)).toBe(expectedCode);
+  if (expectedMessage !== undefined && caught instanceof Error) {
+    expect(caught.message).toMatch(expectedMessage);
+  }
+}
+
+/** Codes SQLSTATE utilisés par les tests. */
+export const SQLSTATE = Object.freeze({
+  insufficientPrivilege: '42501',
+  uniqueViolation: '23505',
+  checkViolation: '23514',
+  foreignKeyViolation: '23503',
+  stringTooLong: '22001',
+  raiseException: 'P0001',
+});
+
+export function uniqueEmail(): string {
+  return `test-${randomBytes(8).toString('hex')}@exemple.test`;
+}
+
+/** Empreinte factice de 32 octets (SHA-256 ou HMAC-SHA-256). */
+export function digest32(): Buffer {
+  return randomBytes(32);
+}
+
+/** Crée un compte client invité et renvoie son identifiant. */
+export async function insertUser(
+  client: pg.Client,
+  values: { readonly email?: string; readonly role?: 'ADMIN' | 'CLIENT' } = {},
+): Promise<string> {
+  const result = await client.query<{ id: string }>(
+    `INSERT INTO users (email, role, display_name, updated_at)
+     VALUES ($1, $2, 'Client de test', now()) RETURNING id`,
+    [values.email ?? uniqueEmail(), values.role ?? 'CLIENT'],
+  );
+  const row = result.rows[0];
+  if (row === undefined) throw new Error('insertion du compte de test impossible');
+  return row.id;
+}

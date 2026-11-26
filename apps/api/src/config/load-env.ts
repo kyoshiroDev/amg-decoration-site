@@ -5,13 +5,13 @@
 // lecture seule), jamais depuis l'environnement en production (visible par `docker inspect` et dans
 // /proc). La forme directe `X` n'est admise qu'en développement et en test.
 import { posix } from 'node:path';
+import { stripFinalNewline, type SecretFileReader } from '@amg/api-db';
 import { ENV_KEYS, envSchema, type ApiEnv } from './env.schema.js';
 import { SecretValue } from './secret-value.js';
 
-export type EnvSource = Readonly<Record<string, string | undefined>>;
+export type { SecretFileReader } from '@amg/api-db';
 
-/** Lit le contenu d'un fichier secret ; lève une erreur s'il est illisible ou trop gros. */
-export type SecretFileReader = (path: string) => string;
+export type EnvSource = Readonly<Record<string, string | undefined>>;
 
 export interface SecretSpec {
   /** Nom de la variable, en majuscules (`SESSION_PEPPER` → lu depuis `SESSION_PEPPER_FILE`). */
@@ -37,13 +37,6 @@ export type LoadEnvResult<S extends readonly SecretSpec[]> =
 const DIRECT_SECRET_NODE_ENVS: readonly string[] = ['development', 'test'];
 
 const CONTROL_CHARACTER = /\p{Cc}/u;
-
-/** Retire un seul saut de ligne final (fichier écrit avec `echo` ou un éditeur). */
-function stripFinalNewline(content: string): string {
-  if (content.endsWith('\r\n')) return content.slice(0, -2);
-  if (content.endsWith('\n')) return content.slice(0, -1);
-  return content;
-}
 
 function readSecret(
   spec: SecretSpec,

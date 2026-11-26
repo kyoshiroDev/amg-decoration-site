@@ -1,0 +1,11 @@
+{
+  // Build de la lib (src seul, client Prisma généré compris) vers dist/, référencé par apps/api.
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"]
+}

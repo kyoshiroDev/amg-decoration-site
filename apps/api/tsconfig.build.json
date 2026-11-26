@@ -9,5 +9,8 @@
     "declarationMap": false
   },
   "include": ["src/**/*.ts"],
-  "references": [{ "path": "../../libs/shared/schemas/tsconfig.lib.json" }]
+  "references": [
+    { "path": "../../libs/shared/schemas/tsconfig.lib.json" },
+    { "path": "../../libs/api/db/tsconfig.lib.json" }
+  ]
 }

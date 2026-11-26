@@ -16,3 +16,6 @@ coverage/
 
 # Nx (cache et données de workspace)
 .nx/
+
+# Client Prisma généré
+libs/api/db/src/generated/

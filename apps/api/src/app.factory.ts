@@ -2,8 +2,10 @@
 // exactement la configuration servie en production (préfixe, en-têtes, absence de CORS).
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import type { LoggerService, NestApplicationOptions, Type } from '@nestjs/common';
+import { Module } from '@nestjs/common';
+import type { DynamicModule, LoggerService, NestApplicationOptions, Type } from '@nestjs/common';
 import { AppModule } from './app.module.js';
+import { ConfigModule, type LoadedApiConfig } from './config/config.module.js';
 import { handleFrameworkError, registerSecurityHeaders } from './http/security-headers.js';
 
 /** Préfixe de toutes les routes : l'API est servie sous `admin.…/api/` et `espace.…/api/` (même origine). */
@@ -26,11 +28,24 @@ export const CONNECTION_TIMEOUT_MS = 120_000;
 
 export interface CreateAppOptions {
   readonly logger: LoggerService | false;
+  /** Configuration validée par `loadEnv` (main.ts) ; injectée sous le jeton API_CONFIG. */
+  readonly config: LoadedApiConfig;
   /**
    * Module racine, `AppModule` par défaut. Les tests HTTP passent un module qui importe `AppModule`
    * et ajoute des routes de test (ex. POST pour éprouver les parseurs) : même configuration servie.
    */
   readonly rootModule?: Type<object>;
+}
+
+/** Racine technique : la configuration (module global) au-dessus du module applicatif. */
+@Module({})
+class ApplicationRoot {}
+
+function rootModule(options: CreateAppOptions): DynamicModule {
+  return {
+    module: ApplicationRoot,
+    imports: [ConfigModule.forRoot(options.config), options.rootModule ?? AppModule],
+  };
 }
 
 export async function createApp(options: CreateAppOptions): Promise<NestFastifyApplication> {
@@ -62,7 +77,7 @@ export async function createApp(options: CreateAppOptions): Promise<NestFastifyA
     abortOnError: false,
   };
   const app = await NestFactory.create<NestFastifyApplication>(
-    options.rootModule ?? AppModule,
+    rootModule(options),
     adapter,
     nestOptions,
   );

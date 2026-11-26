@@ -40,6 +40,11 @@ services:
       - '127.0.0.1:5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql
+      # Rôles de l'API (amg_migrator, amg_app) et leurs mots de passe PUBLICS de développement,
+      # créés au premier démarrage seulement (volume vide). Volume existant : rejouer les deux
+      # fichiers avec psql (docs/EXPLOITATION.md §11) ou repartir de zéro avec `down -v`.
+      - ./libs/api/db/sql/roles.sql:/docker-entrypoint-initdb.d/10-roles.sql:ro
+      - ./libs/api/db/sql/dev/passwords.sql:/docker-entrypoint-initdb.d/20-dev-passwords.sql:ro
     shm_size: 64mb
     mem_limit: 192m
     memswap_limit: 192m

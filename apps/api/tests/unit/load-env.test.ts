@@ -2,7 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { loadEnv, type EnvSource, type SecretFileReader } from '../../src/config/load-env.js';
 import { API_SECRETS } from '../../src/config/secrets.js';
 
-const BASE: EnvSource = { NODE_ENV: 'production', AMG_ENV: 'prod', HOST: '0.0.0.0', PORT: '3000' };
+const DB: EnvSource = { DB_HOST: 'postgres', DB_PORT: '5432', DB_NAME: 'amg', DB_USER: 'amg_app' };
+const BASE: EnvSource = {
+  NODE_ENV: 'production',
+  AMG_ENV: 'prod',
+  HOST: '0.0.0.0',
+  PORT: '3000',
+  ...DB,
+};
+const DB_ENV = { DB_HOST: 'postgres', DB_PORT: 5432, DB_NAME: 'amg', DB_USER: 'amg_app' };
+
+/** Variables non secrètes seules (les secrets de l'API sont éprouvés plus bas). */
+const NO_SECRETS = [] as const;
 
 const noFile: SecretFileReader = () => {
   throw new Error('aucun fichier attendu');
@@ -26,28 +37,42 @@ function errorsOf(result: ReturnType<typeof loadEnv>): readonly string[] {
 
 describe('loadEnv : variables non secrètes', () => {
   it('accepte une configuration de production complète', () => {
-    const result = loadEnv(BASE, noFile, API_SECRETS);
+    const result = loadEnv(BASE, noFile, NO_SECRETS);
     expect(result).toEqual({
       ok: true,
       config: {
-        env: { NODE_ENV: 'production', AMG_ENV: 'prod', HOST: '0.0.0.0', PORT: 3000 },
+        env: { NODE_ENV: 'production', AMG_ENV: 'prod', HOST: '0.0.0.0', PORT: 3000, ...DB_ENV },
         secrets: {},
       },
     });
   });
 
   it('applique les valeurs par défaut locales (127.0.0.1:3000)', () => {
-    const result = loadEnv({ NODE_ENV: 'development', AMG_ENV: 'dev' }, noFile, API_SECRETS);
+    const result = loadEnv(
+      {
+        NODE_ENV: 'development',
+        AMG_ENV: 'dev',
+        DB_HOST: 'localhost',
+        DB_NAME: 'amg_dev',
+        DB_USER: 'amg_app',
+      },
+      noFile,
+      NO_SECRETS,
+    );
     expect(result.ok && result.config.env).toEqual({
       NODE_ENV: 'development',
       AMG_ENV: 'dev',
       HOST: '127.0.0.1',
       PORT: 3000,
+      DB_HOST: 'localhost',
+      DB_PORT: 5432,
+      DB_NAME: 'amg_dev',
+      DB_USER: 'amg_app',
     });
   });
 
   it('exige NODE_ENV et AMG_ENV (aucun mode implicite)', () => {
-    const errors = errorsOf(loadEnv({}, noFile, API_SECRETS));
+    const errors = errorsOf(loadEnv({}, noFile, NO_SECRETS));
     expect(errors).toEqual(
       expect.arrayContaining([
         expect.stringMatching(/^NODE_ENV : /),
@@ -63,7 +88,7 @@ describe('loadEnv : variables non secrètes', () => {
     ['test', 'staging'],
   ])('refuse le couple NODE_ENV=%s / AMG_ENV=%s', (nodeEnv, amgEnv) => {
     const errors = errorsOf(
-      loadEnv({ ...BASE, NODE_ENV: nodeEnv, AMG_ENV: amgEnv }, noFile, API_SECRETS),
+      loadEnv({ ...BASE, NODE_ENV: nodeEnv, AMG_ENV: amgEnv }, noFile, NO_SECRETS),
     );
     expect(errors).toEqual([expect.stringMatching(/^AMG_ENV : incompatible avec NODE_ENV/)]);
   });
@@ -71,25 +96,29 @@ describe('loadEnv : variables non secrètes', () => {
   it.each(['0', '65536', '3e3', '0x10', ' 3000', '03000', '', '-1', '3000.5'])(
     'refuse PORT=%j',
     (port) => {
-      const errors = errorsOf(loadEnv({ ...BASE, PORT: port }, noFile, API_SECRETS));
+      const errors = errorsOf(loadEnv({ ...BASE, PORT: port }, noFile, NO_SECRETS));
       expect(errors).toHaveLength(1);
       expect(errors[0]).toMatch(/^PORT : /);
     },
   );
 
   it.each(['localhost', '::', '256.0.0.1', '0.0.0.0 '])('refuse HOST=%j', (host) => {
-    expect(errorsOf(loadEnv({ ...BASE, HOST: host }, noFile, API_SECRETS))).toEqual([
+    expect(errorsOf(loadEnv({ ...BASE, HOST: host }, noFile, NO_SECRETS))).toEqual([
       expect.stringMatching(/^HOST : /),
     ]);
   });
 
   it('ignore les variables hors liste blanche', () => {
-    const result = loadEnv({ ...BASE, PATH: '/usr/bin', EXTRA: 'x' }, noFile, API_SECRETS);
+    const result = loadEnv({ ...BASE, PATH: '/usr/bin', EXTRA: 'x' }, noFile, NO_SECRETS);
     expect(result.ok && Object.keys(result.config.env)).toEqual([
       'NODE_ENV',
       'AMG_ENV',
       'HOST',
       'PORT',
+      'DB_HOST',
+      'DB_PORT',
+      'DB_NAME',
+      'DB_USER',
     ]);
   });
 
@@ -97,9 +126,18 @@ describe('loadEnv : variables non secrètes', () => {
     const marker = 'VALEUR-SENSIBLE-123';
     const errors = errorsOf(
       loadEnv(
-        { NODE_ENV: marker, AMG_ENV: marker, HOST: marker, PORT: marker },
+        {
+          NODE_ENV: marker,
+          AMG_ENV: marker,
+          HOST: marker,
+          PORT: marker,
+          DB_HOST: marker,
+          DB_PORT: marker,
+          DB_NAME: marker,
+          DB_USER: marker,
+        },
         noFile,
-        API_SECRETS,
+        NO_SECRETS,
       ),
     );
     expect(errors.length).toBeGreaterThan(0);
@@ -107,7 +145,7 @@ describe('loadEnv : variables non secrètes', () => {
   });
 
   it('gèle la configuration chargée', () => {
-    const result = loadEnv(BASE, noFile, API_SECRETS);
+    const result = loadEnv(BASE, noFile, NO_SECRETS);
     expect(result.ok && Object.isFrozen(result.config) && Object.isFrozen(result.config.env)).toBe(
       true,
     );
@@ -153,7 +191,7 @@ describe('loadEnv : secrets *_FILE', () => {
       ['test', 'test'],
     ] as const) {
       const result = loadEnv(
-        { NODE_ENV: nodeEnv, AMG_ENV: amgEnv, TEST_PEPPER: SECRET_VALUE },
+        { NODE_ENV: nodeEnv, AMG_ENV: amgEnv, ...DB, TEST_PEPPER: SECRET_VALUE },
         noFile,
         PEPPER,
       );
@@ -222,12 +260,75 @@ describe('loadEnv : secrets *_FILE', () => {
   it('cumule les erreurs de l’environnement et des secrets, sans aucune valeur', () => {
     const errors = errorsOf(
       loadEnv(
-        { NODE_ENV: 'production', AMG_ENV: 'dev', TEST_PEPPER: SECRET_VALUE },
+        { NODE_ENV: 'production', AMG_ENV: 'dev', ...DB, TEST_PEPPER: SECRET_VALUE },
         noFile,
         PEPPER,
       ),
     );
     expect(errors).toHaveLength(2);
     expect(errors.join('\n')).not.toContain(SECRET_VALUE);
+  });
+});
+
+describe('loadEnv : base de données', () => {
+  const DB_PASSWORD = 'mot-de-passe-du-role-amg-app-0123456789';
+
+  it('exige les quatre variables de connexion', () => {
+    const errors = errorsOf(
+      loadEnv({ NODE_ENV: 'production', AMG_ENV: 'prod' }, noFile, NO_SECRETS),
+    );
+    for (const name of ['DB_HOST', 'DB_NAME', 'DB_USER']) {
+      expect(errors).toContainEqual(expect.stringMatching(new RegExp(`^${name} : `)));
+    }
+  });
+
+  it.each(['amg', 'amg_migrator', 'postgres'])(
+    'refuse que l’API se connecte avec le rôle réservé %s',
+    (user) => {
+      expect(errorsOf(loadEnv({ ...BASE, DB_USER: user }, noFile, NO_SECRETS))).toEqual([
+        expect.stringMatching(/^DB_USER : rôle réservé/),
+      ]);
+    },
+  );
+
+  it.each([
+    ['DB_HOST', 'amg_app:secret@postgres'],
+    ['DB_PORT', '5432/amg'],
+    ['DB_NAME', 'amg?sslmode=disable'],
+  ])('refuse %s=%j', (name, value) => {
+    expect(errorsOf(loadEnv({ ...BASE, [name]: value }, noFile, NO_SECRETS))).toEqual([
+      expect.stringMatching(new RegExp(`^${name} : `)),
+    ]);
+  });
+
+  it('lit le mot de passe du rôle depuis DB_PASSWORD_FILE', () => {
+    const result = loadEnv(
+      { ...BASE, DB_PASSWORD_FILE: '/run/secrets/pg_app_password' },
+      fakeFiles({ '/run/secrets/pg_app_password': `${DB_PASSWORD}\n` }),
+      API_SECRETS,
+    );
+    expect(result.ok && result.config.secrets.DB_PASSWORD.reveal()).toBe(DB_PASSWORD);
+  });
+
+  it('refuse DB_PASSWORD dans l’environnement en production', () => {
+    expect(errorsOf(loadEnv({ ...BASE, DB_PASSWORD: DB_PASSWORD }, noFile, API_SECRETS))).toEqual([
+      'DB_PASSWORD : interdit hors développement et test, utiliser DB_PASSWORD_FILE',
+    ]);
+  });
+
+  it('refuse un mot de passe de moins de 32 caractères', () => {
+    const errors = errorsOf(
+      loadEnv({ ...BASE, DB_PASSWORD_FILE: '/s' }, fakeFiles({ '/s': 'court' }), API_SECRETS),
+    );
+    expect(errors).toEqual(['DB_PASSWORD : longueur hors bornes (32 à 256 caractères)']);
+  });
+
+  it('n’accepte aucune URL de connexion (DATABASE_URL est ignorée)', () => {
+    const result = loadEnv(
+      { ...BASE, DATABASE_URL: 'postgresql://amg:secret@postgres/amg' },
+      noFile,
+      NO_SECRETS,
+    );
+    expect(result.ok && Object.keys(result.config.env)).not.toContain('DATABASE_URL');
   });
 });

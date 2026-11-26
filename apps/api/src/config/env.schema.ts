@@ -1,5 +1,6 @@
 // Variables d'environnement non secrètes de l'API, validées au démarrage (ADR-0023). Liste blanche :
 // seules ces clés sont lues dans l'environnement, toute valeur invalide empêche le démarrage.
+import { databaseEnvShape, tcpPortSchema } from '@amg/api-db';
 import { z } from 'zod';
 
 export const NODE_ENVS = ['production', 'development', 'test'] as const;
@@ -15,12 +16,11 @@ const AMG_ENVS_BY_NODE_ENV: Readonly<Record<NodeEnv, readonly AmgEnv[]>> = {
   test: ['test'],
 };
 
-/** Port TCP en décimal strict (pas de `3e3`, `0x10`, espaces ni zéro initial). */
-const portSchema = z
-  .string()
-  .regex(/^[1-9]\d{0,4}$/, 'entier décimal attendu')
-  .transform(Number)
-  .pipe(z.number().int().max(65_535));
+/**
+ * Rôles que l'API ne doit jamais utiliser : superutilisateurs (`amg` de l'image, `postgres`) et
+ * propriétaire des tables (`amg_migrator`), qui contournerait les droits réduits de `amg_app`.
+ */
+const RESERVED_DB_USERS: readonly string[] = ['amg', 'amg_migrator', 'postgres'];
 
 export const envSchema = z
   .strictObject({
@@ -28,9 +28,21 @@ export const envSchema = z
     AMG_ENV: z.enum(AMG_ENVS),
     /** Adresse d'écoute : 0.0.0.0 dans le conteneur (réseau interne), 127.0.0.1 par défaut en local. */
     HOST: z.ipv4().default('127.0.0.1'),
-    PORT: portSchema.default(3000),
+    PORT: tcpPortSchema.default(3000),
+    /**
+     * Connexion à PostgreSQL (rôle `amg_app`) : DB_HOST, DB_PORT (5432 par défaut), DB_NAME, DB_USER.
+     * Le mot de passe est un secret (`DB_PASSWORD_FILE`, secrets.ts) ; aucune URL dans l'environnement.
+     */
+    ...databaseEnvShape,
   })
   .superRefine((env, ctx) => {
+    if (RESERVED_DB_USERS.includes(env.DB_USER)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['DB_USER'],
+        message: `rôle réservé à l'administration ou aux migrations (${RESERVED_DB_USERS.join(', ')}), utiliser amg_app`,
+      });
+    }
     if (!AMG_ENVS_BY_NODE_ENV[env.NODE_ENV].includes(env.AMG_ENV)) {
       ctx.addIssue({
         code: 'custom',
