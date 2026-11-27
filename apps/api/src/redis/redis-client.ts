@@ -30,7 +30,7 @@ export function createRedisClient(config: LoadedApiConfig, onError: (error: Erro
     password: config.secrets.REDIS_PASSWORD.reveal(),
     db: 0,
     // RESP2 : un seul AUTH à la connexion (pas de HELLO), ni CLIENT SETINFO ni INFO : l'utilisateur
-    // ACL n'a besoin que des commandes de données (liste dans l'ADR et EXPLOITATION).
+    // ACL n'a besoin que des commandes de données (liste dans l'ADR-0023, « Magasin de sessions »).
     protocol: 2,
     disableClientInfo: true,
     enableReadyCheck: false,
