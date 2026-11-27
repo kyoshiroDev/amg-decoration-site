@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Même image PostgreSQL, au même digest, en production (deploy/compose.yaml), en développement
-# local (compose.dev.yaml) et dans le job CI d'intégration (.github/workflows/ci.yml) : les
-# migrations et les droits sont éprouvés sur la version exacte qui tournera sur le serveur.
+# local (compose.dev.yaml), dans le job CI d'intégration (.github/workflows/ci.yml) et dans le
+# contrôle des images de l'API (.github/workflows/deploy.yml) : les migrations et les droits sont
+# éprouvés sur la version exacte qui tournera sur le serveur.
 set -Eeuo pipefail
 
-readonly FILES=(deploy/compose.yaml compose.dev.yaml .github/workflows/ci.yml)
+readonly FILES=(deploy/compose.yaml compose.dev.yaml .github/workflows/ci.yml .github/workflows/deploy.yml)
 # Référence complète : postgres:<tag>@sha256:<64 hexadécimaux>.
 readonly PATTERN='postgres:[0-9A-Za-z._-]+@sha256:[0-9a-f]{64}'
 

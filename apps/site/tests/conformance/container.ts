@@ -64,7 +64,7 @@ export default async function setup(project: TestProject): Promise<() => void> {
     '--detach',
     '--read-only',
     '--tmpfs',
-    '/tmp:size=16m,mode=1777',
+    '/tmp:size=16m,mode=1777,noexec,nosuid,nodev',
     '--cap-drop',
     'ALL',
     '--security-opt',

@@ -4,7 +4,7 @@
 # Installé sur le serveur par l'humain après relecture du diff (docs/EXPLOITATION.md, 3.3), jamais
 # envoyé par la CI : la clé de déploiement ne peut que choisir un digest d'image.
 # Images épinglées par digest (relevé avec `docker buildx imagetools inspect <image:tag>`) ; le site
-# par le digest publié par la CI (SITE_DIGEST, écrit par deploy.sh).
+# et l'API par le digest publié par la CI (SITE_DIGEST, API_DIGEST, écrits par deploy.sh).
 # Chaque projet a ses volumes, son réseau de données interne et son réseau d'entrée vers Traefik.
 # Jamais de `ports:` (seul Traefik expose), jamais de `container_name` (déploiement par réplique).
 # Ressources : limites dures (mémoire sans swap), priorité CPU basse, tués en premier en cas d'OOM
@@ -45,7 +45,7 @@ services:
     # Non root imposé, quelle que soit l'image (UID de nginx-unprivileged).
     user: '101:101'
     tmpfs:
-      - /tmp:size=16m,mode=1777
+      - /tmp:size=16m,mode=1777,noexec,nosuid,nodev
     mem_limit: ${SITE_MEM_LIMIT:-64m}
     memswap_limit: ${SITE_MEM_LIMIT:-64m}
     cpus: 0.5
@@ -138,7 +138,55 @@ services:
       timeout: 3s
       retries: 5
 
-  # Reportés (voir le plan CRM 2) : api et worker (CRM 3), admin et espace-client (CRM 4-5).
+  # API (ADR-0023) : servie sous /api/ des hôtes admin. et espace. (même origine que chaque CRM).
+  # Migrations appliquées AVANT la bascule par deploy.sh (conteneur ponctuel, rôle amg_migrator),
+  # jamais au démarrage. Rôle PostgreSQL amg_app (moindre privilège), mot de passe en fichier.
+  # Le secret est lu par l'utilisateur de l'image (65532) : fichier 640, groupe 65532
+  # (EXPLOITATION.md, §11).
+  api:
+    <<: *hardening
+    image: ${API_IMAGE:?API_IMAGE manquant}@${API_DIGEST:?API_DIGEST manquant}
+    profiles: [api]
+    # Non root imposé, quelle que soit l'image (utilisateur nonroot de l'image distroless).
+    user: '65532:65532'
+    environment:
+      NODE_ENV: production
+      AMG_ENV: ${AMG_ENV}
+      HOST: 0.0.0.0
+      PORT: '3000'
+      DB_HOST: postgres
+      DB_PORT: '5432'
+      DB_NAME: amg
+      DB_USER: amg_app
+      DB_PASSWORD_FILE: /run/secrets/pg_app_password
+    secrets:
+      - pg_app_password
+    # Fichier de drainage de la bascule (/tmp/drain) ; rien d'autre n'est écrit.
+    tmpfs:
+      - /tmp:size=8m,mode=1777,noexec,nosuid,nodev
+    mem_limit: ${API_MEM_LIMIT:-256m}
+    memswap_limit: ${API_MEM_LIMIT:-256m}
+    cpus: 1.0
+    pids_limit: 128
+    # edge : Traefik (entrée seulement) ; data : Postgres et Redis. Tous deux internes : l'API ne
+    # parle jamais à Internet.
+    networks:
+      - edge
+      - data
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=${AMG_EDGE_NETWORK}'
+      # Forme imposée (watch.sh) : (Host(`admin.…`) || Host(`espace.…`)) && PathPrefix(`/api/`).
+      - 'traefik.http.routers.${AMG_PROJECT}-api.rule=${API_RULE:?API_RULE manquant}'
+      - 'traefik.http.routers.${AMG_PROJECT}-api.entrypoints=websecure'
+      - 'traefik.http.routers.${AMG_PROJECT}-api.tls.certresolver=${AMG_CERTRESOLVER:?AMG_CERTRESOLVER manquant}'
+      - 'traefik.http.routers.${AMG_PROJECT}-api.middlewares=${API_MIDDLEWARES:?API_MIDDLEWARES manquant}'
+      - 'traefik.http.services.${AMG_PROJECT}-api.loadbalancer.server.port=3000'
+      # Middlewares propres au conteneur de l'API (aucune dépendance aux labels du site).
+      - 'traefik.http.middlewares.${AMG_PROJECT}-api-retry.retry.attempts=3'
+      - 'traefik.http.middlewares.${AMG_PROJECT}-api-retry.retry.initialinterval=100ms'
+
+  # Reportés : worker (CRM 3, lot 5), admin et espace-client (CRM 4-5).
   # Pas d'antivirus : fichiers déposés reconstruits (ADR-0022), budget dans EXPLOITATION.md, 10.
 
 secrets:
@@ -146,6 +194,10 @@ secrets:
     file: ${AMG_DIR}/secrets/pg_password
   redis_conf:
     file: ${AMG_DIR}/secrets/redis.conf
+  # Rôle amg_app de l'API (EXPLOITATION.md, §11). Le secret des migrations (pg_migrator_password)
+  # n'est jamais monté ici : seul le conteneur ponctuel des migrations le reçoit (amg_run).
+  pg_app_password:
+    file: ${AMG_DIR}/secrets/pg_app_password
 
 volumes:
   pgdata:

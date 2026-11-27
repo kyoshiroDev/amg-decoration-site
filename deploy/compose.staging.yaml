@@ -20,3 +20,14 @@ services:
       - 'traefik.http.middlewares.amg-staging-auth.basicauth.users=${STAGING_BASIC_AUTH:?STAGING_BASIC_AUTH manquant}'
       - 'traefik.http.middlewares.amg-staging-auth.basicauth.removeheader=true'
       - 'traefik.http.middlewares.amg-staging-noindex.headers.customresponseheaders.X-Robots-Tag=noindex, nofollow'
+  # API : mêmes protections que le site, déclarées par son propre conteneur (noms `amg-staging-api-…`),
+  # pour ne dépendre d'aucun label d'un autre conteneur. Basic auth retirée avant l'API (removeheader).
+  api:
+    oom_score_adj: 900
+    labels:
+      - 'traefik.http.middlewares.amg-staging-api-ratelimit.ratelimit.average=10'
+      - 'traefik.http.middlewares.amg-staging-api-ratelimit.ratelimit.period=1s'
+      - 'traefik.http.middlewares.amg-staging-api-ratelimit.ratelimit.burst=30'
+      - 'traefik.http.middlewares.amg-staging-api-auth.basicauth.users=${STAGING_BASIC_AUTH:?STAGING_BASIC_AUTH manquant}'
+      - 'traefik.http.middlewares.amg-staging-api-auth.basicauth.removeheader=true'
+      - 'traefik.http.middlewares.amg-staging-api-noindex.headers.customresponseheaders.X-Robots-Tag=noindex, nofollow'

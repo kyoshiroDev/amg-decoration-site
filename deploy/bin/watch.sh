@@ -9,6 +9,10 @@
 #     stricte (voir traefik_label_problem) : objets préfixés par le projet, routeurs HTTP sur
 #     l'entrée websecure, notre émetteur, des hôtes AMG attendus, nos middlewares et notre service.
 #     Seconde ligne de défense : deploy.sh refuse déjà toute image qui porte un label traefik.* ;
+#   - l'image des conteneurs site et api en marche est celle de amg.env (*_IMAGE@*_DIGEST) ;
+#   - le journal de sécurité de la base est conforme (amg_guard.security_events_violation() NULL,
+#     EXPLOITATION.md §11), dès que roles.sql a été joué, et amg_migrator n'a pas LOGIN hors d'une
+#     fenêtre (verrou de l'environnement libre) ;
 #   - les adresses publiques listées répondent le code attendu (Traefik → réseau d'entrée → site) ;
 #   - l'espace disque et les inodes de la racine et du dossier Docker restent sous le seuil ;
 #   - les slices AMG (amg.slice : plafond commun de tout AMG, 3 800 Mio ; amg-prod.slice ;
@@ -87,30 +91,14 @@ if [ -r "$RESTARTS_STATE" ]; then
   done <"$RESTARTS_STATE"
 fi
 
-# Hôtes autorisés par environnement (domaine public du site, ADR-0020).
-allowed_hosts() {
-  case "$1" in
-    prod) echo '^((www|admin|espace)\.)?amgdecorationdinterieur\.com$' ;;
-    staging) echo '^((admin|espace)\.)?staging\.amgdecorationdinterieur\.com$' ;;
-  esac
-}
-
-# Règle de routeur : uniquement des Host(`…`) autorisés, combinés par `||` (parenthèses admises).
-check_rule() { # $1 env, $2 conteneur, $3 règle
-  local env_name=$1 short=$2 rest=$3 matched host host_re count=0
-  local bt=$'\x60' # accent grave, délimiteur des valeurs dans la syntaxe Traefik
-  local matcher_re="Host\\(${bt}([^${bt}]*)${bt}\\)" leftover_re='^[[:space:]|()]*$'
-  host_re=$(allowed_hosts "$env_name")
-  while [[ "$rest" =~ $matcher_re ]]; do
-    matched=${BASH_REMATCH[0]}
-    host=${BASH_REMATCH[1]}
-    rest=${rest/"$matched"/}
-    [[ "$host" =~ $host_re ]] || problem "$env_name : routeur Traefik du conteneur $short sur un hôte non autorisé : $host"
-    count=$((count + 1))
-  done
-  if [ "$count" -eq 0 ] || ! [[ "$rest" =~ $leftover_re ]]; then
-    problem "$env_name : règle de routeur Traefik non reconnue (conteneur $short) : $3"
-  fi
+# Règle de routeur (amg_traefik_rule_problems, amg-common.sh) : uniquement des Host(`…`) d'AMG
+# combinés par `||`, éventuellement suivis, pour l'API seule, de `&& PathPrefix(`/api/`)`.
+# La forme API n'est admise que pour le routeur <projet>-api.
+check_rule() { # $1 env, $2 conteneur, $3 règle, $4 routeur, $5 projet
+  local p
+  while IFS= read -r p; do
+    [ -n "$p" ] && problem "$1 : routeur Traefik du conteneur $2 : $p"
+  done < <(amg_traefik_rule_problems "$1" "$3" "$4" "$5")
 }
 
 # Labels Traefik de chaque conteneur du projet (Config.Labels contient aussi ceux de l'image).
@@ -120,7 +108,8 @@ check_rule() { # $1 env, $2 conteneur, $3 règle
 # sont admis (p = projet, s = service Compose du conteneur, n = nom libre [a-z0-9-]) :
 #   traefik.enable                                     true
 #   traefik.docker.network                             le réseau d'entrée de l'environnement
-#   traefik.http.routers.<p>-n.rule                    Host(`…`) d'AMG seulement (check_rule)
+#   traefik.http.routers.<p>-n.rule                    Host(`…`) d'AMG seulement, et pour l'API
+#                                                      (Host(`…`) || …) && PathPrefix(`/api/`) (check_rule)
 #   traefik.http.routers.<p>-n.entrypoints             websecure
 #   traefik.http.routers.<p>-n.tls.certresolver        notre émetteur
 #   traefik.http.routers.<p>-n.middlewares             liste de <p>-n@docker
@@ -155,9 +144,9 @@ traefik_label_problem() { # $1 env, $2 conteneur, $3 projet, $4 service Compose,
       return 0
       ;;
   esac
-  if [[ "$key" =~ ^traefik\.http\.routers\.${n_re}\.(rule|entrypoints|tls\.certresolver|middlewares|service)$ ]]; then
-    case "${BASH_REMATCH[1]}" in
-      rule) check_rule "$env_name" "$short" "$value" ;;
+  if [[ "$key" =~ ^traefik\.http\.routers\.(${n_re})\.(rule|entrypoints|tls\.certresolver|middlewares|service)$ ]]; then
+    case "${BASH_REMATCH[2]}" in
+      rule) check_rule "$env_name" "$short" "$value" "${BASH_REMATCH[1]}" "$project" ;;
       entrypoints)
         [ "$value" = websecure ] || problem "$env_name : routeur du conteneur $short sur l'entrée $value"
         ;;
@@ -259,8 +248,16 @@ check_environment() { # $1 prod|staging
     return 0
   fi
 
-  local service id state health restarts oom healthy
+  local service id state health restarts oom healthy expected running var
   for service in "${services[@]}"; do
+    # Services déployés par digest : l'image en marche doit être celle de amg.env (une bascule
+    # interrompue, ou une image lancée à la main, laisserait un écart que rien d'autre ne voit).
+    expected=''
+    case "$service" in site | api)
+      var=${service^^}
+      expected="$(sed -n "s/^${var}_IMAGE=//p" "$dir/amg.env" | tail -n 1)@$(sed -n "s/^${var}_DIGEST=//p" "$dir/amg.env" | tail -n 1)"
+      ;;
+    esac
     mapfile -t ids < <(docker ps -aq --filter "label=com.docker.compose.project=$project" \
       --filter "label=com.docker.compose.service=$service")
     healthy=0
@@ -270,6 +267,11 @@ check_environment() { # $1 prod|staging
         '{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}} {{.RestartCount}} {{.State.OOMKilled}}' \
         "$id" 2>/dev/null || echo "absent none 0 false")
       current_restarts+=("$id $restarts")
+      if [ -n "$expected" ] && [ "$state" = running ]; then
+        running=$(docker inspect -f '{{.Config.Image}}' "$id" 2>/dev/null || echo illisible)
+        [ "$running" = "$expected" ] \
+          || problem "$env_name/$service : conteneur ${id:0:12} sur « $running », amg.env annonce « $expected » (bascule interrompue ?)"
+      fi
       if [ "$restarts" -gt "${previous_restarts[$id]:-$restarts}" ]; then
         problem "$env_name/$service : a redémarré ($restarts fois au total, OOM au dernier arrêt : $oom)"
       fi
@@ -284,6 +286,53 @@ check_environment() { # $1 prod|staging
     done
     [ "$healthy" -ge 1 ] || problem "$env_name/$service : aucun conteneur en marche et sain"
   done
+  check_journal "$env_name" "$project" "${services[@]}"
+}
+
+# Journal de sécurité de la base (EXPLOITATION.md §11) : amg_guard.security_events_violation() doit
+# rendre NULL (déclencheur d'événement désactivé, journal modifié par le superutilisateur, droits
+# changés…). Sous amg, psql -X, chemin épinglé, délai borné : la fonction ne lit que des catalogues.
+# Tant que roles.sql n'a pas été joué (fonction absente), seul un environnement où l'API est activée
+# alerte.
+# Lecture sous amg dans la base de l'environnement : catalogues seulement, -X, chemin épinglé, 10 s.
+watch_psql() { # $1 conteneur postgres, $2 requête
+  timeout 30 docker exec -e PGOPTIONS="$AMG_PG_ADMIN_OPTIONS -c statement_timeout=10000" "$1" \
+    psql -X -v ON_ERROR_STOP=1 -U amg -d amg -At -c "$2" </dev/null 2>/dev/null
+}
+
+check_journal() { # $1 env, $2 projet, $3… services attendus
+  local env_name=$1 project=$2 pg present violation login api=0 s
+  shift 2
+  for s in "$@"; do [ "$s" = api ] && api=1; done
+  pg=$(docker ps -q --filter "label=com.docker.compose.project=$project" \
+    --filter label=com.docker.compose.service=postgres --filter status=running | head -n 1)
+  [ -n "$pg" ] || return 0 # absence de postgres déjà signalée par le contrôle des services
+  # Fenêtre restée ouverte (EXPLOITATION.md §11) : amg_migrator ne peut se connecter que pendant
+  # une migration ou une restauration, qui tiennent le verrou de l'environnement. Verrou libre avant
+  # (check_environment) ET après la lecture : LOGIN hors de toute fenêtre, incident.
+  login=$(watch_psql "$pg" "select r.rolcanlogin from pg_catalog.pg_roles r where r.rolname OPERATOR(pg_catalog.=) 'amg_migrator'") \
+    || login=erreur
+  if [ "$login" = t ] && flock -n "$(amg_env_lock "$env_name")" true; then
+    problem "$env_name : INCIDENT : amg_migrator a LOGIN hors de toute fenêtre de migration (la refermer, EXPLOITATION.md §11)"
+  fi
+  present=$(watch_psql "$pg" "select pg_catalog.to_regprocedure('amg_guard.security_events_violation()') is not null") \
+    || present=erreur
+  case "$present" in
+    t) ;;
+    f)
+      [ "$api" = 0 ] || problem "$env_name : garde du journal de sécurité absente (roles.sql non joué ?)"
+      return 0
+      ;;
+    *)
+      problem "$env_name : vérification du journal de sécurité impossible (postgres injoignable ?)"
+      return 0
+      ;;
+  esac
+  if ! violation=$(watch_psql "$pg" "$AMG_JOURNAL_CHECK_SQL"); then
+    problem "$env_name : vérification du journal de sécurité en échec"
+  elif [ -n "$violation" ]; then
+    problem "$env_name : JOURNAL DE SÉCURITÉ NON CONFORME : $(tr '\n' ' ' <<<"$violation" | cut -c1-300)"
+  fi
 }
 
 check_urls() {
