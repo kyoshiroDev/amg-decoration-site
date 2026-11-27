@@ -14,6 +14,8 @@ import { buildTrustProxy } from './http/trust-proxy.js';
 import { createInfrastructure, type Infrastructure } from './infrastructure/infrastructure.js';
 import { InfrastructureModule } from './infrastructure/infrastructure.module.js';
 import { redisKeyPrefix } from './redis/redis-client.js';
+import { registerHostGate } from './access/host-gate.js';
+import { ServedHosts } from './access/served-hosts.js';
 
 /** Préfixe de toutes les routes : l'API est servie sous `admin.…/api/` et `espace.…/api/` (même origine). */
 export const API_PREFIX = 'api';
@@ -119,6 +121,8 @@ export async function createApp(options: CreateAppOptions): Promise<NestFastifyA
     redis: infrastructure.rateLimitRedis,
     keyPrefix: redisKeyPrefix(options.config.env.AMG_ENV),
   });
+  // Après la limitation (toutes les requêtes comptent), avant l'analyse du corps (aucun oracle).
+  registerHostGate(fastify, new ServedHosts(options.config));
   // Corps d'erreur génériques (y compris 404 du routeur et rejets des gardes) ; paramètres, requêtes
   // et corps validés par les schémas Zod déclarés sur chaque route (`{ schema }`).
   app.useGlobalFilters(new ApiExceptionFilter());

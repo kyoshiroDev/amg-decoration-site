@@ -47,14 +47,14 @@ describe('routes inconnues', () => {
     expect(response.headers).toMatchObject(SECURITY_HEADERS);
   });
 
-  it('refuse un corps JSON au-delà de la limite (413), en-têtes compris', async () => {
+  it('route inconnue : 404 avant l’analyse du corps, même au-delà de la limite', async () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/health',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ data: 'x'.repeat(70 * 1024) }),
     });
-    expect(response.statusCode).toBe(413);
+    expect(response.statusCode).toBe(404);
     expect(response.headers).toMatchObject(SECURITY_HEADERS);
   });
 });

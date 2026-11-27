@@ -29,7 +29,7 @@ describe('Strict-Transport-Security', () => {
       {
         method: 'POST',
         url: '/api/admin/test/echo',
-        headers: { 'content-type': 'text/plain' },
+        headers: { host: 'admin.example.test', 'content-type': 'text/plain' },
         payload: 'a',
       },
       415,
@@ -39,7 +39,7 @@ describe('Strict-Transport-Security', () => {
       {
         method: 'POST',
         url: '/api/admin/test/echo',
-        headers: { 'content-type': 'application/json' },
+        headers: { host: 'admin.example.test', 'content-type': 'application/json' },
         payload: JSON.stringify({ data: 'x'.repeat(70 * 1024) }),
       },
       413,

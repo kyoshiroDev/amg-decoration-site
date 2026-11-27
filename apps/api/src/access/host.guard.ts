@@ -1,6 +1,9 @@
 // Garde d'hôte (1re garde globale, ADR-0023) : avant toute authentification, une route n'existe que
 // sur l'hôte de son audience. Hôte inconnu, route admin sur l'hôte espace, route client sur l'hôte
 // admin, route sans préfixe d'audience non déclarée `@AnyHost()` : même 404 qu'une route inconnue.
+// Le refus effectif a lieu plus tôt, dans le crochet Fastify `onRequest` (host-gate.ts), avant
+// l'analyse du corps ; cette garde le refait (défense en profondeur) et pose l'audience. Une route
+// `@AnyHost()` doit aussi figurer dans HOST_AGNOSTIC_ROUTES, sinon le crochet la refuse.
 import {
   Inject,
   Injectable,
@@ -32,6 +35,8 @@ export class HostGuard implements CanActivate {
       return true;
     }
     const request = context.switchToHttp().getRequest<FastifyRequest>();
+    // Une route liée à un hôte n'est jamais servie ailleurs, même si un décorateur l'oublie : le
+    // crochet a déjà refusé tout autre cas.
     const hostAudience = this.hosts.audienceOf(request.headers.host);
     const audience = routeAudience(request.routeOptions.url);
     if (hostAudience === undefined || audience !== hostAudience) throw new NotFoundException();

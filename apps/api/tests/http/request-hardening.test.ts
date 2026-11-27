@@ -44,7 +44,7 @@ describe('types de corps', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/admin/test/echo',
-      headers: { 'content-type': contentType },
+      headers: { host: 'admin.example.test', 'content-type': contentType },
       payload,
     });
     expect(response.statusCode).toBe(415);
@@ -69,7 +69,7 @@ describe('types de corps', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/admin/test/echo',
-      headers: { 'content-type': 'application/json' },
+      headers: { host: 'admin.example.test', 'content-type': 'application/json' },
       payload: '{"__proto__":{"admin":true}}',
     });
     expect(response.statusCode).toBe(400);

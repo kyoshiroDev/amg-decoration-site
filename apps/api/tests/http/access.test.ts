@@ -82,6 +82,62 @@ describe('garde d’hôte : un seul 404, avant toute authentification', () => {
     }
   });
 
+  it.each([
+    ['text/xml', { 'content-type': 'text/xml' }, '<a/>'],
+    ['JSON invalide', { 'content-type': 'application/json' }, '{"a":'],
+    [
+      'JSON de plus de 64 Kio',
+      { 'content-type': 'application/json' },
+      JSON.stringify({ d: 'x'.repeat(70 * 1024) }),
+    ],
+    ['JSON avec __proto__', { 'content-type': 'application/json' }, '{"__proto__":{"a":1}}'],
+  ] as const)(
+    'corps %s : même 404 qu’une route inconnue, avant toute analyse du corps',
+    async (_label, bodyHeaders, payload) => {
+      const reference = await inject({
+        method: 'POST',
+        url: '/api/admin/zzz',
+        headers: { host: HOSTS.ADMIN, ...bodyHeaders },
+        payload,
+      });
+      expect(reference.statusCode).toBe(404);
+      expect(reference.json()).toEqual(errorBody(404));
+      const variants: InjectOptions[] = [
+        // Routes existantes de l'autre audience (415, 400 ou 413 si le corps était analysé).
+        { method: 'POST', url: '/api/admin/session/logout', headers: { host: HOSTS.CLIENT } },
+        { method: 'POST', url: '/api/client/session/logout', headers: { host: HOSTS.ADMIN } },
+        {
+          method: 'DELETE',
+          url: '/api/client/sessions/AAAAAAAAAAAAAAAAAAAAAA',
+          headers: { host: HOSTS.ADMIN },
+        },
+        // Hôte inconnu, sur une route existante et sur une route inconnue.
+        { method: 'POST', url: '/api/admin/session/logout', headers: { host: 'evil.example' } },
+        { method: 'POST', url: '/api/inconnue', headers: { host: 'evil.example' } },
+        // Route inconnue sur l'hôte de l'autre audience.
+        { method: 'POST', url: '/api/client/zzz', headers: { host: HOSTS.ADMIN } },
+      ];
+      for (const variant of variants) {
+        const response = await inject({
+          ...variant,
+          headers: { ...variant.headers, ...bodyHeaders },
+          payload,
+        });
+        expect(snapshot(response), JSON.stringify(variant)).toEqual(snapshot(reference));
+      }
+    },
+  );
+
+  it('sur le bon hôte, la même route analyse bien le corps (415) : le refus précédent vient de l’hôte', async () => {
+    const response = await inject({
+      method: 'POST',
+      url: '/api/admin/session/logout',
+      headers: { host: HOSTS.ADMIN, 'content-type': 'text/xml' },
+      payload: '<a/>',
+    });
+    expect(response.statusCode).toBe(415);
+  });
+
   it('le 404 ne recopie jamais le chemin', async () => {
     const response = await inject({
       method: 'GET',
