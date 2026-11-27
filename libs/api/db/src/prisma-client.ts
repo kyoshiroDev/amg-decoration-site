@@ -7,7 +7,7 @@
 // (`amg_app`), qui ne peut pas écrire le journal de sécurité, et le pool du journal
 // (`amg_journal`), qui ne peut rien faire d'autre qu'écrire et lire `public.security_events`.
 import { PrismaPg } from '@prisma/adapter-pg';
-import type { PoolConfig } from 'pg';
+import pg, { type PoolConfig } from 'pg';
 import { z } from 'zod';
 import type { DatabaseConnection } from './database-config.js';
 import { PrismaClient } from './generated/prisma/client.js';
@@ -189,7 +189,10 @@ export type GuardedPoolConfig = Omit<PoolConfig, 'onConnect'> & {
 };
 
 /** Configuration du pool `pg`, exposée pour être testée sans base. */
-export function buildPoolConfig(options: CreatePrismaClientOptions): GuardedPoolConfig {
+/** Réglages d'une connexion, communs au pool et au contrôle de démarrage. */
+function buildClientConfig(
+  options: Pick<CreatePrismaClientOptions, 'connection' | 'scope' | 'applicationName'>,
+): pg.ClientConfig {
   const { connection } = options;
   const timeouts = options.scope === 'journal' ? JOURNAL_POOL_TIMEOUTS : POOL_TIMEOUTS;
   return {
@@ -198,14 +201,21 @@ export function buildPoolConfig(options: CreatePrismaClientOptions): GuardedPool
     database: connection.database,
     user: connection.user,
     password: () => connection.password.reveal(),
-    max: options.maxConnections,
     application_name: options.applicationName,
     options: API_CONNECTION_OPTIONS,
     connectionTimeoutMillis: timeouts.connectionTimeoutMillis,
-    idleTimeoutMillis: timeouts.idleTimeoutMillis,
     statement_timeout: timeouts.statementTimeoutMillis,
     lock_timeout: timeouts.lockTimeoutMillis,
     idle_in_transaction_session_timeout: timeouts.idleInTransactionTimeoutMillis,
+  };
+}
+
+export function buildPoolConfig(options: CreatePrismaClientOptions): GuardedPoolConfig {
+  const timeouts = options.scope === 'journal' ? JOURNAL_POOL_TIMEOUTS : POOL_TIMEOUTS;
+  return {
+    ...buildClientConfig(options),
+    max: options.maxConnections,
+    idleTimeoutMillis: timeouts.idleTimeoutMillis,
     onConnect: (client) => assertLeastPrivilegedSession(client, options.scope ?? 'app'),
   };
 }
@@ -220,4 +230,35 @@ export function createPrismaClient(options: CreatePrismaClientOptions): PrismaCl
   }
   const adapter = new PrismaPg(buildPoolConfig(options), { onPoolError: options.onPoolError });
   return new PrismaClient({ adapter });
+}
+
+/** Résultat du contrôle de démarrage : rôle conforme, ou base injoignable (contrôle à refaire). */
+export type RoleVerification = 'ok' | 'unreachable';
+
+/**
+ * Contrôle de démarrage (ADR-0023) : ouvre une connexion isolée avec la configuration exacte du
+ * pool (`scope` compris) et lui applique `assertLeastPrivilegedSession`. Rôle non conforme :
+ * `DatabaseRoleError` levée (l'appelant refuse de démarrer). Base injoignable, authentification
+ * refusée ou requête en échec : `unreachable`, sans dépendance de démarrage à la base ; chaque
+ * connexion ouverte plus tard par le pool repasse par le même contrôle.
+ */
+export async function verifyDatabaseRole(
+  options: Pick<CreatePrismaClientOptions, 'connection' | 'scope' | 'applicationName'>,
+): Promise<RoleVerification> {
+  const client = new pg.Client(buildClientConfig(options));
+  client.on('error', () => undefined);
+  try {
+    await client.connect();
+  } catch {
+    return 'unreachable';
+  }
+  try {
+    await assertLeastPrivilegedSession(client, options.scope ?? 'app');
+    return 'ok';
+  } catch (error: unknown) {
+    if (error instanceof DatabaseRoleError) throw error;
+    return 'unreachable';
+  } finally {
+    await client.end().catch(() => undefined);
+  }
 }

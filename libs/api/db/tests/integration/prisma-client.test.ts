@@ -13,6 +13,7 @@ import {
   DatabaseRoleError,
   assertLeastPrivilegedSession,
   createPrismaClient,
+  verifyDatabaseRole,
 } from '../../src/prisma-client.js';
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
 import { writeSecurityEvent } from '../../src/journal.js';
@@ -326,4 +327,64 @@ describe('contrôle du rôle à chaque nouvelle connexion', () => {
       }
     },
   );
+});
+
+describe('contrôle de démarrage (verifyDatabaseRole)', () => {
+  function connectionOf(role: Role): {
+    host: string;
+    port: number;
+    database: string;
+    user: string;
+    password: { reveal: () => string };
+  } {
+    const env = testDatabaseEnv();
+    return {
+      host: env.DB_HOST,
+      port: env.DB_PORT,
+      database: env.DB_NAME,
+      user: role,
+      password: { reveal: () => testPassword(role) },
+    };
+  }
+
+  it('accepte chaque rôle sur son pool', async () => {
+    await expect(
+      verifyDatabaseRole({
+        connection: connectionOf(APP_ROLE),
+        applicationName: 'amg-api-db-tests',
+      }),
+    ).resolves.toBe('ok');
+    await expect(
+      verifyDatabaseRole({
+        connection: connectionOf(JOURNAL_ROLE),
+        scope: 'journal',
+        applicationName: 'amg-api-db-tests',
+      }),
+    ).resolves.toBe('ok');
+  });
+
+  it('refuse un rôle qui écrit le journal sur le pool principal, et le rôle de l’API sur celui du journal', async () => {
+    await expect(
+      verifyDatabaseRole({
+        connection: connectionOf(JOURNAL_ROLE),
+        applicationName: 'amg-api-db-tests',
+      }),
+    ).rejects.toBeInstanceOf(DatabaseRoleError);
+    await expect(
+      verifyDatabaseRole({
+        connection: connectionOf(APP_ROLE),
+        scope: 'journal',
+        applicationName: 'amg-api-db-tests',
+      }),
+    ).rejects.toBeInstanceOf(DatabaseRoleError);
+  });
+
+  it('refuse le propriétaire des tables', async () => {
+    await expect(
+      verifyDatabaseRole({
+        connection: connectionOf(MIGRATOR_ROLE),
+        applicationName: 'amg-api-db-tests',
+      }),
+    ).rejects.toBeInstanceOf(DatabaseRoleError);
+  });
 });

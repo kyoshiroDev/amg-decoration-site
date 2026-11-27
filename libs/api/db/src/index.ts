@@ -40,6 +40,8 @@ export {
   type GuardedPoolConfig,
   type SessionQueryable,
   type SessionScope,
+  type RoleVerification,
+  verifyDatabaseRole,
 } from './prisma-client.js';
 export {
   CSRF_CHECKS,

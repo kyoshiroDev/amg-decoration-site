@@ -107,6 +107,33 @@ docker exec "$PG_CONTAINER" pg_dump -U amg -d "$PG_DB" --format=custom --no-owne
   || { cat "$WORK/restore.err" >&2; fail "la base migrée ne passe pas le filtre de restauration (amg_restore_list_filter)"; }
 echo "liste de restauration : $(grep -c '^[0-9]' "$WORK/restore.kept") objets gardés"
 
+echo "== API : rôle PostgreSQL non conforme, démarrage refusé"
+# Pool principal sous amg_journal (qui écrit le journal) et pool du journal sous amg_app : le contrôle
+# des rôles au démarrage (apps/api/src/database/role-check.ts) doit arrêter le processus en erreur,
+# avant toute écoute (sinon le conteneur deviendrait sain et deploy.sh basculerait).
+if timeout 60 docker run --rm --network host --read-only --tmpfs /tmp:size=8m,mode=1777,noexec,nosuid,nodev \
+  --cap-drop ALL --security-opt no-new-privileges:true --memory 160m --memory-swap 160m \
+  --pids-limit 128 --user 65532:65532 \
+  -e NODE_ENV=production -e AMG_ENV=staging -e HOST=127.0.0.1 -e PORT=3001 \
+  -e DB_HOST=127.0.0.1 -e DB_PORT=5432 -e DB_NAME="$PG_DB" -e DB_USER=amg_journal \
+  -e DB_PASSWORD_FILE=/run/secrets/pg_journal_password \
+  -e DB_JOURNAL_USER=amg_app -e DB_JOURNAL_PASSWORD_FILE=/run/secrets/pg_app_password \
+  -e ADMIN_ORIGIN=https://admin.example.test -e CLIENT_ORIGIN=https://espace.example.test \
+  -e TRUSTED_PROXY=127.0.0.1 \
+  -e REDIS_HOST=127.0.0.1 -e REDIS_PORT=6379 -e REDIS_USER=amg_api \
+  -e REDIS_PASSWORD_FILE=/run/secrets/redis_password \
+  -v "$WORK/pg_app_password:/run/secrets/pg_app_password:ro" \
+  -v "$WORK/pg_journal_password:/run/secrets/pg_journal_password:ro" \
+  -v "$WORK/redis_password:/run/secrets/redis_password:ro" "$API_IMAGE_REF" >"$WORK/refused.log" 2>&1; then
+  fail "API : démarrée sous un rôle non conforme"
+else
+  code=$?
+fi
+[ "$code" -ne 124 ] || { cat "$WORK/refused.log" >&2; fail "API : ni démarrée ni arrêtée en 60 s sous un rôle non conforme"; }
+grep -q 'Rôle de base de données non conforme, démarrage refusé' "$WORK/refused.log" \
+  || { cat "$WORK/refused.log" >&2; fail "API : arrêt sans le refus attendu (code $code)"; }
+! grep -qE 'amg_journal|amg_app|127\.0\.0\.1' "$WORK/refused.log" || fail "API : le refus cite un rôle ou un hôte"
+
 echo "== API (amg_app, amg_journal, Redis, contraintes de production)"
 docker run -d --name "$API_CONTAINER" --network host --read-only --tmpfs /tmp:size=8m,mode=1777,noexec,nosuid,nodev \
   --cap-drop ALL --security-opt no-new-privileges:true --memory 160m --memory-swap 160m \

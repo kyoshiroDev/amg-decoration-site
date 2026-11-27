@@ -12,6 +12,7 @@ import {
   assertLeastPrivilegedSession,
   buildPoolConfig,
   createPrismaClient,
+  verifyDatabaseRole,
   type CreatePrismaClientOptions,
   type SessionQueryable,
 } from '../../src/prisma-client.js';
@@ -238,5 +239,13 @@ describe('createPrismaClient', () => {
 
   it.each([0, -1, 1.5, Number.NaN])('refuse maxConnections=%s', (maxConnections) => {
     expect(() => createPrismaClient({ ...options, maxConnections })).toThrow(RangeError);
+  });
+});
+
+describe('verifyDatabaseRole', () => {
+  it('base injoignable : « unreachable », sans lever d’erreur ni attendre', async () => {
+    const started = Date.now();
+    await expect(verifyDatabaseRole(options)).resolves.toBe('unreachable');
+    expect(Date.now() - started).toBeLessThan(5_000);
   });
 });

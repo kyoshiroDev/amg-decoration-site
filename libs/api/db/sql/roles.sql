@@ -584,9 +584,12 @@ $$;
 -- migration elle-même, l'état de transition reste admis par security_events_violation() (deux
 -- commandes successives) ; c'est cette fonction-ci, jouée après la fenêtre (fin de ce fichier,
 -- deploy.sh, watch.sh, restauration), qui refuse qu'il dure. Cas non vu ici : une migration qui
--- retirerait tout droit à amg_journal et rendrait INSERT à amg_app (état d'origine) ; l'API refuse
--- alors toute connexion (pool principal : écriture du journal interdite à amg_app ; pool du journal :
--- écriture exigée), panne immédiate et visible.
+-- retirerait tout droit à amg_journal et rendrait INSERT à amg_app (état d'origine). L'API le
+-- refuse au démarrage : avant l'écoute, une connexion de chacun de ses deux pools est contrôlée
+-- (amg_app ne doit pas pouvoir écrire le journal, amg_journal doit le pouvoir) et l'API sort en
+-- erreur, le conteneur ne devient pas sain, deploy.sh ne bascule pas. Base injoignable au
+-- démarrage : l'API démarre, et chaque connexion ouverte plus tard par un pool est contrôlée à son
+-- ouverture (refusée, aucune donnée servie, mais le processus continue). ADR-0023.
 CREATE OR REPLACE FUNCTION amg_guard.security_events_settled_violation() RETURNS text
   LANGUAGE plpgsql STABLE
   SET search_path = pg_catalog, pg_temp
