@@ -133,6 +133,17 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 20
+      # Redis au même digest que la production : l'API contrôlée y ouvre ses sessions et sa
+      # limitation de débit sous l'utilisateur ACL de l'API (redis-acl-ci.sh).
+      redis:
+        image: redis:8.12.0-alpine3.23@sha256:5af80107c1eeecb484a2269b80a26d12bfa6521787da4663bd9f19f60a163483
+        ports:
+          - 127.0.0.1:6379:6379
+        options: >-
+          --health-cmd "redis-cli -h 127.0.0.1 ping 2>&1 | grep -qE 'PONG|NOAUTH'"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
     outputs:
       api-image: ${{ steps.name.outputs.api }}
       migrate-image: ${{ steps.name.outputs.migrate }}
@@ -144,6 +155,8 @@ jobs:
           persist-credentials: false
       - name: Image PostgreSQL identique à la production
         run: .github/scripts/check-postgres-image.sh
+      - name: Image Redis identique à la production
+        run: .github/scripts/check-redis-image.sh
       - id: name
         run: |
           owner=${GITHUB_REPOSITORY_OWNER,,}
@@ -208,6 +221,7 @@ jobs:
           MIGRATE_IMAGE_REF: ${{ steps.name.outputs.migrate }}:${{ env.IMAGE_TAG }}
           PG_CONTAINER: ${{ job.services.postgres.id }}
           PG_DB: amg_test
+          REDIS_CONTAINER: ${{ job.services.redis.id }}
         run: .github/scripts/check-api-images.sh
       - id: save
         name: Images exportées pour la publication

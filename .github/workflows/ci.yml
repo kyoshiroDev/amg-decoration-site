@@ -84,8 +84,8 @@ jobs:
           node-version-file: .nvmrc
       - run: node .github/scripts/audit-production.mjs
 
-  # API contre un PostgreSQL réel (CRM 3, lot 1 ; ADR-0023) : même image, au même digest, que la
-  # production (contrôlé par check-postgres-image.sh). Rôles créés par libs/api/db/sql/roles.sql,
+  # API contre un PostgreSQL et un Redis réels (CRM 3, lots 1 et 3 ; ADR-0023) : mêmes images, aux
+  # mêmes digests, que la production (check-postgres-image.sh, check-redis-image.sh). Rôles créés par libs/api/db/sql/roles.sql,
   # migrations appliquées par `prisma migrate deploy` sous le rôle des migrations, dérive schéma ↔
   # migrations refusée, puis tests d'intégration (droits des rôles, contraintes, journal en ajout
   # seul, consommation atomique) sous le rôle de l'API. Refuse aussi toute modification d'une
@@ -110,6 +110,17 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 20
+      # Redis au même digest que la production (check-redis-image.sh) : sessions, limitation de
+      # débit ; utilisateur ACL de l'API créé par redis-acl-ci.sh, `default` ensuite désactivé.
+      redis:
+        image: redis:8.12.0-alpine3.23@sha256:5af80107c1eeecb484a2269b80a26d12bfa6521787da4663bd9f19f60a163483
+        ports:
+          - 127.0.0.1:6379:6379
+        options: >-
+          --health-cmd "redis-cli -h 127.0.0.1 ping 2>&1 | grep -qE 'PONG|NOAUTH'"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
     # DB_HOST, DB_PORT et DB_NAME ne sont PAS posées au niveau du job : prisma.config.ts exige alors
     # toutes les variables de connexion (loadCliDatabaseConnection, strict), ce qui ferait échouer
     # `prisma generate` à l'étape de build. Elles sont données aux seules étapes qui parlent à la base.
@@ -120,12 +131,21 @@ jobs:
       TEST_DB_JOURNAL_PASSWORD: dev-only-amg-journal-password-public
       TEST_DB_MIGRATOR_PASSWORD: dev-only-amg-migrator-password-public
       TEST_DB_SUPERUSER_PASSWORD: ci-only-superuser-password-public
+      # Utilisateur ACL Redis de l'API dans le service jetable ci-dessus (mot de passe public).
+      TEST_REDIS_USER: amg_api
+      TEST_REDIS_PASSWORD: ci-only-redis-password-public-0123456789
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Image PostgreSQL identique à la production
         run: .github/scripts/check-postgres-image.sh
+      - name: Image Redis identique à la production
+        run: .github/scripts/check-redis-image.sh
+      - name: Utilisateur ACL Redis de l'API
+        env:
+          REDIS_CONTAINER: ${{ job.services.redis.id }}
+        run: .github/scripts/redis-acl-ci.sh "$REDIS_CONTAINER" test "$TEST_REDIS_USER" "$TEST_REDIS_PASSWORD"
       # Dépôt public : récupération anonyme de main, sans jeton.
       - name: Migrations déjà fusionnées sur main inchangées
         run: |
@@ -167,11 +187,13 @@ jobs:
           PG_CONTAINER: ${{ job.services.postgres.id }}
         run: docker exec -i -e PGOPTIONS='-c search_path=pg_catalog,pg_temp' "$PG_CONTAINER" psql -X -v ON_ERROR_STOP=1 -U amg -d amg_test < libs/api/db/sql/roles.sql
       # npm run (pas nx) : aucune dépendance de cible, donc pas de `prisma generate` avec DB_* partielles.
-      - name: Tests d'intégration (rôle de l'API)
+      - name: Tests d'intégration (rôles de l'API et du journal, Redis)
         env:
           DB_HOST: 127.0.0.1
           DB_PORT: '5432'
           DB_NAME: amg_test
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: '6379'
         run: |
           npm run test:integration -w @amg/api-db
           npm run test:integration -w @amg/api
