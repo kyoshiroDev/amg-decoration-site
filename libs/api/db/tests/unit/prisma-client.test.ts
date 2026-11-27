@@ -6,6 +6,7 @@ import {
   API_CONNECTION_OPTIONS,
   API_SEARCH_PATH,
   DatabaseRoleError,
+  JOURNAL_POOL_TIMEOUTS,
   POOL_TIMEOUTS,
   SESSION_PRIVILEGES_SQL,
   assertLeastPrivilegedSession,
@@ -201,6 +202,18 @@ describe('assertLeastPrivilegedSession', () => {
       (e: unknown) => e,
     );
     expect(error instanceof DatabaseRoleError ? error.reasons : []).toContain(reason);
+  });
+
+  it('le pool du journal a ses propres délais, courts', () => {
+    expect(buildPoolConfig({ ...options, scope: 'journal' })).toMatchObject({
+      connectionTimeoutMillis: 2_000,
+      statement_timeout: 5_000,
+      lock_timeout: 5_000,
+      idle_in_transaction_session_timeout: 5_000,
+    });
+    expect(JOURNAL_POOL_TIMEOUTS.statementTimeoutMillis).toBeLessThan(
+      POOL_TIMEOUTS.statementTimeoutMillis,
+    );
   });
 
   it('le pool du journal contrôle chaque connexion avec son périmètre', async () => {

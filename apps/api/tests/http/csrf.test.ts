@@ -145,6 +145,26 @@ describe.each(['ADMIN', 'CLIENT'] as const)('CSRF sur l’hôte %s', (audience) 
     ]);
   });
 
+  it('journal indisponible : la clé d’anti-répétition est libérée, le refus suivant est journalisé', async () => {
+    const { token } = await createSession(infra, audience);
+    infra.journalEvents.failing = true;
+    const first = await app.inject({
+      method: 'POST',
+      url: logout,
+      headers: readHeaders(audience, token),
+    });
+    expect(first.statusCode).toBe(403);
+    expect(infra.journalEvents.events).toEqual([]);
+    infra.journalEvents.failing = false;
+    const second = await app.inject({
+      method: 'POST',
+      url: logout,
+      headers: readHeaders(audience, token),
+    });
+    expect(second.statusCode).toBe(403);
+    expect(infra.journalEvents.events.map((event) => event.type)).toEqual(['CSRF_REJECTED']);
+  });
+
   it('une requête sans session est refusée par la garde de session avant le CSRF (401)', async () => {
     const response = await app.inject({
       method: 'POST',

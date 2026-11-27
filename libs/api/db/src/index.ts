@@ -30,6 +30,7 @@ export {
   API_CONNECTION_OPTIONS,
   API_SEARCH_PATH,
   DatabaseRoleError,
+  JOURNAL_POOL_TIMEOUTS,
   POOL_TIMEOUTS,
   SESSION_PRIVILEGES_SQL,
   assertLeastPrivilegedSession,

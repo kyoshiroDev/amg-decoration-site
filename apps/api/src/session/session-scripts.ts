@@ -63,7 +63,13 @@ while redis.call('ZCARD', KEYS[2]) > max do
   redis.call('DEL', sess_prefix .. victim)
   if pid then table.insert(evicted, pid) end
 end
-redis.call('PEXPIREAT', KEYS[2], fmt(abs))
+-- L'index vit au moins jusqu'à l'échéance absolue la plus lointaine de ses sessions : jamais
+-- raccourci (GT) ; posé directement s'il n'a pas encore d'expiration (PTTL -1 : GT n'agirait pas).
+if redis.call('PTTL', KEYS[2]) < 0 then
+  redis.call('PEXPIREAT', KEYS[2], fmt(abs))
+else
+  redis.call('PEXPIREAT', KEYS[2], fmt(abs), 'GT')
+end
 return evicted
 `;
 

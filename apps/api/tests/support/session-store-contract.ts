@@ -246,6 +246,8 @@ export function describeSessionStoreContract(
       expect(await store.claim(key, MINUTE)).toBe(true);
       expect(await store.claim(key, MINUTE)).toBe(false);
       expect(await store.claim(`${key}:autre`, MINUTE)).toBe(true);
+      await store.release(key);
+      expect(await store.claim(key, MINUTE)).toBe(true);
     });
   });
 }

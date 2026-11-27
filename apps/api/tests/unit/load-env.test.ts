@@ -18,7 +18,7 @@ const BASE: EnvSource = {
   AMG_ENV: 'prod',
   HOST: '0.0.0.0',
   PORT: '3000',
-  TRUSTED_PROXY: '172.30.0.0/24',
+  TRUSTED_PROXY: '192.0.2.0/24',
   ...DB,
 };
 const DB_ENV = {
@@ -33,7 +33,7 @@ const DB_ENV = {
   REDIS_PORT: 6379,
   REDIS_USER: 'amg_api',
 };
-const PROXY = { family: 'ipv4', address: '172.30.0.0', prefix: 24 };
+const PROXY = { family: 'ipv4', address: '192.0.2.0', prefix: 24 };
 
 /** Copie sans la variable `name`. */
 function omit(source: EnvSource, name: string): EnvSource {
@@ -329,7 +329,7 @@ describe('loadEnv : secrets *_FILE', () => {
         {
           NODE_ENV: 'production',
           AMG_ENV: 'dev',
-          TRUSTED_PROXY: '172.30.0.2',
+          TRUSTED_PROXY: '192.0.2.2',
           ...DB,
           TEST_PEPPER: SECRET_VALUE,
         },
@@ -460,9 +460,9 @@ describe('loadEnv : hôtes, proxy de confiance, Redis et journal', () => {
   });
 
   it.each([
-    ['172.30.0.2', { family: 'ipv4', address: '172.30.0.2', prefix: 32 }],
-    ['172.30.0.0/16', { family: 'ipv4', address: '172.30.0.0', prefix: 16 }],
-    ['fd00:1::/64', { family: 'ipv6', address: 'fd00:1::', prefix: 64 }],
+    ['192.0.2.2', { family: 'ipv4', address: '192.0.2.2', prefix: 32 }],
+    ['198.18.0.0/16', { family: 'ipv4', address: '198.18.0.0', prefix: 16 }],
+    ['2001:db8:1::/64', { family: 'ipv6', address: '2001:db8:1::', prefix: 64 }],
   ])('accepte TRUSTED_PROXY=%s', (value, expected) => {
     const result = loadEnv({ ...BASE, TRUSTED_PROXY: value }, noFile, NO_SECRETS);
     expect(result.ok && result.config.env.TRUSTED_PROXY).toEqual(expected);
@@ -472,16 +472,16 @@ describe('loadEnv : hôtes, proxy de confiance, Redis et journal', () => {
     'true',
     '*',
     '0.0.0.0/0',
-    '10.0.0.0/8',
-    '172.30.0.0/15',
+    '192.0.0.0/8',
+    '198.18.0.0/15',
     '::/0',
-    'fd00::/32',
-    '172.30.0.0/33',
-    '172.30.0.0/024',
-    '172.30.0.0/16/1',
-    '172.30.0.0, 10.0.0.1',
+    '2001:db8::/32',
+    '192.0.2.0/33',
+    '192.0.2.0/024',
+    '198.18.0.0/16/1',
+    '192.0.2.0, 198.51.100.1',
     'traefik',
-    'fe80::1%eth0',
+    '2001:db8::1%eth0',
   ])('refuse TRUSTED_PROXY=%j', (value) => {
     expect(errorsOf(loadEnv({ ...BASE, TRUSTED_PROXY: value }, noFile, NO_SECRETS))).toEqual([
       expect.stringMatching(/^TRUSTED_PROXY : /),

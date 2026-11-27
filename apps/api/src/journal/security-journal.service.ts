@@ -26,9 +26,11 @@ export class SecurityJournal {
     @Inject(ONCE_STORE) private readonly once: OnceStore,
   ) {}
 
-  async record(event: SecurityEventInput): Promise<void> {
+  /** Écrit l'événement ; `false` si l'écriture a échoué (déjà consigné au journal applicatif). */
+  async record(event: SecurityEventInput): Promise<boolean> {
     try {
       await writeSecurityEvent(this.writer, event);
+      return true;
     } catch (error: unknown) {
       logger.error({
         message: 'Journal de sécurité : écriture impossible',
@@ -36,14 +38,19 @@ export class SecurityJournal {
         error: error instanceof Error ? error.name : 'inconnue',
         code: errorCode(error),
       });
+      return false;
     }
   }
 
-  /** Écrit l'événement si aucun de même clé ne l'a été dans la fenêtre (anti-inondation). */
+  /**
+   * Écrit l'événement si aucun de même clé ne l'a été dans la fenêtre (anti-inondation). Si
+   * l'écriture échoue, la clé est libérée : le refus suivant retentera d'écrire l'événement.
+   */
   async recordOnce(key: string, event: SecurityEventInput): Promise<void> {
+    const onceKey = `${event.type}:${key}`;
     let first: boolean;
     try {
-      first = await this.once.claim(`${event.type}:${key}`, REPEATED_EVENT_WINDOW_MS);
+      first = await this.once.claim(onceKey, REPEATED_EVENT_WINDOW_MS);
     } catch {
       logger.warn({
         message: 'Journal de sécurité : anti-répétition indisponible',
@@ -51,6 +58,14 @@ export class SecurityJournal {
       });
       return;
     }
-    if (first) await this.record(event);
+    if (!first || (await this.record(event))) return;
+    try {
+      await this.once.release(onceKey);
+    } catch {
+      logger.warn({
+        message: 'Journal de sécurité : clé d’anti-répétition non libérée',
+        type: event.type,
+      });
+    }
   }
 }

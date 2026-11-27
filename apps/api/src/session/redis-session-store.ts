@@ -31,7 +31,7 @@ import {
 } from './session.types.js';
 
 /** Ce dont le magasin a besoin d'un client Redis. */
-export type SessionRedis = Pick<Redis, 'eval' | 'set'>;
+export type SessionRedis = Pick<Redis, 'eval' | 'set' | 'del'>;
 
 export interface RedisSessionStoreOptions {
   readonly redis: SessionRedis;
@@ -225,6 +225,14 @@ export class RedisSessionStore implements SessionStore, OnceStore {
       [this.#indexKey(audience, userId)],
       [String(Math.trunc(this.#now())), this.#sessionPrefix],
     );
+  }
+
+  async release(key: string): Promise<void> {
+    try {
+      await this.#redis.del(`${this.#oncePrefix}${key}`);
+    } catch (error: unknown) {
+      throw new SessionStoreUnavailableError({ cause: error });
+    }
   }
 
   /** Anti-répétition : `SET NX PX`, vrai si la clé n'existait pas. */

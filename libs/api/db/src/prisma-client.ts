@@ -32,6 +32,20 @@ export const POOL_TIMEOUTS = Object.freeze({
  */
 export type SessionScope = 'app' | 'journal';
 
+/**
+ * Délais du pool du journal : un INSERT ou une lecture bornée, jamais long. Courts pour qu'une
+ * opération qui écrit au journal (déconnexion…) n'attende pas la base bloquée : connexion 2 s,
+ * requête et verrou 5 s (les mêmes que roles.sql pour `amg_journal`, que le client imposerait
+ * sinon à 15 s), transaction inactive 5 s (le pool n'en ouvre aucune).
+ */
+export const JOURNAL_POOL_TIMEOUTS = Object.freeze({
+  connectionTimeoutMillis: 2_000,
+  idleTimeoutMillis: 30_000,
+  statementTimeoutMillis: 5_000,
+  lockTimeoutMillis: 5_000,
+  idleInTransactionTimeoutMillis: 5_000,
+});
+
 export interface CreatePrismaClientOptions {
   readonly connection: DatabaseConnection;
   /** Pool principal par défaut. */
@@ -177,6 +191,7 @@ export type GuardedPoolConfig = Omit<PoolConfig, 'onConnect'> & {
 /** Configuration du pool `pg`, exposée pour être testée sans base. */
 export function buildPoolConfig(options: CreatePrismaClientOptions): GuardedPoolConfig {
   const { connection } = options;
+  const timeouts = options.scope === 'journal' ? JOURNAL_POOL_TIMEOUTS : POOL_TIMEOUTS;
   return {
     host: connection.host,
     port: connection.port,
@@ -186,11 +201,11 @@ export function buildPoolConfig(options: CreatePrismaClientOptions): GuardedPool
     max: options.maxConnections,
     application_name: options.applicationName,
     options: API_CONNECTION_OPTIONS,
-    connectionTimeoutMillis: POOL_TIMEOUTS.connectionTimeoutMillis,
-    idleTimeoutMillis: POOL_TIMEOUTS.idleTimeoutMillis,
-    statement_timeout: POOL_TIMEOUTS.statementTimeoutMillis,
-    lock_timeout: POOL_TIMEOUTS.lockTimeoutMillis,
-    idle_in_transaction_session_timeout: POOL_TIMEOUTS.idleInTransactionTimeoutMillis,
+    connectionTimeoutMillis: timeouts.connectionTimeoutMillis,
+    idleTimeoutMillis: timeouts.idleTimeoutMillis,
+    statement_timeout: timeouts.statementTimeoutMillis,
+    lock_timeout: timeouts.lockTimeoutMillis,
+    idle_in_transaction_session_timeout: timeouts.idleInTransactionTimeoutMillis,
     onConnect: (client) => assertLeastPrivilegedSession(client, options.scope ?? 'app'),
   };
 }

@@ -103,7 +103,7 @@ describe('limite globale par IP', () => {
 });
 
 describe('proxy de confiance (X-Forwarded-For)', () => {
-  const PROXY = '172.30.0.0/24';
+  const PROXY = '192.0.2.0/24';
 
   it('sans proxy configuré, un X-Forwarded-For est ignoré', async () => {
     await start();
@@ -143,11 +143,11 @@ describe('proxy de confiance (X-Forwarded-For)', () => {
     const response = await app?.inject({
       method: 'POST',
       url: `${PREFIXES.ADMIN}/session/logout`,
-      remoteAddress: '172.30.0.2',
+      remoteAddress: '192.0.2.2',
       headers: {
         ...writeHeaders('ADMIN', token),
         // Entrées forgées par le client, puis celle de Traefik (adresse réelle du client).
-        'x-forwarded-for': '10.0.0.1, 172.30.0.3, 203.0.113.9',
+        'x-forwarded-for': '198.51.100.1, 192.0.2.3, 203.0.113.9',
       },
     });
     expect(response?.statusCode).toBe(204);
@@ -159,7 +159,7 @@ describe('proxy de confiance (X-Forwarded-For)', () => {
     const options = {
       method: 'GET',
       url: '/api/inconnue',
-      remoteAddress: '172.30.0.2',
+      remoteAddress: '192.0.2.2',
       headers: { host: HOSTS.ADMIN, 'x-forwarded-for': '203.0.113.9' },
     } as const;
     await exhaust(options);
@@ -176,7 +176,7 @@ describe('proxy de confiance (X-Forwarded-For)', () => {
     const response = await app?.inject({
       method: 'GET',
       url: '/api/admin/session',
-      remoteAddress: '172.30.0.2',
+      remoteAddress: '192.0.2.2',
       headers: { host: HOSTS.CLIENT, 'x-forwarded-host': HOSTS.ADMIN },
     });
     expect(response?.statusCode).toBe(404);

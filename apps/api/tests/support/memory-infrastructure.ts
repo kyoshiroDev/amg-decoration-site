@@ -172,6 +172,12 @@ export class MemorySessionStore implements SessionStore, OnceStore {
     return Promise.resolve(this.#owned(userId, audience).map(([, record]) => record));
   }
 
+  release(key: string): Promise<void> {
+    this.#check();
+    this.#claims.delete(key);
+    return Promise.resolve();
+  }
+
   claim(key: string, windowMs: number): Promise<boolean> {
     this.#check();
     const now = this.#clock.now();

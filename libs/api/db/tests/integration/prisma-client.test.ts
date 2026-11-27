@@ -151,6 +151,12 @@ describe('pool du journal', () => {
     expect(unchanged?.type).toBe('LOGOUT');
   });
 
+  it('applique ses propres délais courts (requête 5 s)', async () => {
+    const rows = await journal.$queryRaw<{ timeout: string }[]>`
+      SELECT pg_catalog.current_setting('statement_timeout') AS timeout`;
+    expect(rows).toEqual([{ timeout: '5s' }]);
+  });
+
   it('ne lit aucune autre table', async () => {
     await expect(journal.user.count()).rejects.toThrow();
   });

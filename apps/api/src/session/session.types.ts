@@ -113,6 +113,8 @@ export interface SessionStore {
 /** Anti-répétition (événements de journal) : `true` la première fois dans la fenêtre. */
 export interface OnceStore {
   claim(key: string, windowMs: number): Promise<boolean>;
+  /** Libère une clé réservée dont l'événement n'a pas pu être écrit. */
+  release(key: string): Promise<void>;
 }
 
 /** Magasin indisponible ou réponse inattendue : la requête reçoit 503, sans détail. */
