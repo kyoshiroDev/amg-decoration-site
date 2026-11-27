@@ -57,16 +57,30 @@ out=$(docker exec -e REDISCLI_AUTH=x "$NAME" redis-cli -h 127.0.0.1 --user defau
 [ "$(api set "amg:$ENV_NAME:once:x" 1 PX 60000 NX)" = OK ] || fail "SET dans le préfixe refusé à amg_api"
 [ "$(api get "amg:$ENV_NAME:once:x")" = 1 ] || fail "GET dans le préfixe refusé à amg_api"
 [ "$(api eval "return redis.call('INCR', KEYS[1])" 1 "amg:$ENV_NAME:rl:x")" = 1 ] || fail "EVAL (INCR) dans le préfixe refusé"
+# Refus attendus, réponse affichée en cas d'écart (journal de la CI lisible).
+expect_denied() { # $1 motif ERE de la réponse attendue, $2 description, puis la commande de amg_api
+  local pattern=$1 what=$2 out
+  shift 2
+  out=$(api "$@")
+  grep -qE -- "$pattern" <<<"$out" || fail "$what (réponse : $(head -c 300 <<<"$out"))"
+}
 for denied in "get amg:prod:x" "set autre:x 1" "config get maxmemory" "keys *" "info" "flushall" "acl list" \
-  "client list" "select 1" "scan 0" "debug sleep 0" "module list"; do
+  "client list" "select 1" "scan 0" "debug sleep 0" "module list" "publish amg:$ENV_NAME:c 1"; do
   read -r -a args <<<"$denied" # découpage sans expansion de motifs (« keys * »)
   # NOPERM (ACL), ou « not allowed » pour DEBUG et MODULE (enable-*-command no, contrôlé avant l'ACL).
-  grep -qE 'NOPERM|not allowed' <<<"$(api "${args[@]}")" || fail "« $denied » permis à amg_api"
+  expect_denied 'NOPERM|not allowed' "« $denied » permis à amg_api" "${args[@]}"
 done
-grep -q NOPERM <<<"$(api eval "return redis.call('GET', KEYS[1])" 1 "amg:prod:x")" \
-  || fail "clé hors du préfixe lue par un script"
-grep -q NOPERM <<<"$(api eval "return redis.call('KEYS', '*')" 0)" || fail "KEYS permis dans un script"
-grep -q NOPERM <<<"$(api publish amg:$ENV_NAME:c 1)" || fail "canal permis à amg_api"
+# Clé déclarée à EVAL (KEYS[1]) hors du préfixe : refusée par l'ACL avant le script, en NOPERM.
+expect_denied 'NOPERM ' "clé hors du préfixe déclarée à un script" \
+  eval "return redis.call('GET', KEYS[1])" 1 "amg:prod:x"
+# Dans un script, Redis ne répond pas NOPERM : scriptVerifyACL (src/script.c, Redis 8.12) préfixe le
+# message de getAclErrorMessage (src/acl.c) par « ACL failure in script: », et luaPushErrorBuff
+# (src/script_lua.c) ajoute le code générique ERR à une erreur sans code. (CONFIG n'est pas testé
+# ici : commande « noscript », refusée dans un script avant toute ACL.)
+expect_denied "ERR ACL failure in script: User amg_api has no permissions to run the 'keys' command" \
+  "KEYS permis dans un script" eval "return redis.call('KEYS', '*')" 0
+expect_denied 'ERR ACL failure in script: No permissions to access a key' \
+  "clé hors du préfixe non déclarée lue par un script" eval "return redis.call('GET', 'amg:prod:x')" 0
 
 files=$(docker exec "$NAME" ls -A /data)
 [ -z "$files" ] || fail "fichiers de persistance écrits dans /data : $files"
