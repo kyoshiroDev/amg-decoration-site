@@ -50,6 +50,9 @@ MIN_TABLES=${MIN_TABLES:-0}
 # Migration qui crée le journal de sécurité : si la sauvegarde l'a appliquée, le journal restauré
 # doit être présent et scellé (lu sous amg_migrator, jamais sous amg).
 JOURNAL_MIGRATION=20261126120000_init
+# Migration qui fait d'amg_journal le seul écrivain du journal (CRM 3, lot 3) : si la sauvegarde
+# l'a appliquée, amg_app ne doit plus avoir INSERT sur le journal, et amg_journal doit l'avoir.
+JOURNAL_ROLE_MIGRATION=20261127120000_journal_role
 RUN_ID=amg-restore-test-$(date +%Y%m%d-%H%M%S)
 PG_CONTAINER=$RUN_ID-pg
 FILES_VOLUME=$RUN_ID-files
@@ -238,8 +241,10 @@ if [ "$(migrator_q "select pg_catalog.to_regclass('public._prisma_migrations') i
     false
   }
   journal_expected=$(migrator_q "select exists (select from public._prisma_migrations m where m.migration_name OPERATOR(pg_catalog.=) '$JOURNAL_MIGRATION' and m.finished_at is not null)")
+  journal_role_expected=$(migrator_q "select exists (select from public._prisma_migrations m where m.migration_name OPERATOR(pg_catalog.=) '$JOURNAL_ROLE_MIGRATION' and m.finished_at is not null)")
 else
   journal_expected=f
+  journal_role_expected=f
 fi
 if [ "$tables" -gt 0 ]; then
   migrator_q 'analyze' >/dev/null
@@ -278,6 +283,16 @@ bad_journal_grants=$(admin_q "$NEW_DB" "select pg_catalog.count(*) from pg_catal
   log "amg_journal a des droits en trop sur $bad_journal_grants relation(s) restaurée(s)"
   false
 }
+# Écrivain du journal, lu explicitement (en plus de l'état stabilisé ci-dessus) : après la migration
+# du rôle du journal, amg_app n'écrit plus le journal et amg_journal l'écrit.
+if [ "$journal_role_expected" = t ]; then
+  writers=$(admin_q "$NEW_DB" "select pg_catalog.concat(pg_catalog.has_table_privilege('amg_app', 'public.security_events', 'INSERT'), ' ', pg_catalog.has_table_privilege('amg_journal', 'public.security_events', 'INSERT'))")
+  [ "$writers" = 'f t' ] || {
+    log "écrivain du journal faux après $JOURNAL_ROLE_MIGRATION (INSERT amg_app, amg_journal : $writers ; attendu f t)"
+    false
+  }
+  log "journal : amg_journal seul écrivain, amg_app en lecture seule"
+fi
 if [ "$(admin_q "$NEW_DB" "select pg_catalog.to_regclass('public.security_events') is not null")" = t ]; then
   # Empreinte du journal sous amg_app (jamais sous amg) : à comparer, lors d'un incident, à celle de
   # la base d'origine (EXPLOITATION.md §11).

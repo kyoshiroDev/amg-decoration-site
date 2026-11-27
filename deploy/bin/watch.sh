@@ -11,7 +11,7 @@
 #     Seconde ligne de défense : deploy.sh refuse déjà toute image qui porte un label traefik.* ;
 #   - l'image des conteneurs site et api en marche est celle de amg.env (*_IMAGE@*_DIGEST) ;
 #   - si l'API est activée, TRUSTED_PROXY de amg.env est le sous-réseau du réseau d'entrée ;
-#   - le journal de sécurité de la base est conforme (amg_guard.security_events_violation() NULL,
+#   - le journal de sécurité de la base est conforme (amg_guard.security_events_settled_violation() NULL,
 #     EXPLOITATION.md §11), dès que roles.sql a été joué, et amg_migrator n'a pas LOGIN hors d'une
 #     fenêtre (verrou de l'environnement libre) ;
 #   - les adresses publiques listées répondent le code attendu (Traefik → réseau d'entrée → site) ;
@@ -302,11 +302,12 @@ check_environment() { # $1 prod|staging
   check_journal "$env_name" "$project" "${services[@]}"
 }
 
-# Journal de sécurité de la base (EXPLOITATION.md §11) : amg_guard.security_events_violation() doit
-# rendre NULL (déclencheur d'événement désactivé, journal modifié par le superutilisateur, droits
-# changés…). Sous amg, psql -X, chemin épinglé, délai borné : la fonction ne lit que des catalogues.
-# Tant que roles.sql n'a pas été joué (fonction absente), seul un environnement où l'API est activée
-# alerte.
+# Journal de sécurité de la base (EXPLOITATION.md §11) : amg_guard.security_events_settled_violation()
+# doit rendre NULL (déclencheur d'événement désactivé, journal modifié par le superutilisateur, droits
+# changés, migration du rôle du journal inachevée, cliquet non posé…). Sous amg, psql -X, chemin
+# épinglé, délai borné : la fonction ne lit que des catalogues. Tant que roles.sql n'a jamais été
+# joué (aucune garde), seul un environnement où l'API est activée alerte ; garde présente sans la
+# fonction de l'état stabilisé (roles.sql d'avant le CRM 3, lot 3) : alerte toujours.
 # Lecture sous amg dans la base de l'environnement : catalogues seulement, -X, chemin épinglé, 10 s.
 watch_psql() { # $1 conteneur postgres, $2 requête
   timeout 30 docker exec -e PGOPTIONS="$AMG_PG_ADMIN_OPTIONS -c statement_timeout=10000" "$1" \
@@ -328,12 +329,16 @@ check_journal() { # $1 env, $2 projet, $3… services attendus
   if [ "$login" = t ] && flock -n "$(amg_env_lock "$env_name")" true; then
     problem "$env_name : INCIDENT : amg_migrator a LOGIN hors de toute fenêtre de migration (la refermer, EXPLOITATION.md §11)"
   fi
-  present=$(watch_psql "$pg" "select pg_catalog.to_regprocedure('amg_guard.security_events_violation()') is not null") \
+  present=$(watch_psql "$pg" "select pg_catalog.concat(pg_catalog.to_regprocedure('amg_guard.security_events_violation()') is not null, ' ', pg_catalog.to_regprocedure('$AMG_JOURNAL_CHECK_FUNCTION') is not null)") \
     || present=erreur
   case "$present" in
-    t) ;;
-    f)
+    't t') ;;
+    'f f')
       [ "$api" = 0 ] || problem "$env_name : garde du journal de sécurité absente (roles.sql non joué ?)"
+      return 0
+      ;;
+    't f')
+      problem "$env_name : contrôle de l'état stabilisé du journal absent ($AMG_JOURNAL_CHECK_FUNCTION) : roles.sql antérieur au CRM 3, lot 3, rejouer celui du commit installé (EXPLOITATION.md §11)"
       return 0
       ;;
     *)
