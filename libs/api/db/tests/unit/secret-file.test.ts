@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { SECRET_FILE_MAX_BYTES, readSecretFile } from '../../src/config/read-secret-file.js';
+import { SECRET_FILE_MAX_BYTES, readSecretFile } from '../../src/secret-file.js';
 
 let dir: string;
 

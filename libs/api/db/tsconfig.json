@@ -1,0 +1,16 @@
+{
+  // Contrôle des types (src + tests + configs), sans émission ; utilisé aussi par ESLint (lint typé).
+  // Le build passe par tsconfig.lib.json.
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": [
+    "src/**/*.ts",
+    "tests/**/*.ts",
+    "prisma.config.ts",
+    "vitest.config.ts",
+    "vitest.integration.config.ts"
+  ]
+}

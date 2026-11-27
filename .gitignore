@@ -36,3 +36,6 @@ Thumbs.db
 
 # Nx (cache et données de workspace)
 .nx/
+
+# Client Prisma généré (`prisma generate`, cible Nx `generate` de @amg/api-db)
+libs/api/db/src/generated/

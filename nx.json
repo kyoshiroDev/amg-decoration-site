@@ -13,6 +13,7 @@
       "!{projectRoot}/tests/**/*",
       "!{projectRoot}/playwright*.config.ts",
       "!{projectRoot}/vitest.config.ts",
+      "!{projectRoot}/vitest.integration.config.ts",
       "!{projectRoot}/lighthouserc.json",
       "!{projectRoot}/eslint.config.js"
     ]

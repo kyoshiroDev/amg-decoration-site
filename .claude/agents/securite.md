@@ -14,7 +14,7 @@ Tu es **l'auditeur sécurité** du projet AMG Décoration. Les CRM manipulent le
 
 ## Grille (chaque point ✅ / ⚠️ / ❌ avec preuve : fichier:ligne, requête, sortie de commande)
 
-1. **Authentification** : Argon2id et paramètres, TOTP obligatoire admin, mot de passe provisoire (aléa, usage unique, expiration, changement forcé appliqué côté serveur), blocage et limitation de débit, messages non énumérants, réinitialisation, journal.
+1. **Authentification** : Argon2id et paramètres, TOTP obligatoire admin, lien d’activation (aléa ≥ 128 bits, haché, usage unique et consommation atomique, expiration, jeton dans le fragment et consommé par POST, ADR-0023), blocage et limitation de débit, messages non énumérants, réinitialisation, journal.
 2. **Sessions** : cookies `HttpOnly` / `Secure` / `SameSite`, rotation, expiration, révocation, CSRF, déconnexion des autres appareils.
 3. **Autorisation** : refus par défaut, contrôle de rôle et de **propriété** sur chaque route (IDOR) ; tente des accès croisés client A → projet B, client → routes admin.
 4. **Entrées** : schémas Zod stricts partout (API, WebSocket, jobs), aucune requête brute non paramétrée, pas de XSS stocké (messages, remarques, textes de réalisations), pas d'injection dans les en-têtes ou emails.

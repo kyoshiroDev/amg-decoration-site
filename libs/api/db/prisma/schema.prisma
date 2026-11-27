@@ -1,0 +1,214 @@
+// Schéma de la base des CRM (ADR-0019, ADR-0023). Seul accès à PostgreSQL : Prisma, requêtes
+// paramétrées. Chaque changement passe par une migration versionnée (prisma/migrations), jamais
+// modifiée après fusion sur main (contrôle CI). Les invariants que Prisma ne sait pas exprimer
+// (CHECK, déclencheurs, droits des rôles) sont écrits en SQL dans les migrations et éprouvés par
+// tests/integration.
+//
+// Conventions : tables et colonnes en snake_case (@@map, @map), identifiants UUID v7 générés par
+// PostgreSQL 18 (`uuidv7()`, ordonnés dans le temps : index compacts, pas de fuite de compteur),
+// dates en `timestamptz` (UTC), empreintes en `bytea` de longueur contrôlée.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  runtime             = "nodejs"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  CLIENT
+
+  @@map("user_role")
+}
+
+/// INVITED : compte créé, lien d'activation envoyé, aucun mot de passe. ACTIVE : mot de passe choisi
+/// par l'utilisateur. DISABLED : connexion refusée, sessions révoquées (le compte et son historique
+/// restent).
+enum UserStatus {
+  INVITED
+  ACTIVE
+  DISABLED
+
+  @@map("user_status")
+}
+
+model User {
+  id                String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  /// Normalisée (espaces retirés, minuscules) par `emailSchema` ; la base le vérifie (CHECK).
+  email             String     @unique(map: "users_email_key") @db.VarChar(254)
+  role              UserRole
+  status            UserStatus @default(INVITED)
+  displayName       String     @map("display_name") @db.VarChar(120)
+  /// Argon2id (chaîne PHC). Null tant que le compte n'est pas activé, et après `reset-mfa`.
+  passwordHash      String?    @map("password_hash") @db.VarChar(255)
+  passwordChangedAt DateTime?  @map("password_changed_at") @db.Timestamptz(3)
+  /// Blocage progressif par compte (ADR-0023) : compteur d'échecs consécutifs et fin du blocage.
+  failedLoginCount  Int        @default(0) @map("failed_login_count")
+  lockedUntil       DateTime?  @map("locked_until") @db.Timestamptz(3)
+  lastLoginAt       DateTime?  @map("last_login_at") @db.Timestamptz(3)
+  createdAt         DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  activationTokens       ActivationToken[] @relation("ActivationTokenUser")
+  issuedActivationTokens ActivationToken[] @relation("ActivationTokenIssuer")
+  totpFactor             TotpFactor?
+  recoveryCodes          RecoveryCode[]
+  enrollmentCodes        EnrollmentCode[]
+
+  @@map("users")
+}
+
+/// INVITATION : 7 jours. INVITATION_RESEND, PASSWORD_RESET (renvoyés par Amandine) et MFA_RESET
+/// (commande `reset-mfa`) : 72 heures. Bornes vérifiées par la base (CHECK).
+enum ActivationPurpose {
+  INVITATION
+  INVITATION_RESEND
+  PASSWORD_RESET
+  MFA_RESET
+
+  @@map("activation_purpose")
+}
+
+/// Lien d'activation à usage unique (remplace le mot de passe provisoire, ADR-0023) : le jeton
+/// (256 bits aléatoires) n'existe en clair que dans l'email ; la base n'en garde que le SHA-256.
+/// Consommation atomique : un seul UPDATE conditionnel (non consommé, non révoqué, non expiré).
+/// Hors de ce schéma, dans la migration : un seul lien vivant par compte (index unique partiel
+/// `activation_tokens_one_live_per_user_key`, ignoré par Prisma), dates fixées par la base et
+/// consommation ou révocation définitives (déclencheur), UPDATE de l'API limité à ces deux colonnes.
+model ActivationToken {
+  id         String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId     String            @map("user_id") @db.Uuid
+  purpose    ActivationPurpose
+  /// SHA-256 du jeton (32 octets), unique : recherche par égalité sur l'index, sans comparaison en clair.
+  tokenHash  Bytes             @map("token_hash") @db.ByteA
+  expiresAt  DateTime          @map("expires_at") @db.Timestamptz(3)
+  consumedAt DateTime?         @map("consumed_at") @db.Timestamptz(3)
+  /// Révoqué à l'émission du suivant, à la désactivation du compte ou par `reset-mfa`.
+  revokedAt  DateTime?         @map("revoked_at") @db.Timestamptz(3)
+  /// Admin qui a demandé l'envoi ; null pour une commande serveur (`create-admin`, `reset-mfa`).
+  issuedById String?           @map("issued_by_id") @db.Uuid
+  createdAt  DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user     User  @relation("ActivationTokenUser", fields: [userId], references: [id], onDelete: Cascade)
+  issuedBy User? @relation("ActivationTokenIssuer", fields: [issuedById], references: [id], onDelete: SetNull)
+
+  @@unique([tokenHash], map: "activation_tokens_token_hash_key")
+  @@index([userId], map: "activation_tokens_user_id_idx")
+  @@index([issuedById], map: "activation_tokens_issued_by_id_idx")
+  @@map("activation_tokens")
+}
+
+/// Facteur TOTP (un par utilisateur). Secret chiffré AES-256-GCM par l'API (clé `TOTP_KEY_FILE`,
+/// jamais en base) : vecteur d'initialisation de 12 octets, étiquette de 16 octets, version de clé
+/// pour la rotation.
+model TotpFactor {
+  userId           String    @id @map("user_id") @db.Uuid
+  secretCiphertext Bytes     @map("secret_ciphertext") @db.ByteA
+  secretIv         Bytes     @map("secret_iv") @db.ByteA
+  secretAuthTag    Bytes     @map("secret_auth_tag") @db.ByteA
+  keyVersion       Int       @map("key_version")
+  /// Null tant que l'enrôlement n'est pas confirmé par un premier code.
+  confirmedAt      DateTime? @map("confirmed_at") @db.Timestamptz(3)
+  /// Dernier pas de temps accepté (anti-rejeu) : un code d'un pas ≤ celui-ci est refusé.
+  lastUsedStep     BigInt?   @map("last_used_step")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("totp_factors")
+}
+
+/// Code de secours à usage unique (10 par enrôlement), stocké en HMAC-SHA-256 poivré
+/// (`RECOVERY_PEPPER_FILE`, jamais en base).
+model RecoveryCode {
+  id         String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  codeHmac   Bytes     @map("code_hmac") @db.ByteA
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, codeHmac], map: "recovery_codes_user_id_code_hmac_key")
+  @@map("recovery_codes")
+}
+
+/// Code d'enrôlement délivré par `reset-mfa` (aléa ≥ 80 bits, 30 minutes au plus, remis en personne
+/// ou lors du rappel vérifié), exigé pour enrôler le nouveau TOTP. HMAC-SHA-256 poivré comme les
+/// codes de secours. Mêmes garanties que les liens d'activation (un seul vivant par compte, dates de
+/// la base, consommation ou révocation définitives), écrites dans la migration.
+model EnrollmentCode {
+  id         String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  codeHmac   Bytes     @map("code_hmac") @db.ByteA
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(3)
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz(3)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "enrollment_codes_user_id_idx")
+  @@map("enrollment_codes")
+}
+
+enum SecurityEventType {
+  LOGIN_SUCCEEDED
+  LOGIN_FAILED
+  ACCOUNT_LOCKED
+  LOGOUT
+  MFA_SUCCEEDED
+  MFA_FAILED
+  MFA_ENROLLED
+  MFA_RESET
+  RECOVERY_CODE_USED
+  RECOVERY_CODES_REGENERATED
+  ENROLLMENT_CODE_ISSUED
+  ACTIVATION_LINK_ISSUED
+  ACTIVATION_LINK_CONSUMED
+  PASSWORD_CHANGED
+  EMAIL_CHANGED
+  ACCOUNT_DISABLED
+  SESSION_REVOKED
+  SESSIONS_REVOKED_ALL
+  ACCESS_DENIED
+  CSRF_REJECTED
+  RATE_LIMITED
+  NEW_DEVICE_ALERT
+
+  @@map("security_event_type")
+}
+
+/// Journal de sécurité, en ajout seul : le rôle de l'API n'a que INSERT et SELECT ; un déclencheur
+/// refuse toute modification, tout vidage et toute suppression d'un événement de moins de 12 mois,
+/// pour tout rôle non superutilisateur (la purge de rétention, lot 5, ne supprime que les plus
+/// anciens), et un déclencheur d'événement (sql/roles.sql) empêche le propriétaire de la table de le
+/// désactiver ou de le remplacer. Pas de clé étrangère vers users : le journal survit à la
+/// suppression d'un compte (identifiant pseudonyme, rétention 12 mois, docs/CONFORMITE.md). Date et
+/// identifiant sont fixés par la base à l'insertion.
+model SecurityEvent {
+  id         String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  occurredAt DateTime          @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  type       SecurityEventType
+  /// Compte concerné (null si inconnu : tentative sur une adresse inexistante).
+  userId     String?           @map("user_id") @db.Uuid
+  /// Auteur de l'action quand il diffère du compte concerné (admin, commande serveur : null).
+  actorId    String?           @map("actor_id") @db.Uuid
+  ip         String?           @db.Inet
+  /// Appareil approximatif (navigateur et système dérivés de l'en-tête User-Agent, tronqué).
+  device     String?           @db.VarChar(160)
+  /// Détails sans secret ni donnée de projet, validés par un schéma Zod par type ; 2 Kio au plus.
+  details    Json?             @db.JsonB
+
+  @@index([userId, occurredAt], map: "security_events_user_id_occurred_at_idx")
+  @@index([type, occurredAt], map: "security_events_type_occurred_at_idx")
+  @@index([occurredAt], map: "security_events_occurred_at_idx")
+  @@map("security_events")
+}

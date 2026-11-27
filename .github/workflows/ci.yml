@@ -32,8 +32,8 @@ jobs:
       - run: deploy/ci/check-budget.sh
 
   # Site, API (@amg/api) et libs : `npm run verify` construit, contrôle, linte et teste tous les projets
-  # Nx (ADR-0023). Les tests de l'API ici sont unitaires et HTTP (app.inject), sans base ; le job
-  # d'intégration contre Postgres/Redis arrive au lot 1 du CRM 3.
+  # Nx (ADR-0023). Les tests de l'API ici sont unitaires et HTTP (app.inject), sans base ; ceux contre
+  # un PostgreSQL réel sont dans le job « API (intégration) » ci-dessous.
   verify:
     name: Vérifications (types, lint, tests, build)
     runs-on: ubuntu-latest
@@ -64,6 +64,112 @@ jobs:
           name: dist
           path: apps/site/dist
           retention-days: 3
+
+  # Dépendances installées en production (`npm audit --omit=dev`, ADR-0023) : aucune vulnérabilité
+  # élevée ou critique, sauf exception datée et justifiée de .github/audit-exceptions.json (échue :
+  # le job échoue). Lit le seul package-lock.json, sans installation.
+  audit:
+    name: Audit des dépendances de production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - run: node .github/scripts/audit-production.mjs
+
+  # API contre un PostgreSQL réel (CRM 3, lot 1 ; ADR-0023) : même image, au même digest, que la
+  # production (contrôlé par check-postgres-image.sh). Rôles créés par libs/api/db/sql/roles.sql,
+  # migrations appliquées par `prisma migrate deploy` sous le rôle des migrations, dérive schéma ↔
+  # migrations refusée, puis tests d'intégration (droits des rôles, contraintes, journal en ajout
+  # seul, consommation atomique) sous le rôle de l'API. Refuse aussi toute modification d'une
+  # migration déjà présente sur main.
+  api-integration:
+    name: API (intégration)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71
+        env:
+          # Identifiants PUBLICS de cette base jetable, propre au job (comme compose.dev.yaml).
+          POSTGRES_USER: amg
+          POSTGRES_PASSWORD: ci-only-superuser-password-public
+          POSTGRES_DB: amg_test
+        # Publié sur la boucle locale du runner seulement (jamais sur toutes ses interfaces).
+        ports:
+          - 127.0.0.1:5432:5432
+        options: >-
+          --health-cmd "pg_isready -U amg -d amg_test -h 127.0.0.1"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    # DB_HOST, DB_PORT et DB_NAME ne sont PAS posées au niveau du job : prisma.config.ts exige alors
+    # toutes les variables de connexion (loadCliDatabaseConnection, strict), ce qui ferait échouer
+    # `prisma generate` à l'étape de build. Elles sont données aux seules étapes qui parlent à la base.
+    env:
+      # Mots de passe publics de libs/api/db/sql/dev/passwords.sql (base jetable du job) et
+      # superutilisateur du service ci-dessus (tests de ce que lui seul peut faire).
+      TEST_DB_APP_PASSWORD: dev-only-amg-app-password-not-secret
+      TEST_DB_MIGRATOR_PASSWORD: dev-only-amg-migrator-password-public
+      TEST_DB_SUPERUSER_PASSWORD: ci-only-superuser-password-public
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Image PostgreSQL identique à la production
+        run: .github/scripts/check-postgres-image.sh
+      # Dépôt public : récupération anonyme de main, sans jeton.
+      - name: Migrations déjà fusionnées sur main inchangées
+        run: |
+          git fetch --no-tags --depth=1 origin main
+          .github/scripts/check-migrations-immutable.sh FETCH_HEAD
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # roles.sql est atomique (BEGIN … COMMIT dans le fichier) ; passwords.sql ouvre la connexion
+      # d'amg_migrator (créé NOLOGIN) comme une fenêtre de migration.
+      - name: Rôles PostgreSQL (amg_migrator, amg_app)
+        env:
+          PG_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker exec -i -e PGOPTIONS='-c search_path=pg_catalog,pg_temp' "$PG_CONTAINER" psql -X -v ON_ERROR_STOP=1 -U amg -d amg_test < libs/api/db/sql/roles.sql
+          docker exec -i -e PGOPTIONS='-c search_path=pg_catalog,pg_temp' "$PG_CONTAINER" psql -X -v ON_ERROR_STOP=1 -U amg -d amg_test < libs/api/db/sql/dev/passwords.sql
+      - name: Build des libs (client Prisma généré)
+        run: npx nx run-many -t build -p @amg/shared-schemas,@amg/api-db --outputStyle=static
+      - name: Migrations (rôle des migrations) et absence de dérive
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: '5432'
+          DB_NAME: amg_test
+          DB_USER: amg_migrator
+        run: |
+          umask 077
+          printf '%s' "$TEST_DB_MIGRATOR_PASSWORD" > "$RUNNER_TEMP/pg_migrator_password"
+          export DB_PASSWORD_FILE="$RUNNER_TEMP/pg_migrator_password"
+          npm run migrate:deploy -w @amg/api-db
+          # Rejouer ne fait rien (aucune migration en attente).
+          npm run migrate:deploy -w @amg/api-db
+          # Base migrée = schema.prisma (code 2 si une migration manque ou diverge).
+          npm run migrate:diff -w @amg/api-db
+      # Idempotence, et vérification du journal de sécurité migré (fin de roles.sql).
+      - name: Rôles rejoués après migration (idempotence, journal conforme)
+        env:
+          PG_CONTAINER: ${{ job.services.postgres.id }}
+        run: docker exec -i -e PGOPTIONS='-c search_path=pg_catalog,pg_temp' "$PG_CONTAINER" psql -X -v ON_ERROR_STOP=1 -U amg -d amg_test < libs/api/db/sql/roles.sql
+      # npm run (pas nx) : aucune dépendance de cible, donc pas de `prisma generate` avec DB_* partielles.
+      - name: Tests d'intégration (rôle de l'API)
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: '5432'
+          DB_NAME: amg_test
+        run: |
+          npm run test:integration -w @amg/api-db
+          npm run test:integration -w @amg/api
 
   e2e:
     name: Tests e2e + accessibilité

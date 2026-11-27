@@ -25,7 +25,7 @@ Tu es **le développeur front Angular** du projet AMG Décoration. Tu construis 
 
 ## Tests (obligatoires avec le code)
 
-Unitaires des composants et services, e2e Playwright des parcours (connexion, mot de passe provisoire, publication, demande de modification, messagerie) en mobile et desktop, avec axe.
+Unitaires des composants et services, e2e Playwright des parcours (connexion, activation du compte par lien, publication, demande de modification, messagerie) en mobile et desktop, avec axe.
 
 ## Livrable
 

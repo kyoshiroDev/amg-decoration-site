@@ -1,0 +1,123 @@
+{
+  "name": "@amg/api-db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Schéma Prisma, migrations versionnées et client PostgreSQL de l'API (ADR-0019, ADR-0023).",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "generate": "prisma generate",
+    "build": "tsc -p tsconfig.lib.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:status": "prisma migrate status",
+    "migrate:diff": "prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.4",
+    "@types/pg": "8.23.1",
+    "prisma": "7.10.1"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "pg": "8.23.1",
+    "zod": "4.6.7"
+  },
+  "nx": {
+    "targets": {
+      "generate": {
+        "cache": true,
+        "inputs": [
+          "{projectRoot}/prisma/schema.prisma",
+          "{projectRoot}/prisma.config.ts",
+          "{projectRoot}/src/database-config.ts",
+          "{projectRoot}/src/secret-file.ts",
+          {
+            "externalDependencies": [
+              "prisma",
+              "@prisma/client"
+            ]
+          }
+        ],
+        "outputs": [
+          "{projectRoot}/src/generated"
+        ]
+      },
+      "build": {
+        "dependsOn": [
+          "generate",
+          "^build"
+        ],
+        "inputs": [
+          "production",
+          "^production",
+          "{workspaceRoot}/tsconfig.base.json"
+        ],
+        "outputs": [
+          "{projectRoot}/dist"
+        ]
+      },
+      "check": {
+        "dependsOn": [
+          "generate",
+          "^build"
+        ],
+        "inputs": [
+          "default",
+          "^production",
+          "{workspaceRoot}/tsconfig.base.json"
+        ]
+      },
+      "lint": {
+        "dependsOn": [
+          "generate",
+          "^build"
+        ]
+      },
+      "test": {
+        "dependsOn": [
+          "generate",
+          "^build"
+        ],
+        "inputs": [
+          "default",
+          "^production",
+          "{workspaceRoot}/tsconfig.base.json"
+        ]
+      },
+      "test:integration": {
+        "cache": false,
+        "dependsOn": [
+          "build"
+        ]
+      },
+      "migrate:deploy": {
+        "cache": false,
+        "dependsOn": [
+          "generate"
+        ]
+      },
+      "migrate:status": {
+        "cache": false
+      },
+      "migrate:diff": {
+        "cache": false,
+        "dependsOn": [
+          "generate"
+        ]
+      }
+    }
+  }
+}

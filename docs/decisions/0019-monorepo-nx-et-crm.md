@@ -1,6 +1,6 @@
 # ADR-0019 — Monorepo Nx : site, admin, espace client et API
 
-- **Statut** : acceptée, révisée le 2026-11-26 (ligne Notifications : Resend, ADR-0023)
+- **Statut** : acceptée, révisée le 2026-11-26 (lignes Notifications : Resend, et Authentification : lien d'activation, ADR-0023)
 - **Date** : 2026-11-24
 
 ## Contexte
@@ -36,7 +36,7 @@ Principes :
 - **Zod partout** : chaque entrée de l'API est validée par un schéma de `libs/shared/schemas`, les formulaires Angular utilisent les mêmes schémas ; champs inconnus refusés.
 - **Prisma** seul accès à PostgreSQL (requêtes paramétrées) ; migrations versionnées, jamais modifiées à la main en production.
 - **Modules NestJS** : `auth`, `catalogue`, `realisations`, `projets`, `fichiers`, `messagerie`, `notifications`, `pilotage`, `publication`, `audit`. Redis pour les sessions, la limitation de débit et les tâches de fond (BullMQ : emails, conversion d'images, reconstruction du site).
-- **Authentification** (décisions de l'humain) : email + mot de passe ; à l'invitation, mot de passe provisoire généré par le serveur, jamais vu par Amandine, valable 7 jours, à usage unique, changement obligatoire à la première connexion ; Amandine peut en renvoyer un (72 h). Vérification en deux étapes TOTP **obligatoire pour l'admin**, facultative pour les clients (pas de SMS). Argon2id, sessions en cookies `HttpOnly` `Secure` `SameSite=Strict`, CSRF, blocage progressif, alertes de connexion, journal de sécurité.
+- **Authentification** (décisions de l'humain) : email + mot de passe ; à l'invitation, **lien d'activation à usage unique** envoyé au client, jamais vu par Amandine, valable 7 jours, avec lequel le client choisit lui-même son mot de passe ; Amandine peut en renvoyer un (72 h), y compris pour un mot de passe oublié (révision du 2026-11-26, [ADR-0023](0023-outillage-api.md) : remplace le mot de passe provisoire initialement prévu). Vérification en deux étapes TOTP **obligatoire pour l'admin**, facultative pour les clients (pas de SMS). Argon2id, sessions en cookies `HttpOnly` `Secure` `SameSite=Strict`, CSRF, blocage progressif, alertes de connexion, journal de sécurité.
 - **Autorisation** : rôle (admin / client) et propriété vérifiés à chaque requête ; un client n'accède qu'à son projet. Tests automatiques de tentatives d'accès croisé.
 - **Catalogue** : formules et options modifiables, supprimées par archivage ; chaque devis garde une copie figée des prix et contenus signés.
 - **Notifications** : PWA installables, Web Push (VAPID), emails automatiques envoyés par l'API HTTPS de **Resend** depuis le worker seul, réponses dirigées vers le Gmail d'Amandine (révision du 2026-11-26, [ADR-0023](0023-outillage-api.md) ; remplace le relais SMTP Gmail initialement prévu).
