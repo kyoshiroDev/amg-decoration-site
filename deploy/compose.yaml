@@ -45,7 +45,7 @@ services:
     # Non root imposé, quelle que soit l'image (UID de nginx-unprivileged).
     user: '101:101'
     tmpfs:
-      - /tmp:size=16m,mode=1777
+      - /tmp:size=16m,mode=1777,noexec,nosuid,nodev
     mem_limit: ${SITE_MEM_LIMIT:-64m}
     memswap_limit: ${SITE_MEM_LIMIT:-64m}
     cpus: 0.5
@@ -163,7 +163,7 @@ services:
       - pg_app_password
     # Fichier de drainage de la bascule (/tmp/drain) ; rien d'autre n'est écrit.
     tmpfs:
-      - /tmp:size=8m,mode=1777
+      - /tmp:size=8m,mode=1777,noexec,nosuid,nodev
     mem_limit: ${API_MEM_LIMIT:-256m}
     memswap_limit: ${API_MEM_LIMIT:-256m}
     cpus: 1.0

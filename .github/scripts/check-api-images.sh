@@ -42,9 +42,11 @@ image_files "$API_IMAGE_REF" "$WORK/api.files"
 for forbidden in bin/sh bin/bash bin/dash bin/busybox usr/bin/sh usr/bin/bash usr/bin/dash usr/bin/busybox usr/bin/apt; do
   ! grep -qx "$forbidden" "$WORK/api.files" || fail "image de l'API : $forbidden présent"
 done
-for absent in prisma effect @prisma/config @prisma/dev @prisma/engines @prisma/studio-core .bin; do
-  ! grep -q "^app/node_modules/$absent/" "$WORK/api.files" || fail "image de l'API : node_modules/$absent présent"
-done
+# Copies imbriquées comprises (node_modules/<paquet>/node_modules/…).
+if grep -E '(^|/)node_modules/(prisma|effect|@prisma/(config|dev|engines|studio-core)|\.bin)/' "$WORK/api.files" >"$WORK/forbidden"; then
+  head -n 5 "$WORK/forbidden" >&2
+  fail "image de l'API : CLI Prisma, effect ou .bin présents"
+fi
 for present in app/apps/api/dist/main.js app/apps/api/dist/healthcheck.js \
   app/libs/api/db/dist/generated/prisma/client.js app/node_modules/@prisma/client/package.json \
   app/node_modules/@prisma/adapter-pg/package.json; do
@@ -92,7 +94,7 @@ tables=$(admin -c "select pg_catalog.count(*) from pg_catalog.pg_tables where sc
 [ "$tables" -ge 7 ] || fail "migrations : $tables tables dans public (7 attendues au moins)"
 
 echo "== API (amg_app, contraintes de production)"
-docker run -d --name "$API_CONTAINER" --network host --read-only --tmpfs /tmp:size=8m,mode=1777 \
+docker run -d --name "$API_CONTAINER" --network host --read-only --tmpfs /tmp:size=8m,mode=1777,noexec,nosuid,nodev \
   --cap-drop ALL --security-opt no-new-privileges:true --memory 160m --memory-swap 160m \
   --pids-limit 128 --user 65532:65532 \
   -e NODE_ENV=production -e AMG_ENV=staging -e HOST=127.0.0.1 -e PORT=3000 \

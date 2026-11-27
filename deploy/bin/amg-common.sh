@@ -170,9 +170,15 @@ amg_run_source_ok() {
   [ ! -S "$real" ]
 }
 
+# Groupe de l'utilisateur des images de l'API (distroless nonroot) : groupe des secrets de l'API.
+AMG_IMAGE_GID=65532
+# Attente maximale du verrou des ponctuels par le conteneur des migrations : la fenêtre de migration
+# est déjà ouverte à ce moment (deploy.sh attend le verrou avant de l'ouvrir), elle reste courte.
+AMG_MIGRATE_ONEOFF_WAIT=30
+
 # Secret des migrations ($1 = valeur de -v), admis pour le seul rôle `migrate` (amg_run) : exactement
-# <racine>/<env>/secrets/pg_migrator_password, fichier régulier (ni lien, ni composant lien), sans
-# aucun droit pour « les autres » (640 attendu : groupe 65532, l'utilisateur de l'image), monté en
+# <racine>/<env>/secrets/pg_migrator_password, fichier régulier (ni lien, ni composant lien), mode
+# exactement 640 ou 440 et groupe AMG_IMAGE_GID (l'utilisateur de l'image), monté en
 # lecture seule sur /run/secrets/pg_migrator_password. Aucun autre fichier de secrets/ n'est jamais
 # monté par un ponctuel. AMG_RUN_ROLE et AMG_RUN_ENV sont posés par amg_run (portée dynamique).
 amg_run_secret_ok() {
@@ -183,8 +189,8 @@ amg_run_secret_ok() {
   amg_clean_path "$want" || return 1
   [ "$v" = "$want:/run/secrets/pg_migrator_password:ro" ] || return 1
   [ -f "$want" ] && [ ! -L "$want" ] && [ "$(readlink -f -- "$want")" = "$want" ] || return 1
-  mode=$(stat -c '%a' -- "$want") || return 1
-  [[ "$mode" =~ ^[0-7]{3,4}$ ]] && (((8#$mode & 8#007) == 0))
+  mode=$(stat -c '%a %g' -- "$want") || return 1
+  [ "$mode" = "640 $AMG_IMAGE_GID" ] || [ "$mode" = "440 $AMG_IMAGE_GID" ]
 }
 
 # Valeur $2 admise pour l'option $1 de amg_run (liste blanche, une règle par option).
@@ -325,19 +331,32 @@ amg_allowed_hosts() {
   esac
 }
 
-# Problèmes d'une règle de routeur Traefik ($1 env, $2 règle ; une ligne par problème, aucune sortie
-# = conforme), utilisé par watch.sh. Deux formes seulement :
+# Problèmes d'une règle de routeur Traefik ($1 env, $2 règle, $3 nom du routeur, $4 projet ; une
+# ligne par problème, aucune sortie = conforme), utilisé par watch.sh. Deux formes seulement :
 #   Host(`a`) || Host(`b`) …                          hôtes d'AMG (parenthèses admises)
-#   (Host(`a`) || Host(`b`)) && PathPrefix(`/api/`)     l'API, à la même origine que chaque CRM
-# PathPrefix n'est admis que joint par && à un groupe d'hôtes AMG : jamais seul ni par ||, ce qui
-# capterait les chemins /api/ de tous les hôtes du Traefik partagé (ceux du voisin compris).
+#   (Host(`a`) || Host(`b`)) && PathPrefix(`/api/`)     l'API, routeur <projet>-api SEULEMENT
+# Forme API : groupe intérieur fait exactement de Host(`…`) joints par ||, sans aucune parenthèse
+# interne (`(Host(a)) || (Host(b)) && PathPrefix(…)` se lit Host(a) || (Host(b) && PathPrefix(…)) :
+# tout l'hôte a irait à l'API). PathPrefix n'est jamais admis seul ni joint par || : il capterait
+# les chemins /api/ de tous les hôtes du Traefik partagé (ceux du voisin compris).
 amg_traefik_rule_problems() {
-  local env_name=$1 rule=$2 rest host_re matched host count=0
+  local env_name=$1 rule=$2 router=${3:-} project=${4:-} rest host_re matched host count=0
   local bt=$'\x60' # accent grave, délimiteur des valeurs dans la syntaxe Traefik
   local matcher_re="Host\\(${bt}([^${bt}]*)${bt}\\)" leftover_re='^[[:space:]|()]*$'
   local api_re="^\\((.*)\\)[[:space:]]*&&[[:space:]]*PathPrefix\\(${bt}/api/${bt}\\)\$"
+  local group_re="^Host\\(${bt}[^${bt}]+${bt}\\)([[:space:]]*\\|\\|[[:space:]]*Host\\(${bt}[^${bt}]+${bt}\\))*\$"
   rest=$rule
-  if [[ "$rest" =~ $api_re ]]; then rest=${BASH_REMATCH[1]}; fi
+  if [[ "$rest" =~ $api_re ]]; then
+    rest=${BASH_REMATCH[1]}
+    if [ -z "$project" ] || [ "$router" != "$project-api" ]; then
+      echo "PathPrefix(/api/) réservé au routeur $project-api (routeur $router) : $rule"
+      return 0
+    fi
+    if ! [[ "$rest" =~ $group_re ]]; then
+      echo "groupe d'hôtes de l'API non reconnu (Host(…) joints par ||, sans parenthèses) : $rule"
+      return 0
+    fi
+  fi
   host_re=$(amg_allowed_hosts "$env_name")
   while [[ "$rest" =~ $matcher_re ]]; do
     matched=${BASH_REMATCH[0]}
@@ -357,12 +376,14 @@ amg_traefik_rule_problems() {
 # d'événement, schéma amg_guard et tous ses objets (réservés au superutilisateur, recréés par
 # roles.sql), schéma public lui-même, ses droits et son commentaire, droits par défaut (posés par
 # roles.sql), extension plpgsql (fournie par le serveur). Tout autre objet doit être dans le schéma
-# public ou sans schéma, sinon refus (code 1) : la liste n'est pas utilisable.
+# public ET d'un type de la liste blanche (ceux que créent les migrations : tables, données,
+# séquences, valeurs par défaut, contraintes, index, déclencheurs, types, fonctions, droits,
+# commentaires), sinon refus (code 1) dès `list` : la liste n'est pas utilisable.
 amg_restore_list_filter() {
   local line body status=0
   local entry_re='^[0-9]+; [0-9]+ [0-9]+ (.+)$'
   local drop_re='^(EVENT TRIGGER |DEFAULT ACL |SCHEMA - (public|amg_guard)( |$)|(ACL|COMMENT) - SCHEMA (public|amg_guard)( |$)|EXTENSION - plpgsql( |$)|COMMENT - EXTENSION plpgsql( |$)|[A-Z]+( [A-Z]+)* amg_guard )'
-  local keep_re='^[A-Z]+( [A-Z]+)* (public|-) '
+  local keep_re='^(TABLE|TABLE DATA|SEQUENCE|SEQUENCE SET|SEQUENCE OWNED BY|DEFAULT|CONSTRAINT|FK CONSTRAINT|CHECK CONSTRAINT|INDEX|TRIGGER|TYPE|FUNCTION|ACL|COMMENT) public '
   while IFS= read -r line || [ -n "$line" ]; do
     if [ -z "$line" ] || [[ "$line" == ';'* ]]; then
       printf '%s\n' "$line"
@@ -379,7 +400,7 @@ amg_restore_list_filter() {
     elif [[ "$body" =~ $keep_re ]]; then
       printf '%s\n' "$line"
     else
-      printf 'liste : REFUS : objet hors du schéma public : %s\n' "$line" >&2
+      printf 'liste : REFUS : objet hors du schéma public ou de type non admis : %s\n' "$line" >&2
       status=1
     fi
   done

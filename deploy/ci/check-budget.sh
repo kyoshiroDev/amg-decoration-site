@@ -115,7 +115,7 @@ check_slice_file amg-staging.slice "MemoryMax=${AMG_STAGING_MAX_MIB}M" "MemoryHi
 declare -A env_total=()
 printf '%-10s %-28s %10s\n' environnement service limite
 check_env() { # $1 nom, $2 fichier d'environnement, $3… fichiers Compose
-  local env_name=$1 env_file=$2 json name svc parent mem swap routed replicas scale oom tmpfs_bad build
+  local env_name=$1 env_file=$2 json name svc parent mem swap routed replicas scale oom tmpfs_bad build tmpfs_exec
   local mem_b swap_b sum=0 rollout=0 rollout_svc=- slice
   slice=$(amg_env_slice "$env_name")
   shift 2
@@ -130,7 +130,9 @@ check_env() { # $1 nom, $2 fichier d'environnement, $3… fichiers Compose
   # jamais déclaré ni monté par Compose (EXPLOITATION.md, §11).
   [ "$(jq '[(.secrets // {}) | to_entries[] | select((.key + " " + (.value.file // "")) | test("pg_migrator_password"))] | length' <<<"$json")" = 0 ] \
     || error "$env_name : secret pg_migrator_password déclaré dans Compose (réservé au conteneur des migrations)"
-  while IFS=$'\t' read -r svc parent mem swap routed replicas scale oom tmpfs_bad build; do
+  [ "$(jq '[.services[] | (.volumes // [])[] | select((if type == "string" then . else (.source // "") end) | test("pg_migrator_password"))] | length' <<<"$json")" = 0 ] \
+    || error "$env_name : un service Compose monte pg_migrator_password (réservé au conteneur des migrations)"
+  while IFS=$'\t' read -r svc parent mem swap routed replicas scale oom tmpfs_bad build tmpfs_exec; do
     [ "$build" = false ] || error "$env_name/$svc : build: interdit (images construites en CI, jamais sur le serveur)"
     [ "$parent" = "$slice" ] || error "$env_name/$svc : cgroup_parent « $parent » (attendu $slice)"
     { [ "$replicas" = - ] || [ "$replicas" -le 1 ]; } \
@@ -138,6 +140,9 @@ check_env() { # $1 nom, $2 fichier d'environnement, $3… fichiers Compose
     { [ "$scale" = - ] || [ "$scale" -le 1 ]; } \
       || error "$env_name/$svc : scale=$scale (au plus 1 : la bascule est comptée à part)"
     [ "$tmpfs_bad" = 0 ] || error "$env_name/$svc : tmpfs sans size= (mémoire non bornée dans le conteneur)"
+    # Services exposés (site, API) : /tmp jamais exécutable (noexec, nosuid, nodev).
+    [ "$routed" != true ] || [ "$tmpfs_exec" = 0 ] \
+      || error "$env_name/$svc : tmpfs sans noexec,nosuid,nodev sur un service exposé par Traefik"
     if [ "$env_name" = staging ]; then
       [ "$oom" = 900 ] || error "$env_name/$svc : oom_score_adj=$oom (attendu 900 : préproduction tuée en premier)"
     else
@@ -166,7 +171,8 @@ check_env() { # $1 nom, $2 fichier d'environnement, $3… fichiers Compose
       (.value.scale // "-" | tostring),
       (.value.oom_score_adj // "-" | tostring),
       ([(.value.tmpfs // []) | if type == "string" then [.] else . end | .[] | select(test("(^|[:,])size=") | not)] | length | tostring),
-      (.value | has("build") | tostring)
+      (.value | has("build") | tostring),
+      ([(.value.tmpfs // []) | if type == "string" then [.] else . end | .[] | select((test("(^|[:,])noexec(,|$)") and test("(^|[:,])nosuid(,|$)") and test("(^|[:,])nodev(,|$)")) | not)] | length | tostring)
     ] | @tsv' <<<"$json")
   printf '%-10s %-28s %6s Mio\n' "$env_name" "bascule (+1 $rollout_svc)" "$(mib "$rollout")"
   env_total[$env_name]=$((sum + rollout))

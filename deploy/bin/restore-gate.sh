@@ -134,11 +134,20 @@ close_window() {
     -c "select pg_catalog.count(pg_catalog.pg_terminate_backend(a.pid)) from pg_catalog.pg_stat_activity a where a.usename OPERATOR(pg_catalog.=) 'amg_migrator'" \
     </dev/null >/dev/null
 }
+# Non réentrant (signaux ignorés dès l'entrée), fermeture retentée cinq fois avant l'incident.
 on_exit() {
-  local rc=$?
+  local rc=$? attempt closed=0
+  trap '' HUP INT TERM
   if [ "$WINDOW_OPEN" = 1 ]; then
-    if close_window; then
-      log "fenêtre de restauration refermée (sortie, code $rc)"
+    for attempt in 1 2 3 4 5; do
+      if close_window; then
+        closed=1
+        break
+      fi
+      sleep 2
+    done
+    if [ "$closed" = 1 ]; then
+      log "fenêtre de restauration refermée (sortie, code $rc, essai $attempt)"
     else
       log "INCIDENT : fenêtre restée OUVERTE (amg_migrator LOGIN) : la refermer à la main (EXPLOITATION.md §11)"
       [ "$rc" -ne 0 ] || rc=6
@@ -156,6 +165,14 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 log "restauration du snapshot $SNAPSHOT dans une base neuve ($NEW_DB) : début (flux reçu du poste)"
+# Journal déjà scellé dans la base en service (marqueur de roles.sql, schéma amg_guard du
+# superutilisateur : lecture permise sous amg) : la base restaurée devra l'être aussi, sinon une
+# sauvegarde sans journal (ou au journal retiré) remplacerait silencieusement la base.
+SEALED=$(pg_admin amg -c "select pg_catalog.to_regclass('amg_guard.journal_sealed') is not null" </dev/null)
+if [ "$SEALED" = t ]; then
+  SEALED=$(pg_admin amg -c 'select exists (select from amg_guard.journal_sealed)' </dev/null)
+fi
+log "journal scellé dans la base en service : $SEALED"
 pg_admin postgres -c "DROP DATABASE IF EXISTS $NEW_DB WITH (FORCE)" \
   -c "CREATE DATABASE $NEW_DB TEMPLATE template0" </dev/null >/dev/null
 pg_admin "$NEW_DB" <"$ROLES_SQL" >/dev/null
@@ -178,6 +195,10 @@ log "fenêtre refermée ; rejeu de roles.sql dans $NEW_DB (déclencheurs réacti
 pg_admin "$NEW_DB" <"$ROLES_SQL" >/dev/null || refuse "rejeu de roles.sql en échec : journal restauré non conforme, base en service inchangée"
 violation=$(pg_admin "$NEW_DB" -c "$AMG_JOURNAL_CHECK_SQL" </dev/null)
 [ -z "$violation" ] || refuse "journal restauré non conforme : $violation"
+if [ "$SEALED" = t ]; then
+  restored=$(pg_admin "$NEW_DB" -c "select pg_catalog.to_regclass('public.security_events') is not null and exists (select from amg_guard.journal_sealed)" </dev/null)
+  [ "$restored" = t ] || refuse "journal de sécurité absent ou non scellé dans la sauvegarde, alors qu'il l'est en service : base en service inchangée"
+fi
 for _ in 1 2 3 4 5; do [ -s "$STATE/.restore.sum" ] && break; sleep 1; done
 [ "$(cat "$STATE/.restore.sum" 2>/dev/null)" = "$(cat "$SUM")" ] \
   || refuse "le flux restauré n'est pas celui de la liste (empreinte différente) : base en service inchangée"
@@ -187,5 +208,9 @@ OLD_DB=amg_avant_$(date +%Y%m%d%H%M)
 pg_admin postgres -c "select pg_catalog.count(pg_catalog.pg_terminate_backend(a.pid)) from pg_catalog.pg_stat_activity a where a.datname OPERATOR(pg_catalog.=) ANY (ARRAY['amg', '$NEW_DB']::name[]) and a.pid OPERATOR(pg_catalog.<>) pg_catalog.pg_backend_pid()" \
   -c "ALTER DATABASE amg RENAME TO $OLD_DB; ALTER DATABASE $NEW_DB RENAME TO amg" </dev/null >/dev/null
 SWITCHED=1
+# Ancienne base conservée pour comparaison, fermée aux rôles de l'API et des migrations.
+pg_admin postgres -c "REVOKE CONNECT, TEMPORARY ON DATABASE $OLD_DB FROM PUBLIC, amg_app, amg_migrator" </dev/null >/dev/null \
+  || log "INCIDENT : droits de connexion de $OLD_DB non retirés : REVOKE CONNECT à faire à la main"
+
 rm -f "$LIST" "$SUM" "$STATE/.restore.sum"
 log "restauration du snapshot $SNAPSHOT : terminée, base en service remplacée (ancienne : $OLD_DB)"

@@ -43,8 +43,12 @@ RESTIC_IMAGE=restic/restic:0.20.0@sha256:93999df80d4ac6cb148e82d2ef1fe6a81996f17
 PG_IMAGE=postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71
 MAX_AGE_HOURS=36
 # Tables attendues au moins dans public (7 depuis la migration initiale du CRM 3, _prisma_migrations
-# comprise) : 0 tant que l'API n'est pas en production (la base sauvegardée est vide).
+# comprise) : 0 tant que l'API n'est pas en production (la base sauvegardée est vide). À RELEVER
+# (MIN_TABLES=7 à chaque test) dès que l'API est en production : sinon une sauvegarde vide passe.
 MIN_TABLES=${MIN_TABLES:-0}
+# Migration qui crée le journal de sécurité : si la sauvegarde l'a appliquée, le journal restauré
+# doit être présent et scellé (lu sous amg_migrator, jamais sous amg).
+JOURNAL_MIGRATION=20261126120000_init
 RUN_ID=amg-restore-test-$(date +%Y%m%d-%H%M%S)
 PG_CONTAINER=$RUN_ID-pg
 FILES_VOLUME=$RUN_ID-files
@@ -232,6 +236,9 @@ if [ "$(migrator_q "select pg_catalog.to_regclass('public._prisma_migrations') i
     log "migration Prisma inachevée dans la sauvegarde"
     false
   }
+  journal_expected=$(migrator_q "select exists (select from public._prisma_migrations m where m.migration_name OPERATOR(pg_catalog.=) '$JOURNAL_MIGRATION' and m.finished_at is not null)")
+else
+  journal_expected=f
 fi
 if [ "$tables" -gt 0 ]; then
   migrator_q 'analyze' >/dev/null
@@ -248,6 +255,14 @@ violation=$(admin_q "$NEW_DB" "$AMG_JOURNAL_CHECK_SQL")
   log "journal de sécurité restauré non conforme : $violation"
   false
 }
+if [ "$journal_expected" = t ]; then
+  sealed=$(admin_q "$NEW_DB" "select pg_catalog.to_regclass('public.security_events') is not null and exists (select from amg_guard.journal_sealed)")
+  [ "$sealed" = t ] || {
+    log "journal de sécurité absent ou non scellé alors que la sauvegarde a appliqué $JOURNAL_MIGRATION"
+    false
+  }
+  log "journal de sécurité présent et scellé"
+fi
 # Droits d'amg_app : catalogues seulement (has_table_privilege ne lit aucune table).
 bad_grants=$(admin_q "$NEW_DB" "select pg_catalog.count(*) from pg_catalog.pg_class c join pg_catalog.pg_namespace n on n.oid OPERATOR(pg_catalog.=) c.relnamespace where n.nspname OPERATOR(pg_catalog.=) 'public' and c.relkind OPERATOR(pg_catalog.=) ANY (ARRAY['r','p','v','m']::\"char\"[]) and (pg_catalog.has_table_privilege('amg_app', c.oid, 'TRUNCATE, REFERENCES, TRIGGER') or (c.relname OPERATOR(pg_catalog.=) '_prisma_migrations' and pg_catalog.has_table_privilege('amg_app', c.oid, 'SELECT, INSERT, UPDATE, DELETE')))")
 [ "$bad_grants" = 0 ] || {

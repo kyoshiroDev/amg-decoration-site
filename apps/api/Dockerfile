@@ -43,24 +43,39 @@ RUN npm run generate -w @amg/api-db \
  && test -f libs/api/db/dist/generated/prisma/client.js
 
 # Étape 3 : dépendances de production de l'API, sans scripts d'installation. Le CLI `prisma` est un
-# pair optionnel de @prisma/client : npm le marque `devOptional` et `--omit=dev` l'installe encore,
-# avec tout son arbre. Pas de `--omit=optional` (il retirerait aussi les binaires natifs optionnels
-# de production) : on retire chaque paquet marqué `devOptional` dans le fichier de verrouillage
-# (atteint seulement par une dépendance de développement ou par une dépendance optionnelle d'un
-# paquet de développement), puis on vérifie que le CLI et `effect` ont bien disparu (ADR-0023).
+# pair optionnel de @prisma/client et une dépendance de développement de @amg/api-db : npm le marque
+# `devOptional` (paquet requis à la fois par une dépendance de développement et par une dépendance
+# optionnelle, pair optionnel compris, d'un paquet de production ; aucune dépendance de production
+# obligatoire n'en a besoin) et `--omit=dev` l'installe encore, avec tout son arbre. Pas de
+# `--omit=optional` (il retirerait aussi les binaires natifs optionnels de production) : chaque
+# paquet marqué `devOptional` dans le fichier de verrouillage est retiré, chaque nom retiré doit
+# figurer dans apps/api/docker/dev-optional.txt (sinon la construction échoue : relire le
+# changement du verrouillage), puis on vérifie que le CLI et `effect` ont bien disparu (ADR-0023).
 FROM manifests AS prod-deps
 RUN npm ci --omit=dev --ignore-scripts -w @amg/api -w @amg/api-db -w @amg/shared-schemas
+COPY apps/api/docker/dev-optional.txt /tmp/dev-optional.txt
 RUN node --input-type=module <<'EOF'
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 const { packages } = JSON.parse(readFileSync('package-lock.json', 'utf8'));
-let removed = 0;
+const allowed = new Set(
+  readFileSync('/tmp/dev-optional.txt', 'utf8')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line !== '' && !line.startsWith('#')),
+);
+const removed = [];
 for (const [path, meta] of Object.entries(packages)) {
   if (meta.devOptional === true && path.includes('node_modules/') && existsSync(path)) {
     rmSync(path, { recursive: true, force: true });
-    removed += 1;
+    removed.push(path.replace(/^.*node_modules\//, ''));
   }
 }
-process.stdout.write(`paquets devOptional retirés : ${removed}\n`);
+const unexpected = removed.filter((name) => !allowed.has(name));
+process.stdout.write(`paquets devOptional retirés (${removed.length}) : ${removed.sort().join(' ')}\n`);
+if (unexpected.length > 0) {
+  process.stderr.write(`ERREUR : retirés hors de dev-optional.txt : ${unexpected.join(' ')}\n`);
+  process.exit(1);
+}
 EOF
 RUN rm -rf node_modules/prisma node_modules/effect node_modules/@prisma/config node_modules/@prisma/dev \
       node_modules/@prisma/engines node_modules/@prisma/studio-core node_modules/.bin \

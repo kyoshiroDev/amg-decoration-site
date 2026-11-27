@@ -10,7 +10,8 @@
 #     l'entrée websecure, notre émetteur, des hôtes AMG attendus, nos middlewares et notre service.
 #     Seconde ligne de défense : deploy.sh refuse déjà toute image qui porte un label traefik.* ;
 #   - le journal de sécurité de la base est conforme (amg_guard.security_events_violation() NULL,
-#     EXPLOITATION.md §11), dès que roles.sql a été joué ;
+#     EXPLOITATION.md §11), dès que roles.sql a été joué, et amg_migrator n'a pas LOGIN hors d'une
+#     fenêtre (verrou de l'environnement libre) ;
 #   - les adresses publiques listées répondent le code attendu (Traefik → réseau d'entrée → site) ;
 #   - l'espace disque et les inodes de la racine et du dossier Docker restent sous le seuil ;
 #   - les slices AMG (amg.slice : plafond commun de tout AMG, 3 800 Mio ; amg-prod.slice ;
@@ -91,11 +92,12 @@ fi
 
 # Règle de routeur (amg_traefik_rule_problems, amg-common.sh) : uniquement des Host(`…`) d'AMG
 # combinés par `||`, éventuellement suivis, pour l'API seule, de `&& PathPrefix(`/api/`)`.
-check_rule() { # $1 env, $2 conteneur, $3 règle
+# La forme API n'est admise que pour le routeur <projet>-api.
+check_rule() { # $1 env, $2 conteneur, $3 règle, $4 routeur, $5 projet
   local p
   while IFS= read -r p; do
     [ -n "$p" ] && problem "$1 : routeur Traefik du conteneur $2 : $p"
-  done < <(amg_traefik_rule_problems "$1" "$3")
+  done < <(amg_traefik_rule_problems "$1" "$3" "$4" "$5")
 }
 
 # Labels Traefik de chaque conteneur du projet (Config.Labels contient aussi ceux de l'image).
@@ -141,9 +143,9 @@ traefik_label_problem() { # $1 env, $2 conteneur, $3 projet, $4 service Compose,
       return 0
       ;;
   esac
-  if [[ "$key" =~ ^traefik\.http\.routers\.${n_re}\.(rule|entrypoints|tls\.certresolver|middlewares|service)$ ]]; then
-    case "${BASH_REMATCH[1]}" in
-      rule) check_rule "$env_name" "$short" "$value" ;;
+  if [[ "$key" =~ ^traefik\.http\.routers\.(${n_re})\.(rule|entrypoints|tls\.certresolver|middlewares|service)$ ]]; then
+    case "${BASH_REMATCH[2]}" in
+      rule) check_rule "$env_name" "$short" "$value" "${BASH_REMATCH[1]}" "$project" ;;
       entrypoints)
         [ "$value" = websecure ] || problem "$env_name : routeur du conteneur $short sur l'entrée $value"
         ;;
@@ -278,17 +280,29 @@ check_environment() { # $1 prod|staging
 # changés…). Sous amg, psql -X, chemin épinglé, délai borné : la fonction ne lit que des catalogues.
 # Tant que roles.sql n'a pas été joué (fonction absente), seul un environnement où l'API est activée
 # alerte.
+# Lecture sous amg dans la base de l'environnement : catalogues seulement, -X, chemin épinglé, 10 s.
+watch_psql() { # $1 conteneur postgres, $2 requête
+  timeout 30 docker exec -e PGOPTIONS="$AMG_PG_ADMIN_OPTIONS -c statement_timeout=10000" "$1" \
+    psql -X -v ON_ERROR_STOP=1 -U amg -d amg -At -c "$2" </dev/null 2>/dev/null
+}
+
 check_journal() { # $1 env, $2 projet, $3… services attendus
-  local env_name=$1 project=$2 pg present violation api=0 s
+  local env_name=$1 project=$2 pg present violation login api=0 s
   shift 2
   for s in "$@"; do [ "$s" = api ] && api=1; done
   pg=$(docker ps -q --filter "label=com.docker.compose.project=$project" \
     --filter label=com.docker.compose.service=postgres --filter status=running | head -n 1)
   [ -n "$pg" ] || return 0 # absence de postgres déjà signalée par le contrôle des services
-  present=$(timeout 30 docker exec -e PGOPTIONS="$AMG_PG_ADMIN_OPTIONS -c statement_timeout=10000" "$pg" \
-    psql -X -v ON_ERROR_STOP=1 -U amg -d amg -At \
-    -c "select pg_catalog.to_regprocedure('amg_guard.security_events_violation()') is not null" \
-    </dev/null 2>/dev/null) || present=erreur
+  # Fenêtre restée ouverte (EXPLOITATION.md §11) : amg_migrator ne peut se connecter que pendant
+  # une migration ou une restauration, qui tiennent le verrou de l'environnement. Verrou libre avant
+  # (check_environment) ET après la lecture : LOGIN hors de toute fenêtre, incident.
+  login=$(watch_psql "$pg" "select r.rolcanlogin from pg_catalog.pg_roles r where r.rolname OPERATOR(pg_catalog.=) 'amg_migrator'") \
+    || login=erreur
+  if [ "$login" = t ] && flock -n "$(amg_env_lock "$env_name")" true; then
+    problem "$env_name : INCIDENT : amg_migrator a LOGIN hors de toute fenêtre de migration (la refermer, EXPLOITATION.md §11)"
+  fi
+  present=$(watch_psql "$pg" "select pg_catalog.to_regprocedure('amg_guard.security_events_violation()') is not null") \
+    || present=erreur
   case "$present" in
     t) ;;
     f)
@@ -300,8 +314,7 @@ check_journal() { # $1 env, $2 projet, $3… services attendus
       return 0
       ;;
   esac
-  if ! violation=$(timeout 30 docker exec -e PGOPTIONS="$AMG_PG_ADMIN_OPTIONS -c statement_timeout=10000" "$pg" \
-    psql -X -v ON_ERROR_STOP=1 -U amg -d amg -At -c "$AMG_JOURNAL_CHECK_SQL" </dev/null 2>/dev/null); then
+  if ! violation=$(watch_psql "$pg" "$AMG_JOURNAL_CHECK_SQL"); then
     problem "$env_name : vérification du journal de sécurité en échec"
   elif [ -n "$violation" ]; then
     problem "$env_name : JOURNAL DE SÉCURITÉ NON CONFORME : $(tr '\n' ' ' <<<"$violation" | cut -c1-300)"

@@ -4,10 +4,13 @@
 # appels et rejouent des réponses choisies par chaque cas. Lancé par ci.yml (job « Budget mémoire
 # AMG ») et deploy.yml (job `build`), et à la main depuis la racine du dépôt :
 #   deploy/ci/test-scripts.sh
-# Couvre : liste blanche de amg_run (règles du rôle migrate), règles de routeur Traefik admises par
-# watch.sh, filtre de la liste de restauration, et la fenêtre de migration de deploy.sh (ouverture
-# seulement si le journal est conforme et roles.sql à jour, fermeture même en cas d'échec, d'erreur
-# de fermeture ou d'interruption, aucune bascule sans migrations réussies et journal vérifié).
+# Couvre : liste blanche de amg_run (règles du rôle migrate, mode et groupe du secret), règles de
+# routeur Traefik admises par watch.sh, filtre de la liste de restauration, alerte de watch.sh sur
+# un LOGIN d'amg_migrator hors fenêtre, et la fenêtre de migration de deploy.sh (ouverture seulement
+# si roles.sql rejoué, journal conforme et roles.sql à jour, fermeture même en cas d'échec, d'erreur
+# de fermeture, d'interruption ou de second signal, aucune bascule sans migrations réussies et
+# journal vérifié, amg.env écrit seulement après la bascule, détail gardé dans le journal du
+# serveur et seule une ligne de statut sur la sortie renvoyée par SSH).
 set -uo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
@@ -33,6 +36,20 @@ refute() { # $1 description, puis une commande qui doit échouer
   shift
   if "$@"; then ko "$what"; else ok; fi
 }
+
+# Double de `stat` : mode et groupe du secret des migrations simulés (le groupe 65532 de l'image
+# n'existe pas sur le poste ni sur le runner) ; tout autre appel va au vrai stat.
+STUB=$T/stub
+mkdir -p "$STUB/bin"
+cat >"$STUB/bin/stat" <<'EOF'
+#!/usr/bin/env bash
+case "${*: -1}" in
+  *pg_migrator_password) echo "${STUB_STAT:-640 65532}" ;;
+  *) exec /usr/bin/stat "$@" ;;
+esac
+EOF
+chmod +x "$STUB/bin/stat"
+export PATH="$STUB/bin:$PATH"
 
 # --- amg_run : liste blanche des options -------------------------------------------------------
 (
@@ -61,9 +78,10 @@ refute() { # $1 description, puis une commande qui doit échouer
   refute "secret d'un autre environnement refusé" as migrate prod -v "$mount_ok"
   refute "autre fichier de secrets refusé" as migrate staging \
     -v "$AMG_ROOT/staging/secrets/pg_app_password:/run/secrets/pg_migrator_password:ro"
-  chmod 644 "$secret"
-  refute "secret lisible par tous refusé" as migrate staging -v "$mount_ok"
-  chmod 640 "$secret"
+  check "secret 440 groupe 65532 admis" env STUB_STAT='440 65532' bash -c "source '$BIN/amg-common.sh'; AMG_ROOT='$AMG_ROOT' AMG_RUN_ROLE=migrate AMG_RUN_ENV=staging amg_run_value_ok -v '$mount_ok'"
+  for bad in '644 65532' '600 65532' '660 65532' '640 0' '640 1000'; do
+    refute "secret « $bad » refusé" env STUB_STAT="$bad" bash -c "source '$BIN/amg-common.sh'; AMG_ROOT='$AMG_ROOT' AMG_RUN_ROLE=migrate AMG_RUN_ENV=staging amg_run_value_ok -v '$mount_ok'"
+  done
   mv "$secret" "$secret.real"
   ln -s "$secret.real" "$secret"
   refute "secret par lien symbolique refusé" as migrate staging -v "$mount_ok"
@@ -80,15 +98,25 @@ refute() { # $1 description, puis une commande qui doit échouer
   source "$BIN/amg-common.sh"
   bt=$'\x60'
   h() { printf 'Host(%s%s%s)' "$bt" "$1" "$bt"; }
-  clean() { [ -z "$(amg_traefik_rule_problems "$1" "$2")" ]; }
+  # $1 env, $2 règle, $3 routeur (défaut : <projet>-api)
+  clean() { [ -z "$(amg_traefik_rule_problems "$1" "$2" "${3:-amg-$1-api}" "amg-$1")" ]; }
   api="($(h admin.staging.amgdecorationdinterieur.com) || $(h espace.staging.amgdecorationdinterieur.com)) && PathPrefix(${bt}/api/${bt})"
-  check "règle du site admise" clean prod "$(h amgdecorationdinterieur.com) || $(h www.amgdecorationdinterieur.com)"
+  check "règle du site admise" clean prod "$(h amgdecorationdinterieur.com) || $(h www.amgdecorationdinterieur.com)" amg-prod-site
   check "règle de l'API admise" clean staging "$api"
+  refute "forme API refusée hors du routeur <projet>-api" clean staging "$api" amg-staging-site
+  refute "forme API refusée pour le routeur api d'un autre projet" clean staging "$api" amg-prod-api
+  refute "règle piège (Host(www)) || (Host(admin)) && PathPrefix(/api/) refusée" clean prod \
+    "($(h www.amgdecorationdinterieur.com)) || ($(h admin.amgdecorationdinterieur.com)) && PathPrefix(${bt}/api/${bt})"
+  refute "parenthèses internes du groupe API refusées" clean prod \
+    "(($(h admin.amgdecorationdinterieur.com))) && PathPrefix(${bt}/api/${bt})"
+  refute "&& interne au groupe API refusé" clean prod \
+    "($(h admin.amgdecorationdinterieur.com) && $(h espace.amgdecorationdinterieur.com)) && PathPrefix(${bt}/api/${bt})"
   refute "hôte du voisin refusé" clean prod "$(h exemple.org)"
   refute "PathPrefix seul refusé" clean prod "PathPrefix(${bt}/api/${bt})"
   refute "PathPrefix joint par || refusé" clean prod "$(h admin.amgdecorationdinterieur.com) || PathPrefix(${bt}/api/${bt})"
   refute "PathPrefix sans parenthèses refusé" clean prod "$(h admin.amgdecorationdinterieur.com) && PathPrefix(${bt}/api/${bt})"
   refute "autre préfixe refusé" clean prod "($(h admin.amgdecorationdinterieur.com)) && PathPrefix(${bt}/${bt})"
+  check "groupe API d'un seul hôte admis" clean prod "($(h admin.amgdecorationdinterieur.com)) && PathPrefix(${bt}/api/${bt})"
   refute "hôte de production refusé en préproduction" clean staging "($(h admin.amgdecorationdinterieur.com)) && PathPrefix(${bt}/api/${bt})"
   refute "HostRegexp refusé" clean prod "HostRegexp(${bt}.*${bt})"
   echo "$passed" >>"$T/passed"
@@ -132,13 +160,23 @@ EOF
   refute "objet hors de public refusé" amg_restore_list_filter <"$T/list.bad" >/dev/null 2>&1
   printf 'pas une ligne de liste\n' >"$T/list.bad"
   refute "ligne illisible refusée" amg_restore_list_filter <"$T/list.bad" >/dev/null 2>&1
+  for bad in '301; 1259 16510 VIEW public v amg_migrator' '302; 2605 16520 CAST - CAST (text AS public.t) amg_migrator' \
+    '303; 3079 16530 EXTENSION - pgcrypto amg_migrator' '304; 1255 16540 PROCEDURE public p() amg_migrator' \
+    '305; 3600 16550 TEXT SEARCH DICTIONARY public d amg_migrator'; do
+    printf '%s\n' "$bad" >"$T/list.bad"
+    refute "type d'entrée hors liste blanche refusé : ${bad#*; }" amg_restore_list_filter <"$T/list.bad" >/dev/null 2>&1
+  done
   echo "$passed" >>"$T/passed"
   exit "$failures"
 ) || failures=$((failures + $?))
 
 # --- deploy.sh : déploiement de l'API et fenêtre de migration ----------------------------------
-STUB=$T/stub
-mkdir -p "$STUB/bin"
+cat >"$STUB/bin/flock" <<'EOF'
+#!/usr/bin/env bash
+# Double de flock : journalise ses arguments, puis le vrai flock.
+[ -z "${STUB_STATE:-}" ] || printf 'flock %s\n' "$*" >>"$STUB_STATE/calls.log"
+exec /usr/bin/flock "$@"
+EOF
 cat >"$STUB/bin/sleep" <<'EOF'
 #!/usr/bin/env bash
 exit 0
@@ -205,7 +243,15 @@ case "$1" in
     fi
     for q in "${sqls[@]}"; do
       printf '%s\n' "$q" >>"$S/sql.log"
+      if [[ "$q" == *'NOLOGIN'* ]] && [ -n "${STUB_NOLOGIN_SIGNAL:-}" ]; then
+        # Second signal pendant la fermeture, première fermeture en échec.
+        kill -TERM "$PPID"
+        n=$(($(cat "$S/nologin" 2>/dev/null || echo 0) + 1))
+        echo "$n" >"$S/nologin"
+        [ "$n" -gt 1 ] || exit 3
+      fi
       fail_on "$q" && exit 3
+      if [[ "$q" == *rolcanlogin* ]]; then echo "${STUB_LOGIN:-f}"; fi
       if [[ "$q" == *security_events_violation* ]]; then
         n=$(($(cat "$S/violations" 2>/dev/null || echo 0) + 1))
         echo "$n" >"$S/violations"
@@ -266,19 +312,28 @@ EOF2
   env -i PATH="$STUB/bin:/usr/bin:/bin" HOME="$T" AMG_ROOT="$amg" AMG_CGROUP_ROOT="$cg" \
     STUB_STATE="$case_dir/state" STUB_NEW_ID="$NEW_ID" STUB_ROLES_SHA="$sha" \
     STUB_SCOPE_DIR="$cg/amg.slice/amg-staging.slice" "$@" \
-    bash "$BIN/deploy.sh" staging deploy api "$API_D" "$MIG_D" >"$case_dir/out.log" 2>&1
+    bash "$BIN/deploy.sh" staging deploy api "$API_D" "$MIG_D" >"$case_dir/ssh.log" 2>&1
   CASE_RC=$?
+  LOG=$amg/logs/deploy-staging.log
 }
 sql_has() { grep -sqF -- "$1" "$CASE_DIR/state/sql.log"; }
 calls_has() { grep -qF -- "$1" "$CASE_DIR/state/calls.log"; }
 # Ordre des événements de la fenêtre dans sql.log (« LOGIN », « docker run », « NOLOGIN »…).
 sql_order() { grep -oE 'amg_migrator NOLOGIN|amg_migrator LOGIN|docker run|psql < fichier' "$CASE_DIR/state/sql.log" | tr '\n' ' '; }
+no_env_temp() { ! compgen -G "$CASE_DIR/amg/staging/.amg.env.*" >/dev/null; }
+ssh_is_status_only() { [ "$(wc -l <"$CASE_DIR/ssh.log")" = 1 ] && grep -q '^deploy.sh staging deploy : ' "$CASE_DIR/ssh.log"; }
 api_digest() { sed -n 's/^API_DIGEST=//p' "$CASE_DIR/amg/staging/amg.env"; }
 
 run_deploy succes
 check "déploiement de l'API réussi" test "$CASE_RC" = 0
-check "ordre de la fenêtre : LOGIN, migrations, NOLOGIN, rejeu de roles.sql" \
-  test "$(sql_order)" = 'amg_migrator LOGIN docker run amg_migrator NOLOGIN psql < fichier '
+check "ordre : roles.sql rejoué, LOGIN, migrations, NOLOGIN, roles.sql rejoué" \
+  test "$(sql_order)" = 'psql < fichier amg_migrator LOGIN docker run amg_migrator NOLOGIN psql < fichier '
+check "migrations : verrou des ponctuels attendu 30 s au plus, fenêtre ouverte" calls_has 'flock -w 30 '
+check "sortie SSH : une seule ligne de statut" ssh_is_status_only
+check "sortie SSH : réussite annoncée" grep -q 'réussi' "$CASE_DIR/ssh.log"
+check "journal détaillé du serveur en 600" test "$(stat -c '%a' "$LOG")" = 600
+check "journal détaillé : fenêtre et bascule" grep -q 'en ligne : api' "$LOG"
+refute "aucun INCIDENT quand LOGIN était fermé" grep -q 'INCIDENT' "$LOG"
 check "sessions d'amg_migrator terminées à la fermeture" sql_has 'pg_terminate_backend'
 check "journal vérifié avant et après la fenêtre" test "$(cat "$CASE_DIR/state/violations")" = 2
 check "migrations : réseau de données, secret en lecture seule, rôle migrate" \
@@ -295,9 +350,15 @@ check "historique de l'API avec le digest des migrations" \
 run_deploy migration-en-echec STUB_MIGRATE_RC=1
 check "migrations en échec : déploiement en échec" test "$CASE_RC" != 0
 check "migrations en échec : fenêtre refermée puis roles.sql rejoué" \
-  test "$(sql_order)" = 'amg_migrator LOGIN docker run amg_migrator NOLOGIN psql < fichier '
+  test "$(sql_order)" = 'psql < fichier amg_migrator LOGIN docker run amg_migrator NOLOGIN psql < fichier '
 refute "migrations en échec : aucune bascule" calls_has '--scale api=2'
-check "migrations en échec : digest précédent remis" test "$(api_digest)" = "$ZERO"
+check "migrations en échec : amg.env jamais modifié" test "$(api_digest)" = "$ZERO"
+check "migrations en échec : aucun fichier temporaire d'amg.env" no_env_temp
+check "migrations en échec : sortie SSH réduite au statut" ssh_is_status_only
+
+run_deploy login-deja-ouvert STUB_LOGIN=t
+check "LOGIN déjà ouvert avant la fenêtre : INCIDENT journalisé" grep -q 'INCIDENT : amg_migrator avait déjà LOGIN' "$LOG"
+check "LOGIN déjà ouvert : fenêtre refermée à la fin" sql_has 'amg_migrator NOLOGIN'
 
 run_deploy journal-avant STUB_VIOLATION_1='déclencheur désactivé'
 check "journal non conforme avant : refus" test "$CASE_RC" != 0
@@ -306,6 +367,8 @@ refute "journal non conforme avant : aucune migration" calls_has 'run '
 
 run_deploy journal-apres STUB_VIOLATION_2='droits modifiés'
 check "journal non conforme après : échec" test "$CASE_RC" != 0
+check "journal non conforme après : écart dans le journal du serveur" grep -q 'droits modifiés' "$LOG"
+refute "journal non conforme après : écart absent de la sortie SSH" grep -q 'droits modifiés' "$CASE_DIR/ssh.log"
 check "journal non conforme après : fenêtre refermée" sql_has 'amg_migrator NOLOGIN'
 refute "journal non conforme après : aucune bascule" calls_has '--scale api=2'
 
@@ -314,15 +377,15 @@ check "roles.sql différent de l'image : refus" test "$CASE_RC" != 0
 refute "roles.sql différent : aucune ouverture de LOGIN" sql_has 'amg_migrator LOGIN'
 
 run_deploy rejeu-en-echec STUB_PSQL_FAIL=roles.sql
-check "rejeu de roles.sql en échec : échec" test "$CASE_RC" != 0
-check "rejeu de roles.sql en échec : fenêtre refermée avant" sql_has 'amg_migrator NOLOGIN'
-refute "rejeu de roles.sql en échec : aucune bascule" calls_has '--scale api=2'
+check "rejeu de roles.sql en échec (avant la fenêtre) : refus" test "$CASE_RC" != 0
+refute "rejeu de roles.sql en échec : aucune ouverture de LOGIN" sql_has 'amg_migrator LOGIN'
+refute "rejeu de roles.sql en échec : aucune migration" calls_has 'run '
 
 run_deploy fermeture-en-echec STUB_PSQL_FAIL=NOLOGIN
 check "fermeture impossible : échec" test "$CASE_RC" != 0
-check "fermeture impossible : nouvel essai à la sortie" \
-  test "$(grep -c 'amg_migrator NOLOGIN' "$CASE_DIR/state/sql.log")" = 2
-check "fermeture impossible : incident journalisé" grep -q 'INCIDENT' "$CASE_DIR/out.log"
+check "fermeture impossible : cinq nouveaux essais à la sortie" \
+  test "$(grep -c 'amg_migrator NOLOGIN' "$CASE_DIR/state/sql.log")" = 6
+check "fermeture impossible : incident journalisé" grep -q 'INCIDENT : fenêtre de migration restée OUVERTE' "$LOG"
 refute "fermeture impossible : aucune bascule" calls_has '--scale api=2'
 
 run_deploy interruption STUB_MIGRATE_KILL=1
@@ -330,9 +393,68 @@ check "interruption pendant les migrations : sortie en échec" test "$CASE_RC" !
 check "interruption : fenêtre refermée par le piège EXIT" sql_has 'amg_migrator NOLOGIN'
 refute "interruption : aucune bascule" calls_has '--scale api=2'
 
+run_deploy double-signal STUB_MIGRATE_KILL=1 STUB_NOLOGIN_SIGNAL=1
+check "second signal pendant la fermeture : nouvel essai malgré le signal" \
+  test "$(grep -c 'amg_migrator NOLOGIN' "$CASE_DIR/state/sql.log")" -ge 2
+check "second signal : fenêtre finalement refermée" grep -q 'fenêtre de migration refermée (sortie' "$LOG"
+refute "second signal : aucun INCIDENT" grep -q 'INCIDENT' "$LOG"
+
 run_deploy pull-en-echec STUB_PULL_RC=1
 check "image de l'API introuvable : échec" test "$CASE_RC" != 0
 refute "image de l'API introuvable : aucune fenêtre" sql_has 'LOGIN'
+
+# --- watch.sh : LOGIN d'amg_migrator hors fenêtre ---------------------------------------------
+WSTUB=$T/wstub
+mkdir -p "$WSTUB"
+cat >"$WSTUB/docker" <<'EOF'
+#!/usr/bin/env bash
+# Double de docker pour watch.sh : un environnement de préproduction avec un seul postgres sain.
+case "$1" in
+  info) case "$*" in *DockerRootDir*) echo /var/lib/docker ;; *) echo 'systemd 2' ;; esac ;;
+  ps) case "$*" in *service=postgres*) echo "$STUB_PG" ;; esac ;;
+  network) [ "$2" = inspect ] && case "$*" in *Internal*) echo true ;; esac ;;
+  compose) echo postgres ;;
+  inspect) case "$*" in *State.Status*) echo 'running healthy 0 false' ;; esac ;;
+  exec)
+    case "$*" in
+      *rolcanlogin*) echo "${STUB_LOGIN:-f}" ;;
+      *to_regprocedure*) echo t ;;
+    esac
+    ;;
+esac
+exit 0
+EOF
+printf '#!/usr/bin/env bash\ncat >/dev/null\nexit 0\n' >"$WSTUB/curl"
+chmod +x "$WSTUB/docker" "$WSTUB/curl"
+run_watch() { # $1 1 pour tenir le verrou de l'environnement (fenêtre en cours), puis variables du double
+  local w=$T/watch hold=$1 locker=''
+  shift
+  rm -rf "$w"
+  mkdir -p "$w/amg/secrets" "$w/amg/logs" "$w/amg/staging/compose" "$w/cg"
+  printf 'HC_WATCH_URL=https://hc.invalid/x\nTRAEFIK_CONTAINER=traefik\n' >"$w/amg/secrets/watch.env"
+  printf 'AMG_PROJECT=amg-staging\nAMG_ENV=staging\nAMG_EDGE_NETWORK=amg_edge_staging\n' >"$w/amg/staging/amg.env"
+  if [ "$hold" = 1 ]; then
+    # Le processus qui tient le verrou devient `sleep` (exec) : le tuer libère le verrou, et il ne
+    # garde ouverte aucune sortie du script.
+    (
+      exec 9>"$w/amg/staging/.deploy.lock"
+      /usr/bin/flock 9
+      exec /bin/sleep 30
+    ) </dev/null >/dev/null 2>&1 &
+    locker=$!
+    for _ in $(seq 50); do /usr/bin/flock -n "$w/amg/staging/.deploy.lock" true || break; /bin/sleep 0.1; done
+  fi
+  env -i PATH="$WSTUB:$STUB/bin:/usr/bin:/bin" HOME="$T" AMG_ROOT="$w/amg" AMG_CGROUP_ROOT="$w/cg" \
+    STUB_PG="$PG_ID" "$@" bash "$BIN/watch.sh" >"$w/out.log" 2>&1
+  if [ -n "$locker" ]; then kill "$locker" 2>/dev/null; wait "$locker" 2>/dev/null; fi
+  WATCH_OUT=$w/out.log
+}
+run_watch 0 STUB_LOGIN=t
+check "watch : LOGIN d'amg_migrator hors fenêtre signalé" grep -q 'amg_migrator a LOGIN hors de toute fenêtre' "$WATCH_OUT"
+run_watch 0 STUB_LOGIN=f
+refute "watch : aucun signalement si NOLOGIN" grep -q 'amg_migrator a LOGIN' "$WATCH_OUT"
+run_watch 1 STUB_LOGIN=t
+refute "watch : aucun signalement pendant une fenêtre (verrou tenu)" grep -q 'amg_migrator a LOGIN' "$WATCH_OUT"
 
 while read -r n; do passed=$((passed + n)); done <"$T/passed"
 printf 'tests des scripts du serveur : %d réussis, %d en échec\n' "$passed" "$failures"

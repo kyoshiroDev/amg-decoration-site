@@ -64,6 +64,20 @@ if [ "$(env_value AMG_ENV)" != "$ENV_NAME" ] || [ "$(env_value AMG_PROJECT)" != 
   exit 2
 fi
 
+# Journal détaillé sur le serveur seulement (sortie de Compose, de Docker, du conteneur des
+# migrations, écarts du journal de sécurité) : la sortie standard part par SSH dans les journaux
+# PUBLICS de GitHub Actions. Par SSH, seule une ligne de statut est renvoyée (piège de sortie) ;
+# dans un terminal (humain), le détail s'affiche aussi. `status` garde sa sortie.
+LOG_FILE=$AMG_ROOT/logs/deploy-$ENV_NAME.log
+if [ "$ACTION" != status ]; then
+  mkdir -p "$AMG_ROOT/logs"
+  (umask 077 && : >>"$LOG_FILE")
+  chmod 600 "$LOG_FILE"
+  exec 3>&1
+  if [ -t 1 ]; then exec > >(tee -a "$LOG_FILE") 2>&1; else exec >>"$LOG_FILE" 2>&1; fi
+  log "début : $*"
+fi
+
 # Service déployable : variables de son image dans amg.env et historique propre.
 SERVICE='' DIGEST_VAR='' IMAGE_VAR='' HISTORY=''
 select_service() { # $1 site|api
@@ -83,12 +97,18 @@ select_service() { # $1 site|api
 
 current_digest() { env_value "$DIGEST_VAR"; }
 
-set_digest() { # écrit le digest dans amg.env : un redémarrage du serveur relance la même version
+# Écrit le digest dans amg.env (un redémarrage du serveur relance la même version), seulement après
+# une bascule réussie. Chaque étape est vérifiée (appelée en contexte `||`, où `set -e` est
+# inopérant) : un échec laisse amg.env intact et ne le remplace jamais par une copie tronquée.
+set_digest() {
   local tmp
-  tmp=$(mktemp "$AMG_DIR/.amg.env.XXXXXX")
-  sed "s/^$DIGEST_VAR=.*/$DIGEST_VAR=$1/" "$ENV_FILE" >"$tmp"
-  chmod 600 "$tmp"
-  mv "$tmp" "$ENV_FILE"
+  tmp=$(mktemp "$AMG_DIR/.amg.env.XXXXXX") || return 1
+  if sed "s/^$DIGEST_VAR=.*/$DIGEST_VAR=$1/" "$ENV_FILE" >"$tmp" && grep -qx "$DIGEST_VAR=$1" "$tmp" \
+    && [ "$(wc -l <"$tmp")" = "$(wc -l <"$ENV_FILE")" ] && chmod 600 "$tmp" && mv "$tmp" "$ENV_FILE"; then
+    return 0
+  fi
+  rm -f "$tmp"
+  return 1
 }
 
 wait_healthy() { # $1 identifiant de conteneur
@@ -137,8 +157,9 @@ in_slice() { # $1 identifiant de conteneur
 service_enabled() { compose config --services 2>/dev/null | grep -x "$SERVICE" >/dev/null; }
 
 PREVIOUS='' TARGET='' REVISION=-
-# Téléchargement et contrôles de la nouvelle image, digest écrit dans amg.env (remis à la valeur
-# précédente par `restore_digest` en cas d'échec). Aucun conteneur n'est encore démarré.
+# Téléchargement et contrôles de la nouvelle image. Le digest cible n'est PAS écrit dans amg.env :
+# il est passé à Compose par l'environnement du processus (prioritaire sur --env-file pour
+# l'interpolation), et n'est écrit qu'après la bascule réussie. Aucun conteneur n'est démarré.
 prepare() { # $1 digest cible
   local image
   TARGET=$1
@@ -149,7 +170,7 @@ prepare() { # $1 digest cible
     return 1
   }
   log "pull $SERVICE $image@$TARGET (en ligne : $PREVIOUS)"
-  set_digest "$TARGET"
+  export "$DIGEST_VAR=$TARGET"
   if ! compose pull --quiet "$SERVICE"; then
     log "ÉCHEC pull"
     return 1
@@ -165,8 +186,6 @@ prepare() { # $1 digest cible
     "$image@$TARGET" 2>/dev/null || true)
   [[ "$REVISION" =~ ^[0-9a-f]{40}$ ]] || REVISION=-
 }
-
-restore_digest() { [ -z "$PREVIOUS" ] || set_digest "$PREVIOUS"; }
 
 # Bascule vers l'image préparée ; $1 : informations ajoutées à l'historique (digest des migrations).
 switch() {
@@ -210,15 +229,16 @@ switch() {
     docker stop --time 10 "${old_ids[@]}" >/dev/null
     docker rm "${old_ids[@]}" >/dev/null
   fi
+  set_digest "$TARGET" || {
+    log "INCIDENT : $SERVICE $TARGET en ligne, mais $ENV_FILE n'a pas pu être mis à jour ($DIGEST_VAR) : le corriger à la main"
+    return 1
+  }
   printf '%s %s %s%s\n' "$(date -Is)" "$TARGET" "$REVISION" "${extra:+ $extra}" >>"$HISTORY"
   log "en ligne : $SERVICE $TARGET (commit $REVISION)"
 }
 
 rollout() { # $1 digest cible (site, ou retour arrière : aucune migration)
-  prepare "$1" && switch || {
-    restore_digest
-    return 1
-  }
+  prepare "$1" && switch
 }
 
 # --- Fenêtre de migration (API) -------------------------------------------------------------------
@@ -258,15 +278,33 @@ close_window() {
 
 # Piège de sortie : une fenêtre encore ouverte est refermée quoi qu'il arrive ; le code de sortie
 # reste celui de l'échec (6 si tout avait réussi mais que la fenêtre n'a pas pu être refermée).
+# Non réentrant : les signaux sont ignorés dès l'entrée (un second SIGTERM ou la coupure SSH ne
+# l'interrompt pas), et la fermeture est retentée cinq fois avant de déclarer l'incident.
 on_exit() {
-  local rc=$?
+  local rc=$? attempt
+  trap '' HUP INT TERM
   if [ "$WINDOW_OPEN" = 1 ]; then
-    if close_window; then
-      WINDOW_OPEN=0
-      log "fenêtre de migration refermée (sortie, code $rc)"
+    for attempt in 1 2 3 4 5; do
+      if close_window; then
+        WINDOW_OPEN=0
+        break
+      fi
+      sleep 2
+    done
+    if [ "$WINDOW_OPEN" = 0 ]; then
+      log "fenêtre de migration refermée (sortie, code $rc, essai $attempt)"
     else
       log "INCIDENT : fenêtre de migration restée OUVERTE (amg_migrator LOGIN) : la refermer à la main (EXPLOITATION.md §11)"
       [ "$rc" -ne 0 ] || rc=6
+    fi
+  fi
+  if [ "$ACTION" != status ]; then
+    log "fin : code $rc"
+    if [ "$rc" = 0 ]; then
+      printf 'deploy.sh %s %s : réussi\n' "$ENV_NAME" "$ACTION" >&3 2>/dev/null || true
+    else
+      printf 'deploy.sh %s %s : ÉCHEC (code %s), détail dans %s sur le serveur\n' \
+        "$ENV_NAME" "$ACTION" "$rc" "$LOG_FILE" >&3 2>/dev/null || true
     fi
   fi
   exit "$rc"
@@ -292,8 +330,10 @@ check_migrate_image() {
 # mot de passe en fichier monté en lecture seule, espace de PID propre, aucune capacité ; 192 Mio
 # sans swap (budget : EXPLOITATION.md, 10).
 migrate_container() { # $1 image@digest
+  # Verrou des ponctuels déjà attendu avant l'ouverture : ici, 30 s au plus, fenêtre ouverte.
+  local AMG_ONEOFF_WAIT=$AMG_MIGRATE_ONEOFF_WAIT
   amg_run "$ENV_NAME" migrate 192m --read-only --cap-drop ALL --security-opt no-new-privileges:true \
-    --cpus 1 --pids-limit 64 --tmpfs /tmp:rw,noexec,nosuid,size=32m \
+    --cpus 1 --pids-limit 64 --tmpfs /tmp:rw,noexec,nosuid,nodev,size=32m \
     --network "amg-${ENV_NAME}_data" --user 65532:65532 \
     -e DB_HOST=postgres -e DB_PORT=5432 -e DB_NAME=amg -e DB_USER=amg_migrator \
     -e DB_PASSWORD_FILE=/run/secrets/pg_migrator_password \
@@ -305,13 +345,25 @@ run_migrations() { # $1 image@digest des migrations
   local image=$1 rc=0
   PG=$(postgres_container) || { log "REFUS : conteneur postgres introuvable, multiple ou pas sain"; return 1; }
   check_migrate_image "$image" || return 1
+  # Un seul conteneur ponctuel à la fois : attendre ici (sauvegarde en cours…), pas une fois la
+  # fenêtre ouverte (le conteneur des migrations n'attend ensuite que 30 s).
+  flock -w "$AMG_ONEOFF_WAIT" "$AMG_ROOT/.oneoff.lock" true || { log "ÉCHEC : verrou des ponctuels"; return 1; }
+  # Avant l'ouverture : rejeu de roles.sql (réaffirme rôles, droits et déclencheurs d'événement),
+  # puis vérification du journal ; le moindre écart, aucune ouverture.
+  pg_admin <"$ROLES_SQL" >/dev/null || {
+    log "REFUS : rejeu de roles.sql en échec avant la fenêtre (journal non conforme ?) : aucune ouverture (EXPLOITATION.md §11)"
+    return 1
+  }
   journal_ok || {
     log "REFUS : aucune ouverture de LOGIN d'amg_migrator tant que le journal n'est pas conforme (fenêtre corrective : EXPLOITATION.md §11)"
     return 1
   }
-  # Un seul conteneur ponctuel à la fois : attendre ici (sauvegarde en cours…), pas une fois la
-  # fenêtre ouverte.
-  flock -w "$AMG_ONEOFF_WAIT" "$AMG_ROOT/.oneoff.lock" true || { log "ÉCHEC : verrou des ponctuels"; return 1; }
+  local login
+  login=$(pg_admin -c "select r.rolcanlogin from pg_catalog.pg_roles r where r.rolname OPERATOR(pg_catalog.=) 'amg_migrator'" </dev/null) || {
+    log "ÉCHEC : lecture de l'attribut LOGIN d'amg_migrator"
+    return 1
+  }
+  [ "$login" != t ] || log "INCIDENT : amg_migrator avait déjà LOGIN avant l'ouverture (fenêtre restée ouverte ?) : examiner pg_stat_activity, changer son mot de passe (EXPLOITATION.md §11)"
   WINDOW_OPEN=1 # avant LOGIN : le piège EXIT refermera la fenêtre quoi qu'il arrive
   pg_admin -c 'ALTER ROLE amg_migrator LOGIN' </dev/null >/dev/null || {
     log "ÉCHEC : ouverture de la fenêtre de migration"
@@ -343,9 +395,9 @@ deploy_api() { # $1 digest de l'API, $2 digest des migrations
   local migrate_image
   migrate_image=$(env_value MIGRATE_IMAGE)
   [ -n "$migrate_image" ] || { log "REFUS : $ENV_FILE sans MIGRATE_IMAGE (EXPLOITATION.md, 9)"; return 1; }
-  prepare "$1" || { restore_digest; return 1; }
-  run_migrations "$migrate_image@$2" || { restore_digest; return 1; }
-  switch "migrations=$2" || { restore_digest; return 1; }
+  prepare "$1" || return 1
+  run_migrations "$migrate_image@$2" || return 1
+  switch "migrations=$2"
 }
 
 # Un seul déploiement à la fois par environnement, donc une seule réplique en surplus : hypothèse
