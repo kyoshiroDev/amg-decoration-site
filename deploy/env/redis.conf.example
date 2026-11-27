@@ -1,31 +1,48 @@
 # Modèle de /opt/amg/<env>/secrets/redis.conf (droits 600), lu par Redis sur l'entrée standard
-# (deploy/compose.yaml). Le mot de passe est généré et saisi par l'humain sur le serveur :
-#   openssl rand -base64 36    # puis remplacer <MOT_DE_PASSE_REDIS> ci-dessous
-# Jamais versionné rempli.
+# (deploy/compose.yaml). Un Redis par environnement (projets Compose amg-prod et amg-staging) : ce
+# fichier ne couvre que les clés de SON environnement. Aucun mot de passe en clair ici : seulement
+# l'empreinte SHA-256 de celui de l'API, rempli par l'humain sur le serveur (EXPLOITATION.md, §11,
+# « Redis de l'API ») :
+#   <ENV>               prod ou staging (préfixe des clés amg:<env>:, fixé par l'API depuis AMG_ENV)
+#   <EMPREINTE_SHA256>  sha256sum de secrets/redis_api_password (64 caractères hexadécimaux en
+#                       minuscules ; un fichier non rempli empêche Redis de démarrer)
+#   <MAXMEMORY>         96mb en production (REDIS_MEM_LIMIT=128m), 48mb en préproduction (64m)
+# Jamais versionné rempli. Pas de commentaire en fin de ligne : Redis le refuse.
 
 # Réseau : Redis n'est joignable que par le réseau interne `data` du projet (sans passerelle).
 bind * -::*
 port 6379
 protected-mode yes
-requirepass <MOT_DE_PASSE_REDIS>
 
-# Commandes destructrices ou d'administration désactivées pour les clients (API, worker).
-# `rename-command` est marqué obsolète par Redis au profit des ACL : à remplacer par une ligne
-# `user default on >… ~* &* +@all -flushall -flushdb -config -debug` quand l'API (CRM 3) aura fixé
-# ses besoins. Une rotation du mot de passe se fait alors dans le fichier, plus par CONFIG SET.
-rename-command FLUSHALL ""
-rename-command FLUSHDB ""
-rename-command CONFIG ""
-rename-command DEBUG ""
+# Utilisateurs ACL (ADR-0023, « Magasin de sessions »). Aucun requirepass (il donnerait un mot de
+# passe à `default`) ni aclfile : les utilisateurs sont déclarés ici, et aucune commande d'ACL ou de
+# configuration n'est permise à quiconque (pas d'administrateur : une modification passe par ce
+# fichier et un redémarrage).
+# `default` désactivé : une connexion non authentifiée reçoit NOAUTH à toute commande (la sonde de
+# santé du conteneur s'en sert pour savoir que le serveur répond).
+user default off
+# API : préfixe de son environnement seulement, aucun canal, et exactement les commandes qu'elle
+# appelle, scripts Lua compris (l'ACL s'applique aussi dans un script). Liste identique à celle de
+# .github/scripts/redis-acl-ci.sh, éprouvée en CI (deploy/ci/test-scripts.sh vérifie l'égalité).
+user amg_api reset on #<EMPREINTE_SHA256> resetkeys ~amg:<ENV>:* resetchannels -@all +eval +evalsha +hmget +hset +hget +del +exists +pexpireat +zadd +zrange +zrem +zcard +incr +pexpire +pttl +get +set
+# Worker (CRM 3, lot 5) : son propre utilisateur, à déclarer ici avec ses commandes (BullMQ).
+
 enable-debug-command no
 enable-module-command no
 
-# Mémoire : sous la limite du conteneur (REDIS_MEM_LIMIT), sans éviction (exigée par les files
-# de tâches BullMQ du worker, CRM 3). Production (REDIS_MEM_LIMIT=128m) : 96mb ;
-# préproduction (64m) : 48mb. Pas de commentaire en fin de ligne : Redis le refuse.
-maxmemory 96mb
+# Mémoire : sous la limite du conteneur (REDIS_MEM_LIMIT), sans éviction : Redis plein refuse les
+# écritures (l'API répond 503) au lieu d'évincer des sessions ou des compteurs de limitation de débit
+# (ADR-0023) ; exigé aussi par les files BullMQ du worker (lot 5).
+maxmemory <MAXMEMORY>
 maxmemory-policy noeviction
 
-# Persistance dans le volume nommé `redisdata`.
+# Sans persistance (lot 3) : sessions (empreintes des jetons, compte, réseau tronqué, appareil
+# approximatif) et compteurs restent en mémoire, jamais sur le disque. Un redémarrage de Redis
+# déconnecte tout le monde (sûr : aucun accès n'est accordé, ADR-0023). Avec AOF « everysec », une
+# révocation (déconnexion, session fermée) des dernières secondes avant un arrêt brutal pourrait
+# être perdue et la session revivre au redémarrage ; « always » ferait attendre chaque requête sur
+# le disque partagé. Sans persistance, pas non plus de fork pour réécrire l'AOF (copie de la mémoire
+# sous la limite du conteneur). Les files du worker (lot 5) en auront besoin : décision à ce lot.
 dir /data
-appendonly yes
+appendonly no
+save ""

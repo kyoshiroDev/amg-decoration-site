@@ -34,6 +34,10 @@ jobs:
       # liste de restauration : doubles de docker et systemctl, aucun conteneur lancé.
       - name: Tests des scripts du serveur
         run: deploy/ci/test-scripts.sh
+      # Modèle redis.conf du serveur (utilisateurs ACL, sans persistance) sur l'image Redis au digest
+      # de production : un seul conteneur jetable, sans réseau.
+      - name: Configuration Redis du serveur
+        run: deploy/ci/check-redis-conf.sh
 
   # Site, API (@amg/api) et libs : `npm run verify` construit, contrôle, linte et teste tous les projets
   # Nx (ADR-0023). Les tests de l'API ici sont unitaires et HTTP (app.inject), sans base ; ceux contre

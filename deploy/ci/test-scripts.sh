@@ -5,9 +5,11 @@
 # AMG ») et deploy.yml (job `build`), et à la main depuis la racine du dépôt :
 #   deploy/ci/test-scripts.sh
 # Couvre : liste blanche de amg_run (règles du rôle migrate, mode et groupe du secret), règles de
-# routeur Traefik admises par watch.sh, filtre de la liste de restauration, alerte de watch.sh sur
-# un LOGIN d'amg_migrator hors fenêtre, le refus (code 7) de restore-gate.sh avant toute écriture
-# quand la fenêtre est déjà ouverte, et la fenêtre de migration de deploy.sh (ouverture seulement
+# routeur Traefik admises par watch.sh, filtre de la liste de restauration, alertes de watch.sh sur
+# un LOGIN d'amg_migrator hors fenêtre et sur un TRUSTED_PROXY qui n'est pas le sous-réseau d'entrée,
+# le refus (code 7) de restore-gate.sh avant toute écriture quand la fenêtre est déjà ouverte,
+# l'utilisateur ACL Redis de l'API (modèle du serveur identique à la CI), le refus de deploy.sh
+# quand TRUSTED_PROXY diffère du sous-réseau d'entrée, et la fenêtre de migration de deploy.sh (ouverture seulement
 # si roles.sql rejoué, journal conforme et roles.sql à jour, fermeture même en cas d'échec, d'erreur
 # de fermeture, d'interruption ou de second signal, aucune bascule sans migrations réussies et
 # journal vérifié, amg.env écrit seulement après la bascule, détail gardé dans le journal du
@@ -261,6 +263,7 @@ case "$1" in
         ;;
     esac
     ;;
+  network) [ "$2" = inspect ] && echo "${STUB_EDGE_SUBNET-198.51.100.0/24}" ;;
   inspect)
     case "$3" in
       *Health*) echo healthy ;;
@@ -352,6 +355,8 @@ run_deploy() {
   cat >"$amg/staging/amg.env" <<EOF2
 AMG_PROJECT=amg-staging
 AMG_ENV=staging
+AMG_EDGE_NETWORK=amg_edge_staging
+TRUSTED_PROXY=198.51.100.0/24
 API_IMAGE=ghcr.io/proprietaire/amg-api
 API_DIGEST=$ZERO
 MIGRATE_IMAGE=ghcr.io/proprietaire/amg-api-migrate
@@ -496,6 +501,16 @@ run_deploy term-fin-de-bascule STUB_STOP_SIGNAL=TERM
 check "SIGTERM en fin de bascule ignoré : ancienne réplique retirée" calls_has "rm $OLD_ID"
 check "SIGTERM en fin de bascule : déploiement réussi" test "$CASE_RC" = 0
 
+check "proxy de confiance comparé au sous-réseau du réseau d'entrée" calls_has 'network inspect'
+run_deploy proxy-different STUB_EDGE_SUBNET=203.0.113.0/24
+check "TRUSTED_PROXY différent du sous-réseau d'entrée : refus" test "$CASE_RC" != 0
+check "TRUSTED_PROXY différent : raison journalisée" grep -q 'REFUS : TRUSTED_PROXY=198.51.100.0/24' "$LOG"
+refute "TRUSTED_PROXY différent : aucun téléchargement" calls_has ' pull '
+refute "TRUSTED_PROXY différent : aucune fenêtre" sql_has 'LOGIN'
+run_deploy proxy-reseau-illisible STUB_EDGE_SUBNET=
+check "sous-réseau d'entrée illisible : refus" test "$CASE_RC" != 0
+refute "sous-réseau d'entrée illisible : aucune fenêtre" sql_has 'LOGIN'
+
 run_deploy pull-en-echec STUB_PULL_RC=1
 check "image de l'API introuvable : échec" test "$CASE_RC" != 0
 refute "image de l'API introuvable : aucune fenêtre" sql_has 'LOGIN'
@@ -509,7 +524,7 @@ cat >"$WSTUB/docker" <<'EOF'
 case "$1" in
   info) case "$*" in *DockerRootDir*) echo /var/lib/docker ;; *) echo 'systemd 2' ;; esac ;;
   ps) case "$*" in *service=postgres*) echo "$STUB_PG" ;; *service=api*) echo "$STUB_API_ID" ;; esac ;;
-  network) [ "$2" = inspect ] && case "$*" in *Internal*) echo true ;; esac ;;
+  network) [ "$2" = inspect ] && case "$*" in *Internal*) echo true ;; *IPAM*) echo "${STUB_EDGE_SUBNET-198.51.100.0/24}" ;; esac ;;
   compose) printf '%s\n' postgres api ;;
   inspect)
     case "$*" in
@@ -534,7 +549,7 @@ run_watch() { # $1 1 pour tenir le verrou de l'environnement (fenêtre en cours)
   rm -rf "$w"
   mkdir -p "$w/amg/secrets" "$w/amg/logs" "$w/amg/staging/compose" "$w/cg"
   printf 'HC_WATCH_URL=https://hc.invalid/x\nTRAEFIK_CONTAINER=traefik\n' >"$w/amg/secrets/watch.env"
-  printf 'AMG_PROJECT=amg-staging\nAMG_ENV=staging\nAMG_EDGE_NETWORK=amg_edge_staging\nAPI_IMAGE=ghcr.io/p/amg-api\nAPI_DIGEST=%s\n' \
+  printf 'AMG_PROJECT=amg-staging\nAMG_ENV=staging\nAMG_EDGE_NETWORK=amg_edge_staging\nTRUSTED_PROXY=198.51.100.0/24\nAPI_IMAGE=ghcr.io/p/amg-api\nAPI_DIGEST=%s\n' \
     "$API_D" >"$w/amg/staging/amg.env"
   if [ "$hold" = 1 ]; then
     # Le processus qui tient le verrou devient `sleep` (exec) : le tuer libère le verrou, et il ne
@@ -561,6 +576,9 @@ run_watch 1 STUB_LOGIN=t
 refute "watch : aucun signalement pendant une fenêtre (verrou tenu)" grep -q 'amg_migrator a LOGIN' "$WATCH_OUT"
 run_watch 0 STUB_RUNNING="ghcr.io/p/amg-api@$ZERO"
 check "watch : API en marche sur un autre digest que amg.env signalée" grep -q 'amg.env annonce' "$WATCH_OUT"
+refute "watch : TRUSTED_PROXY égal au sous-réseau d'entrée, aucun signalement" grep -q 'TRUSTED_PROXY' "$WATCH_OUT"
+run_watch 0 STUB_EDGE_SUBNET=203.0.113.0/24
+check "watch : TRUSTED_PROXY différent du sous-réseau d'entrée signalé" grep -q "TRUSTED_PROXY « 198.51.100.0/24 » n'est pas le sous-réseau" "$WATCH_OUT"
 
 # --- restore-gate.sh : fenêtre déjà ouverte refusée avant toute écriture -------------------------
 # Une copie du script par cas, sa racine (/opt/amg) et son PATH (fixé à /usr/bin:/bin) redirigés
@@ -662,6 +680,19 @@ check "restore-gate : fenêtre contrôlée avant la création de la base neuve" 
   awk '/rolcanlogin/ && !l { l = NR } /CREATE DATABASE amg_restore/ && !c { c = NR } END { exit !(l && c && l < c) }' "$GATE_SQL"
 check "restore-gate : ancienne base fermée à amg_app et amg_migrator" gate_sql_has 'FROM PUBLIC, amg_app, amg_migrator'
 check "restore-gate : ancienne base fermée à amg_journal" grep -qE 'ON DATABASE amg_avant_[0-9]{12} FROM amg_journal$' "$GATE_SQL"
+
+# --- Redis : utilisateur ACL de l'API identique en CI et dans le modèle du serveur ---------------
+REDIS_CONF=$ROOT/deploy/env/redis.conf.example
+conf_cmds=$(grep -E '^user amg_api ' "$REDIS_CONF" | tr ' ' '\n' | grep -E '^[+]' | sort | tr '\n' ' ')
+ci_cmds=$(sed -n '/^readonly API_REDIS_COMMANDS=(/,/^)/p' "$ROOT/.github/scripts/redis-acl-ci.sh" \
+  | tr ' ' '\n' | grep -E '^[+]' | sort | tr '\n' ' ')
+check "redis.conf : commandes de amg_api identiques à redis-acl-ci.sh" test -n "$ci_cmds" -a "$conf_cmds" = "$ci_cmds"
+check "redis.conf : amg_api limité au préfixe de son environnement, sans canal" \
+  grep -qE '^user amg_api reset on #<EMPREINTE_SHA256> resetkeys ~amg:<ENV>:[*] resetchannels -@all [+]' "$REDIS_CONF"
+check "redis.conf : utilisateur default désactivé" grep -qx 'user default off' "$REDIS_CONF"
+check "redis.conf : sans éviction" grep -qx 'maxmemory-policy noeviction' "$REDIS_CONF"
+refute "redis.conf : ni requirepass ni aclfile" grep -qE '^(requirepass|aclfile)' "$REDIS_CONF"
+check "redis.conf : un seul utilisateur en plus de default" test "$(grep -cE '^user ' "$REDIS_CONF")" = 2
 
 while read -r n; do passed=$((passed + n)); done <"$T/passed"
 printf 'tests des scripts du serveur : %d réussis, %d en échec\n' "$passed" "$failures"

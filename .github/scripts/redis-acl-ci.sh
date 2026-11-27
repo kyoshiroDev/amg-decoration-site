@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Utilisateur ACL Redis de l'API dans un service Redis jetable de la CI (jobs « API (intégration) »
 # et contrôle des images), à l'image des règles attendues sur le serveur (ADR-0023, « Magasin de
-# sessions » ; à reprendre par `devops` dans deploy/env/redis.conf) : préfixe de clés de
-# l'environnement seulement, aucun canal, et les seules commandes dont l'API a besoin (scripts Lua
-# du magasin de sessions et de @fastify/rate-limit compris : l'ACL s'applique aussi dans les
-# scripts). L'utilisateur `default` est ensuite désactivé : toute connexion doit s'authentifier.
+# sessions » ; repris à l'identique dans deploy/env/redis.conf.example, égalité vérifiée par
+# deploy/ci/test-scripts.sh) : préfixe de clés de l'environnement seulement, aucun canal, et les
+# seules commandes dont l'API a besoin (scripts Lua du magasin de sessions et de
+# @fastify/rate-limit compris : l'ACL s'applique aussi dans les scripts). L'utilisateur `default` est ensuite désactivé : toute connexion doit s'authentifier.
 # Les tests d'intégration éprouvent ces règles (commande manquante : échec ; clé hors préfixe ou
 # commande d'administration : NOPERM).
 #

@@ -390,13 +390,21 @@ jobs:
         env:
           BASIC_AUTH: ${{ secrets.STAGING_BASIC_AUTH_PLAIN }}
         # Même origine que chaque CRM : /api/ des deux hôtes, derrière la basic auth de la préproduction.
+        # Puis la session de chaque audience sans cookie : 401 de l'API elle-même (corps JSON, pas
+        # celui de la basic auth), preuve que Redis répond sous l'utilisateur ACL amg_api (sinon 503 :
+        # /api/health n'utilise pas Redis) et que l'hôte est servi (sinon 404).
         run: |
-          for host in admin.staging.amgdecorationdinterieur.com espace.staging.amgdecorationdinterieur.com; do
+          for pair in admin.staging.amgdecorationdinterieur.com:admin espace.staging.amgdecorationdinterieur.com:client; do
+            host=${pair%%:*}
             url=https://$host/api/health
             body=$(printf 'user = "%s"\n' "$BASIC_AUTH" \
               | curl -K - -fsS --retry 10 --retry-delay 6 --retry-all-errors "$url")
             test "$body" = '{"status":"ok"}'
             test "$(curl -s -o /dev/null -w '%{http_code}' "$url")" = 401
+            out=$(printf 'user = "%s"\n' "$BASIC_AUTH" \
+              | curl -K - -sS -w '\n%{http_code}' "https://$host/api/${pair##*:}/session")
+            test "$(tail -n 1 <<<"$out")" = 401
+            grep -q '"statusCode":401' <<<"$out"
           done
 
   deploy-production:

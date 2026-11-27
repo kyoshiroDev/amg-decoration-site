@@ -10,6 +10,7 @@
 #     l'entrée websecure, notre émetteur, des hôtes AMG attendus, nos middlewares et notre service.
 #     Seconde ligne de défense : deploy.sh refuse déjà toute image qui porte un label traefik.* ;
 #   - l'image des conteneurs site et api en marche est celle de amg.env (*_IMAGE@*_DIGEST) ;
+#   - si l'API est activée, TRUSTED_PROXY de amg.env est le sous-réseau du réseau d'entrée ;
 #   - le journal de sécurité de la base est conforme (amg_guard.security_events_violation() NULL,
 #     EXPLOITATION.md §11), dès que roles.sql a été joué, et amg_migrator n'a pas LOGIN hors d'une
 #     fenêtre (verrou de l'environnement libre) ;
@@ -248,7 +249,19 @@ check_environment() { # $1 prod|staging
     return 0
   fi
 
-  local service id state health restarts oom healthy expected running var
+  # Proxy de confiance de l'API (EXPLOITATION.md §11) : TRUSTED_PROXY doit rester le sous-réseau du
+  # réseau d'entrée (réseau recréé, autre sous-réseau : l'API ne verrait plus l'adresse des clients).
+  local service trusted subnets
+  for service in "${services[@]}"; do
+    [ "$service" = api ] && [ "$internal" != absent ] || continue
+    trusted=$(sed -n 's/^TRUSTED_PROXY=//p' "$dir/amg.env" | tail -n 1)
+    subnets=$(docker network inspect -f '{{range .IPAM.Config}}{{println .Subnet}}{{end}}' "$edge" 2>/dev/null || true)
+    if [ -z "$trusted" ] || ! grep -qxF -- "$trusted" <<<"$subnets"; then
+      problem "$env_name : TRUSTED_PROXY « $trusted » n'est pas le sous-réseau de $edge : l'API ne voit plus l'adresse réelle des clients (EXPLOITATION.md §11)"
+    fi
+  done
+
+  local id state health restarts oom healthy expected running var
   for service in "${services[@]}"; do
     # Services déployés par digest : l'image en marche doit être celle de amg.env (une bascule
     # interrompue, ou une image lancée à la main, laisserait un écart que rien d'autre ne voit).

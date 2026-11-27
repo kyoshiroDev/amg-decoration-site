@@ -113,9 +113,11 @@ services:
     <<: *hardening
     image: redis:8.12.0-alpine3.23@sha256:5af80107c1eeecb484a2269b80a26d12bfa6521787da4663bd9f19f60a163483
     # Le shell (root, sans autre capacité que celles-ci) lit le secret, puis lâche ses privilèges :
-    # Redis lit sa configuration sur l'entrée standard. Le mot de passe n'apparaît jamais dans la
-    # ligne de commande (visible par `ps` sur l'hôte), et l'entrypoint officiel ne modifie pas le
-    # propriétaire du fichier monté depuis l'hôte. Modèle du fichier : deploy/env/redis.conf.example.
+    # Redis lit sa configuration sur l'entrée standard. Aucun secret dans la ligne de commande
+    # (visible par `ps` sur l'hôte), et l'entrypoint officiel ne modifie pas le propriétaire du
+    # fichier monté depuis l'hôte. Modèle du fichier : deploy/env/redis.conf.example (utilisateurs
+    # ACL : default désactivé, amg_api limité au préfixe de l'environnement ; sans persistance).
+    # Un Redis par environnement : l'ACL de chacun ne couvre que son préfixe amg:<env>:.
     cap_add: [SETGID, SETUID, DAC_OVERRIDE]
     entrypoint:
       - /bin/sh
@@ -132,7 +134,8 @@ services:
     networks:
       - data
     healthcheck:
-      # REDISCLI_AUTH n'est pas défini ici : un PING sans auth renvoie NOAUTH, preuve que le serveur répond.
+      # Sans authentification (utilisateur default désactivé) : un PING renvoie NOAUTH, preuve que le
+      # serveur répond ; aucun mot de passe dans la sonde.
       test: ['CMD-SHELL', 'redis-cli -h 127.0.0.1 ping 2>&1 | grep -qE "PONG|NOAUTH"']
       interval: 10s
       timeout: 3s
@@ -140,9 +143,13 @@ services:
 
   # API (ADR-0023) : servie sous /api/ des hôtes admin. et espace. (même origine que chaque CRM).
   # Migrations appliquées AVANT la bascule par deploy.sh (conteneur ponctuel, rôle amg_migrator),
-  # jamais au démarrage. Rôle PostgreSQL amg_app (moindre privilège), mot de passe en fichier.
-  # Le secret est lu par l'utilisateur de l'image (65532) : fichier 640, groupe 65532
-  # (EXPLOITATION.md, §11).
+  # jamais au démarrage. Rôles PostgreSQL amg_app (moindre privilège) et amg_journal (seul écrivain
+  # du journal de sécurité, pool dédié), utilisateur ACL Redis amg_api (sessions, limitation de
+  # débit), mots de passe en fichiers propres à chaque environnement. Les secrets sont lus par
+  # l'utilisateur de l'image (65532) : fichiers 640, groupe 65532 (EXPLOITATION.md, §11).
+  # TRUSTED_PROXY : sous-réseau du réseau d'entrée (celui où Traefik se connecte), seul saut cru pour
+  # X-Forwarded-For ; deploy.sh refuse de déployer l'API et watch.sh alerte s'il en diffère
+  # (EXPLOITATION.md, §11, « Proxy de confiance »).
   api:
     <<: *hardening
     image: ${API_IMAGE:?API_IMAGE manquant}@${API_DIGEST:?API_DIGEST manquant}
@@ -159,8 +166,19 @@ services:
       DB_NAME: amg
       DB_USER: amg_app
       DB_PASSWORD_FILE: /run/secrets/pg_app_password
+      DB_JOURNAL_USER: amg_journal
+      DB_JOURNAL_PASSWORD_FILE: /run/secrets/pg_journal_password
+      ADMIN_ORIGIN: ${ADMIN_ORIGIN:?ADMIN_ORIGIN manquant}
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:?CLIENT_ORIGIN manquant}
+      TRUSTED_PROXY: ${TRUSTED_PROXY:?TRUSTED_PROXY manquant}
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+      REDIS_USER: amg_api
+      REDIS_PASSWORD_FILE: /run/secrets/redis_api_password
     secrets:
       - pg_app_password
+      - pg_journal_password
+      - redis_api_password
     # Fichier de drainage de la bascule (/tmp/drain) ; rien d'autre n'est écrit.
     tmpfs:
       - /tmp:size=8m,mode=1777,noexec,nosuid,nodev
@@ -198,9 +216,17 @@ secrets:
   # n'est jamais monté ici : seul le conteneur ponctuel des migrations le reçoit (amg_run).
   pg_app_password:
     file: ${AMG_DIR}/secrets/pg_app_password
+  # Rôle amg_journal (pool du journal de sécurité de l'API) et utilisateur ACL Redis de l'API
+  # (empreinte SHA-256 de ce mot de passe dans redis.conf) : EXPLOITATION.md, §11.
+  pg_journal_password:
+    file: ${AMG_DIR}/secrets/pg_journal_password
+  redis_api_password:
+    file: ${AMG_DIR}/secrets/redis_api_password
 
 volumes:
   pgdata:
+  # Inutilisé tant que Redis est sans persistance (redis.conf : sessions et compteurs en mémoire) ;
+  # gardé pour les files du worker (CRM 3, lot 5), qui décidera de la persistance.
   redisdata:
   # files: (CRM 5) fichiers clients, monté par l'API seule, sauvegardé chaque nuit.
 
