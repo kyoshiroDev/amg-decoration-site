@@ -6,7 +6,8 @@
 #   deploy/ci/test-scripts.sh
 # Couvre : liste blanche de amg_run (règles du rôle migrate, mode et groupe du secret), règles de
 # routeur Traefik admises par watch.sh, filtre de la liste de restauration, alerte de watch.sh sur
-# un LOGIN d'amg_migrator hors fenêtre, et la fenêtre de migration de deploy.sh (ouverture seulement
+# un LOGIN d'amg_migrator hors fenêtre, le refus (code 7) de restore-gate.sh avant toute écriture
+# quand la fenêtre est déjà ouverte, et la fenêtre de migration de deploy.sh (ouverture seulement
 # si roles.sql rejoué, journal conforme et roles.sql à jour, fermeture même en cas d'échec, d'erreur
 # de fermeture, d'interruption ou de second signal, aucune bascule sans migrations réussies et
 # journal vérifié, amg.env écrit seulement après la bascule, détail gardé dans le journal du
@@ -560,6 +561,107 @@ run_watch 1 STUB_LOGIN=t
 refute "watch : aucun signalement pendant une fenêtre (verrou tenu)" grep -q 'amg_migrator a LOGIN' "$WATCH_OUT"
 run_watch 0 STUB_RUNNING="ghcr.io/p/amg-api@$ZERO"
 check "watch : API en marche sur un autre digest que amg.env signalée" grep -q 'amg.env annonce' "$WATCH_OUT"
+
+# --- restore-gate.sh : fenêtre déjà ouverte refusée avant toute écriture -------------------------
+# Une copie du script par cas, sa racine (/opt/amg) et son PATH (fixé à /usr/bin:/bin) redirigés
+# vers le dossier du cas : le double de docker passe devant le vrai. Substitutions vérifiées.
+GSTUB=$T/gstub
+mkdir -p "$GSTUB"
+cat >"$GSTUB/docker" <<'EOF'
+#!/usr/bin/env bash
+# Double de docker pour restore-gate.sh : un postgres de production sain, ni API ni worker.
+S=$STUB_STATE
+printf '%s\n' "$*" >>"$S/calls.log"
+case "$1" in
+  ps) case "$*" in *service=postgres*) echo "$STUB_PG" ;; esac ;;
+  inspect) echo healthy ;;
+  exec)
+    shift
+    while [ "$#" -gt 0 ]; do case "$1" in -i) shift ;; -e) shift 2 ;; *) break ;; esac; done
+    shift # conteneur
+    case "$1" in
+      psql) ;;
+      pg_restore) cat >/dev/null; exit "${STUB_RESTORE_RC:-0}" ;;
+      *) cat >/dev/null; exit 0 ;;
+    esac
+    sqls=()
+    while [ "$#" -gt 0 ]; do
+      if [ "$1" = -c ]; then sqls+=("$2"); shift 2; else shift; fi
+    done
+    if [ "${#sqls[@]}" -eq 0 ]; then
+      cat >/dev/null
+      echo 'psql < fichier' >>"$S/sql.log"
+      exit 0
+    fi
+    for q in "${sqls[@]}"; do
+      printf '%s\n' "$q" >>"$S/sql.log"
+      case "$q" in
+        *rolcanlogin*) echo "${STUB_LOGIN-f}" ;;
+        *pg_roles*amg_journal*) echo 1 ;;
+        *pg_terminate_backend*) echo 0 ;;
+        *pg_stat_activity*) echo "${STUB_SESSIONS:-0}" ;;
+        *"to_regclass('amg_guard.journal_sealed')"*) echo f ;;
+      esac
+    done
+    ;;
+esac
+exit 0
+EOF
+# Vrai sleep (le double de $STUB/bin rend la main aussitôt) : l'empreinte du flux est écrite par un
+# processus en arrière-plan, que le script attend quelques secondes au plus.
+printf '#!/usr/bin/env bash\nexec /bin/sleep "$@"\n' >"$GSTUB/sleep"
+chmod +x "$GSTUB/docker" "$GSTUB/sleep"
+SNAP=0123abcd
+run_gate() { # $1 nom du cas (unique), puis variables du double ; flux « pg_dump » factice en entrée
+  local g=$T/gate-$1 root
+  shift
+  root=$g/root
+  mkdir -p "$g/bin" "$root/prod/compose" "$root/prod/restore" "$root/backups/prod" "$root/logs"
+  cp "$BIN/amg-common.sh" "$g/bin/"
+  sed -e "s|^AMG_ROOT=/opt/amg\$|AMG_ROOT=$root|" \
+    -e "s|^export PATH=/usr/bin:/bin |export PATH=$GSTUB:$STUB/bin:/usr/bin:/bin |" \
+    "$BIN/restore-gate.sh" >"$g/bin/restore-gate.sh"
+  GATE_COPY_OK=0
+  grep -qx "AMG_ROOT=$root" "$g/bin/restore-gate.sh" && grep -q "^export PATH=$GSTUB:" "$g/bin/restore-gate.sh" \
+    && GATE_COPY_OK=1
+  echo '-- roles' >"$root/prod/compose/roles.sql"
+  echo dump >"$root/backups/prod/amg-prod.dump.age"
+  printf '1; 0 0 TABLE public t amg_migrator\n' >"$root/prod/restore/$SNAP.list"
+  printf 'flux-factice\n' | sha256sum | cut -d' ' -f1 >"$root/prod/restore/$SNAP.sha256"
+  printf 'flux-factice\n' | env -i PATH=/usr/bin:/bin HOME="$T" STUB_STATE="$g" STUB_PG="$PG_ID" \
+    SSH_ORIGINAL_COMMAND="restore $SNAP RESTAURER-amg-prod-$SNAP" "$@" \
+    bash "$g/bin/restore-gate.sh" >"$g/out.log" 2>&1
+  GATE_RC=$?
+  GATE_SQL=$g/sql.log
+  GATE_LOG=$root/logs/restore.log
+}
+gate_sql_has() { grep -sqF -- "$1" "$GATE_SQL"; }
+run_gate login-deja-ouvert STUB_LOGIN=t
+check "restore-gate : copie de test redirigée (racine et PATH)" test "$GATE_COPY_OK" = 1
+check "restore-gate : LOGIN déjà ouvert, refus code 7" test "$GATE_RC" = 7
+check "restore-gate : LOGIN déjà ouvert, INCIDENT journalisé" grep -q 'INCIDENT : amg_migrator a déjà LOGIN' "$GATE_LOG"
+refute "restore-gate : LOGIN déjà ouvert, aucune base amg_restore créée ni supprimée" gate_sql_has 'DATABASE'
+refute "restore-gate : LOGIN déjà ouvert, roles.sql non joué" gate_sql_has 'psql < fichier'
+refute "restore-gate : LOGIN déjà ouvert, aucune ouverture ni fermeture de fenêtre" gate_sql_has 'ALTER ROLE'
+run_gate session-active STUB_SESSIONS=1
+check "restore-gate : session d'amg_migrator active, refus code 7" test "$GATE_RC" = 7
+refute "restore-gate : session active, aucune base amg_restore créée ni supprimée" gate_sql_has 'DATABASE'
+refute "restore-gate : session active, aucune ouverture ni fermeture de fenêtre" gate_sql_has 'ALTER ROLE'
+run_gate lecture-illisible STUB_LOGIN=
+check "restore-gate : attribut LOGIN illisible, refus code 7" test "$GATE_RC" = 7
+refute "restore-gate : attribut LOGIN illisible, aucune base créée" gate_sql_has 'CREATE DATABASE'
+# Contre-épreuves, fenêtre fermée : la restauration avance (le double ne refuse pas tout).
+run_gate echec-pg-restore STUB_RESTORE_RC=1
+check "restore-gate : échec de pg_restore, code 3" test "$GATE_RC" = 3
+check "restore-gate : échec de pg_restore, fenêtre ouverte puis refermée" \
+  bash -c "grep -q 'ALTER ROLE amg_migrator LOGIN' '$GATE_SQL' && grep -q 'ALTER ROLE amg_migrator NOLOGIN' '$GATE_SQL'"
+check "restore-gate : échec de pg_restore, amg_restore supprimée" gate_sql_has 'DROP DATABASE IF EXISTS amg_restore WITH (FORCE)'
+run_gate succes
+check "restore-gate : restauration réussie" test "$GATE_RC" = 0
+check "restore-gate : fenêtre contrôlée avant la création de la base neuve" \
+  awk '/rolcanlogin/ && !l { l = NR } /CREATE DATABASE amg_restore/ && !c { c = NR } END { exit !(l && c && l < c) }' "$GATE_SQL"
+check "restore-gate : ancienne base fermée à amg_app et amg_migrator" gate_sql_has 'FROM PUBLIC, amg_app, amg_migrator'
+check "restore-gate : ancienne base fermée à amg_journal" grep -qE 'ON DATABASE amg_avant_[0-9]{12} FROM amg_journal$' "$GATE_SQL"
 
 while read -r n; do passed=$((passed + n)); done <"$T/passed"
 printf 'tests des scripts du serveur : %d réussis, %d en échec\n' "$passed" "$failures"

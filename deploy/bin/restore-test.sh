@@ -21,9 +21,10 @@
 #    transaction ; aucun dump en clair sur le disque), fenêtre refermée, rejeu de roles.sql,
 #    journal vérifié, bascule par renommage.
 # 4. Vérifie : restauration sans erreur, tables présentes, dernière migration Prisma, nombre de
-#    lignes par table (sous amg_migrator), journal de sécurité conforme, droits d'amg_app (catalogues,
-#    sous amg), empreinte du journal (sous amg_app) ; fichiers (si sauvegardés) restaurés dans un
-#    volume jetable avec --verify. Le superutilisateur amg ne lit aucune table : catalogues seulement.
+#    lignes par table (sous amg_migrator), journal de sécurité conforme, droits d'amg_app et
+#    d'amg_journal (catalogues, sous amg), empreinte du journal (sous amg_app, qui garde SELECT) ;
+#    fichiers (si sauvegardés) restaurés dans un volume jetable avec --verify. Le superutilisateur
+#    amg ne lit aucune table : catalogues seulement.
 # 5. Nettoie tout (piège EXIT), signale à Healthchecks.io (période 31 jours : pas de test ce
 #    mois-ci = alerte). Le résultat est à recopier dans le registre de docs/EXPLOITATION.md (5.2).
 set -Eeuo pipefail
@@ -267,6 +268,14 @@ fi
 bad_grants=$(admin_q "$NEW_DB" "select pg_catalog.count(*) from pg_catalog.pg_class c join pg_catalog.pg_namespace n on n.oid OPERATOR(pg_catalog.=) c.relnamespace where n.nspname OPERATOR(pg_catalog.=) 'public' and c.relkind OPERATOR(pg_catalog.=) ANY (ARRAY['r','p','v','m']::\"char\"[]) and (pg_catalog.has_table_privilege('amg_app', c.oid, 'TRUNCATE, REFERENCES, TRIGGER') or (c.relname OPERATOR(pg_catalog.=) '_prisma_migrations' and pg_catalog.has_table_privilege('amg_app', c.oid, 'SELECT, INSERT, UPDATE, DELETE')))")
 [ "$bad_grants" = 0 ] || {
   log "amg_app a des droits en trop sur $bad_grants table(s) restaurée(s)"
+  false
+}
+# Droits d'amg_journal (CRM 3, lot 3), catalogues seulement : rien sur les autres relations de public,
+# et sur le journal ni UPDATE, ni DELETE, ni TRUNCATE, ni REFERENCES, ni TRIGGER (SELECT et INSERT
+# seuls, accordés par la migration 20261127120000_journal_role ; aucun droit avant elle).
+bad_journal_grants=$(admin_q "$NEW_DB" "select pg_catalog.count(*) from pg_catalog.pg_class c join pg_catalog.pg_namespace n on n.oid OPERATOR(pg_catalog.=) c.relnamespace where n.nspname OPERATOR(pg_catalog.=) 'public' and c.relkind OPERATOR(pg_catalog.=) ANY (ARRAY['r','p','v','m','S','f']::\"char\"[]) and case when c.relkind OPERATOR(pg_catalog.=) 'S' then pg_catalog.has_sequence_privilege('amg_journal', c.oid, 'USAGE, SELECT, UPDATE') when c.relname OPERATOR(pg_catalog.=) 'security_events' then pg_catalog.has_table_privilege('amg_journal', c.oid, 'UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER') else pg_catalog.has_table_privilege('amg_journal', c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER') end")
+[ "$bad_journal_grants" = 0 ] || {
+  log "amg_journal a des droits en trop sur $bad_journal_grants relation(s) restaurée(s)"
   false
 }
 if [ "$(admin_q "$NEW_DB" "select pg_catalog.to_regclass('public.security_events') is not null")" = t ]; then
