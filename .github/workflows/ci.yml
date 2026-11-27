@@ -30,6 +30,10 @@ jobs:
           persist-credentials: false
       # docker compose et jq sont fournis par l'image ubuntu-latest ; aucune dépendance npm.
       - run: deploy/ci/check-budget.sh
+      # Fenêtre de migration de deploy.sh, liste blanche de amg_run, règles Traefik de watch.sh,
+      # liste de restauration : doubles de docker et systemctl, aucun conteneur lancé.
+      - name: Tests des scripts du serveur
+        run: deploy/ci/test-scripts.sh
 
   # Site, API (@amg/api) et libs : `npm run verify` construit, contrôle, linte et teste tous les projets
   # Nx (ADR-0023). Les tests de l'API ici sont unitaires et HTTP (app.inject), sans base ; ceux contre

@@ -1,0 +1,13 @@
+# Exceptions de l'analyse Trivy de l'image des MIGRATIONS seulement (deploy.yml, job `build-api`).
+# L'image de l'API n'en a aucune : le CLI Prisma et son arbre en sont exclus (ADR-0023).
+# Même exception, même échéance, que .github/audit-exceptions.json : à retirer ensemble.
+vulnerabilities:
+  - id: CVE-2026-121707
+    expired_at: 2027-01-31
+    statement: >-
+      GHSA-7589-6fvf-x4pw, effect 3.20.0 épinglé exactement par @prisma/config 7.10.1 (ReDoS dans
+      Schema.TemplateLiteral). Chargé seulement par le CLI Prisma pour lire prisma.config.ts (entrée de
+      confiance, dans l'image), dans un conteneur ponctuel sans sortie réseau ; jamais par l'API.
+  - id: GHSA-7589-6fvf-x4pw
+    expired_at: 2027-01-31
+    statement: Même avis, sous son identifiant GitHub (selon la base utilisée par Trivy).

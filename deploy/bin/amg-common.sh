@@ -22,7 +22,7 @@ AMG_SLICE_TASKS_MAX=2048  # TasksMax de amg.slice
 AMG_SYSTEMD_DIR=/etc/systemd/system # seul emplacement admis des fichiers de slice (installés par root)
 # Marge interne de la slice, sous laquelle la CI garde le pire cas : noyau, pics, imprévu.
 AMG_BUDGET_MARGIN_MIB=512
-# Score OOM des conteneurs ponctuels (sauvegarde, futures migrations) : tués avant la production
+# Score OOM des conteneurs ponctuels (sauvegarde, migrations) : tués avant la production
 # (500, postgres 200), après la préproduction (900).
 AMG_ONEOFF_OOM_SCORE_ADJ=700
 # Attente maximale du verrou des conteneurs ponctuels (un seul à la fois sur tout le serveur).
@@ -170,6 +170,23 @@ amg_run_source_ok() {
   [ ! -S "$real" ]
 }
 
+# Secret des migrations ($1 = valeur de -v), admis pour le seul rôle `migrate` (amg_run) : exactement
+# <racine>/<env>/secrets/pg_migrator_password, fichier régulier (ni lien, ni composant lien), sans
+# aucun droit pour « les autres » (640 attendu : groupe 65532, l'utilisateur de l'image), monté en
+# lecture seule sur /run/secrets/pg_migrator_password. Aucun autre fichier de secrets/ n'est jamais
+# monté par un ponctuel. AMG_RUN_ROLE et AMG_RUN_ENV sont posés par amg_run (portée dynamique).
+amg_run_secret_ok() {
+  local v=$1 root=${AMG_ROOT:-/opt/amg} want mode
+  [ "${AMG_RUN_ROLE:-}" = migrate ] || return 1
+  case "${AMG_RUN_ENV:-}" in prod | staging) ;; *) return 1 ;; esac
+  want=$root/$AMG_RUN_ENV/secrets/pg_migrator_password
+  amg_clean_path "$want" || return 1
+  [ "$v" = "$want:/run/secrets/pg_migrator_password:ro" ] || return 1
+  [ -f "$want" ] && [ ! -L "$want" ] && [ "$(readlink -f -- "$want")" = "$want" ] || return 1
+  mode=$(stat -c '%a' -- "$want") || return 1
+  [[ "$mode" =~ ^[0-7]{3,4}$ ]] && (((8#$mode & 8#007) == 0))
+}
+
 # Valeur $2 admise pour l'option $1 de amg_run (liste blanche, une règle par option).
 amg_run_value_ok() {
   local opt=$1 v=$2 root=${AMG_ROOT:-/opt/amg} src dst mode
@@ -196,10 +213,16 @@ amg_run_value_ok() {
         && [[ ",$mode," =~ ,size=[1-9][0-9]{0,5}[kmg]?, ]]
       ;;
     -v)
+      amg_run_secret_ok "$v" && return 0
       IFS=: read -r src dst mode <<<"$v"
       [[ "$v" =~ ^[^:]+:[^:]+(:ro)?$ ]] && amg_run_source_ok "$src" && amg_clean_path "$dst"
       ;;
-    --network) [ "$v" = none ] || [ "$v" = bridge ] ;;
+    # Réseau de données du projet (Postgres, interne, sans sortie) : rôle `migrate` seulement.
+    --network)
+      [ "$v" = none ] || [ "$v" = bridge ] \
+        || { [ "${AMG_RUN_ROLE:-}" = migrate ] && [[ "${AMG_RUN_ENV:-}" =~ ^(prod|staging)$ ]] \
+          && [ "$v" = "amg-${AMG_RUN_ENV}_data" ]; }
+      ;;
     --name) [[ "$v" =~ ^amg-[a-z0-9-]{1,50}$ ]] ;;
     --entrypoint) [[ "$v" =~ ^/?[A-Za-z0-9_][A-Za-z0-9_./-]{0,200}$ && "/$v/" != */../* ]] ;;
     -w) [ "$v" = / ] || amg_clean_path "$v" ;;
@@ -227,6 +250,10 @@ AMG_RUN_CAPS='DAC_READ_SEARCH'
 #   sans valeur : --read-only, -i
 #   une valeur  : --env-file, -e, --hostname, --cpus, --pids-limit, --cap-drop, --cap-add,
 #                 --security-opt, --tmpfs, -v, --network, --name, --entrypoint, -w, --user
+# Règles propres au rôle `migrate` (deploy.sh, fenêtre de migration), et à lui seul : réseau de
+# données du projet (--network amg-<env>_data) et montage du seul secret des migrations
+# (amg_run_secret_ok). Espace de PID propre dans tous les cas (--pid refusé) : le mot de passe que
+# le CLI Prisma passe en argument au moteur de schéma n'est visible d'aucun autre conteneur.
 # Avant le lancement : plafond commun en place (amg_all_slices_problems), image épinglée par digest
 # et sans label Traefik (image_labels_safe). Les valeurs imposées sont placées APRÈS celles de
 # l'appelant (pour docker, la dernière valeur d'une option l'emporte).
@@ -236,6 +263,8 @@ amg_run() {
   shift 3 || { echo "amg_run : arguments manquants" >&2; return 2; }
   case "$env_name" in prod | staging) ;; *) echo "amg_run : environnement refusé : $env_name" >&2; return 2 ;; esac
   [[ "$role" =~ ^[a-z][a-z0-9-]{0,30}$ ]] || { echo "amg_run : rôle refusé : $role" >&2; return 2; }
+  # Contexte des règles propres à un rôle (amg_run_value_ok, amg_run_secret_ok).
+  local AMG_RUN_ENV=$env_name AMG_RUN_ROLE=$role
   [[ "$mem" =~ ^[1-9][0-9]{0,4}m$ ]] || { echo "amg_run : mémoire refusée (NNNm) : $mem" >&2; return 2; }
   while [ "$#" -gt 0 ] && [ "$1" != -- ]; do
     opt=$1
@@ -277,4 +306,82 @@ amg_run() {
   flock -w "$AMG_ONEOFF_WAIT" "${AMG_ROOT:-/opt/amg}/.oneoff.lock" \
     docker run "${opts[@]}" --rm --cgroup-parent "amg-$env_name.slice" --memory "$mem" --memory-swap "$mem" \
     --oom-score-adj "$AMG_ONEOFF_OOM_SCORE_ADJ" --label "org.amg.role=$role" -- "$@"
+}
+
+# Options de session de toute commande psql sous le superutilisateur `amg` (EXPLOITATION.md §11) :
+# chemin de recherche sans `public` (une fonction ou un opérateur d'amg_migrator n'y est jamais
+# résolu). Toujours avec `psql -X` (aucun ~/.psqlrc lu).
+AMG_PG_ADMIN_OPTIONS='-c search_path=pg_catalog,pg_temp'
+# Vérification du journal de sécurité (roles.sql) : NULL (sortie vide avec psql -At) si conforme,
+# sinon l'écart en clair. Ne lit que des catalogues, chemin épinglé : aucun code d'amg_migrator.
+AMG_JOURNAL_CHECK_SQL='select amg_guard.security_events_violation()'
+
+# Hôtes autorisés par environnement (domaine public du site, ADR-0020).
+amg_allowed_hosts() {
+  case "$1" in
+    prod) echo '^((www|admin|espace)\.)?amgdecorationdinterieur\.com$' ;;
+    staging) echo '^((admin|espace)\.)?staging\.amgdecorationdinterieur\.com$' ;;
+    *) echo '^$' ;;
+  esac
+}
+
+# Problèmes d'une règle de routeur Traefik ($1 env, $2 règle ; une ligne par problème, aucune sortie
+# = conforme), utilisé par watch.sh. Deux formes seulement :
+#   Host(`a`) || Host(`b`) …                          hôtes d'AMG (parenthèses admises)
+#   (Host(`a`) || Host(`b`)) && PathPrefix(`/api/`)     l'API, à la même origine que chaque CRM
+# PathPrefix n'est admis que joint par && à un groupe d'hôtes AMG : jamais seul ni par ||, ce qui
+# capterait les chemins /api/ de tous les hôtes du Traefik partagé (ceux du voisin compris).
+amg_traefik_rule_problems() {
+  local env_name=$1 rule=$2 rest host_re matched host count=0
+  local bt=$'\x60' # accent grave, délimiteur des valeurs dans la syntaxe Traefik
+  local matcher_re="Host\\(${bt}([^${bt}]*)${bt}\\)" leftover_re='^[[:space:]|()]*$'
+  local api_re="^\\((.*)\\)[[:space:]]*&&[[:space:]]*PathPrefix\\(${bt}/api/${bt}\\)\$"
+  rest=$rule
+  if [[ "$rest" =~ $api_re ]]; then rest=${BASH_REMATCH[1]}; fi
+  host_re=$(amg_allowed_hosts "$env_name")
+  while [[ "$rest" =~ $matcher_re ]]; do
+    matched=${BASH_REMATCH[0]}
+    host=${BASH_REMATCH[1]}
+    rest=${rest/"$matched"/}
+    [[ "$host" =~ $host_re ]] || echo "hôte non autorisé : $host"
+    count=$((count + 1))
+  done
+  if [ "$count" -eq 0 ] || ! [[ "$rest" =~ $leftover_re ]]; then
+    echo "règle non reconnue : $rule"
+  fi
+}
+
+# Liste de restauration filtrée (EXPLOITATION.md §11, restauration) : lit la sortie de
+# `pg_restore -l` sur l'entrée standard, écrit sur la sortie la liste à restaurer sous amg_migrator
+# (`pg_restore -L`), et chaque ligne retirée sur la sortie d'erreur. Retirés : déclencheurs
+# d'événement, schéma amg_guard et tous ses objets (réservés au superutilisateur, recréés par
+# roles.sql), schéma public lui-même, ses droits et son commentaire, droits par défaut (posés par
+# roles.sql), extension plpgsql (fournie par le serveur). Tout autre objet doit être dans le schéma
+# public ou sans schéma, sinon refus (code 1) : la liste n'est pas utilisable.
+amg_restore_list_filter() {
+  local line body status=0
+  local entry_re='^[0-9]+; [0-9]+ [0-9]+ (.+)$'
+  local drop_re='^(EVENT TRIGGER |DEFAULT ACL |SCHEMA - (public|amg_guard)( |$)|(ACL|COMMENT) - SCHEMA (public|amg_guard)( |$)|EXTENSION - plpgsql( |$)|COMMENT - EXTENSION plpgsql( |$)|[A-Z]+( [A-Z]+)* amg_guard )'
+  local keep_re='^[A-Z]+( [A-Z]+)* (public|-) '
+  while IFS= read -r line || [ -n "$line" ]; do
+    if [ -z "$line" ] || [[ "$line" == ';'* ]]; then
+      printf '%s\n' "$line"
+      continue
+    fi
+    if ! [[ "$line" =~ $entry_re ]]; then
+      printf 'liste : REFUS : ligne illisible : %s\n' "$line" >&2
+      status=1
+      continue
+    fi
+    body=${BASH_REMATCH[1]}
+    if [[ "$body" =~ $drop_re ]]; then
+      printf 'liste : retiré : %s\n' "$line" >&2
+    elif [[ "$body" =~ $keep_re ]]; then
+      printf '%s\n' "$line"
+    else
+      printf 'liste : REFUS : objet hors du schéma public : %s\n' "$line" >&2
+      status=1
+    fi
+  done
+  return "$status"
 }

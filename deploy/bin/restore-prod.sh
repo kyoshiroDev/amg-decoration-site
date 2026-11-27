@@ -4,7 +4,12 @@
 # Aucune clé ni aucun mot de passe de sauvegarde sur le VPS : le snapshot est lu et déchiffré ici,
 # puis le flux pg_dump passe par SSH jusqu'à restore-gate.sh, qui contrôle le serveur et le
 # branche sur pg_restore. Aucun dump en clair écrit, ni ici ni sur le serveur.
+#   restic dump (clé B2 lecture seule) | age -d (clé saisie ici) | ssh <clé d'incident> "list …"
 #   restic dump (clé B2 lecture seule) | age -d (clé saisie ici) | ssh <clé d'incident> "restore …"
+# Deux passages du même flux : le premier donne au serveur la table des matières (liste filtrée et
+# empreinte gardées sur le serveur), le second est restauré dans une base neuve sous amg_migrator,
+# vérifié (même empreinte, journal de sécurité conforme), puis substitué à la base en service
+# (EXPLOITATION.md §11 ; l'ancienne base est conservée sous le nom amg_avant_<date>).
 #   deploy/bin/restore-prod.sh <id_snapshot> 2>&1 | tee -a ~/amg-restauration/restore-prod.log
 # Prérequis du poste : ceux de restore-test.sh (docker, jq, age, ssh ; AMG_RESTORE_ENV) et, dans ce
 # même fichier d'accès (600) :
@@ -104,10 +109,13 @@ echo
   echo "clé age invalide" >&2
   exit 2
 }
+stream() { # flux pg_dump du snapshot, déchiffré en mémoire
+  restic dump "$SNAPSHOT" /backup/db/amg-prod.dump.age </dev/null | age -d -i <(printf '%s\n' "$AGE_IDENTITY")
+}
 
-log "restauration du snapshot $SNAPSHOT : flux déchiffré en mémoire, envoyé par SSH (une seule transaction)"
-restic dump "$SNAPSHOT" /backup/db/amg-prod.dump.age </dev/null \
-  | age -d -i <(printf '%s\n' "$AGE_IDENTITY") \
-  | gate restore "$SNAPSHOT" "RESTAURER-$SOURCE_HOST-$SNAPSHOT"
+log "table des matières du snapshot $SNAPSHOT : envoyée au serveur, qui la filtre et la garde"
+stream | gate list "$SNAPSHOT"
+log "restauration du snapshot $SNAPSHOT : base neuve en amg_migrator, une seule transaction, puis bascule"
+stream | gate restore "$SNAPSHOT" "RESTAURER-$SOURCE_HOST-$SNAPSHOT"
 AGE_IDENTITY=''
-log "restauration terminée : redémarrer les services, vérifier, retirer la clé d'incident du serveur, consigner (EXPLOITATION.md, 5.2)"
+log "restauration terminée : redémarrer les services, vérifier, retirer la clé d'incident du serveur, supprimer l'ancienne base après contrôle, consigner (EXPLOITATION.md, 5.4)"

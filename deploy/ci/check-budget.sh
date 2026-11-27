@@ -32,7 +32,8 @@
 #     + le plus gros conteneur ponctuel (amg_run : un seul à la fois sur tout le serveur, verrou
 #       commun /opt/amg/.oneoff.lock) ;
 #   - le pire cas de la préproduction (avec son plus gros ponctuel) dépasse le plafond de
-#     amg-staging.slice.
+#     amg-staging.slice ;
+#   - Compose déclare le secret pg_migrator_password (réservé au conteneur ponctuel des migrations).
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
@@ -125,6 +126,10 @@ check_env() { # $1 nom, $2 fichier d'environnement, $3… fichiers Compose
   name=$(jq -r '.name' <<<"$json")
   [ "$name" = "amg-$env_name" ] || error "$env_name : projet Compose $name (attendu amg-$env_name)"
   [ "$(jq '.services | length' <<<"$json")" -gt 0 ] || error "$env_name : aucun service"
+  # Le secret d'amg_migrator ne va qu'au conteneur ponctuel des migrations (amg_run, rôle migrate) :
+  # jamais déclaré ni monté par Compose (EXPLOITATION.md, §11).
+  [ "$(jq '[(.secrets // {}) | to_entries[] | select((.key + " " + (.value.file // "")) | test("pg_migrator_password"))] | length' <<<"$json")" = 0 ] \
+    || error "$env_name : secret pg_migrator_password déclaré dans Compose (réservé au conteneur des migrations)"
   while IFS=$'\t' read -r svc parent mem swap routed replicas scale oom tmpfs_bad build; do
     [ "$build" = false ] || error "$env_name/$svc : build: interdit (images construites en CI, jamais sur le serveur)"
     [ "$parent" = "$slice" ] || error "$env_name/$svc : cgroup_parent « $parent » (attendu $slice)"

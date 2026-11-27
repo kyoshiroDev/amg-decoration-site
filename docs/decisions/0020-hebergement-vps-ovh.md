@@ -1,6 +1,6 @@
 # ADR-0020 — Hébergement sur le VPS OVH, à côté du projet existant
 
-- **Statut** : acceptée, révisée trois fois le 2026-11-25 (voir les sections « Révision » ; en cas d’écart, la plus récente l’emporte)
+- **Statut** : acceptée, révisée trois fois le 2026-11-25 puis le 2026-11-27 (voir les sections « Révision » ; en cas d’écart, la plus récente l’emporte)
 - **Date** : 2026-11-24
 
 ## Contexte
@@ -14,7 +14,7 @@ Décisions de l'humain : fichiers stockés sur le disque du VPS ; sauvegardes ch
 ## Décision
 
 - **Un projet Docker Compose séparé** (`amg`), qui ne modifie ni les conteneurs, ni les réseaux, ni la configuration du projet voisin.
-- **Traefik existant** comme seule porte d'entrée : nos conteneurs s'y branchent par leurs propres labels (HTTPS Let's Encrypt, redirection HTTP vers HTTPS, en-têtes de sécurité par middleware). Pas de second reverse proxy.
+- **Traefik existant** comme seule porte d'entrée : nos conteneurs s'y branchent par leurs propres labels (HTTPS Let's Encrypt, redirection HTTP vers HTTPS ; en-têtes de sécurité : voir la révision du 2026-11-25, ils sont posés par nos propres conteneurs). Pas de second reverse proxy.
 - **Conteneurs** : `site`, `admin`, `espace-client` (statiques, nginx non root), `api` et `worker` (NestJS), `postgres` et `redis` **propres à AMG** (jamais exposés, réseau interne). Pas d'antivirus : les fichiers déposés sont reconstruits (ADR-0022).
 - **Domaines** : `amgdecorationdinterieur.com` (site), `admin.amgdecorationdinterieur.com`, `espace.amgdecorationdinterieur.com` ; préproduction sur `staging.`, `admin.staging.`, `espace.staging.` (accès protégé, `noindex`).
 - **Fichiers** : volume Docker dédié sur le disque du VPS, hors de toute racine web ; servis par l'API via des liens temporaires signés après contrôle des droits.
@@ -80,3 +80,19 @@ Décisions de l'humain : fichiers stockés sur le disque du VPS ; sauvegardes ch
 - Aucun `docker build` sur le VPS (rappel) : il tournerait hors de toute slice.
 
 **Conséquences.** Les trois fichiers de slice sont installés ensemble par l'humain (`docs/EXPLOITATION.md`, §9 étape 1) ; `amg.env` gagne `AMG_ENV` et `SITE_MEM_LIMIT`.
+
+## Révision du 2026-11-27 : API, migrations et restauration (CRM 3, lot 2)
+
+**Contexte.** L'ADR-0023 a remplacé « migrations appliquées au démarrage de l'API » (décision initiale ci-dessus) par un conteneur ponctuel des migrations sous le rôle `amg_migrator`, `NOLOGIN` hors des fenêtres de migration, et fixé les règles de restauration (base neuve, jamais sous le superutilisateur). Le lot 2 les met en œuvre sur le serveur.
+
+**Décision.**
+
+- **Deux images**, construites depuis les sources dans un seul `apps/api/Dockerfile` (cibles `api` et `migrate`), analysées par Trivy et contrôlées sur un PostgreSQL réel en CI avant publication : `amg-api` (distroless Node 24, **sans shell**, utilisateur 65532, dépendances de production seules, CLI Prisma et son arbre retirés puis absence vérifiée, **aucune exception Trivy**) et `amg-api-migrate` (CLI Prisma, migrations, `prisma.config.ts` ; exception Trivy datée pour `effect`, la même que l'audit npm). Sans shell, la sonde de santé et le drainage de la bascule passent par un script Node de l'image.
+- **Migrations avant la bascule** (`deploy.sh … deploy api <api> <migrations>`) : journal vérifié avant toute ouverture, fenêtre `LOGIN` / `NOLOGIN` + `pg_terminate_backend` refermée par un piège posé avant l'ouverture, conteneur ponctuel `amg_run` (rôle `migrate` : seul autorisé sur le réseau de données et à monter le secret d'`amg_migrator`, espace de PID propre), rejeu de `roles.sql` et vérification du journal ; le moindre échec, aucune bascule. Retour arrière de l'API sans migration (expansion puis contraction).
+- **`roles.sql` installé par l'humain** avec les fichiers Compose (relu, `sha256sum`), jamais pris dans l'image : il est exécuté par le superutilisateur PostgreSQL, ce que la clé de déploiement ne doit pas pouvoir choisir. L'image des migrations porte l'empreinte de son `roles.sql` (label) : `deploy.sh` refuse de migrer si elle diffère du fichier installé.
+- **Commande forcée étendue** : `deploy site <digest>`, `deploy api <digest> <digest>`, `rollback site|api`, `status` ; toujours aucun fichier transmis.
+- **Routage de l'API** : `(Host(admin.…) || Host(espace.…)) && PathPrefix(/api/)`, seule forme où `PathPrefix` est admis par la liste blanche de `watch.sh` (jamais seul ni joint par `||`, qui capterait les chemins `/api/` des hôtes du voisin). Middlewares déclarés par le conteneur de l'API lui-même. L'entrée `websecure` du Traefik partagé ne pose aucun en-tête ; aucun middleware `@file` n'est cité par nos labels (configuration du voisin, et la liste blanche n'admet que `<projet>-…@docker`) : **l'API pose elle-même tous ses en-têtes de sécurité, HSTS compris** (ADR-0023), comme le nginx du site.
+- **Restauration** : base neuve `amg_restore`, liste filtrée, `pg_restore` connecté directement en `amg_migrator`, bascule par renommage (`amg_avant_<date>` conservée) ; même procédure dans le test mensuel du poste.
+- **Budget** : API 256 Mio en production et 160 Mio en préproduction (bascule comprise), migrations 192 Mio ; pire cas 2 336 Mio pour un seuil de 3 288 Mio (`docs/EXPLOITATION.md`, §10). Le worker est reporté au lot 5.
+
+**Conséquences.** `amg.env` gagne `API_IMAGE`, `API_DIGEST`, `MIGRATE_IMAGE`, `API_RULE`, `API_MIDDLEWARES`, `API_MEM_LIMIT` ; les secrets de l'API sont en `640`, groupe 65532 ; nouvelles étapes de l'humain (§9, étapes 13 à 17), dont la décision `hidepid=2` sur l'hôte. Une fois tout réservé, la préproduction atteint exactement son plafond de 1 Gio : toute limite de préproduction relevée impose d'en réduire une autre.

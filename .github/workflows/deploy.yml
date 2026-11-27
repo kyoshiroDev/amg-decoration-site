@@ -1,8 +1,11 @@
-# push sur dev  → vérifications, image, analyse Trivy, conformité nginx ; publication GHCR et préproduction
-#                 seulement si la variable de dépôt AMG_STAGING_ON_VPS=true (serveur prêt, EXPLOITATION §9).
+# push sur dev  → vérifications, images (site, API, migrations), analyses Trivy, conformité nginx,
+#                 contrôle des images de l'API sur PostgreSQL ; publication GHCR et préproduction
+#                 seulement si la variable de dépôt AMG_STAGING_ON_VPS=true (serveur prêt, EXPLOITATION §9),
+#                 et pour l'API si, en plus, AMG_STAGING_API_ON_VPS=true (rôles créés, §11).
 # push sur main → mêmes étapes ; déploiement de production seulement quand le site quitte Vercel
-#                 (variable de dépôt AMG_PROD_SITE_ON_VPS=true, CRM 8) et après approbation humaine
-#                 (environnement GitHub « production » avec relecteur obligatoire).
+#                 (variable de dépôt AMG_PROD_SITE_ON_VPS=true, CRM 8 ; pour l'API, en plus,
+#                 AMG_PROD_API_ON_VPS=true) et après approbation humaine (environnement GitHub
+#                 « production » avec relecteur obligatoire).
 # Séparation des droits : le job qui exécute npm (dépendances tierces) n'a aucun droit d'écriture ;
 # le job qui publie sur GHCR n'exécute aucun code du dépôt ni de npm, il pousse l'image vérifiée
 # reçue en artefact. Le déploiement désigne l'image par son DIGEST (immuable), jamais par un tag.
@@ -47,6 +50,9 @@ jobs:
       # Avant tout le reste : un fichier Compose hors budget ne doit produire aucune image.
       - name: Budget mémoire AMG (slice amg.slice, 3 800 Mio)
         run: deploy/ci/check-budget.sh
+      # Fenêtre de migration, liste blanche de amg_run, règles Traefik, liste de restauration (sans Docker).
+      - name: Tests des scripts du serveur
+        run: deploy/ci/test-scripts.sh
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: apps/site/node_modules/.astro/assets
@@ -103,6 +109,122 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
+  build-api:
+    name: Images de l'API (vérifiées et analysées, sans droit d'écriture)
+    # Construites depuis les sources (multi-étapes, apps/api/Dockerfile), sans npm sur le runner : le
+    # job `build` vérifie déjà le code (npm run verify). Contrôlées sur un PostgreSQL au digest de la
+    # production (.github/scripts/check-api-images.sh), puis exportées pour la publication.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71
+        env:
+          # Identifiants PUBLICS de cette base jetable, propre au job (comme ci.yml).
+          POSTGRES_USER: amg
+          POSTGRES_PASSWORD: ci-only-superuser-password-public
+          POSTGRES_DB: amg_test
+        ports:
+          - 127.0.0.1:5432:5432
+        options: >-
+          --health-cmd "pg_isready -U amg -d amg_test -h 127.0.0.1"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    outputs:
+      api-image: ${{ steps.name.outputs.api }}
+      migrate-image: ${{ steps.name.outputs.migrate }}
+      api-id: ${{ steps.save.outputs.api-id }}
+      migrate-id: ${{ steps.save.outputs.migrate-id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Image PostgreSQL identique à la production
+        run: .github/scripts/check-postgres-image.sh
+      - id: name
+        run: |
+          owner=${GITHUB_REPOSITORY_OWNER,,}
+          echo "api=ghcr.io/$owner/amg-api" >> "$GITHUB_OUTPUT"
+          echo "migrate=ghcr.io/$owner/amg-api-migrate" >> "$GITHUB_OUTPUT"
+          # Empreinte de roles.sql, portée par l'image des migrations (comparée au fichier installé
+          # sur le serveur par deploy.sh avant toute fenêtre de migration).
+          echo "roles-sha=$(sha256sum libs/api/db/sql/roles.sql | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Image de l'API
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          target: api
+          load: true
+          push: false
+          provenance: false
+          sbom: false
+          tags: ${{ steps.name.outputs.api }}:${{ env.IMAGE_TAG }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+      - name: Image des migrations
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          target: migrate
+          load: true
+          push: false
+          provenance: false
+          sbom: false
+          tags: ${{ steps.name.outputs.migrate }}:${{ env.IMAGE_TAG }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.amg.roles-sql.sha256=${{ steps.name.outputs.roles-sha }}
+      # Image de l'API : aucune exception (effect et le CLI Prisma en sont exclus, ADR-0023).
+      - name: Analyse de l'image de l'API (bloquante sur HIGH et CRITICAL corrigeables, sans exception)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.76.2
+          image-ref: ${{ steps.name.outputs.api }}:${{ env.IMAGE_TAG }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+      # Image des migrations : CLI Prisma compris, donc `effect` ; exception datée, la même que
+      # .github/audit-exceptions.json (.github/trivy/migrate.trivyignore.yaml).
+      - name: Analyse de l'image des migrations (bloquante, exception datée du CLI Prisma)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.76.2
+          image-ref: ${{ steps.name.outputs.migrate }}:${{ env.IMAGE_TAG }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          trivyignores: .github/trivy/migrate.trivyignore.yaml
+      - name: Contrôle des images (contenu, migrations et API sur PostgreSQL)
+        env:
+          API_IMAGE_REF: ${{ steps.name.outputs.api }}:${{ env.IMAGE_TAG }}
+          MIGRATE_IMAGE_REF: ${{ steps.name.outputs.migrate }}:${{ env.IMAGE_TAG }}
+          PG_CONTAINER: ${{ job.services.postgres.id }}
+          PG_DB: amg_test
+        run: .github/scripts/check-api-images.sh
+      - id: save
+        name: Images exportées pour la publication
+        env:
+          API: ${{ steps.name.outputs.api }}
+          MIGRATE: ${{ steps.name.outputs.migrate }}
+        run: |
+          echo "api-id=$(docker image inspect -f '{{.Id}}' "$API:$IMAGE_TAG")" >> "$GITHUB_OUTPUT"
+          echo "migrate-id=$(docker image inspect -f '{{.Id}}' "$MIGRATE:$IMAGE_TAG")" >> "$GITHUB_OUTPUT"
+          docker save -o "$RUNNER_TEMP/amg-api.tar" "$API:$IMAGE_TAG" "$MIGRATE:$IMAGE_TAG"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: amg-api-images
+          path: ${{ runner.temp }}/amg-api.tar
+          retention-days: 1
+          if-no-files-found: error
+
   publish:
     name: Publication GHCR (sans npm ni code du dépôt)
     # Droit packages: write réservé aux deux branches déployées (pas de publication depuis une autre),
@@ -147,11 +269,66 @@ jobs:
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
           echo "Publié : $IMAGE@$digest ($IMAGE_TAG)" >> "$GITHUB_STEP_SUMMARY"
 
+  publish-api:
+    name: Publication GHCR de l'API (sans npm ni code du dépôt)
+    # Mêmes garde-fous que `publish`, plus l'activation de l'API dans l'environnement visé.
+    if: >-
+      (github.ref == 'refs/heads/dev' && vars.AMG_STAGING_ON_VPS == 'true' && vars.AMG_STAGING_API_ON_VPS == 'true') ||
+      (github.ref == 'refs/heads/main' && vars.AMG_PROD_SITE_ON_VPS == 'true' && vars.AMG_PROD_API_ON_VPS == 'true')
+    needs: [build, build-api]
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    outputs:
+      api-digest: ${{ steps.push.outputs.api-digest }}
+      migrate-digest: ${{ steps.push.outputs.migrate-digest }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: amg-api-images
+          path: ${{ runner.temp }}/image
+      - name: Chargement et contrôle des images vérifiées
+        env:
+          API: ${{ needs.build-api.outputs.api-image }}
+          MIGRATE: ${{ needs.build-api.outputs.migrate-image }}
+          API_ID: ${{ needs.build-api.outputs.api-id }}
+          MIGRATE_ID: ${{ needs.build-api.outputs.migrate-id }}
+        run: |
+          docker load -q -i "$RUNNER_TEMP/image/amg-api.tar"
+          test "$(docker image inspect -f '{{.Id}}' "$API:$IMAGE_TAG")" = "$API_ID"
+          test "$(docker image inspect -f '{{.Id}}' "$MIGRATE:$IMAGE_TAG")" = "$MIGRATE_ID"
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: push
+        env:
+          API: ${{ needs.build-api.outputs.api-image }}
+          MIGRATE: ${{ needs.build-api.outputs.migrate-image }}
+        run: |
+          publish() { # $1 image, $2 sortie
+            local digest registry
+            docker push "$1:$IMAGE_TAG" | tee "$RUNNER_TEMP/push.log"
+            digest=$(grep -oE 'digest: sha256:[0-9a-f]{64}' "$RUNNER_TEMP/push.log" | tail -n 1 | cut -d' ' -f2)
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "digest introuvable" >&2; exit 1; }
+            registry=$(docker buildx imagetools inspect "$1:$IMAGE_TAG" --format '{{json .Manifest}}' | jq -r .digest)
+            [ "$registry" = "$digest" ] || { echo "le tag $IMAGE_TAG désigne $registry, pas $digest" >&2; exit 1; }
+            echo "$2=$digest" >> "$GITHUB_OUTPUT"
+            echo "Publié : $1@$digest ($IMAGE_TAG)" >> "$GITHUB_STEP_SUMMARY"
+          }
+          publish "$API" api-digest
+          publish "$MIGRATE" migrate-digest
+
   deploy-staging:
     name: Préproduction (staging.)
-    # Activé par l'humain une fois le serveur prêt (docs/EXPLOITATION.md §9, étape 12).
-    if: github.ref == 'refs/heads/dev' && vars.AMG_STAGING_ON_VPS == 'true'
-    needs: publish
+    # Activé par l'humain une fois le serveur prêt (docs/EXPLOITATION.md §9, étape 12). Un seul job
+    # par environnement : deploy.sh tient le verrou de l'environnement, les bascules se suivent.
+    if: >-
+      !cancelled() && github.ref == 'refs/heads/dev' && vars.AMG_STAGING_ON_VPS == 'true' &&
+      needs.build-api.result == 'success' && needs.publish.result == 'success' &&
+      (needs.publish-api.result == 'success' || needs.publish-api.result == 'skipped')
+    needs: [build-api, publish, publish-api]
     runs-on: ubuntu-latest
     environment:
       name: staging
@@ -161,19 +338,27 @@ jobs:
       - name: Déploiement sans coupure (par digest)
         env:
           DIGEST: ${{ needs.publish.outputs.digest }}
+          API_DIGEST: ${{ needs.publish-api.outputs.api-digest }}
+          MIGRATE_DIGEST: ${{ needs.publish-api.outputs.migrate-digest }}
           SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
           TARGET: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
         # Clé chargée dans un ssh-agent (jamais écrite sur le disque), agent tué à la sortie.
+        # API d'abord (migrations avant sa bascule), puis le site ; l'API seulement si elle a été publiée.
         run: |
-          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "digest invalide" >&2; exit 1; }
+          re='^sha256:[0-9a-f]{64}$'
+          [[ "$DIGEST" =~ $re ]] || { echo "digest invalide" >&2; exit 1; }
           work=$(mktemp -d)
           trap 'ssh-agent -k >/dev/null 2>&1 || true; rm -rf "$work"' EXIT
           eval "$(ssh-agent -s)" >/dev/null
           ssh-add -q - <<<"$SSH_KEY"
           printf '%s\n' "$KNOWN_HOSTS" > "$work/known_hosts"
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$work/known_hosts" \
-            "$TARGET" "deploy $DIGEST"
+          gate() { ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$work/known_hosts" "$TARGET" "$1"; }
+          if [ -n "$API_DIGEST" ]; then
+            [[ "$API_DIGEST" =~ $re && "$MIGRATE_DIGEST" =~ $re ]] || { echo "digests de l'API invalides" >&2; exit 1; }
+            gate "deploy api $API_DIGEST $MIGRATE_DIGEST"
+          fi
+          gate "deploy site $DIGEST"
       - name: Contrôle après déploiement
         env:
           BASIC_AUTH: ${{ secrets.STAGING_BASIC_AUTH_PLAIN }}
@@ -186,11 +371,27 @@ jobs:
             | curl -K - -fsS --retry 10 --retry-delay 6 --retry-all-errors -D - -o /dev/null "$url")
           grep -qi '^x-robots-tag: noindex' <<<"$headers"
           test "$(curl -s -o /dev/null -w '%{http_code}' "$url")" = 401
+      - name: Contrôle de l'API après déploiement
+        if: needs.publish-api.outputs.api-digest != ''
+        env:
+          BASIC_AUTH: ${{ secrets.STAGING_BASIC_AUTH_PLAIN }}
+        # Même origine que chaque CRM : /api/ des deux hôtes, derrière la basic auth de la préproduction.
+        run: |
+          for host in admin.staging.amgdecorationdinterieur.com espace.staging.amgdecorationdinterieur.com; do
+            url=https://$host/api/health
+            body=$(printf 'user = "%s"\n' "$BASIC_AUTH" \
+              | curl -K - -fsS --retry 10 --retry-delay 6 --retry-all-errors "$url")
+            test "$body" = '{"status":"ok"}'
+            test "$(curl -s -o /dev/null -w '%{http_code}' "$url")" = 401
+          done
 
   deploy-production:
     name: Production
-    if: github.ref == 'refs/heads/main' && vars.AMG_PROD_SITE_ON_VPS == 'true'
-    needs: publish
+    if: >-
+      !cancelled() && github.ref == 'refs/heads/main' && vars.AMG_PROD_SITE_ON_VPS == 'true' &&
+      needs.build-api.result == 'success' && needs.publish.result == 'success' &&
+      (needs.publish-api.result == 'success' || needs.publish-api.result == 'skipped')
+    needs: [build-api, publish, publish-api]
     runs-on: ubuntu-latest
     environment:
       name: production
@@ -200,16 +401,23 @@ jobs:
       - name: Déploiement sans coupure (par digest)
         env:
           DIGEST: ${{ needs.publish.outputs.digest }}
+          API_DIGEST: ${{ needs.publish-api.outputs.api-digest }}
+          MIGRATE_DIGEST: ${{ needs.publish-api.outputs.migrate-digest }}
           SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
           TARGET: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
         run: |
-          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "digest invalide" >&2; exit 1; }
+          re='^sha256:[0-9a-f]{64}$'
+          [[ "$DIGEST" =~ $re ]] || { echo "digest invalide" >&2; exit 1; }
           work=$(mktemp -d)
           trap 'ssh-agent -k >/dev/null 2>&1 || true; rm -rf "$work"' EXIT
           eval "$(ssh-agent -s)" >/dev/null
           ssh-add -q - <<<"$SSH_KEY"
           printf '%s\n' "$KNOWN_HOSTS" > "$work/known_hosts"
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$work/known_hosts" \
-            "$TARGET" "deploy $DIGEST"
+          gate() { ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$work/known_hosts" "$TARGET" "$1"; }
+          if [ -n "$API_DIGEST" ]; then
+            [[ "$API_DIGEST" =~ $re && "$MIGRATE_DIGEST" =~ $re ]] || { echo "digests de l'API invalides" >&2; exit 1; }
+            gate "deploy api $API_DIGEST $MIGRATE_DIGEST"
+          fi
+          gate "deploy site $DIGEST"
       - run: curl -fsS --retry 10 --retry-delay 6 --retry-all-errors -o /dev/null https://amgdecorationdinterieur.com/
