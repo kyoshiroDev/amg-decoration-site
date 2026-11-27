@@ -335,6 +335,8 @@ amg_allowed_hosts() {
 # ligne par problème, aucune sortie = conforme), utilisé par watch.sh. Deux formes seulement :
 #   Host(`a`) || Host(`b`) …                          hôtes d'AMG (parenthèses admises)
 #   (Host(`a`) || Host(`b`)) && PathPrefix(`/api/`)     l'API, routeur <projet>-api SEULEMENT
+# Les hôtes admin.… et espace.… ne sont admis que pour <projet>-api et, respectivement,
+# <projet>-admin et <projet>-espace-client (applications des CRM, CRM 4 et 5).
 # Forme API : groupe intérieur fait exactement de Host(`…`) joints par ||, sans aucune parenthèse
 # interne (`(Host(a)) || (Host(b)) && PathPrefix(…)` se lit Host(a) || (Host(b) && PathPrefix(…)) :
 # tout l'hôte a irait à l'API). PathPrefix n'est jamais admis seul ni joint par || : il capterait
@@ -363,6 +365,13 @@ amg_traefik_rule_problems() {
     host=${BASH_REMATCH[1]}
     rest=${rest/"$matched"/}
     [[ "$host" =~ $host_re ]] || echo "hôte non autorisé : $host"
+    # Hôtes des CRM : réservés à l'API et à l'application de cet hôte (CRM 4 et 5).
+    case "$host" in
+      admin.*) [[ -n "$project" && " $project-api $project-admin " == *" $router "* ]] \
+        || echo "hôte $host réservé aux routeurs $project-api et $project-admin (routeur ${router:-?})" ;;
+      espace.*) [[ -n "$project" && " $project-api $project-espace-client " == *" $router "* ]] \
+        || echo "hôte $host réservé aux routeurs $project-api et $project-espace-client (routeur ${router:-?})" ;;
+    esac
     count=$((count + 1))
   done
   if [ "$count" -eq 0 ] || ! [[ "$rest" =~ $leftover_re ]]; then

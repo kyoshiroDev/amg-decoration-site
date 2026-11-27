@@ -115,7 +115,7 @@ check_slice_file amg-staging.slice "MemoryMax=${AMG_STAGING_MAX_MIB}M" "MemoryHi
 declare -A env_total=()
 printf '%-10s %-28s %10s\n' environnement service limite
 check_env() { # $1 nom, $2 fichier d'environnement, $3… fichiers Compose
-  local env_name=$1 env_file=$2 json name svc parent mem swap routed replicas scale oom tmpfs_bad build tmpfs_exec
+  local env_name=$1 env_file=$2 json name svc parent mem swap routed replicas scale oom tmpfs_bad build tmpfs_exec tmpfs_vol_nosize
   local mem_b swap_b sum=0 rollout=0 rollout_svc=- slice
   slice=$(amg_env_slice "$env_name")
   shift 2
@@ -132,7 +132,9 @@ check_env() { # $1 nom, $2 fichier d'environnement, $3… fichiers Compose
     || error "$env_name : secret pg_migrator_password déclaré dans Compose (réservé au conteneur des migrations)"
   [ "$(jq '[.services[] | (.volumes // [])[] | select((if type == "string" then . else (.source // "") end) | test("pg_migrator_password"))] | length' <<<"$json")" = 0 ] \
     || error "$env_name : un service Compose monte pg_migrator_password (réservé au conteneur des migrations)"
-  while IFS=$'\t' read -r svc parent mem swap routed replicas scale oom tmpfs_bad build tmpfs_exec; do
+  local rows=0
+  while IFS=$'\t' read -r svc parent mem swap routed replicas scale oom tmpfs_bad build tmpfs_exec tmpfs_vol_nosize; do
+    rows=$((rows + 1))
     [ "$build" = false ] || error "$env_name/$svc : build: interdit (images construites en CI, jamais sur le serveur)"
     [ "$parent" = "$slice" ] || error "$env_name/$svc : cgroup_parent « $parent » (attendu $slice)"
     { [ "$replicas" = - ] || [ "$replicas" -le 1 ]; } \
@@ -140,9 +142,10 @@ check_env() { # $1 nom, $2 fichier d'environnement, $3… fichiers Compose
     { [ "$scale" = - ] || [ "$scale" -le 1 ]; } \
       || error "$env_name/$svc : scale=$scale (au plus 1 : la bascule est comptée à part)"
     [ "$tmpfs_bad" = 0 ] || error "$env_name/$svc : tmpfs sans size= (mémoire non bornée dans le conteneur)"
+    [ "$tmpfs_vol_nosize" = 0 ] || error "$env_name/$svc : volume tmpfs sans taille (mémoire non bornée dans le conteneur)"
     # Services exposés (site, API) : /tmp jamais exécutable (noexec, nosuid, nodev).
     [ "$routed" != true ] || [ "$tmpfs_exec" = 0 ] \
-      || error "$env_name/$svc : tmpfs sans noexec,nosuid,nodev sur un service exposé par Traefik"
+      || error "$env_name/$svc : tmpfs sans noexec,nosuid,nodev (ou rétabli par exec, suid, dev, ou volume tmpfs, sans ces options) sur un service exposé par Traefik"
     if [ "$env_name" = staging ]; then
       [ "$oom" = 900 ] || error "$env_name/$svc : oom_score_adj=$oom (attendu 900 : préproduction tuée en premier)"
     else
@@ -172,8 +175,13 @@ check_env() { # $1 nom, $2 fichier d'environnement, $3… fichiers Compose
       (.value.oom_score_adj // "-" | tostring),
       ([(.value.tmpfs // []) | if type == "string" then [.] else . end | .[] | select(test("(^|[:,])size=") | not)] | length | tostring),
       (.value | has("build") | tostring),
-      ([(.value.tmpfs // []) | if type == "string" then [.] else . end | .[] | select((test("(^|[:,])noexec(,|$)") and test("(^|[:,])nosuid(,|$)") and test("(^|[:,])nodev(,|$)")) | not)] | length | tostring)
+      ((([(.value.tmpfs // []) | if type == "string" then [.] else . end | .[] | select((test("(^|[:,])noexec(,|$)") and test("(^|[:,])nosuid(,|$)") and test("(^|[:,])nodev(,|$)") and (test("(^|[:,])(exec|suid|dev)(,|$)") | not)) | not)] | length)
+        + ([(.value.volumes // [])[] | select(type == "object" and .type == "tmpfs")] | length)) | tostring),
+      ([(.value.volumes // [])[] | select(type == "object" and .type == "tmpfs" and ((.tmpfs.size // 0) | tostring | test("^[1-9]") | not))] | length | tostring)
     ] | @tsv' <<<"$json")
+  # Une expression jq en échec ne doit jamais donner une liste de services vide, donc un budget nul.
+  [ "$rows" = "$(jq '.services | length' <<<"$json")" ] \
+    || error "$env_name : lecture des services incomplète ($rows lus) : contrôle invalide"
   printf '%-10s %-28s %6s Mio\n' "$env_name" "bascule (+1 $rollout_svc)" "$(mib "$rollout")"
   env_total[$env_name]=$((sum + rollout))
 }

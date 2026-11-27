@@ -73,6 +73,16 @@ if [ "$ACTION" != status ]; then
   mkdir -p "$AMG_ROOT/logs"
   (umask 077 && : >>"$LOG_FILE")
   chmod 600 "$LOG_FILE"
+  # Rétention de 30 jours (données d'exploitation, adresses d'images et écarts du journal ; RGPD :
+  # EXPLOITATION.md, 3.1) : les blocs datés de plus de 30 jours sont retirés à chaque lancement.
+  LOG_CUTOFF=$(date -d '30 days ago' +%F)
+  LOG_TMP=$(mktemp "$AMG_ROOT/logs/.deploy.XXXXXX")
+  if awk -v c="$LOG_CUTOFF" 'match($0, /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T/) { keep = (substr($0, 1, 10) >= c) } keep' \
+    "$LOG_FILE" >"$LOG_TMP" && chmod 600 "$LOG_TMP"; then
+    mv "$LOG_TMP" "$LOG_FILE"
+  else
+    rm -f "$LOG_TMP"
+  fi
   exec 3>&1
   if [ -t 1 ]; then exec > >(tee -a "$LOG_FILE") 2>&1; else exec >>"$LOG_FILE" 2>&1; fi
   log "début : $*"
@@ -156,7 +166,7 @@ in_slice() { # $1 identifiant de conteneur
 # démarrerait quand même (service nommé), mais watch.sh ne le surveillerait pas.
 service_enabled() { compose config --services 2>/dev/null | grep -x "$SERVICE" >/dev/null; }
 
-PREVIOUS='' TARGET='' REVISION=-
+PREVIOUS='' TARGET='' REVISION=- IMAGE_REF=''
 # Téléchargement et contrôles de la nouvelle image. Le digest cible n'est PAS écrit dans amg.env :
 # il est passé à Compose par l'environnement du processus (prioritaire sur --env-file pour
 # l'interpolation), et n'est écrit qu'après la bascule réussie. Aucun conteneur n'est démarré.
@@ -165,6 +175,7 @@ prepare() { # $1 digest cible
   TARGET=$1
   PREVIOUS=$(current_digest)
   image=$(env_value "$IMAGE_VAR")
+  IMAGE_REF=$image@$TARGET
   service_enabled || {
     log "REFUS : service $SERVICE inactif dans $ENV_FILE (COMPOSE_PROFILES)"
     return 1
@@ -199,6 +210,11 @@ switch() {
       compose rm -s -f "$SERVICE" >/dev/null || true
       return 1
     fi
+    if ! runs_target "$new"; then
+      compose rm -s -f "$SERVICE" >/dev/null || true
+      return 1
+    fi
+    commit_release "$extra" || return 1
   else
     if ! compose up -d --no-deps --no-recreate --scale "$SERVICE=2" "$SERVICE"; then
       log "ÉCHEC : impossible de démarrer la nouvelle réplique, retour à $PREVIOUS (aucune coupure)"
@@ -220,6 +236,18 @@ switch() {
       fi
       return 1
     fi
+    if ! runs_target "$new"; then
+      docker rm -f "$new" >/dev/null
+      return 1
+    fi
+    # La nouvelle réplique sert : amg.env et l'historique sont écrits AVANT le drainage (une
+    # interruption ensuite ne laisse jamais amg.env sur l'ancien digest, ni un retour arrière qui
+    # reculerait de deux versions), et les signaux sont ignorés jusqu'à la fin de la bascule.
+    trap '' HUP INT TERM
+    commit_release "$extra" || {
+      restore_signal_traps
+      return 1
+    }
     sleep 3 # laisse Traefik enregistrer la nouvelle réplique
     local -a old_ids
     local c
@@ -228,13 +256,34 @@ switch() {
     sleep "$DRAIN_WAIT"
     docker stop --time 10 "${old_ids[@]}" >/dev/null
     docker rm "${old_ids[@]}" >/dev/null
+    restore_signal_traps
   fi
+  log "en ligne : $SERVICE $TARGET (commit $REVISION)"
+}
+
+# La réplique $1 tourne bien sur l'image préparée (le digest cible passé à Compose par
+# l'environnement) : sinon, Compose aurait démarré l'image de amg.env, c'est-à-dire l'ancienne.
+runs_target() { # $1 identifiant de conteneur
+  local running
+  running=$(docker inspect -f '{{.Config.Image}}' "$1" 2>/dev/null || true)
+  [ "$running" = "$IMAGE_REF" ] && return 0
+  log "REFUS : la nouvelle réplique tourne sur « ${running:-?} », pas sur $IMAGE_REF : retirée, $PREVIOUS reste en ligne"
+  return 1
+}
+
+# Version en ligne : amg.env (redémarrage du serveur) puis historique (retour arrière).
+commit_release() { # $1 informations ajoutées à l'historique
   set_digest "$TARGET" || {
     log "INCIDENT : $SERVICE $TARGET en ligne, mais $ENV_FILE n'a pas pu être mis à jour ($DIGEST_VAR) : le corriger à la main"
     return 1
   }
-  printf '%s %s %s%s\n' "$(date -Is)" "$TARGET" "$REVISION" "${extra:+ $extra}" >>"$HISTORY"
-  log "en ligne : $SERVICE $TARGET (commit $REVISION)"
+  printf '%s %s %s%s\n' "$(date -Is)" "$TARGET" "$REVISION" "${1:+ $1}" >>"$HISTORY"
+}
+
+restore_signal_traps() {
+  trap 'exit 129' HUP
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
 }
 
 rollout() { # $1 digest cible (site, ou retour arrière : aucune migration)
@@ -302,6 +351,9 @@ on_exit() {
     log "fin : code $rc"
     if [ "$rc" = 0 ]; then
       printf 'deploy.sh %s %s : réussi\n' "$ENV_NAME" "$ACTION" >&3 2>/dev/null || true
+    elif [ "$rc" = 7 ]; then
+      printf 'deploy.sh %s %s : REFUS (code 7), fenêtre de migration déjà ouverte ou session amg_migrator active : incident, aucune ouverture\n' \
+        "$ENV_NAME" "$ACTION" >&3 2>/dev/null || true
     else
       printf 'deploy.sh %s %s : ÉCHEC (code %s), détail dans %s sur le serveur\n' \
         "$ENV_NAME" "$ACTION" "$rc" "$LOG_FILE" >&3 2>/dev/null || true
@@ -348,8 +400,13 @@ run_migrations() { # $1 image@digest des migrations
   # Un seul conteneur ponctuel à la fois : attendre ici (sauvegarde en cours…), pas une fois la
   # fenêtre ouverte (le conteneur des migrations n'attend ensuite que 30 s).
   flock -w "$AMG_ONEOFF_WAIT" "$AMG_ROOT/.oneoff.lock" true || { log "ÉCHEC : verrou des ponctuels"; return 1; }
-  # Avant l'ouverture : rejeu de roles.sql (réaffirme rôles, droits et déclencheurs d'événement),
-  # puis vérification du journal ; le moindre écart, aucune ouverture.
+  # Avant l'ouverture : journal vérifié tel quel (un écart est journalisé, jamais réparé en silence
+  # par le rejeu), puis rejeu de roles.sql (rôles, droits, déclencheurs d'événement) et nouvelle
+  # vérification ; le moindre écart, aucune ouverture.
+  journal_ok || {
+    log "REFUS : aucune ouverture de LOGIN d'amg_migrator tant que le journal n'est pas conforme (fenêtre corrective : EXPLOITATION.md §11)"
+    return 1
+  }
   pg_admin <"$ROLES_SQL" >/dev/null || {
     log "REFUS : rejeu de roles.sql en échec avant la fenêtre (journal non conforme ?) : aucune ouverture (EXPLOITATION.md §11)"
     return 1
@@ -358,12 +415,21 @@ run_migrations() { # $1 image@digest des migrations
     log "REFUS : aucune ouverture de LOGIN d'amg_migrator tant que le journal n'est pas conforme (fenêtre corrective : EXPLOITATION.md §11)"
     return 1
   }
-  local login
+  # Fenêtre déjà ouverte (LOGIN) ou session d'amg_migrator active : incident, refus (code 7), aucune
+  # ouverture ni fermeture par ce déploiement (la fenêtre est examinée et refermée par l'humain).
+  local login sessions
   login=$(pg_admin -c "select r.rolcanlogin from pg_catalog.pg_roles r where r.rolname OPERATOR(pg_catalog.=) 'amg_migrator'" </dev/null) || {
     log "ÉCHEC : lecture de l'attribut LOGIN d'amg_migrator"
     return 1
   }
-  [ "$login" != t ] || log "INCIDENT : amg_migrator avait déjà LOGIN avant l'ouverture (fenêtre restée ouverte ?) : examiner pg_stat_activity, changer son mot de passe (EXPLOITATION.md §11)"
+  sessions=$(pg_admin -c "select pg_catalog.count(*) from pg_catalog.pg_stat_activity a where a.usename OPERATOR(pg_catalog.=) 'amg_migrator'" </dev/null) || {
+    log "ÉCHEC : lecture des sessions d'amg_migrator"
+    return 1
+  }
+  if [ "$login" = t ] || [ "$sessions" != 0 ]; then
+    log "INCIDENT : amg_migrator a déjà LOGIN ($login) ou des sessions actives ($sessions) avant l'ouverture : REFUS, examiner pg_stat_activity, refermer la fenêtre, changer son mot de passe (EXPLOITATION.md §11)"
+    exit 7
+  fi
   WINDOW_OPEN=1 # avant LOGIN : le piège EXIT refermera la fenêtre quoi qu'il arrive
   pg_admin -c 'ALTER ROLE amg_migrator LOGIN' </dev/null >/dev/null || {
     log "ÉCHEC : ouverture de la fenêtre de migration"

@@ -9,6 +9,7 @@
 #     stricte (voir traefik_label_problem) : objets préfixés par le projet, routeurs HTTP sur
 #     l'entrée websecure, notre émetteur, des hôtes AMG attendus, nos middlewares et notre service.
 #     Seconde ligne de défense : deploy.sh refuse déjà toute image qui porte un label traefik.* ;
+#   - l'image des conteneurs site et api en marche est celle de amg.env (*_IMAGE@*_DIGEST) ;
 #   - le journal de sécurité de la base est conforme (amg_guard.security_events_violation() NULL,
 #     EXPLOITATION.md §11), dès que roles.sql a été joué, et amg_migrator n'a pas LOGIN hors d'une
 #     fenêtre (verrou de l'environnement libre) ;
@@ -247,8 +248,16 @@ check_environment() { # $1 prod|staging
     return 0
   fi
 
-  local service id state health restarts oom healthy
+  local service id state health restarts oom healthy expected running var
   for service in "${services[@]}"; do
+    # Services déployés par digest : l'image en marche doit être celle de amg.env (une bascule
+    # interrompue, ou une image lancée à la main, laisserait un écart que rien d'autre ne voit).
+    expected=''
+    case "$service" in site | api)
+      var=${service^^}
+      expected="$(sed -n "s/^${var}_IMAGE=//p" "$dir/amg.env" | tail -n 1)@$(sed -n "s/^${var}_DIGEST=//p" "$dir/amg.env" | tail -n 1)"
+      ;;
+    esac
     mapfile -t ids < <(docker ps -aq --filter "label=com.docker.compose.project=$project" \
       --filter "label=com.docker.compose.service=$service")
     healthy=0
@@ -258,6 +267,11 @@ check_environment() { # $1 prod|staging
         '{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}} {{.RestartCount}} {{.State.OOMKilled}}' \
         "$id" 2>/dev/null || echo "absent none 0 false")
       current_restarts+=("$id $restarts")
+      if [ -n "$expected" ] && [ "$state" = running ]; then
+        running=$(docker inspect -f '{{.Config.Image}}' "$id" 2>/dev/null || echo illisible)
+        [ "$running" = "$expected" ] \
+          || problem "$env_name/$service : conteneur ${id:0:12} sur « $running », amg.env annonce « $expected » (bascule interrompue ?)"
+      fi
       if [ "$restarts" -gt "${previous_restarts[$id]:-$restarts}" ]; then
         problem "$env_name/$service : a redémarré ($restarts fois au total, OOM au dernier arrêt : $oom)"
       fi

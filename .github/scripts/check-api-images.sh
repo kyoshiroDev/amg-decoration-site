@@ -7,7 +7,7 @@
 #   - sur un PostgreSQL réel (service du job, même digest que la production) : rôles, `prisma migrate
 #     deploy` par l'image des migrations sous amg_migrator (secret 640 groupe 65532, racine en
 #     lecture seule, aucune capacité, 192 Mio), rejeu sans effet, journal conforme ; puis l'API sous
-#     amg_app avec les contraintes de production : saine, /api/health en 200, HSTS posé (200 et
+#     la base migrée passe le filtre de restauration ; puis l'API sous amg_app avec les contraintes de production : saine, /api/health en 200, HSTS posé (200 et
 #     404), drainage effectif.
 # Variables : API_IMAGE_REF, MIGRATE_IMAGE_REF (image:tag chargées localement), PG_CONTAINER (id du
 # service postgres), PG_DB (base du service).
@@ -92,6 +92,14 @@ violation=$(admin -c 'select amg_guard.security_events_violation()' </dev/null)
 [ -z "$violation" ] || fail "journal de sécurité non conforme après migration : $violation"
 tables=$(admin -c "select pg_catalog.count(*) from pg_catalog.pg_tables where schemaname OPERATOR(pg_catalog.=) 'public'" </dev/null)
 [ "$tables" -ge 7 ] || fail "migrations : $tables tables dans public (7 attendues au moins)"
+# La base migrée doit passer le filtre de restauration (mêmes options de pg_dump que backup.sh) :
+# un type d'objet refusé se découvre ici, pas en pleine restauration d'incident.
+docker exec "$PG_CONTAINER" pg_dump -U amg -d "$PG_DB" --format=custom --no-owner \
+  | docker exec -i "$PG_CONTAINER" pg_restore -l >"$WORK/restore.list"
+# shellcheck source=deploy/bin/amg-common.sh
+(source deploy/bin/amg-common.sh && amg_restore_list_filter <"$WORK/restore.list" >"$WORK/restore.kept" 2>"$WORK/restore.err") \
+  || { cat "$WORK/restore.err" >&2; fail "la base migrée ne passe pas le filtre de restauration (amg_restore_list_filter)"; }
+echo "liste de restauration : $(grep -c '^[0-9]' "$WORK/restore.kept") objets gardés"
 
 echo "== API (amg_app, contraintes de production)"
 docker run -d --name "$API_CONTAINER" --network host --read-only --tmpfs /tmp:size=8m,mode=1777,noexec,nosuid,nodev \
