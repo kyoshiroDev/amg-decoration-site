@@ -108,31 +108,40 @@ docker exec "$PG_CONTAINER" pg_dump -U amg -d "$PG_DB" --format=custom --no-owne
 echo "liste de restauration : $(grep -c '^[0-9]' "$WORK/restore.kept") objets gardés"
 
 echo "== API : rôle PostgreSQL non conforme, démarrage refusé"
-# Pool principal sous amg_journal (qui écrit le journal) et pool du journal sous amg_app : le contrôle
-# des rôles au démarrage (apps/api/src/database/role-check.ts) doit arrêter le processus en erreur,
-# avant toute écoute (sinon le conteneur deviendrait sain et deploy.sh basculerait).
+# Pool principal sous un rôle jetable membre d'amg_app : la configuration est valide (env.schema.ts),
+# mais l'appartenance à un autre rôle est refusée par le contrôle des rôles au démarrage
+# (apps/api/src/database/role-check.ts) : le processus doit s'arrêter en erreur avant toute écoute
+# (sinon le conteneur deviendrait sain et deploy.sh basculerait). Rôle créé et supprimé ici (base
+# jetable du job), sans toucher l'ACL du journal ; mot de passe public, propre à ce job.
+printf '%s' ci-only-rogue-password-public-0123456789 >"$WORK/pg_rogue_password"
+sudo chown "$(id -u):65532" "$WORK/pg_rogue_password"
+chmod 640 "$WORK/pg_rogue_password"
+admin -c "DROP ROLE IF EXISTS amg_ci_rogue" -c "CREATE ROLE amg_ci_rogue LOGIN INHERIT PASSWORD 'ci-only-rogue-password-public-0123456789' IN ROLE amg_app" </dev/null >/dev/null
 if timeout 60 docker run --rm --network host --read-only --tmpfs /tmp:size=8m,mode=1777,noexec,nosuid,nodev \
   --cap-drop ALL --security-opt no-new-privileges:true --memory 160m --memory-swap 160m \
   --pids-limit 128 --user 65532:65532 \
   -e NODE_ENV=production -e AMG_ENV=staging -e HOST=127.0.0.1 -e PORT=3001 \
-  -e DB_HOST=127.0.0.1 -e DB_PORT=5432 -e DB_NAME="$PG_DB" -e DB_USER=amg_journal \
-  -e DB_PASSWORD_FILE=/run/secrets/pg_journal_password \
-  -e DB_JOURNAL_USER=amg_app -e DB_JOURNAL_PASSWORD_FILE=/run/secrets/pg_app_password \
+  -e DB_HOST=127.0.0.1 -e DB_PORT=5432 -e DB_NAME="$PG_DB" -e DB_USER=amg_ci_rogue \
+  -e DB_PASSWORD_FILE=/run/secrets/pg_rogue_password \
+  -e DB_JOURNAL_USER=amg_journal -e DB_JOURNAL_PASSWORD_FILE=/run/secrets/pg_journal_password \
   -e ADMIN_ORIGIN=https://admin.example.test -e CLIENT_ORIGIN=https://espace.example.test \
   -e TRUSTED_PROXY=127.0.0.1 \
   -e REDIS_HOST=127.0.0.1 -e REDIS_PORT=6379 -e REDIS_USER=amg_api \
   -e REDIS_PASSWORD_FILE=/run/secrets/redis_password \
-  -v "$WORK/pg_app_password:/run/secrets/pg_app_password:ro" \
+  -v "$WORK/pg_rogue_password:/run/secrets/pg_rogue_password:ro" \
   -v "$WORK/pg_journal_password:/run/secrets/pg_journal_password:ro" \
   -v "$WORK/redis_password:/run/secrets/redis_password:ro" "$API_IMAGE_REF" >"$WORK/refused.log" 2>&1; then
   fail "API : démarrée sous un rôle non conforme"
 else
   code=$?
 fi
-[ "$code" -ne 124 ] || { cat "$WORK/refused.log" >&2; fail "API : ni démarrée ni arrêtée en 60 s sous un rôle non conforme"; }
+admin -c "DROP ROLE IF EXISTS amg_ci_rogue" </dev/null >/dev/null
+cat "$WORK/refused.log"
+[ "$code" -ne 124 ] || fail "API : ni démarrée ni arrêtée en 60 s sous un rôle non conforme"
 grep -q 'Rôle de base de données non conforme, démarrage refusé' "$WORK/refused.log" \
-  || { cat "$WORK/refused.log" >&2; fail "API : arrêt sans le refus attendu (code $code)"; }
-! grep -qE 'amg_journal|amg_app|127\.0\.0\.1' "$WORK/refused.log" || fail "API : le refus cite un rôle ou un hôte"
+  || fail "API : arrêt sans le refus attendu (code $code)"
+grep -q 'membre d’un autre rôle' "$WORK/refused.log" || fail "API : refus sans la raison attendue"
+! grep -qE 'amg_ci_rogue|amg_journal|amg_app|127\.0\.0\.1' "$WORK/refused.log" || fail "API : le refus cite un rôle ou un hôte"
 
 echo "== API (amg_app, amg_journal, Redis, contraintes de production)"
 docker run -d --name "$API_CONTAINER" --network host --read-only --tmpfs /tmp:size=8m,mode=1777,noexec,nosuid,nodev \
