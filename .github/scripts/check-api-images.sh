@@ -6,9 +6,9 @@
 #     l'empreinte de libs/api/db/sql/roles.sql (deploy.sh le compare au fichier installé) ;
 #   - sur un PostgreSQL réel (service du job, même digest que la production) : rôles, `prisma migrate
 #     deploy` par l'image des migrations sous amg_migrator (secret 640 groupe 65532, racine en
-#     lecture seule, aucune capacité, 192 Mio), rejeu sans effet, journal conforme ; puis l'API sous
-#     la base migrée passe le filtre de restauration ; puis l'API sous amg_app avec les contraintes de production : saine, /api/health en 200, HSTS posé (200 et
-#     404), drainage effectif.
+#     lecture seule, aucune capacité, 192 Mio), rejeu sans effet, journal conforme ; puis la base
+#     migrée passe le filtre de restauration ; puis l'API sous amg_app avec les contraintes de
+#     production : saine, /api/health en 200, HSTS posé (200 et 404), drainage effectif.
 # Variables : API_IMAGE_REF, MIGRATE_IMAGE_REF (image:tag chargées localement), PG_CONTAINER (id du
 # service postgres), PG_DB (base du service).
 set -Eeuo pipefail
@@ -77,7 +77,7 @@ printf '%s' dev-only-amg-app-password-not-secret >"$WORK/pg_app_password"
 sudo chown "$(id -u):65532" "$WORK/pg_migrator_password" "$WORK/pg_app_password"
 chmod 640 "$WORK/pg_migrator_password" "$WORK/pg_app_password"
 migrate() {
-  docker run --rm --network host --read-only --tmpfs /tmp:rw,noexec,nosuid,size=32m \
+  docker run --rm --network host --read-only --tmpfs /tmp:rw,noexec,nosuid,nodev,size=32m \
     --cap-drop ALL --security-opt no-new-privileges:true --memory 192m --memory-swap 192m \
     --pids-limit 64 --user 65532:65532 \
     -e DB_HOST=127.0.0.1 -e DB_PORT=5432 -e DB_NAME="$PG_DB" -e DB_USER=amg_migrator \

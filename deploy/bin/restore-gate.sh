@@ -181,6 +181,14 @@ pg_admin "$NEW_DB" -c 'ALTER EVENT TRIGGER amg_guard_security_events DISABLE' \
 docker exec -i "$PG" tee "$LIST_IN_PG" <"$LIST" >/dev/null
 rm -f "$STATE/.restore.sum"
 
+# Fenêtre déjà ouverte (LOGIN) ou session d'amg_migrator active : incident, refus (code 7), comme
+# deploy.sh ; aucune ouverture ni fermeture par cette restauration.
+login=$(pg_admin postgres -c "select r.rolcanlogin from pg_catalog.pg_roles r where r.rolname OPERATOR(pg_catalog.=) 'amg_migrator'" </dev/null)
+sessions=$(pg_admin postgres -c "select pg_catalog.count(*) from pg_catalog.pg_stat_activity a where a.usename OPERATOR(pg_catalog.=) 'amg_migrator'" </dev/null)
+if [ "$login" != f ] || [ "$sessions" != 0 ]; then
+  log "INCIDENT : amg_migrator a déjà LOGIN ($login) ou des sessions actives ($sessions) avant la restauration : REFUS (EXPLOITATION.md §11)"
+  exit 7
+fi
 WINDOW_OPEN=1 # avant LOGIN : le piège EXIT refermera la fenêtre quoi qu'il arrive
 pg_admin postgres -c 'ALTER ROLE amg_migrator LOGIN' </dev/null >/dev/null
 log "fenêtre de restauration ouverte : pg_restore en amg_migrator dans $NEW_DB"

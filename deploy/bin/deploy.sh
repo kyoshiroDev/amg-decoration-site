@@ -499,6 +499,10 @@ case "$ACTION" in
         echo "digest des migrations refusé : $MIGRATE_DIGEST" >&2
         exit 2
       }
+      [ "$#" -eq 5 ] || {
+        echo "arguments en trop" >&2
+        exit 2
+      }
     elif [ "$#" -ne 4 ]; then
       echo "arguments en trop" >&2
       exit 2
@@ -509,6 +513,10 @@ case "$ACTION" in
     ;;
   rollback)
     select_service "${3:-}"
+    [ "$#" -eq 3 ] || {
+      echo "arguments en trop" >&2
+      exit 2
+    }
     check_slice || exit 5
     lock
     cur=$(current_digest)
