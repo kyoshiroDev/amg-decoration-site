@@ -28,7 +28,7 @@ describe('Strict-Transport-Security', () => {
       '415',
       {
         method: 'POST',
-        url: '/api/test/echo',
+        url: '/api/admin/test/echo',
         headers: { 'content-type': 'text/plain' },
         payload: 'a',
       },
@@ -38,7 +38,7 @@ describe('Strict-Transport-Security', () => {
       '413',
       {
         method: 'POST',
-        url: '/api/test/echo',
+        url: '/api/admin/test/echo',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ data: 'x'.repeat(70 * 1024) }),
       },
