@@ -203,6 +203,13 @@ services:
       # Middlewares propres au conteneur de l'API (aucune dépendance aux labels du site).
       - 'traefik.http.middlewares.${AMG_PROJECT}-api-retry.retry.attempts=3'
       - 'traefik.http.middlewares.${AMG_PROJECT}-api-retry.retry.initialinterval=100ms'
+      # Limitation de débit devant l'API, par adresse du client (critère par défaut de Traefik :
+      # l'adresse distante, Traefik recevant directement les connexions) : protège le CPU de l'API
+      # et du Traefik partagé avant l'API elle-même (300 requêtes par minute et par IP, ADR-0023).
+      # Utilisée en production (API_MIDDLEWARES) ; la préproduction a la sienne (compose.staging.yaml).
+      - 'traefik.http.middlewares.${AMG_PROJECT}-api-limit.ratelimit.average=20'
+      - 'traefik.http.middlewares.${AMG_PROJECT}-api-limit.ratelimit.period=1s'
+      - 'traefik.http.middlewares.${AMG_PROJECT}-api-limit.ratelimit.burst=60'
 
   # Reportés : worker (CRM 3, lot 5), admin et espace-client (CRM 4-5).
   # Pas d'antivirus : fichiers déposés reconstruits (ADR-0022), budget dans EXPLOITATION.md, 10.
