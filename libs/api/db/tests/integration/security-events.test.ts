@@ -1,4 +1,5 @@
-// Journal de sécurité en ajout seul (ADR-0023) : l'API insère et lit, rien d'autre ; le propriétaire
+// Journal de sécurité en ajout seul (ADR-0023) : le rôle du journal (`amg_journal`, lot 3) insère et
+// lit, rien d'autre ; le rôle de l'API ne fait plus que lire ; le propriétaire
 // des tables (`amg_migrator`) ne peut ni modifier, ni vider, ni supprimer un événement de moins de
 // 12 mois (déclencheur de la migration), ni désactiver, remplacer ou supprimer ce déclencheur, ni
 // bâillonner l'API (droits), censurer des événements (index) ou réécrire l'historique (valeurs du
@@ -10,6 +11,7 @@ import type pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   APP_ROLE,
+  JOURNAL_ROLE,
   MIGRATOR_ROLE,
   SQLSTATE,
   SUPERUSER_ROLE,
@@ -19,17 +21,20 @@ import {
 } from './test-database.js';
 
 let app: pg.Client;
+let journal: pg.Client;
 let migrator: pg.Client;
 let superuser: pg.Client;
 
 beforeAll(async () => {
   app = await connectAs(APP_ROLE);
+  journal = await connectAs(JOURNAL_ROLE);
   migrator = await connectAs(MIGRATOR_ROLE);
   superuser = await connectAs(SUPERUSER_ROLE);
 });
 
 afterAll(async () => {
   await app.end();
+  await journal.end();
   await migrator.end();
   await superuser.end();
 });
@@ -47,10 +52,24 @@ async function insertEvent(client: pg.Client, occurredAt?: string): Promise<stri
 }
 
 describe('rôle de l’API', () => {
-  it('insère et relit un événement', async () => {
+  it('lit le journal mais n’y écrit plus (rôle du journal seul écrivain)', async () => {
     await inRolledBackTransaction(app, async () => {
-      const id = await insertEvent(app);
-      const { rows } = await app.query<{ type: string; ip: string; version: number }>(
+      await app.query('SELECT count(*) FROM public.security_events');
+      await expectSqlError(
+        app,
+        `INSERT INTO public.security_events (type) VALUES ('LOGIN_FAILED')`,
+        [],
+        SQLSTATE.insufficientPrivilege,
+      );
+    });
+  });
+});
+
+describe('rôle du journal', () => {
+  it('insère et relit un événement', async () => {
+    await inRolledBackTransaction(journal, async () => {
+      const id = await insertEvent(journal);
+      const { rows } = await journal.query<{ type: string; ip: string; version: number }>(
         `SELECT type, host(ip) AS ip, uuid_extract_version(id) AS version FROM public.security_events WHERE id = $1`,
         [id],
       );
@@ -59,9 +78,9 @@ describe('rôle de l’API', () => {
   });
 
   it('ne peut pas antidater un événement : la date est celle de la base', async () => {
-    await inRolledBackTransaction(app, async () => {
-      const id = await insertEvent(app, '2000-01-01T00:00:00Z');
-      const { rows } = await app.query<{ recent: boolean }>(
+    await inRolledBackTransaction(journal, async () => {
+      const id = await insertEvent(journal, '2000-01-01T00:00:00Z');
+      const { rows } = await journal.query<{ recent: boolean }>(
         `SELECT occurred_at > now() - interval '1 minute' AS recent FROM public.security_events WHERE id = $1`,
         [id],
       );
@@ -70,9 +89,9 @@ describe('rôle de l’API', () => {
   });
 
   it('ne choisit pas l’identifiant : UUID v7 généré par la base', async () => {
-    await inRolledBackTransaction(app, async () => {
+    await inRolledBackTransaction(journal, async () => {
       const forged = '00000000-0000-4000-8000-000000000000';
-      const { rows } = await app.query<{ id: string; version: number }>(
+      const { rows } = await journal.query<{ id: string; version: number }>(
         `INSERT INTO public.security_events (id, type) VALUES ($1, 'LOGIN_FAILED')
          RETURNING id, uuid_extract_version(id) AS version`,
         [forged],
@@ -88,9 +107,9 @@ describe('rôle de l’API', () => {
     ['supprimer', 'DELETE FROM public.security_events'],
     ['vider', 'TRUNCATE public.security_events'],
   ])('ne peut pas %s le journal', async (_label, sql) => {
-    await inRolledBackTransaction(app, async () => {
-      await insertEvent(app);
-      await expectSqlError(app, sql, [], SQLSTATE.insufficientPrivilege);
+    await inRolledBackTransaction(journal, async () => {
+      await insertEvent(journal);
+      await expectSqlError(journal, sql, [], SQLSTATE.insufficientPrivilege);
     });
   });
 
@@ -98,9 +117,9 @@ describe('rôle de l’API', () => {
     ['des détails qui ne sont pas un objet', `'["liste"]'`],
     ['des détails de plus de 2 Kio', `jsonb_build_object('x', repeat('a', 2100))`],
   ])('refuse %s', async (_label, details) => {
-    await inRolledBackTransaction(app, async () => {
+    await inRolledBackTransaction(journal, async () => {
       await expectSqlError(
-        app,
+        journal,
         `INSERT INTO public.security_events (type, details) VALUES ('LOGIN_FAILED', ${details}::jsonb)`,
         [],
         SQLSTATE.checkViolation,
@@ -109,9 +128,9 @@ describe('rôle de l’API', () => {
   });
 
   it('refuse une adresse IP invalide', async () => {
-    await inRolledBackTransaction(app, async () => {
+    await inRolledBackTransaction(journal, async () => {
       await expectSqlError(
-        app,
+        journal,
         `INSERT INTO public.security_events (type, ip) VALUES ('LOGIN_FAILED', $1)`,
         ['999.0.0.1'],
         '22P02',
@@ -255,18 +274,33 @@ describe('propriétaire des tables : protection du déclencheur (déclencheur d�
   });
 
   it.each([
-    // Droits : bâillonner l'API (plus aucun événement écrit) ou élargir ses droits.
-    ['retirer l’INSERT au rôle de l’API', 'REVOKE INSERT ON public.security_events FROM amg_app'],
+    // Droits : bâillonner le journal (plus aucun événement écrit), le faire écrire hors du pool
+    // dédié (cliquet du lot 3) ou élargir les droits.
     [
-      'retirer tous les droits au rôle de l’API',
-      'REVOKE ALL ON public.security_events FROM amg_app',
+      'retirer l’INSERT au rôle du journal',
+      'REVOKE INSERT ON public.security_events FROM amg_journal',
+    ],
+    [
+      'retirer tous les droits au rôle du journal',
+      'REVOKE ALL ON public.security_events FROM amg_journal',
+    ],
+    ['retirer la lecture au rôle de l’API', 'REVOKE ALL ON public.security_events FROM amg_app'],
+    [
+      'rendre l’INSERT au rôle de l’API (cliquet)',
+      'GRANT INSERT ON public.security_events TO amg_app',
+    ],
+    [
+      'revenir à l’état d’origine (cliquet)',
+      `GRANT INSERT ON public.security_events TO amg_app;
+       REVOKE ALL ON public.security_events FROM amg_journal`,
     ],
     ['donner l’UPDATE au rôle de l’API', 'GRANT UPDATE ON public.security_events TO amg_app'],
+    ['donner l’UPDATE au rôle du journal', 'GRANT UPDATE ON public.security_events TO amg_journal'],
     ['donner un droit de colonne', 'GRANT UPDATE (device) ON public.security_events TO amg_app'],
     ['ouvrir le journal à PUBLIC', 'GRANT INSERT ON public.security_events TO PUBLIC'],
     [
       'donner l’option de transmission',
-      'GRANT INSERT ON public.security_events TO amg_app WITH GRANT OPTION',
+      'GRANT INSERT ON public.security_events TO amg_journal WITH GRANT OPTION',
     ],
     // Index : censurer des événements choisis (doublon refusé, ou fonction qui lève une erreur).
     // Valeur visée jamais insérée par les tests : l'index se crée, puis le contrôle le refuse.
@@ -410,7 +444,11 @@ describe('propriétaire des tables : protection du déclencheur (déclencheur d�
       'créer un index composé sur le journal',
       'CREATE INDEX probe_idx ON public.security_events (type, user_id) INCLUDE (ip)',
     ],
-    ['réaccorder les mêmes droits', 'GRANT SELECT, INSERT ON public.security_events TO amg_app'],
+    [
+      'réaccorder les mêmes droits',
+      `GRANT SELECT ON public.security_events TO amg_app;
+       GRANT SELECT, INSERT ON public.security_events TO amg_journal`,
+    ],
     ['créer une autre table', 'CREATE TABLE public.probe_table (id int)'],
     ['reconstruire un index du journal', 'REINDEX INDEX public.security_events_pkey'],
     [
@@ -514,6 +552,28 @@ describe('vérification de l’état du journal (rejeu de roles.sql)', () => {
       'SELECT sealed FROM amg_guard.journal_sealed',
     );
     expect(rows).toEqual([{ sealed: true }]);
+    // Cliquet posé par le rejeu de roles.sql qui a suivi la migration du rôle du journal.
+    const split = await superuser.query<{ split: boolean }>(
+      'SELECT split FROM amg_guard.journal_writer_split',
+    );
+    expect(split.rows).toEqual([{ split: true }]);
+  });
+
+  it('avant le cliquet : états d’origine et de transition admis, jamais un journal sans écrivain', async () => {
+    // Base qui n'a pas encore reçu la migration 20261127120000_journal_role : simulée dans une
+    // transaction annulée du superutilisateur (marqueur du cliquet effacé, droits d'origine).
+    await inRolledBackTransaction(superuser, async () => {
+      await superuser.query('DELETE FROM amg_guard.journal_writer_split');
+      await superuser.query('GRANT INSERT ON public.security_events TO amg_app');
+      // Transition : deux écrivains.
+      expect(await violation(superuser)).toBeNull();
+      await superuser.query('REVOKE ALL ON public.security_events FROM amg_journal');
+      // Origine : amg_app seul écrivain.
+      expect(await violation(superuser)).toBeNull();
+      await superuser.query('REVOKE INSERT ON public.security_events FROM amg_app');
+      // Plus aucun écrivain.
+      expect(await violation(superuser)).toBe('droits modifiés');
+    });
   });
 
   it('le journal migré n’a ni déclencheur interne ni contrainte en dehors de celles attendues', async () => {
@@ -529,7 +589,8 @@ describe('vérification de l’état du journal (rejeu de roles.sql)', () => {
   });
 
   it.each([
-    ['droits modifiés', 'REVOKE INSERT ON public.security_events FROM amg_app'],
+    ['droits modifiés', 'REVOKE INSERT ON public.security_events FROM amg_journal'],
+    ['droits modifiés', 'GRANT INSERT ON public.security_events TO amg_app'],
     [
       'déclencheurs modifiés',
       'ALTER TABLE public.security_events DISABLE TRIGGER security_events_append_only_row',

@@ -3,7 +3,9 @@
 // aucun objet de configuration susceptible d'être sérialisé ou journalisé. Chaque nouvelle connexion
 // est contrôlée avant toute requête : un rôle trop privilégié (superutilisateur, attribut système,
 // membre d'un autre rôle, propriétaire des tables, droit de création) est refusé et la connexion
-// fermée, l'API ne sert alors aucune donnée.
+// fermée, l'API ne sert alors aucune donnée. Deux pools (ADR-0023, lot 3) : le pool principal
+// (`amg_app`), qui ne peut pas écrire le journal de sécurité, et le pool du journal
+// (`amg_journal`), qui ne peut rien faire d'autre qu'écrire et lire `public.security_events`.
 import { PrismaPg } from '@prisma/adapter-pg';
 import type { PoolConfig } from 'pg';
 import { z } from 'zod';
@@ -24,8 +26,16 @@ export const POOL_TIMEOUTS = Object.freeze({
   idleInTransactionTimeoutMillis: 15_000,
 });
 
+/**
+ * Pool contrôlé : `app` (données, sans écriture du journal) ou `journal` (INSERT et SELECT sur
+ * `public.security_events` exigés, aucun autre droit sur `public`).
+ */
+export type SessionScope = 'app' | 'journal';
+
 export interface CreatePrismaClientOptions {
   readonly connection: DatabaseConnection;
+  /** Pool principal par défaut. */
+  readonly scope?: SessionScope;
   /** Connexions simultanées au plus (budget : 5 pour l'API, 2 pour le worker). */
   readonly maxConnections: number;
   /** Nom visible dans `pg_stat_activity` (diagnostic), sans donnée personnelle. */
@@ -53,7 +63,21 @@ export const SESSION_PRIVILEGES_SQL = `SELECT r.rolsuper AS superuser,
                 WHERE n.nspname = 'public'
                   AND pg_catalog.pg_has_role(current_user, c.relowner, 'MEMBER')) AS owns_objects,
        pg_catalog.has_schema_privilege('public', 'CREATE') AS can_create,
-       pg_catalog.current_setting('search_path') AS search_path
+       pg_catalog.current_setting('search_path') AS search_path,
+       EXISTS (SELECT FROM pg_catalog.pg_class c
+                 JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+                WHERE n.nspname = 'public' AND c.relname = 'security_events'
+                  AND pg_catalog.has_table_privilege(c.oid, 'INSERT')) AS journal_insert,
+       EXISTS (SELECT FROM pg_catalog.pg_class c
+                 JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+                CROSS JOIN pg_catalog.unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE',
+                                                   'REFERENCES', 'TRIGGER', 'MAINTAIN']) AS p(privilege)
+                WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p', 'v', 'm', 'f', 'S')
+                  AND NOT (c.relname = 'security_events' AND p.privilege IN ('SELECT', 'INSERT'))
+                  AND (pg_catalog.has_table_privilege(c.oid, p.privilege)
+                       OR (c.relname <> 'security_events'
+                           AND p.privilege IN ('SELECT', 'INSERT', 'UPDATE', 'REFERENCES')
+                           AND pg_catalog.has_any_column_privilege(c.oid, p.privilege)))) AS beyond_journal
   FROM pg_catalog.pg_roles r
  WHERE r.rolname = current_user`;
 
@@ -67,6 +91,8 @@ const sessionPrivilegesSchema = z.strictObject({
   owns_objects: z.boolean(),
   can_create: z.boolean(),
   search_path: z.string().max(1024),
+  journal_insert: z.boolean(),
+  beyond_journal: z.boolean(),
 });
 
 /**
@@ -76,7 +102,7 @@ const sessionPrivilegesSchema = z.strictObject({
  * connexion (paramètre `options`, prioritaire sur `ALTER ROLE … SET`, que roles.sql pose aussi) et
  * vérifié par `assertLeastPrivilegedSession`, à l'ouverture seulement : du code du propriétaire
  * exécuté dans la session (déclencheur, conversion sur ses tables et types) peut le changer ensuite.
- * La protection du journal n'en dépend pas ; ses lectures passeront par un pool dédié (lot 2).
+ * La protection du journal n'en dépend pas ; il s'écrit et se lit sur un pool dédié (lot 3).
  */
 export const API_SEARCH_PATH = 'pg_catalog, pg_temp';
 
@@ -112,7 +138,10 @@ export interface SessionQueryable {
  * démarrage `DB_USER` = `amg`, `amg_migrator` ou `postgres`, ce contrôle attrape un rôle mal créé
  * ou un mot de passe d'un autre rôle.
  */
-export async function assertLeastPrivilegedSession(client: SessionQueryable): Promise<void> {
+export async function assertLeastPrivilegedSession(
+  client: SessionQueryable,
+  scope: SessionScope = 'app',
+): Promise<void> {
   const { rows } = await client.query(SESSION_PRIVILEGES_SQL);
   const parsed = z.array(sessionPrivilegesSchema).length(1).safeParse(rows);
   if (!parsed.success) throw new DatabaseRoleError(['privilèges illisibles']);
@@ -127,6 +156,13 @@ export async function assertLeastPrivilegedSession(client: SessionQueryable): Pr
   if (privileges?.owns_objects !== false) reasons.push('propriétaire des tables');
   if (privileges?.can_create !== false) reasons.push('création dans le schéma public');
   if (privileges?.search_path !== API_SEARCH_PATH) reasons.push('chemin de recherche');
+  if (scope === 'app') {
+    // Le journal ne s'écrit que sur son pool : aucun code du propriétaire des tables ne s'y exécute.
+    if (privileges?.journal_insert !== false) reasons.push('écriture du journal hors de son pool');
+  } else {
+    if (privileges?.journal_insert !== true) reasons.push('écriture du journal impossible');
+    if (privileges?.beyond_journal !== false) reasons.push('droits hors du journal');
+  }
   if (reasons.length > 0) throw new DatabaseRoleError(reasons);
 }
 
@@ -155,7 +191,7 @@ export function buildPoolConfig(options: CreatePrismaClientOptions): GuardedPool
     statement_timeout: POOL_TIMEOUTS.statementTimeoutMillis,
     lock_timeout: POOL_TIMEOUTS.lockTimeoutMillis,
     idle_in_transaction_session_timeout: POOL_TIMEOUTS.idleInTransactionTimeoutMillis,
-    onConnect: (client) => assertLeastPrivilegedSession(client),
+    onConnect: (client) => assertLeastPrivilegedSession(client, options.scope ?? 'app'),
   };
 }
 

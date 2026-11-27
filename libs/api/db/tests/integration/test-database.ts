@@ -1,6 +1,7 @@
 // Accès à la base des tests d'intégration (job CI « API (intégration) », ou compose.dev.yaml en
 // local). Variables exigées : DB_HOST, DB_PORT, DB_NAME, TEST_DB_APP_PASSWORD,
-// TEST_DB_MIGRATOR_PASSWORD (mots de passe publics de sql/dev/passwords.sql) et
+// TEST_DB_JOURNAL_PASSWORD, TEST_DB_MIGRATOR_PASSWORD (mots de passe publics de
+// sql/dev/passwords.sql) et
 // TEST_DB_SUPERUSER_PASSWORD (superutilisateur `amg` de la base jetable : ci.yml ou compose.dev.yaml,
 // pour les seuls tests qui éprouvent ce que lui seul peut faire). Absentes : échec immédiat et
 // explicite, jamais une suite qui passe à vide.
@@ -11,15 +12,18 @@ import { z } from 'zod';
 import { databaseEnvShape } from '../../src/database-config.js';
 
 export const APP_ROLE = 'amg_app';
+export const JOURNAL_ROLE = 'amg_journal';
 export const MIGRATOR_ROLE = 'amg_migrator';
 export const SUPERUSER_ROLE = 'amg';
-export type Role = typeof APP_ROLE | typeof MIGRATOR_ROLE | typeof SUPERUSER_ROLE;
+export type Role =
+  typeof APP_ROLE | typeof JOURNAL_ROLE | typeof MIGRATOR_ROLE | typeof SUPERUSER_ROLE;
 
 const testEnvSchema = z.strictObject({
   DB_HOST: databaseEnvShape.DB_HOST,
   DB_PORT: databaseEnvShape.DB_PORT,
   DB_NAME: databaseEnvShape.DB_NAME,
   TEST_DB_APP_PASSWORD: z.string().min(1),
+  TEST_DB_JOURNAL_PASSWORD: z.string().min(1),
   TEST_DB_MIGRATOR_PASSWORD: z.string().min(1),
   TEST_DB_SUPERUSER_PASSWORD: z.string().min(1),
 });
@@ -46,6 +50,8 @@ export function testPassword(role: Role): string {
   switch (role) {
     case APP_ROLE:
       return env.TEST_DB_APP_PASSWORD;
+    case JOURNAL_ROLE:
+      return env.TEST_DB_JOURNAL_PASSWORD;
     case MIGRATOR_ROLE:
       return env.TEST_DB_MIGRATOR_PASSWORD;
     case SUPERUSER_ROLE:
@@ -82,7 +88,7 @@ export async function connectAs(role: Role, settings: ConnectionSettings = {}): 
   return client;
 }
 
-/** Contenu exact de pg_db_role_setting pour les deux rôles après roles.sql (ordre : rôle). */
+/** Contenu exact de pg_db_role_setting pour les trois rôles après roles.sql (ordre : rôle). */
 export const EXPECTED_ROLE_SETTINGS = [
   {
     role: 'amg_app',
@@ -90,6 +96,16 @@ export const EXPECTED_ROLE_SETTINGS = [
     config: [
       'search_path=pg_catalog, pg_temp',
       'statement_timeout=15s',
+      'lock_timeout=5s',
+      'idle_in_transaction_session_timeout=15s',
+    ],
+  },
+  {
+    role: 'amg_journal',
+    per_database: false,
+    config: [
+      'search_path=pg_catalog, pg_temp',
+      'statement_timeout=5s',
       'lock_timeout=5s',
       'idle_in_transaction_session_timeout=15s',
     ],

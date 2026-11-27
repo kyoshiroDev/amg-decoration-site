@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   APP_ROLE,
   EXPECTED_ROLE_SETTINGS,
+  JOURNAL_ROLE,
   MIGRATOR_ROLE,
   SQLSTATE,
   SUPERUSER_ROLE,
@@ -99,6 +100,7 @@ describe('rejeu de roles.sql face aux pièges du rôle des migrations', () => {
 describe('rejeu de roles.sql face aux réglages qu’un rôle se donne lui-même', () => {
   it('purge les réglages communs et propres à la base, puis repose les délais', async () => {
     const app = await connectAs(APP_ROLE);
+    const journal = await connectAs(JOURNAL_ROLE);
     const superuser = await connectAs(SUPERUSER_ROLE);
     try {
       const { rows } = await app.query<{ database: string }>(
@@ -112,6 +114,8 @@ describe('rejeu de roles.sql face aux réglages qu’un rôle se donne lui-même
       await migrator.query('ALTER ROLE amg_migrator SET lock_timeout = 0');
       await app.query(`ALTER ROLE amg_app IN DATABASE ${database} SET statement_timeout = 0`);
       await app.query('ALTER ROLE amg_app RESET ALL');
+      await journal.query(`ALTER ROLE amg_journal IN DATABASE ${database} SET lock_timeout = 0`);
+      await journal.query('ALTER ROLE amg_journal SET statement_timeout = 0');
       await superuser.query(ROLES_SQL);
       const settings = await superuser.query<{
         role: string;
@@ -121,12 +125,13 @@ describe('rejeu de roles.sql face aux réglages qu’un rôle se donne lui-même
         `SELECT r.rolname AS role, s.setdatabase OPERATOR(pg_catalog.<>) 0 AS per_database,
                 s.setconfig AS config
            FROM pg_catalog.pg_db_role_setting s JOIN pg_catalog.pg_roles r ON r.oid = s.setrole
-          WHERE r.rolname OPERATOR(pg_catalog.=) ANY (ARRAY['amg_app', 'amg_migrator']::name[])
+          WHERE r.rolname OPERATOR(pg_catalog.=) ANY (ARRAY['amg_app', 'amg_journal', 'amg_migrator']::name[])
           ORDER BY 1, 2`,
       );
       expect(settings.rows).toEqual(EXPECTED_ROLE_SETTINGS);
     } finally {
       await app.end();
+      await journal.end();
       await superuser.end();
     }
   });

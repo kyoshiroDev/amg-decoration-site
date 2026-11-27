@@ -117,6 +117,7 @@ jobs:
       # Mots de passe publics de libs/api/db/sql/dev/passwords.sql (base jetable du job) et
       # superutilisateur du service ci-dessus (tests de ce que lui seul peut faire).
       TEST_DB_APP_PASSWORD: dev-only-amg-app-password-not-secret
+      TEST_DB_JOURNAL_PASSWORD: dev-only-amg-journal-password-public
       TEST_DB_MIGRATOR_PASSWORD: dev-only-amg-migrator-password-public
       TEST_DB_SUPERUSER_PASSWORD: ci-only-superuser-password-public
     steps:
@@ -137,7 +138,7 @@ jobs:
       - run: npm ci
       # roles.sql est atomique (BEGIN … COMMIT dans le fichier) ; passwords.sql ouvre la connexion
       # d'amg_migrator (créé NOLOGIN) comme une fenêtre de migration.
-      - name: Rôles PostgreSQL (amg_migrator, amg_app)
+      - name: Rôles PostgreSQL (amg_migrator, amg_app, amg_journal)
         env:
           PG_CONTAINER: ${{ job.services.postgres.id }}
         run: |

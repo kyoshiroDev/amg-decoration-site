@@ -7,3 +7,4 @@
 -- À exécuter après ../roles.sql, par le superutilisateur.
 ALTER ROLE amg_migrator LOGIN PASSWORD 'dev-only-amg-migrator-password-public';
 ALTER ROLE amg_app PASSWORD 'dev-only-amg-app-password-not-secret';
+ALTER ROLE amg_journal PASSWORD 'dev-only-amg-journal-password-public';

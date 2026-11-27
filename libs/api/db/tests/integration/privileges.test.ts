@@ -1,5 +1,6 @@
-// Moindre privilège (ADR-0023) : attributs des rôles, droits exacts du rôle de l'API table par
-// table et colonne par colonne, aucune fonction exécutable sans droit déclaré, et refus de tout DDL.
+// Moindre privilège (ADR-0023) : attributs des rôles, droits exacts des rôles de l'API et du journal
+// table par table et colonne par colonne, aucune fonction exécutable sans droit déclaré, et refus
+// de tout DDL.
 // Une nouvelle table sans droits déclarés, ou avec des droits en trop, fait échouer
 // `EXPECTED_APP_PRIVILEGES` ; une fonction exécutable par l'API sans être déclarée fait échouer
 // `EXPECTED_APP_FUNCTIONS`.
@@ -8,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   APP_ROLE,
   EXPECTED_ROLE_SETTINGS,
+  JOURNAL_ROLE,
   MIGRATOR_ROLE,
   SQLSTATE,
   connectAs,
@@ -21,10 +23,31 @@ const EXPECTED_APP_PRIVILEGES: Readonly<Record<string, readonly string[]>> = {
   activation_tokens: ['DELETE', 'INSERT', 'SELECT'],
   enrollment_codes: ['DELETE', 'INSERT', 'SELECT'],
   recovery_codes: ['DELETE', 'INSERT', 'SELECT', 'UPDATE'],
-  security_events: ['INSERT', 'SELECT'],
+  security_events: ['SELECT'],
   totp_factors: ['DELETE', 'INSERT', 'SELECT', 'UPDATE'],
   users: ['DELETE', 'INSERT', 'SELECT', 'UPDATE'],
 };
+
+/** Droits attendus du rôle du journal : `security_events` seulement (lot 3). */
+const EXPECTED_JOURNAL_PRIVILEGES: Readonly<Record<string, readonly string[]>> = {
+  _prisma_migrations: [],
+  activation_tokens: [],
+  enrollment_codes: [],
+  recovery_codes: [],
+  security_events: ['INSERT', 'SELECT'],
+  totp_factors: [],
+  users: [],
+};
+
+/** Droits d'un rôle sur chaque relation du schéma public (catalogues seulement). */
+const RELATION_PRIVILEGES_SQL = `SELECT c.relname,
+       coalesce(array_agg(p.privilege ORDER BY p.privilege)
+         FILTER (WHERE pg_catalog.has_table_privilege($1::name, c.oid, p.privilege)), '{}') AS privileges
+  FROM pg_catalog.pg_class c
+  JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+ CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) AS p(privilege)
+ WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p', 'v', 'm', 'f', 'S')
+ GROUP BY c.relname ORDER BY c.relname`;
 
 /** UPDATE limité à des colonnes : `table.colonne` (ordre alphabétique). */
 const EXPECTED_APP_COLUMN_UPDATES: readonly string[] = [
@@ -38,45 +61,78 @@ const EXPECTED_APP_COLUMN_UPDATES: readonly string[] = [
 const EXPECTED_APP_FUNCTIONS: readonly string[] = [];
 
 let app: pg.Client;
+let journal: pg.Client;
 let migrator: pg.Client;
 
 beforeAll(async () => {
   app = await connectAs(APP_ROLE);
+  journal = await connectAs(JOURNAL_ROLE);
   migrator = await connectAs(MIGRATOR_ROLE);
 });
 
 afterAll(async () => {
   await app.end();
+  await journal.end();
   await migrator.end();
 });
 
 describe('attributs des rôles', () => {
   // rolcanlogin : amg_migrator est créé NOLOGIN par roles.sql ; sql/dev/passwords.sql (développement
   // et CI) ouvre la connexion comme le ferait une fenêtre de migration.
-  it.each([APP_ROLE, MIGRATOR_ROLE])('%s ne dispose d’aucun privilège système', async (role) => {
-    const client = role === APP_ROLE ? app : migrator;
-    const { rows } = await client.query<Record<string, boolean>>(
-      `SELECT rolsuper, rolcreaterole, rolcreatedb, rolreplication, rolbypassrls, rolinherit, rolcanlogin
+  it.each([APP_ROLE, JOURNAL_ROLE, MIGRATOR_ROLE])(
+    '%s ne dispose d’aucun privilège système',
+    async (role) => {
+      const client = role === APP_ROLE ? app : role === JOURNAL_ROLE ? journal : migrator;
+      const { rows } = await client.query<Record<string, boolean>>(
+        `SELECT rolsuper, rolcreaterole, rolcreatedb, rolreplication, rolbypassrls, rolinherit, rolcanlogin
          FROM pg_catalog.pg_roles WHERE rolname = current_user`,
+      );
+      expect(rows).toEqual([
+        {
+          rolsuper: false,
+          rolcreaterole: false,
+          rolcreatedb: false,
+          rolreplication: false,
+          rolbypassrls: false,
+          rolinherit: false,
+          rolcanlogin: true,
+        },
+      ]);
+    },
+  );
+
+  it('les rôles de l’API et du journal ne sont membres d’aucun autre rôle', async () => {
+    const { rows } = await app.query(
+      `SELECT 1 FROM pg_catalog.pg_auth_members
+        WHERE member IN ('amg_app'::regrole, 'amg_journal'::regrole)`,
+    );
+    expect(rows).toEqual([]);
+  });
+
+  it('applique les délais côté serveur au rôle du journal', async () => {
+    const { rows } = await journal.query<{ name: string; setting: string }>(
+      `SELECT name, setting FROM pg_catalog.pg_settings
+        WHERE name IN ('statement_timeout', 'lock_timeout', 'idle_in_transaction_session_timeout', 'search_path')
+        ORDER BY name`,
     );
     expect(rows).toEqual([
-      {
-        rolsuper: false,
-        rolcreaterole: false,
-        rolcreatedb: false,
-        rolreplication: false,
-        rolbypassrls: false,
-        rolinherit: false,
-        rolcanlogin: true,
-      },
+      { name: 'idle_in_transaction_session_timeout', setting: '15000' },
+      { name: 'lock_timeout', setting: '5000' },
+      { name: 'search_path', setting: 'pg_catalog, pg_temp' },
+      { name: 'statement_timeout', setting: '5000' },
     ]);
   });
 
-  it('le rôle de l’API n’est membre d’aucun autre rôle', async () => {
-    const { rows } = await app.query(
-      `SELECT 1 FROM pg_catalog.pg_auth_members WHERE member = 'amg_app'::regrole`,
+  it('limite les connexions de chaque rôle', async () => {
+    const { rows } = await app.query<{ rolname: string; rolconnlimit: number }>(
+      `SELECT rolname, rolconnlimit FROM pg_catalog.pg_roles
+        WHERE rolname IN ('amg_app', 'amg_journal', 'amg_migrator') ORDER BY rolname`,
     );
-    expect(rows).toEqual([]);
+    expect(rows).toEqual([
+      { rolname: 'amg_app', rolconnlimit: 20 },
+      { rolname: 'amg_journal', rolconnlimit: 8 },
+      { rolname: 'amg_migrator', rolconnlimit: 3 },
+    ]);
   });
 
   it('applique les délais côté serveur au rôle de l’API', async () => {
@@ -140,7 +196,7 @@ describe('attributs des rôles', () => {
     const { rows } = await app.query<{ role: string; per_database: boolean; config: string[] }>(
       `SELECT r.rolname AS role, s.setdatabase <> 0 AS per_database, s.setconfig AS config
          FROM pg_catalog.pg_db_role_setting s JOIN pg_catalog.pg_roles r ON r.oid = s.setrole
-        WHERE r.rolname IN ('amg_app', 'amg_migrator') ORDER BY 1, 2`,
+        WHERE r.rolname IN ('amg_app', 'amg_journal', 'amg_migrator') ORDER BY 1, 2`,
     );
     expect(rows).toEqual(EXPECTED_ROLE_SETTINGS);
   });
@@ -149,9 +205,12 @@ describe('attributs des rôles', () => {
     const { rows } = await app.query<Record<string, boolean>>(
       `SELECT pg_catalog.has_schema_privilege('amg_migrator', 'amg_guard', 'USAGE') AS migrator_usage,
               pg_catalog.has_schema_privilege('amg_migrator', 'amg_guard', 'CREATE') AS migrator_create,
-              pg_catalog.has_schema_privilege('amg_app', 'amg_guard', 'USAGE') AS app_usage`,
+              pg_catalog.has_schema_privilege('amg_app', 'amg_guard', 'USAGE') AS app_usage,
+              pg_catalog.has_schema_privilege('amg_journal', 'amg_guard', 'USAGE') AS journal_usage`,
     );
-    expect(rows).toEqual([{ migrator_usage: true, migrator_create: false, app_usage: false }]);
+    expect(rows).toEqual([
+      { migrator_usage: true, migrator_create: false, app_usage: false, journal_usage: false },
+    ]);
   });
 });
 
@@ -166,20 +225,30 @@ describe('propriété et droits sur les objets', () => {
     expect(rows).toEqual([]);
   });
 
-  it('le rôle de l’API a exactement les droits déclarés, table par table', async () => {
+  it.each([
+    [APP_ROLE, EXPECTED_APP_PRIVILEGES],
+    [JOURNAL_ROLE, EXPECTED_JOURNAL_PRIVILEGES],
+  ] as const)('%s a exactement les droits déclarés, table par table', async (role, expected) => {
     const { rows } = await app.query<{ relname: string; privileges: string[] }>(
-      `SELECT c.relname,
-              coalesce(array_agg(p.privilege ORDER BY p.privilege)
-                FILTER (WHERE pg_catalog.has_table_privilege('amg_app', c.oid, p.privilege)), '{}') AS privileges
-         FROM pg_catalog.pg_class c
-         JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-        CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) AS p(privilege)
-        WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p', 'v', 'm', 'f', 'S')
-        GROUP BY c.relname ORDER BY c.relname`,
+      RELATION_PRIVILEGES_SQL,
+      [role],
     );
-    expect(Object.fromEntries(rows.map((row) => [row.relname, row.privileges]))).toEqual(
-      EXPECTED_APP_PRIVILEGES,
+    expect(Object.fromEntries(rows.map((row) => [row.relname, row.privileges]))).toEqual(expected);
+  });
+
+  it('le rôle du journal n’a aucun droit de colonne ni aucune fonction exécutable', async () => {
+    const { rows } = await journal.query<{ columns: number; functions: number }>(
+      `SELECT (SELECT count(*)::int FROM pg_catalog.pg_class c
+                 JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+                 JOIN pg_catalog.pg_attribute a ON a.attrelid = c.oid AND a.attnum > 0
+                WHERE n.nspname = 'public' AND c.relname <> 'security_events'
+                  AND pg_catalog.has_column_privilege('amg_journal', c.oid, a.attnum, 'SELECT, INSERT, UPDATE, REFERENCES')) AS columns,
+              (SELECT count(*)::int FROM pg_catalog.pg_proc p
+                 JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+                WHERE n.nspname = 'public'
+                  AND pg_catalog.has_function_privilege('amg_journal', p.oid, 'EXECUTE')) AS functions`,
     );
+    expect(rows).toEqual([{ columns: 0, functions: 0 }]);
   });
 
   it('n’accorde l’UPDATE des liens et codes que sur les colonnes de fin de vie', async () => {
@@ -305,14 +374,46 @@ describe('propriété et droits sur les objets', () => {
     ]);
   });
 
-  it('le marqueur du journal scellé est en lecture seule pour le rôle des migrations', async () => {
-    const { rows } = await migrator.query<Record<string, boolean>>(
-      `SELECT pg_catalog.has_table_privilege('amg_migrator', 'amg_guard.journal_sealed', 'SELECT') AS migrator_select,
-              pg_catalog.has_table_privilege('amg_migrator', 'amg_guard.journal_sealed', 'INSERT, UPDATE, DELETE, TRUNCATE') AS migrator_write,
-              pg_catalog.has_table_privilege('amg_app', 'amg_guard.journal_sealed', 'SELECT') AS app_select`,
-    );
-    expect(rows).toEqual([{ migrator_select: true, migrator_write: false, app_select: false }]);
+  it.each(['amg_guard.journal_sealed', 'amg_guard.journal_writer_split'])(
+    'le marqueur %s est en lecture seule pour le rôle des migrations',
+    async (marker) => {
+      const { rows } = await migrator.query<Record<string, boolean>>(
+        `SELECT pg_catalog.has_table_privilege('amg_migrator', $1, 'SELECT') AS migrator_select,
+                pg_catalog.has_table_privilege('amg_migrator', $1, 'INSERT, UPDATE, DELETE, TRUNCATE') AS migrator_write,
+                pg_catalog.has_table_privilege('amg_app', $1, 'SELECT') AS app_select,
+                pg_catalog.has_table_privilege('amg_journal', $1, 'SELECT') AS journal_select`,
+        [marker],
+      );
+      expect(rows).toEqual([
+        { migrator_select: true, migrator_write: false, app_select: false, journal_select: false },
+      ]);
+    },
+  );
+});
+
+describe('le rôle du journal ne fait rien d’autre qu’écrire et lire le journal', () => {
+  it.each([
+    ['lire les comptes', 'SELECT id FROM public.users LIMIT 1'],
+    ['créer une table', 'CREATE TABLE public.intrusion (id int)'],
+    ['créer une table temporaire', 'CREATE TEMP TABLE intrusion (id int)'],
+    ['modifier un événement', `UPDATE public.security_events SET device = 'falsifié'`],
+    ['supprimer un événement', 'DELETE FROM public.security_events'],
+    ['vider le journal', 'TRUNCATE public.security_events'],
+    ['lire l’historique des migrations', 'SELECT * FROM public._prisma_migrations'],
+  ])('refuse de %s', async (_label, sql) => {
+    await inRolledBackTransaction(journal, async () => {
+      await expectSqlError(journal, sql, [], SQLSTATE.insufficientPrivilege);
+    });
   });
+
+  it.each(['postgres', 'template1'])(
+    'ne peut pas se connecter à la base « %s » de l’image',
+    async (database) => {
+      await expect(connectAs(JOURNAL_ROLE, { database })).rejects.toMatchObject({
+        code: SQLSTATE.insufficientPrivilege,
+      });
+    },
+  );
 });
 
 describe('le rôle de l’API ne fait aucun DDL', () => {
@@ -333,6 +434,10 @@ describe('le rôle de l’API ne fait aucun DDL', () => {
     ['vider une table', 'TRUNCATE public.users'],
     ['lire l’historique des migrations', 'SELECT * FROM public._prisma_migrations'],
     ['écrire l’historique des migrations', 'DELETE FROM public._prisma_migrations'],
+    [
+      'écrire dans le journal (réservé au rôle du journal)',
+      `INSERT INTO public.security_events (type) VALUES ('LOGIN_FAILED')`,
+    ],
   ])('refuse de %s', async (_label, sql) => {
     await inRolledBackTransaction(app, async () => {
       await expectSqlError(app, sql, [], SQLSTATE.insufficientPrivilege);

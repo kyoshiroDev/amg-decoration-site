@@ -1,5 +1,6 @@
 // Point d'entrée unique de @amg/api-db (exports du package.json → dist/index.js) : client Prisma
-// généré, fabrique du client et configuration de connexion.
+// généré, fabrique du client (pool principal ou pool du journal), écriture du journal et
+// configuration de connexion.
 export {
   ActivationPurpose,
   Prisma,
@@ -37,7 +38,20 @@ export {
   type CreatePrismaClientOptions,
   type GuardedPoolConfig,
   type SessionQueryable,
+  type SessionScope,
 } from './prisma-client.js';
+export {
+  CSRF_CHECKS,
+  DEVICE_LABEL_MAX_LENGTH,
+  JOURNALED_EVENT_TYPES,
+  journalAudienceSchema,
+  journalSessionIdSchema,
+  securityEventSchema,
+  writeSecurityEvent,
+  type JournalWriter,
+  type JournaledEventType,
+  type SecurityEventInput,
+} from './journal.js';
 export {
   SECRET_FILE_MAX_BYTES,
   readSecretFile,
