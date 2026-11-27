@@ -94,7 +94,7 @@ migrate
 migrate # rejeu : aucune migration en attente
 admin -c 'ALTER ROLE amg_migrator NOLOGIN' </dev/null >/dev/null
 admin <"$ROLES_SQL" >/dev/null
-violation=$(admin -c 'select amg_guard.security_events_violation()' </dev/null)
+violation=$(admin -c 'select amg_guard.security_events_settled_violation()' </dev/null)
 [ -z "$violation" ] || fail "journal de sécurité non conforme après migration : $violation"
 tables=$(admin -c "select pg_catalog.count(*) from pg_catalog.pg_tables where schemaname OPERATOR(pg_catalog.=) 'public'" </dev/null)
 [ "$tables" -ge 7 ] || fail "migrations : $tables tables dans public (7 attendues au moins)"

@@ -575,6 +575,52 @@ BEGIN
 END;
 $$;
 
+-- État « stabilisé » du journal, hors fenêtre : écart de security_events_violation(), ou, en plus,
+-- migration du rôle du journal (20261127120000_journal_role) appliquée sans aboutir à l'état final.
+-- Critère lu dans les catalogues seulement (jamais dans public._prisma_migrations, table
+-- d'amg_migrator que le superutilisateur ne lit pas, et dont amg_migrator peut de toute façon
+-- effacer les lignes) : `amg_journal` figure dans l'ACL du journal (seule la migration le lui
+-- accorde) alors qu'`amg_app` y a encore INSERT, ou état final atteint sans le cliquet. Pendant la
+-- migration elle-même, l'état de transition reste admis par security_events_violation() (deux
+-- commandes successives) ; c'est cette fonction-ci, jouée après la fenêtre (fin de ce fichier,
+-- deploy.sh, watch.sh, restauration), qui refuse qu'il dure. Cas non vu ici : une migration qui
+-- retirerait tout droit à amg_journal et rendrait INSERT à amg_app (état d'origine) ; l'API refuse
+-- alors toute connexion (pool principal : écriture du journal interdite à amg_app ; pool du journal :
+-- écriture exigée), panne immédiate et visible.
+CREATE OR REPLACE FUNCTION amg_guard.security_events_settled_violation() RETURNS text
+  LANGUAGE plpgsql STABLE
+  SET search_path = pg_catalog, pg_temp
+AS $$
+DECLARE
+  violation text := amg_guard.security_events_violation();
+  journal oid := to_regclass('public.security_events');
+  journal_role oid := to_regrole('amg_journal');
+  journal_granted boolean;
+  final_state boolean;
+BEGIN
+  IF violation IS NOT NULL THEN
+    RETURN violation;
+  END IF;
+  IF journal IS NULL THEN
+    RETURN NULL;
+  END IF;
+  IF journal NOT IN (SELECT amg_guard.sealed_journals()) THEN
+    RETURN 'table présente mais non scellée';
+  END IF;
+  journal_granted := EXISTS (SELECT FROM pg_catalog.pg_class c, LATERAL pg_catalog.aclexplode(c.relacl) a
+                              WHERE c.oid = journal AND a.grantee = journal_role);
+  final_state := has_table_privilege('amg_journal', journal, 'INSERT')
+                 AND NOT has_table_privilege('amg_app', journal, 'INSERT');
+  IF journal_granted AND NOT final_state THEN
+    RETURN 'rôle du journal partiellement appliqué : amg_app écrit encore le journal';
+  END IF;
+  IF final_state AND NOT EXISTS (SELECT FROM amg_guard.journal_writer_split) THEN
+    RETURN 'cliquet du rôle du journal non posé (rejouer roles.sql)';
+  END IF;
+  RETURN NULL;
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION amg_guard.protect_security_events() RETURNS event_trigger
   LANGUAGE plpgsql
   SET search_path = pg_catalog, pg_temp
@@ -637,6 +683,8 @@ REVOKE ALL ON FUNCTION amg_guard.security_events_append_only() FROM PUBLIC;
 REVOKE ALL ON FUNCTION amg_guard.sealed_journals() FROM PUBLIC;
 REVOKE ALL ON FUNCTION amg_guard.security_events_violation() FROM PUBLIC;
 REVOKE ALL ON FUNCTION amg_guard.protect_security_events() FROM PUBLIC;
+-- Contrôle hors fenêtre : superutilisateur seulement (fin de ce fichier, deploy.sh, watch.sh).
+REVOKE ALL ON FUNCTION amg_guard.security_events_settled_violation() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION amg_guard.security_events_append_only() TO amg_migrator;
 GRANT EXECUTE ON FUNCTION amg_guard.sealed_journals() TO amg_migrator;
 GRANT EXECUTE ON FUNCTION amg_guard.security_events_violation() TO amg_migrator;
@@ -714,6 +762,13 @@ BEGIN
        AND NOT pg_catalog.has_table_privilege('amg_app', journal, 'INSERT') THEN
       INSERT INTO amg_guard.journal_writer_split DEFAULT VALUES ON CONFLICT DO NOTHING;
     END IF;
+  END IF;
+  -- Puis l'état stabilisé : une migration du rôle du journal restée inachevée (amg_app écrit
+  -- encore le journal alors qu'amg_journal a reçu ses droits) fait échouer le rejeu, donc deploy.sh.
+  violation := amg_guard.security_events_settled_violation();
+  IF violation IS NOT NULL THEN
+    RAISE EXCEPTION USING ERRCODE = 'insufficient_privilege',
+      MESSAGE = pg_catalog.format('journal de sécurité non conforme : %s', violation);
   END IF;
 END
 $$;
