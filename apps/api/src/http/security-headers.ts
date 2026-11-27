@@ -1,6 +1,9 @@
 // En-têtes de sécurité posés sur TOUTE réponse de l'API (succès, erreur, 404), juste avant l'envoi.
 // L'API ne sert que du JSON : rien à exécuter, rien à encadrer, rien à mettre en cache.
-// HSTS est posé par le middleware Traefik des hôtes admin./espace. (même origine que les CRM).
+// HSTS compris : aucun middleware du Traefik partagé ne pose d'en-tête pour AMG (ADR-0020), chaque
+// conteneur AMG pose les siens. Même valeur que le site (apps/site/nginx/nginx.conf). Posé partout,
+// y compris en développement local en HTTP : les navigateurs l'ignorent sur une réponse non HTTPS
+// (RFC 6797, 8.1), et une seule liste d'en-têtes évite qu'un mode oublie HSTS.
 import type { FastifyError, FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 export const SECURITY_HEADERS = {
@@ -10,6 +13,7 @@ export const SECURITY_HEADERS = {
   'cross-origin-opener-policy': 'same-origin',
   'cross-origin-resource-policy': 'same-origin',
   'referrer-policy': 'no-referrer',
+  'strict-transport-security': 'max-age=63072000; includeSubDomains',
   'x-content-type-options': 'nosniff',
   'x-frame-options': 'DENY',
 } as const satisfies Readonly<Record<string, string>>;
