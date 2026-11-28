@@ -7,13 +7,14 @@
 #   - sur un PostgreSQL réel (service du job, même digest que la production) : rôles, `prisma migrate
 #     deploy` par l'image des migrations sous amg_migrator (secret 640 groupe 65532, racine en
 #     lecture seule, aucune capacité, 192 Mio), rejeu sans effet, journal conforme ; puis la base
-#     migrée passe le filtre de restauration ; puis l'API sous amg_app avec les contraintes de
-#     production : saine, /api/health en 200, HSTS posé (200 et 404), drainage effectif.
+#     migrée passe le filtre de restauration ; puis l'API sous amg_app et amg_journal, sur Redis
+#     (utilisateur ACL de l'API), avec les contraintes de production : saine, /api/health en 200,
+#     404 et 401 génériques, HSTS posé (200, 404 et 401), drainage effectif.
 # Variables : API_IMAGE_REF, MIGRATE_IMAGE_REF (image:tag chargées localement), PG_CONTAINER (id du
-# service postgres), PG_DB (base du service).
+# service postgres), PG_DB (base du service), REDIS_CONTAINER (id du service redis).
 set -Eeuo pipefail
 
-: "${API_IMAGE_REF:?}" "${MIGRATE_IMAGE_REF:?}" "${PG_CONTAINER:?}" "${PG_DB:?}"
+: "${API_IMAGE_REF:?}" "${MIGRATE_IMAGE_REF:?}" "${PG_CONTAINER:?}" "${PG_DB:?}" "${REDIS_CONTAINER:?}"
 ROLES_SQL=libs/api/db/sql/roles.sql
 WORK=$(mktemp -d)
 API_CONTAINER=amg-api-check
@@ -52,6 +53,11 @@ for present in app/apps/api/dist/main.js app/apps/api/dist/healthcheck.js \
   app/node_modules/@prisma/adapter-pg/package.json; do
   grep -qx "$present" "$WORK/api.files" || fail "image de l'API : $present absent"
 done
+# ioredis est imbriqué par npm sous apps/api/node_modules (pair ioredis 5 d'unstorage, site) : il
+# doit être dans l'image, à l'un ou l'autre emplacement (check-deps.mjs l'a déjà exigé au build).
+grep -qxE 'app/(apps/api/)?node_modules/ioredis/package.json' "$WORK/api.files" || fail "image de l'API : ioredis absent"
+# Script de contrôle monté pendant la construction seulement (RUN --mount), jamais dans l'image.
+! grep -qxE 'tmp/check-deps\.mjs/?' "$WORK/api.files" || fail "image de l'API : tmp/check-deps.mjs présent"
 [ "$(docker image inspect -f '{{.Config.User}}' "$API_IMAGE_REF")" = 65532:65532 ] || fail "image de l'API : utilisateur non 65532"
 [ -n "$(docker image inspect -f '{{if .Config.Healthcheck}}{{.Config.Healthcheck.Test}}{{end}}' "$API_IMAGE_REF")" ] \
   || fail "image de l'API : HEALTHCHECK absent"
@@ -62,6 +68,18 @@ image_files "$MIGRATE_IMAGE_REF" "$WORK/migrate.files"
 ! grep -qxE '(usr/)?bin/(sh|bash|dash|busybox)' "$WORK/migrate.files" || fail "image des migrations : shell présent"
 grep -qx 'app/node_modules/@prisma/engines/schema-engine-debian-openssl-3.0.x' "$WORK/migrate.files" \
   || fail "image des migrations : moteur de schéma absent"
+! grep -qxE 'tmp/check-deps\.mjs/?' "$WORK/migrate.files" || fail "image des migrations : tmp/check-deps.mjs présent"
+if grep -E '(^|/)node_modules/\.bin/' "$WORK/migrate.files" >"$WORK/forbidden"; then
+  head -n 5 "$WORK/forbidden" >&2
+  fail "image des migrations : .bin présent"
+fi
+# Paquets dev imbriqués retirés à la construction : le dossier du workspace peut exister, vide.
+echo "contenu de app/libs/api/db/node_modules/ dans l'image des migrations :"
+grep '^app/libs/api/db/node_modules/' "$WORK/migrate.files" || true
+if grep -E '^app/libs/api/db/node_modules/.' "$WORK/migrate.files" >"$WORK/forbidden"; then
+  head -n 5 "$WORK/forbidden" >&2
+  fail "image des migrations : paquets sous libs/api/db/node_modules"
+fi
 want=$(sha256sum "$ROLES_SQL" | cut -d' ' -f1)
 have=$(docker image inspect -f '{{index .Config.Labels "org.amg.roles-sql.sha256"}}' "$MIGRATE_IMAGE_REF")
 [ "$have" = "$want" ] || fail "label org.amg.roles-sql.sha256 ($have) différent de $ROLES_SQL ($want)"
@@ -73,9 +91,14 @@ admin <"$ROLES_SQL" >/dev/null
 admin <libs/api/db/sql/dev/passwords.sql >/dev/null
 printf '%s' dev-only-amg-migrator-password-public >"$WORK/pg_migrator_password"
 printf '%s' dev-only-amg-app-password-not-secret >"$WORK/pg_app_password"
+printf '%s' dev-only-amg-journal-password-public >"$WORK/pg_journal_password"
+# Utilisateur ACL Redis de l'API (mot de passe public de ce service jetable), environnement staging.
+printf '%s' ci-only-redis-password-public-0123456789 >"$WORK/redis_password"
+.github/scripts/redis-acl-ci.sh "$REDIS_CONTAINER" staging amg_api "$(cat "$WORK/redis_password")"
 # Comme sur le serveur : propriétaire le compte courant, groupe 65532 (utilisateur des images), 640.
-sudo chown "$(id -u):65532" "$WORK/pg_migrator_password" "$WORK/pg_app_password"
-chmod 640 "$WORK/pg_migrator_password" "$WORK/pg_app_password"
+SECRETS=("$WORK/pg_migrator_password" "$WORK/pg_app_password" "$WORK/pg_journal_password" "$WORK/redis_password")
+sudo chown "$(id -u):65532" "${SECRETS[@]}"
+chmod 640 "${SECRETS[@]}"
 migrate() {
   docker run --rm --network host --read-only --tmpfs /tmp:rw,noexec,nosuid,nodev,size=32m \
     --cap-drop ALL --security-opt no-new-privileges:true --memory 192m --memory-swap 192m \
@@ -88,7 +111,7 @@ migrate
 migrate # rejeu : aucune migration en attente
 admin -c 'ALTER ROLE amg_migrator NOLOGIN' </dev/null >/dev/null
 admin <"$ROLES_SQL" >/dev/null
-violation=$(admin -c 'select amg_guard.security_events_violation()' </dev/null)
+violation=$(admin -c 'select amg_guard.security_events_settled_violation()' </dev/null)
 [ -z "$violation" ] || fail "journal de sécurité non conforme après migration : $violation"
 tables=$(admin -c "select pg_catalog.count(*) from pg_catalog.pg_tables where schemaname OPERATOR(pg_catalog.=) 'public'" </dev/null)
 [ "$tables" -ge 7 ] || fail "migrations : $tables tables dans public (7 attendues au moins)"
@@ -101,22 +124,73 @@ docker exec "$PG_CONTAINER" pg_dump -U amg -d "$PG_DB" --format=custom --no-owne
   || { cat "$WORK/restore.err" >&2; fail "la base migrée ne passe pas le filtre de restauration (amg_restore_list_filter)"; }
 echo "liste de restauration : $(grep -c '^[0-9]' "$WORK/restore.kept") objets gardés"
 
-echo "== API (amg_app, contraintes de production)"
+echo "== API : rôle PostgreSQL non conforme, démarrage refusé"
+# Pool principal sous un rôle jetable membre d'amg_app : la configuration est valide (env.schema.ts),
+# mais l'appartenance à un autre rôle est refusée par le contrôle des rôles au démarrage
+# (apps/api/src/database/role-check.ts) : le processus doit s'arrêter en erreur avant toute écoute
+# (sinon le conteneur deviendrait sain et deploy.sh basculerait). Rôle créé et supprimé ici (base
+# jetable du job), sans toucher l'ACL du journal ; mot de passe public, propre à ce job.
+printf '%s' ci-only-rogue-password-public-0123456789 >"$WORK/pg_rogue_password"
+sudo chown "$(id -u):65532" "$WORK/pg_rogue_password"
+chmod 640 "$WORK/pg_rogue_password"
+admin -c "DROP ROLE IF EXISTS amg_ci_rogue" -c "CREATE ROLE amg_ci_rogue LOGIN INHERIT PASSWORD 'ci-only-rogue-password-public-0123456789' IN ROLE amg_app" </dev/null >/dev/null
+if timeout 60 docker run --rm --network host --read-only --tmpfs /tmp:size=8m,mode=1777,noexec,nosuid,nodev \
+  --cap-drop ALL --security-opt no-new-privileges:true --memory 160m --memory-swap 160m \
+  --pids-limit 128 --user 65532:65532 \
+  -e NODE_ENV=production -e AMG_ENV=staging -e HOST=127.0.0.1 -e PORT=3001 \
+  -e DB_HOST=127.0.0.1 -e DB_PORT=5432 -e DB_NAME="$PG_DB" -e DB_USER=amg_ci_rogue \
+  -e DB_PASSWORD_FILE=/run/secrets/pg_rogue_password \
+  -e DB_JOURNAL_USER=amg_journal -e DB_JOURNAL_PASSWORD_FILE=/run/secrets/pg_journal_password \
+  -e ADMIN_ORIGIN=https://admin.example.test -e CLIENT_ORIGIN=https://espace.example.test \
+  -e TRUSTED_PROXY=127.0.0.1 \
+  -e REDIS_HOST=127.0.0.1 -e REDIS_PORT=6379 -e REDIS_USER=amg_api \
+  -e REDIS_PASSWORD_FILE=/run/secrets/redis_password \
+  -v "$WORK/pg_rogue_password:/run/secrets/pg_rogue_password:ro" \
+  -v "$WORK/pg_journal_password:/run/secrets/pg_journal_password:ro" \
+  -v "$WORK/redis_password:/run/secrets/redis_password:ro" "$API_IMAGE_REF" >"$WORK/refused.log" 2>&1; then
+  fail "API : démarrée sous un rôle non conforme"
+else
+  code=$?
+fi
+admin -c "DROP ROLE IF EXISTS amg_ci_rogue" </dev/null >/dev/null
+cat "$WORK/refused.log"
+[ "$code" -ne 124 ] || fail "API : ni démarrée ni arrêtée en 60 s sous un rôle non conforme"
+grep -q 'Rôle de base de données non conforme, démarrage refusé' "$WORK/refused.log" \
+  || fail "API : arrêt sans le refus attendu (code $code)"
+grep -q 'membre d’un autre rôle' "$WORK/refused.log" || fail "API : refus sans la raison attendue"
+! grep -qE 'amg_ci_rogue|amg_journal|amg_app|127\.0\.0\.1' "$WORK/refused.log" || fail "API : le refus cite un rôle ou un hôte"
+
+echo "== API (amg_app, amg_journal, Redis, contraintes de production)"
 docker run -d --name "$API_CONTAINER" --network host --read-only --tmpfs /tmp:size=8m,mode=1777,noexec,nosuid,nodev \
   --cap-drop ALL --security-opt no-new-privileges:true --memory 160m --memory-swap 160m \
   --pids-limit 128 --user 65532:65532 \
   -e NODE_ENV=production -e AMG_ENV=staging -e HOST=127.0.0.1 -e PORT=3000 \
   -e DB_HOST=127.0.0.1 -e DB_PORT=5432 -e DB_NAME="$PG_DB" -e DB_USER=amg_app \
   -e DB_PASSWORD_FILE=/run/secrets/pg_app_password \
-  -v "$WORK/pg_app_password:/run/secrets/pg_app_password:ro" "$API_IMAGE_REF" >/dev/null
+  -e DB_JOURNAL_USER=amg_journal -e DB_JOURNAL_PASSWORD_FILE=/run/secrets/pg_journal_password \
+  -e ADMIN_ORIGIN=https://admin.example.test -e CLIENT_ORIGIN=https://espace.example.test \
+  -e TRUSTED_PROXY=127.0.0.1 \
+  -e REDIS_HOST=127.0.0.1 -e REDIS_PORT=6379 -e REDIS_USER=amg_api \
+  -e REDIS_PASSWORD_FILE=/run/secrets/redis_password \
+  -v "$WORK/pg_app_password:/run/secrets/pg_app_password:ro" \
+  -v "$WORK/pg_journal_password:/run/secrets/pg_journal_password:ro" \
+  -v "$WORK/redis_password:/run/secrets/redis_password:ro" "$API_IMAGE_REF" >/dev/null
 health() { docker inspect -f '{{.State.Health.Status}}' "$API_CONTAINER"; }
 for _ in $(seq 60); do [ "$(health)" = healthy ] && break; sleep 1; done
 [ "$(health)" = healthy ] || { docker logs "$API_CONTAINER" >&2; fail "API : pas saine en 60 s"; }
 body=$(curl -fsS http://127.0.0.1:3000/api/health)
 [ "$body" = '{"status":"ok"}' ] || fail "API : /api/health a répondu $body"
+# Gardes et Redis en service : route inconnue 404, route admin sans session 401 (et non 503 :
+# Redis joint sous l'utilisateur ACL, limitation de débit comprise). Connexion à Redis lancée en
+# arrière-plan au démarrage : quelques secondes au plus.
+status() { curl -sS -o /dev/null -w '%{http_code}' -H "Host: $1" "http://127.0.0.1:3000$2"; }
+for _ in $(seq 20); do [ "$(status admin.example.test /api/inconnue)" = 404 ] && break; sleep 1; done
+[ "$(status admin.example.test /api/inconnue)" = 404 ] || { docker logs "$API_CONTAINER" >&2; fail "API : /api/inconnue n'a pas répondu 404 (Redis ?)"; }
+[ "$(status admin.example.test /api/admin/session)" = 401 ] || fail "API : /api/admin/session sans session n'a pas répondu 401"
+[ "$(status espace.example.test /api/admin/session)" = 404 ] || fail "API : route admin servie sur l'hôte espace"
 # HSTS posé par l'API elle-même (rien ne le pose devant elle, ADR-0020), succès comme erreurs.
-for path in /api/health /api/inconnue; do
-  curl -sS -o /dev/null -D - "http://127.0.0.1:3000$path" | tr -d '\r' \
+for path in /api/health /api/inconnue /api/admin/session; do
+  curl -sS -o /dev/null -D - -H 'Host: admin.example.test' "http://127.0.0.1:3000$path" | tr -d '\r' \
     | grep -qix 'strict-transport-security: max-age=63072000; includeSubDomains' \
     || fail "API : $path sans Strict-Transport-Security"
 done

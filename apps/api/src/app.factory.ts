@@ -1,12 +1,21 @@
 // Construction de l'application, partagée par main.ts et les tests HTTP : les tests vérifient
 // exactement la configuration servie en production (préfixe, en-têtes, absence de CORS).
+import fastifyCookie from '@fastify/cookie';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import { Module } from '@nestjs/common';
+import { Module, StandardSchemaValidationPipe } from '@nestjs/common';
 import type { DynamicModule, LoggerService, NestApplicationOptions, Type } from '@nestjs/common';
 import { AppModule } from './app.module.js';
 import { ConfigModule, type LoadedApiConfig } from './config/config.module.js';
+import { ApiExceptionFilter } from './http/api-exception.filter.js';
+import { registerRateLimit } from './http/rate-limit.js';
 import { handleFrameworkError, registerSecurityHeaders } from './http/security-headers.js';
+import { buildTrustProxy } from './http/trust-proxy.js';
+import { createInfrastructure, type Infrastructure } from './infrastructure/infrastructure.js';
+import { InfrastructureModule } from './infrastructure/infrastructure.module.js';
+import { redisKeyPrefix } from './redis/redis-client.js';
+import { registerHostGate } from './access/host-gate.js';
+import { ServedHosts } from './access/served-hosts.js';
 
 /** Préfixe de toutes les routes : l'API est servie sous `admin.…/api/` et `espace.…/api/` (même origine). */
 export const API_PREFIX = 'api';
@@ -35,24 +44,46 @@ export interface CreateAppOptions {
    * et ajoute des routes de test (ex. POST pour éprouver les parseurs) : même configuration servie.
    */
   readonly rootModule?: Type<object>;
+  /**
+   * Infrastructure en mémoire des tests HTTP (tests/support). Refusée hors de NODE_ENV=test : en
+   * production, Redis et le pool du journal sont toujours ceux de la configuration.
+   */
+  readonly infrastructure?: Infrastructure;
+}
+
+/** Infrastructure de test fournie hors des tests, ou limitation de débit en mémoire hors des tests. */
+export class InfrastructureOverrideError extends Error {
+  constructor() {
+    super('Infrastructure de remplacement refusée hors de NODE_ENV=test');
+    this.name = 'InfrastructureOverrideError';
+  }
 }
 
 /** Racine technique : la configuration (module global) au-dessus du module applicatif. */
 @Module({})
 class ApplicationRoot {}
 
-function rootModule(options: CreateAppOptions): DynamicModule {
+function rootModule(options: CreateAppOptions, infrastructure: Infrastructure): DynamicModule {
   return {
     module: ApplicationRoot,
-    imports: [ConfigModule.forRoot(options.config), options.rootModule ?? AppModule],
+    imports: [
+      ConfigModule.forRoot(options.config),
+      InfrastructureModule.forRoot(infrastructure),
+      options.rootModule ?? AppModule,
+    ],
   };
 }
 
 export async function createApp(options: CreateAppOptions): Promise<NestFastifyApplication> {
+  const isTest = options.config.env.NODE_ENV === 'test';
+  if (options.infrastructure !== undefined && !isTest) throw new InfrastructureOverrideError();
+  const infrastructure = options.infrastructure ?? createInfrastructure(options.config);
+  if (infrastructure.rateLimitRedis === null && !isTest) throw new InfrastructureOverrideError();
   const adapter = new FastifyAdapter({
     bodyLimit: JSON_BODY_LIMIT_BYTES,
-    // Aucun en-tête X-Forwarded-* cru tant que le lot 3 n'a pas restreint la confiance à Traefik.
-    trustProxy: false,
+    // Un seul saut cru (Traefik), depuis le CIDR configuré seulement (TRUSTED_PROXY) ; sans lui,
+    // aucun en-tête X-Forwarded-* n'est lu (ADR-0023).
+    trustProxy: buildTrustProxy(options.config.env.TRUSTED_PROXY),
     logger: false,
     requestTimeout: REQUEST_TIMEOUT_MS,
     connectionTimeout: CONNECTION_TIMEOUT_MS,
@@ -77,12 +108,25 @@ export async function createApp(options: CreateAppOptions): Promise<NestFastifyA
     abortOnError: false,
   };
   const app = await NestFactory.create<NestFastifyApplication>(
-    rootModule(options),
+    rootModule(options, infrastructure),
     adapter,
     nestOptions,
   );
   app.setGlobalPrefix(API_PREFIX);
-  registerSecurityHeaders(app.getHttpAdapter().getInstance());
+  const fastify = app.getHttpAdapter().getInstance();
+  registerSecurityHeaders(fastify);
+  // Lecture des cookies seulement (aucune signature : le jeton de session est déjà un aléa).
+  await fastify.register(fastifyCookie);
+  await registerRateLimit(fastify, {
+    redis: infrastructure.rateLimitRedis,
+    keyPrefix: redisKeyPrefix(options.config.env.AMG_ENV),
+  });
+  // Après la limitation (toutes les requêtes comptent), avant l'analyse du corps (aucun oracle).
+  registerHostGate(fastify, new ServedHosts(options.config));
+  // Corps d'erreur génériques (y compris 404 du routeur et rejets des gardes) ; paramètres, requêtes
+  // et corps validés par les schémas Zod déclarés sur chaque route (`{ schema }`).
+  app.useGlobalFilters(new ApiExceptionFilter());
+  app.useGlobalPipes(new StandardSchemaValidationPipe());
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
   return app;

@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { CONNECTION_TIMEOUT_MS, REQUEST_TIMEOUT_MS } from '../../src/app.factory.js';
 import { BAD_REQUEST_BODY, SECURITY_HEADERS } from '../../src/http/security-headers.js';
 import { createTestApp } from './app.js';
-import { TestRoutesModule } from './test-routes.module.js';
+import { ADMIN_SAME_ORIGIN, TestRoutesModule } from './test-routes.module.js';
 
 let app: NestFastifyApplication;
 
@@ -43,8 +43,8 @@ describe('types de corps', () => {
   ])('POST %s : 415 avec les en-têtes de sécurité', async (contentType, payload) => {
     const response = await app.inject({
       method: 'POST',
-      url: '/api/test/echo',
-      headers: { 'content-type': contentType },
+      url: '/api/admin/test/echo',
+      headers: { host: 'admin.example.test', 'content-type': contentType },
       payload,
     });
     expect(response.statusCode).toBe(415);
@@ -56,8 +56,8 @@ describe('types de corps', () => {
     async (contentType) => {
       const response = await app.inject({
         method: 'POST',
-        url: '/api/test/echo',
-        headers: { 'content-type': contentType },
+        url: '/api/admin/test/echo',
+        headers: { ...ADMIN_SAME_ORIGIN, 'content-type': contentType },
         payload: '{"a":1}',
       });
       expect(response.statusCode).toBe(200);
@@ -68,8 +68,8 @@ describe('types de corps', () => {
   it('JSON avec __proto__ refusé (400)', async () => {
     const response = await app.inject({
       method: 'POST',
-      url: '/api/test/echo',
-      headers: { 'content-type': 'application/json' },
+      url: '/api/admin/test/echo',
+      headers: { host: 'admin.example.test', 'content-type': 'application/json' },
       payload: '{"__proto__":{"admin":true}}',
     });
     expect(response.statusCode).toBe(400);

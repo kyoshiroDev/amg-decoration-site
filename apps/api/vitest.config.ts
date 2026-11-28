@@ -9,5 +9,8 @@ export default defineConfig({
   test: {
     include: ['tests/unit/**/*.test.ts', 'tests/http/**/*.test.ts'],
     environment: 'node',
+    // Les tests de limitation de débit enchaînent quelques centaines de requêtes (app.inject) : le
+    // délai par défaut de 5 s est trop court quand les fichiers tournent en parallèle.
+    testTimeout: 20_000,
   },
 });

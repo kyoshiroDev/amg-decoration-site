@@ -1,7 +1,8 @@
 // Client Prisma réel (driver adapter pg) sous le rôle de l'API : lecture, écriture, identifiants
-// UUID v7 générés par la base, journal non modifiable, fermeture du pool ; refus de servir sous un
-// rôle trop privilégié (propriétaire des tables, superutilisateur, attribut système, membre d'un
-// autre rôle).
+// UUID v7 générés par la base, fermeture du pool ; pool du journal sous `amg_journal` (écriture par
+// un INSERT seul, journal non modifiable) ; refus de servir sous un rôle trop privilégié
+// (propriétaire des tables, superutilisateur, attribut système, membre d'un autre rôle) ou hors du
+// périmètre de son pool.
 import { randomBytes } from 'node:crypto';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -12,10 +13,13 @@ import {
   DatabaseRoleError,
   assertLeastPrivilegedSession,
   createPrismaClient,
+  verifyDatabaseRole,
 } from '../../src/prisma-client.js';
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
+import { writeSecurityEvent } from '../../src/journal.js';
 import {
   APP_ROLE,
+  JOURNAL_ROLE,
   MIGRATOR_ROLE,
   SUPERUSER_ROLE,
   connectAs,
@@ -26,10 +30,24 @@ import {
 } from './test-database.js';
 
 let prisma: PrismaClient;
+let journal: PrismaClient;
 const poolErrors: Error[] = [];
 
 beforeAll(() => {
   const env = testDatabaseEnv();
+  journal = createPrismaClient({
+    connection: {
+      host: env.DB_HOST,
+      port: env.DB_PORT,
+      database: env.DB_NAME,
+      user: JOURNAL_ROLE,
+      password: { reveal: () => env.TEST_DB_JOURNAL_PASSWORD },
+    },
+    scope: 'journal',
+    maxConnections: 2,
+    applicationName: 'amg-api-db-tests-journal',
+    onPoolError: (error) => poolErrors.push(error),
+  });
   prisma = createPrismaClient({
     connection: {
       host: env.DB_HOST,
@@ -46,6 +64,7 @@ beforeAll(() => {
 
 afterAll(async () => {
   await prisma.$disconnect();
+  await journal.$disconnect();
   expect(poolErrors).toEqual([]);
 });
 
@@ -89,17 +108,64 @@ describe('client Prisma', () => {
     }
   });
 
-  it('écrit dans le journal mais ne peut ni le modifier ni le supprimer', async () => {
-    const event = await prisma.securityEvent.create({
-      data: { type: 'LOGIN_FAILED', ip: '198.51.100.4', details: { reason: 'test' } },
-    });
-    expect(uuidV7.safeParse(event.id).success).toBe(true);
+  it('ne peut plus écrire dans le journal (pool du journal seul écrivain)', async () => {
     await expect(
-      prisma.securityEvent.update({ where: { id: event.id }, data: { type: 'LOGIN_SUCCEEDED' } }),
+      prisma.securityEvent.create({ data: { type: 'LOGIN_FAILED', ip: '198.51.100.4' } }),
     ).rejects.toThrow();
-    await expect(prisma.securityEvent.delete({ where: { id: event.id } })).rejects.toThrow();
-    const unchanged = await prisma.securityEvent.findUnique({ where: { id: event.id } });
-    expect(unchanged?.type).toBe('LOGIN_FAILED');
+  });
+});
+
+describe('pool du journal', () => {
+  it('écrit un événement par un INSERT seul, puis le relit', async () => {
+    const device = `test-${randomBytes(6).toString('hex')}`;
+    await writeSecurityEvent(journal, {
+      type: 'LOGOUT',
+      userId: null,
+      actorId: null,
+      ip: '198.51.100.4',
+      device,
+      details: { audience: 'CLIENT' },
+    });
+    const event = await journal.securityEvent.findFirst({ where: { device } });
+    expect(event?.type).toBe('LOGOUT');
+    expect(event?.details).toEqual({ audience: 'CLIENT' });
+    expect(uuidV7.safeParse(event?.id).success).toBe(true);
+  });
+
+  it('ne peut ni modifier ni supprimer un événement', async () => {
+    const device = `test-${randomBytes(6).toString('hex')}`;
+    await writeSecurityEvent(journal, {
+      type: 'LOGOUT',
+      userId: null,
+      actorId: null,
+      ip: null,
+      device,
+      details: { audience: 'ADMIN' },
+    });
+    const event = await journal.securityEvent.findFirst({ where: { device } });
+    if (event === null) throw new Error('événement introuvable');
+    await expect(
+      journal.securityEvent.update({ where: { id: event.id }, data: { type: 'LOGIN_SUCCEEDED' } }),
+    ).rejects.toThrow();
+    await expect(journal.securityEvent.delete({ where: { id: event.id } })).rejects.toThrow();
+    const unchanged = await journal.securityEvent.findUnique({ where: { id: event.id } });
+    expect(unchanged?.type).toBe('LOGOUT');
+  });
+
+  it('applique ses propres délais courts (requête 5 s)', async () => {
+    const rows = await journal.$queryRaw<{ timeout: string }[]>`
+      SELECT pg_catalog.current_setting('statement_timeout') AS timeout`;
+    expect(rows).toEqual([{ timeout: '5s' }]);
+  });
+
+  it('ne lit aucune autre table', async () => {
+    await expect(journal.user.count()).rejects.toThrow();
+  });
+
+  it('chaque événement est écrit en autocommit (aucune transaction ouverte)', async () => {
+    const rows = await journal.$queryRaw<{ in_transaction: boolean }[]>`
+      SELECT pg_catalog.txid_current_if_assigned() IS NOT NULL AS in_transaction`;
+    expect(rows).toEqual([{ in_transaction: false }]);
   });
 });
 
@@ -151,6 +217,34 @@ describe('contrôle du rôle à chaque nouvelle connexion', () => {
     const client = await connectAs(APP_ROLE);
     try {
       await expect(assertLeastPrivilegedSession(client)).resolves.toBeUndefined();
+    } finally {
+      await client.end();
+    }
+  });
+
+  it('accepte le rôle du journal sur son pool, et seulement là', async () => {
+    const client = await connectAs(JOURNAL_ROLE);
+    try {
+      await expect(assertLeastPrivilegedSession(client, 'journal')).resolves.toBeUndefined();
+      const error: unknown = await assertLeastPrivilegedSession(client).catch((e: unknown) => e);
+      expect(error instanceof DatabaseRoleError ? error.reasons : []).toEqual([
+        'écriture du journal hors de son pool',
+      ]);
+    } finally {
+      await client.end();
+    }
+  });
+
+  it('refuse le rôle de l’API sur le pool du journal', async () => {
+    const client = await connectAs(APP_ROLE);
+    try {
+      const error: unknown = await assertLeastPrivilegedSession(client, 'journal').catch(
+        (e: unknown) => e,
+      );
+      expect(error instanceof DatabaseRoleError ? error.reasons : []).toEqual([
+        'écriture du journal impossible',
+        'droits hors du journal',
+      ]);
     } finally {
       await client.end();
     }
@@ -233,4 +327,64 @@ describe('contrôle du rôle à chaque nouvelle connexion', () => {
       }
     },
   );
+});
+
+describe('contrôle de démarrage (verifyDatabaseRole)', () => {
+  function connectionOf(role: Role): {
+    host: string;
+    port: number;
+    database: string;
+    user: string;
+    password: { reveal: () => string };
+  } {
+    const env = testDatabaseEnv();
+    return {
+      host: env.DB_HOST,
+      port: env.DB_PORT,
+      database: env.DB_NAME,
+      user: role,
+      password: { reveal: () => testPassword(role) },
+    };
+  }
+
+  it('accepte chaque rôle sur son pool', async () => {
+    await expect(
+      verifyDatabaseRole({
+        connection: connectionOf(APP_ROLE),
+        applicationName: 'amg-api-db-tests',
+      }),
+    ).resolves.toBe('ok');
+    await expect(
+      verifyDatabaseRole({
+        connection: connectionOf(JOURNAL_ROLE),
+        scope: 'journal',
+        applicationName: 'amg-api-db-tests',
+      }),
+    ).resolves.toBe('ok');
+  });
+
+  it('refuse un rôle qui écrit le journal sur le pool principal, et le rôle de l’API sur celui du journal', async () => {
+    await expect(
+      verifyDatabaseRole({
+        connection: connectionOf(JOURNAL_ROLE),
+        applicationName: 'amg-api-db-tests',
+      }),
+    ).rejects.toBeInstanceOf(DatabaseRoleError);
+    await expect(
+      verifyDatabaseRole({
+        connection: connectionOf(APP_ROLE),
+        scope: 'journal',
+        applicationName: 'amg-api-db-tests',
+      }),
+    ).rejects.toBeInstanceOf(DatabaseRoleError);
+  });
+
+  it('refuse le propriétaire des tables', async () => {
+    await expect(
+      verifyDatabaseRole({
+        connection: connectionOf(MIGRATOR_ROLE),
+        applicationName: 'amg-api-db-tests',
+      }),
+    ).rejects.toBeInstanceOf(DatabaseRoleError);
+  });
 });

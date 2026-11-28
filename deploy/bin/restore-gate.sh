@@ -15,6 +15,7 @@
 # aucun déploiement en cours (le verrou de deploy.sh est tenu jusqu'à la fin de la restauration).
 #
 # Restauration (règles du §11 : jamais sur la base en service, jamais sous le superutilisateur) :
+#   0. refus (code 7) si amg_migrator a déjà LOGIN ou une session : rien n'est écrit ;
 #   1. base NEUVE amg_restore (template0), roles.sql installé (rôles, droits, garde du journal),
 #      déclencheurs d'événement du journal désactivés dans cette base seulement (le troisième, qui
 #      refuse CONCURRENTLY, reste actif) ;
@@ -127,6 +128,16 @@ fi
 [ -f "$LIST" ] && [ -n "$(find "$LIST" -mmin -"$MAX_LIST_AGE_MIN")" ] && [ -s "$SUM" ] \
   || refuse "liste du snapshot $SNAPSHOT absente ou de plus de $MAX_LIST_AGE_MIN min : relancer restore-prod.sh"
 
+# Fenêtre déjà ouverte (LOGIN) ou session d'amg_migrator active : incident, refus (code 7), comme
+# deploy.sh, AVANT toute écriture (ni base amg_restore, ni ouverture, ni fermeture de fenêtre : l'état
+# reste tel quel pour l'examen, EXPLOITATION.md §11). Lecture illisible : même refus.
+login=$(pg_admin postgres -c "select r.rolcanlogin from pg_catalog.pg_roles r where r.rolname OPERATOR(pg_catalog.=) 'amg_migrator'" </dev/null) || login=illisible
+sessions=$(pg_admin postgres -c "select pg_catalog.count(*) from pg_catalog.pg_stat_activity a where a.usename OPERATOR(pg_catalog.=) 'amg_migrator'" </dev/null) || sessions=illisible
+if [ "$login" != f ] || [ "$sessions" != 0 ]; then
+  log "INCIDENT : amg_migrator a déjà LOGIN ($login) ou des sessions actives ($sessions) avant la restauration : REFUS, aucune écriture (EXPLOITATION.md §11)"
+  exit 7
+fi
+
 WINDOW_OPEN=0
 SWITCHED=0
 close_window() {
@@ -181,14 +192,6 @@ pg_admin "$NEW_DB" -c 'ALTER EVENT TRIGGER amg_guard_security_events DISABLE' \
 docker exec -i "$PG" tee "$LIST_IN_PG" <"$LIST" >/dev/null
 rm -f "$STATE/.restore.sum"
 
-# Fenêtre déjà ouverte (LOGIN) ou session d'amg_migrator active : incident, refus (code 7), comme
-# deploy.sh ; aucune ouverture ni fermeture par cette restauration.
-login=$(pg_admin postgres -c "select r.rolcanlogin from pg_catalog.pg_roles r where r.rolname OPERATOR(pg_catalog.=) 'amg_migrator'" </dev/null)
-sessions=$(pg_admin postgres -c "select pg_catalog.count(*) from pg_catalog.pg_stat_activity a where a.usename OPERATOR(pg_catalog.=) 'amg_migrator'" </dev/null)
-if [ "$login" != f ] || [ "$sessions" != 0 ]; then
-  log "INCIDENT : amg_migrator a déjà LOGIN ($login) ou des sessions actives ($sessions) avant la restauration : REFUS (EXPLOITATION.md §11)"
-  exit 7
-fi
 WINDOW_OPEN=1 # avant LOGIN : le piège EXIT refermera la fenêtre quoi qu'il arrive
 pg_admin postgres -c 'ALTER ROLE amg_migrator LOGIN' </dev/null >/dev/null
 log "fenêtre de restauration ouverte : pg_restore en amg_migrator dans $NEW_DB"
@@ -216,9 +219,15 @@ OLD_DB=amg_avant_$(date +%Y%m%d%H%M)
 pg_admin postgres -c "select pg_catalog.count(pg_catalog.pg_terminate_backend(a.pid)) from pg_catalog.pg_stat_activity a where a.datname OPERATOR(pg_catalog.=) ANY (ARRAY['amg', '$NEW_DB']::name[]) and a.pid OPERATOR(pg_catalog.<>) pg_catalog.pg_backend_pid()" \
   -c "ALTER DATABASE amg RENAME TO $OLD_DB; ALTER DATABASE $NEW_DB RENAME TO amg" </dev/null >/dev/null
 SWITCHED=1
-# Ancienne base conservée pour comparaison, fermée aux rôles de l'API et des migrations.
+# Ancienne base conservée pour comparaison, fermée aux rôles de l'API, de son journal et des
+# migrations (amg_journal à part : absent si le roles.sql installé précède le CRM 3, lot 3).
 pg_admin postgres -c "REVOKE CONNECT, TEMPORARY ON DATABASE $OLD_DB FROM PUBLIC, amg_app, amg_migrator" </dev/null >/dev/null \
   || log "INCIDENT : droits de connexion de $OLD_DB non retirés : REVOKE CONNECT à faire à la main"
+journal_role=$(pg_admin postgres -c "select pg_catalog.count(*) from pg_catalog.pg_roles r where r.rolname OPERATOR(pg_catalog.=) 'amg_journal'" </dev/null) || journal_role=illisible
+if [ "$journal_role" != 0 ]; then
+  pg_admin postgres -c "REVOKE CONNECT, TEMPORARY ON DATABASE $OLD_DB FROM amg_journal" </dev/null >/dev/null \
+    || log "INCIDENT : droits de connexion d'amg_journal sur $OLD_DB non retirés : REVOKE CONNECT à faire à la main"
+fi
 
 rm -f "$LIST" "$SUM" "$STATE/.restore.sum"
 log "restauration du snapshot $SNAPSHOT : terminée, base en service remplacée (ancienne : $OLD_DB)"

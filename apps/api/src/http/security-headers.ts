@@ -5,6 +5,7 @@
 // y compris en développement local en HTTP : les navigateurs l'ignorent sur une réponse non HTTPS
 // (RFC 6797, 8.1), et une seule liste d'en-têtes évite qu'un mode oublie HSTS.
 import type { FastifyError, FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { errorBody } from './error-bodies.js';
 
 export const SECURITY_HEADERS = {
   'cache-control': 'no-store',
@@ -19,11 +20,7 @@ export const SECURITY_HEADERS = {
 } as const satisfies Readonly<Record<string, string>>;
 
 /** Corps unique des requêtes rejetées par le routeur : ne reprend jamais le chemin reçu. */
-export const BAD_REQUEST_BODY = {
-  statusCode: 400,
-  error: 'Bad Request',
-  message: 'Requête invalide',
-} as const;
+export const BAD_REQUEST_BODY = errorBody(400);
 
 export function registerSecurityHeaders(fastify: FastifyInstance): void {
   fastify.addHook('onSend', (_request, reply, payload, done) => {

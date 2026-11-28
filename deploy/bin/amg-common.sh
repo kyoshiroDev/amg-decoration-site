@@ -318,9 +318,14 @@ amg_run() {
 # chemin de recherche sans `public` (une fonction ou un opérateur d'amg_migrator n'y est jamais
 # résolu). Toujours avec `psql -X` (aucun ~/.psqlrc lu).
 AMG_PG_ADMIN_OPTIONS='-c search_path=pg_catalog,pg_temp'
-# Vérification du journal de sécurité (roles.sql) : NULL (sortie vide avec psql -At) si conforme,
-# sinon l'écart en clair. Ne lit que des catalogues, chemin épinglé : aucun code d'amg_migrator.
-AMG_JOURNAL_CHECK_SQL='select amg_guard.security_events_violation()'
+# Vérification du journal de sécurité HORS FENÊTRE (roles.sql) : NULL (sortie vide avec psql -At)
+# si conforme, sinon l'écart en clair. État stabilisé : les écarts de security_events_violation()
+# (celle du déclencheur d'événement, qui admet l'état de transition de la migration du rôle du
+# journal), plus « rôle du journal partiellement appliqué » et « cliquet non posé ». Superutilisateur
+# seul ; ne lit que des catalogues, chemin épinglé : aucun code d'amg_migrator. Utilisée par
+# deploy.sh (avant et après chaque fenêtre), watch.sh, restore-gate.sh et restore-test.sh.
+AMG_JOURNAL_CHECK_FUNCTION='amg_guard.security_events_settled_violation()'
+AMG_JOURNAL_CHECK_SQL="select $AMG_JOURNAL_CHECK_FUNCTION"
 
 # Hôtes autorisés par environnement (domaine public du site, ADR-0020).
 amg_allowed_hosts() {

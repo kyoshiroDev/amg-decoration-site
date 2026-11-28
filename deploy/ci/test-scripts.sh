@@ -5,8 +5,11 @@
 # AMG ») et deploy.yml (job `build`), et à la main depuis la racine du dépôt :
 #   deploy/ci/test-scripts.sh
 # Couvre : liste blanche de amg_run (règles du rôle migrate, mode et groupe du secret), règles de
-# routeur Traefik admises par watch.sh, filtre de la liste de restauration, alerte de watch.sh sur
-# un LOGIN d'amg_migrator hors fenêtre, et la fenêtre de migration de deploy.sh (ouverture seulement
+# routeur Traefik admises par watch.sh, filtre de la liste de restauration, alertes de watch.sh sur
+# un LOGIN d'amg_migrator hors fenêtre et sur un TRUSTED_PROXY qui n'est pas le sous-réseau d'entrée,
+# le refus (code 7) de restore-gate.sh avant toute écriture quand la fenêtre est déjà ouverte,
+# l'utilisateur ACL Redis de l'API (modèle du serveur identique à la CI), le refus de deploy.sh
+# quand TRUSTED_PROXY diffère du sous-réseau d'entrée, et la fenêtre de migration de deploy.sh (ouverture seulement
 # si roles.sql rejoué, journal conforme et roles.sql à jour, fermeture même en cas d'échec, d'erreur
 # de fermeture, d'interruption ou de second signal, aucune bascule sans migrations réussies et
 # journal vérifié, amg.env écrit seulement après la bascule, détail gardé dans le journal du
@@ -144,6 +147,8 @@ export PATH="$STUB/bin:$PATH"
 3601; 0 16392 TABLE DATA amg_guard journal_sealed amg
 3602; 0 0 ACL - SCHEMA public pg_database_owner
 3603; 0 0 ACL amg_guard FUNCTION security_events_violation() amg
+232; 1255 16393 FUNCTION amg_guard security_events_settled_violation() amg
+3609; 0 0 ACL amg_guard FUNCTION security_events_settled_violation() amg
 2100; 826 16420 DEFAULT ACL - DEFAULT PRIVILEGES FOR FUNCTIONS amg_migrator
 250; 1247 16430 TYPE public security_event_type amg_migrator
 260; 1259 16440 TABLE public security_events amg_migrator
@@ -160,7 +165,9 @@ EOF
   refute "aucun déclencheur d'événement gardé" grep -q 'EVENT TRIGGER' <<<"$kept"
   refute "droits par défaut retirés" grep -q 'DEFAULT ACL' <<<"$kept"
   refute "schéma public et ses droits retirés" grep -qE ' (SCHEMA|ACL|COMMENT) - (SCHEMA )?public' <<<"$kept"
-  check "lignes retirées journalisées" test "$(grep -c 'retiré' "$T/list.err")" = 10
+  check "lignes retirées journalisées" test "$(grep -c 'retiré' "$T/list.err")" = 12
+  check "fonction de l'état stabilisé et son ACL retirées" \
+    test "$(grep -c 'retiré : .*security_events_settled_violation()' "$T/list.err")" = 2
   printf '300; 1259 16500 TABLE autre_schema t amg_migrator\n' >"$T/list.bad"
   refute "objet hors de public refusé" amg_restore_list_filter <"$T/list.bad" >/dev/null 2>&1
   printf 'pas une ligne de liste\n' >"$T/list.bad"
@@ -260,6 +267,7 @@ case "$1" in
         ;;
     esac
     ;;
+  network) [ "$2" = inspect ] && echo "${STUB_EDGE_SUBNET-198.51.100.0/24}" ;;
   inspect)
     case "$3" in
       *Health*) echo healthy ;;
@@ -306,7 +314,7 @@ case "$1" in
       fail_on "$q" && exit 3
       if [[ "$q" == *rolcanlogin* ]]; then echo "${STUB_LOGIN:-f}"; fi
       if [[ "$q" == *pg_stat_activity* && "$q" != *pg_terminate_backend* ]]; then echo "${STUB_SESSIONS:-0}"; fi
-      if [[ "$q" == *security_events_violation* ]]; then
+      if [[ "$q" == *security_events_settled_violation* ]]; then
         n=$(($(cat "$S/violations" 2>/dev/null || echo 0) + 1))
         echo "$n" >"$S/violations"
         var=STUB_VIOLATION_$n
@@ -351,6 +359,8 @@ run_deploy() {
   cat >"$amg/staging/amg.env" <<EOF2
 AMG_PROJECT=amg-staging
 AMG_ENV=staging
+AMG_EDGE_NETWORK=amg_edge_staging
+TRUSTED_PROXY=198.51.100.0/24
 API_IMAGE=ghcr.io/proprietaire/amg-api
 API_DIGEST=$ZERO
 MIGRATE_IMAGE=ghcr.io/proprietaire/amg-api-migrate
@@ -400,6 +410,8 @@ check "journal détaillé : fenêtre et bascule" grep -q 'en ligne : api' "$LOG"
 refute "aucun INCIDENT quand LOGIN était fermé" grep -q 'INCIDENT' "$LOG"
 check "sessions d'amg_migrator terminées à la fermeture" sql_has 'pg_terminate_backend'
 check "journal vérifié avant le rejeu, après le rejeu et après la fenêtre" test "$(cat "$CASE_DIR/state/violations")" = 3
+check "journal vérifié par la fonction de l'état stabilisé" sql_has 'select amg_guard.security_events_settled_violation()'
+refute "journal jamais vérifié par la seule fonction du déclencheur" sql_has 'select amg_guard.security_events_violation()'
 check "nouvelle réplique vérifiée sur l'image cible" calls_has '{{.Config.Image}}'
 check "journal des déploiements : bloc de plus de 30 jours retiré" bash -c "! grep -q 'ancien bloc' '$LOG'"
 check "journal des déploiements : bloc récent gardé" grep -q 'bloc récent' "$LOG"
@@ -446,6 +458,15 @@ refute "journal non conforme après le rejeu : aucune ouverture" sql_has 'ALTER 
 run_deploy journal-avant-rejeu STUB_VIOLATION_1='écart initial'
 check "écart initial journalisé, pas réparé en silence par le rejeu" grep -q 'écart initial' "$LOG"
 refute "écart initial : aucun rejeu de roles.sql" sql_has 'psql < fichier'
+
+run_deploy cliquet-non-pose STUB_VIOLATION_3='cliquet du rôle du journal non posé (rejouer roles.sql)'
+check "état stabilisé non atteint après la fenêtre : échec" test "$CASE_RC" != 0
+check "état stabilisé non atteint : écart journalisé" grep -q 'cliquet du rôle du journal non posé' "$LOG"
+refute "état stabilisé non atteint : aucune bascule" calls_has '--scale api=2'
+check "état stabilisé non atteint : amg.env inchangé" test "$(api_digest)" = "$ZERO"
+run_deploy partiel-avant STUB_VIOLATION_1="rôle du journal partiellement appliqué : amg_app écrit encore le journal"
+check "rôle du journal partiellement appliqué avant la fenêtre : refus" test "$CASE_RC" != 0
+refute "rôle du journal partiellement appliqué : aucune ouverture de LOGIN" sql_has 'amg_migrator LOGIN'
 
 run_deploy journal-apres STUB_VIOLATION_3='droits modifiés'
 check "journal non conforme après : échec" test "$CASE_RC" != 0
@@ -495,6 +516,16 @@ run_deploy term-fin-de-bascule STUB_STOP_SIGNAL=TERM
 check "SIGTERM en fin de bascule ignoré : ancienne réplique retirée" calls_has "rm $OLD_ID"
 check "SIGTERM en fin de bascule : déploiement réussi" test "$CASE_RC" = 0
 
+check "proxy de confiance comparé au sous-réseau du réseau d'entrée" calls_has 'network inspect'
+run_deploy proxy-different STUB_EDGE_SUBNET=203.0.113.0/24
+check "TRUSTED_PROXY différent du sous-réseau d'entrée : refus" test "$CASE_RC" != 0
+check "TRUSTED_PROXY différent : raison journalisée" grep -q 'REFUS : TRUSTED_PROXY=198.51.100.0/24' "$LOG"
+refute "TRUSTED_PROXY différent : aucun téléchargement" calls_has ' pull '
+refute "TRUSTED_PROXY différent : aucune fenêtre" sql_has 'LOGIN'
+run_deploy proxy-reseau-illisible STUB_EDGE_SUBNET=
+check "sous-réseau d'entrée illisible : refus" test "$CASE_RC" != 0
+refute "sous-réseau d'entrée illisible : aucune fenêtre" sql_has 'LOGIN'
+
 run_deploy pull-en-echec STUB_PULL_RC=1
 check "image de l'API introuvable : échec" test "$CASE_RC" != 0
 refute "image de l'API introuvable : aucune fenêtre" sql_has 'LOGIN'
@@ -508,7 +539,7 @@ cat >"$WSTUB/docker" <<'EOF'
 case "$1" in
   info) case "$*" in *DockerRootDir*) echo /var/lib/docker ;; *) echo 'systemd 2' ;; esac ;;
   ps) case "$*" in *service=postgres*) echo "$STUB_PG" ;; *service=api*) echo "$STUB_API_ID" ;; esac ;;
-  network) [ "$2" = inspect ] && case "$*" in *Internal*) echo true ;; esac ;;
+  network) [ "$2" = inspect ] && case "$*" in *Internal*) echo true ;; *IPAM*) echo "${STUB_EDGE_SUBNET-198.51.100.0/24}" ;; esac ;;
   compose) printf '%s\n' postgres api ;;
   inspect)
     case "$*" in
@@ -519,7 +550,8 @@ case "$1" in
   exec)
     case "$*" in
       *rolcanlogin*) echo "${STUB_LOGIN:-f}" ;;
-      *to_regprocedure*) echo t ;;
+      *to_regprocedure*) echo "${STUB_GUARDS:-t t}" ;;
+      *'select amg_guard.security_events_settled_violation()'*) echo "${STUB_JOURNAL:-}" ;;
     esac
     ;;
 esac
@@ -533,7 +565,7 @@ run_watch() { # $1 1 pour tenir le verrou de l'environnement (fenêtre en cours)
   rm -rf "$w"
   mkdir -p "$w/amg/secrets" "$w/amg/logs" "$w/amg/staging/compose" "$w/cg"
   printf 'HC_WATCH_URL=https://hc.invalid/x\nTRAEFIK_CONTAINER=traefik\n' >"$w/amg/secrets/watch.env"
-  printf 'AMG_PROJECT=amg-staging\nAMG_ENV=staging\nAMG_EDGE_NETWORK=amg_edge_staging\nAPI_IMAGE=ghcr.io/p/amg-api\nAPI_DIGEST=%s\n' \
+  printf 'AMG_PROJECT=amg-staging\nAMG_ENV=staging\nAMG_EDGE_NETWORK=amg_edge_staging\nTRUSTED_PROXY=198.51.100.0/24\nAPI_IMAGE=ghcr.io/p/amg-api\nAPI_DIGEST=%s\n' \
     "$API_D" >"$w/amg/staging/amg.env"
   if [ "$hold" = 1 ]; then
     # Le processus qui tient le verrou devient `sleep` (exec) : le tuer libère le verrou, et il ne
@@ -560,6 +592,138 @@ run_watch 1 STUB_LOGIN=t
 refute "watch : aucun signalement pendant une fenêtre (verrou tenu)" grep -q 'amg_migrator a LOGIN' "$WATCH_OUT"
 run_watch 0 STUB_RUNNING="ghcr.io/p/amg-api@$ZERO"
 check "watch : API en marche sur un autre digest que amg.env signalée" grep -q 'amg.env annonce' "$WATCH_OUT"
+refute "watch : TRUSTED_PROXY égal au sous-réseau d'entrée, aucun signalement" grep -q 'TRUSTED_PROXY' "$WATCH_OUT"
+run_watch 0 STUB_EDGE_SUBNET=203.0.113.0/24
+check "watch : TRUSTED_PROXY différent du sous-réseau d'entrée signalé" grep -q "TRUSTED_PROXY « 198.51.100.0/24 » n'est pas le sous-réseau" "$WATCH_OUT"
+run_watch 0
+check "watch : journal conforme, aucun signalement" bash -c "! grep -qE 'JOURNAL|journal' '$WATCH_OUT'"
+run_watch 0 STUB_JOURNAL='rôle du journal partiellement appliqué : amg_app écrit encore le journal'
+check "watch : état stabilisé du journal non atteint signalé" grep -q 'JOURNAL DE SÉCURITÉ NON CONFORME : rôle du journal partiellement appliqué' "$WATCH_OUT"
+run_watch 0 STUB_GUARDS='t f'
+check "watch : fonction de l'état stabilisé absente (ancien roles.sql) signalée" grep -q "contrôle de l'état stabilisé du journal absent" "$WATCH_OUT"
+run_watch 0 STUB_GUARDS='f f'
+check "watch : aucune garde avec l'API activée signalée" grep -q 'garde du journal de sécurité absente' "$WATCH_OUT"
+
+# --- restore-gate.sh : fenêtre déjà ouverte refusée avant toute écriture -------------------------
+# Une copie du script par cas, sa racine (/opt/amg) et son PATH (fixé à /usr/bin:/bin) redirigés
+# vers le dossier du cas : le double de docker passe devant le vrai. Substitutions vérifiées.
+GSTUB=$T/gstub
+mkdir -p "$GSTUB"
+cat >"$GSTUB/docker" <<'EOF'
+#!/usr/bin/env bash
+# Double de docker pour restore-gate.sh : un postgres de production sain, ni API ni worker.
+S=$STUB_STATE
+printf '%s\n' "$*" >>"$S/calls.log"
+case "$1" in
+  ps) case "$*" in *service=postgres*) echo "$STUB_PG" ;; esac ;;
+  inspect) echo healthy ;;
+  exec)
+    shift
+    while [ "$#" -gt 0 ]; do case "$1" in -i) shift ;; -e) shift 2 ;; *) break ;; esac; done
+    shift # conteneur
+    case "$1" in
+      psql) ;;
+      pg_restore) cat >/dev/null; exit "${STUB_RESTORE_RC:-0}" ;;
+      *) cat >/dev/null; exit 0 ;;
+    esac
+    sqls=()
+    while [ "$#" -gt 0 ]; do
+      if [ "$1" = -c ]; then sqls+=("$2"); shift 2; else shift; fi
+    done
+    if [ "${#sqls[@]}" -eq 0 ]; then
+      cat >/dev/null
+      echo 'psql < fichier' >>"$S/sql.log"
+      exit 0
+    fi
+    for q in "${sqls[@]}"; do
+      printf '%s\n' "$q" >>"$S/sql.log"
+      case "$q" in
+        *rolcanlogin*) echo "${STUB_LOGIN-f}" ;;
+        *pg_roles*amg_journal*) echo 1 ;;
+        *pg_terminate_backend*) echo 0 ;;
+        *pg_stat_activity*) echo "${STUB_SESSIONS:-0}" ;;
+        *"to_regclass('amg_guard.journal_sealed')"*) echo f ;;
+        *'select amg_guard.security_events_settled_violation()'*) echo "${STUB_VIOLATION:-}" ;;
+      esac
+    done
+    ;;
+esac
+exit 0
+EOF
+# Vrai sleep (le double de $STUB/bin rend la main aussitôt) : l'empreinte du flux est écrite par un
+# processus en arrière-plan, que le script attend quelques secondes au plus.
+printf '#!/usr/bin/env bash\nexec /bin/sleep "$@"\n' >"$GSTUB/sleep"
+chmod +x "$GSTUB/docker" "$GSTUB/sleep"
+SNAP=0123abcd
+run_gate() { # $1 nom du cas (unique), puis variables du double ; flux « pg_dump » factice en entrée
+  local g=$T/gate-$1 root
+  shift
+  root=$g/root
+  mkdir -p "$g/bin" "$root/prod/compose" "$root/prod/restore" "$root/backups/prod" "$root/logs"
+  cp "$BIN/amg-common.sh" "$g/bin/"
+  sed -e "s|^AMG_ROOT=/opt/amg\$|AMG_ROOT=$root|" \
+    -e "s|^export PATH=/usr/bin:/bin |export PATH=$GSTUB:$STUB/bin:/usr/bin:/bin |" \
+    "$BIN/restore-gate.sh" >"$g/bin/restore-gate.sh"
+  GATE_COPY_OK=0
+  grep -qx "AMG_ROOT=$root" "$g/bin/restore-gate.sh" && grep -q "^export PATH=$GSTUB:" "$g/bin/restore-gate.sh" \
+    && GATE_COPY_OK=1
+  echo '-- roles' >"$root/prod/compose/roles.sql"
+  echo dump >"$root/backups/prod/amg-prod.dump.age"
+  printf '1; 0 0 TABLE public t amg_migrator\n' >"$root/prod/restore/$SNAP.list"
+  printf 'flux-factice\n' | sha256sum | cut -d' ' -f1 >"$root/prod/restore/$SNAP.sha256"
+  printf 'flux-factice\n' | env -i PATH=/usr/bin:/bin HOME="$T" STUB_STATE="$g" STUB_PG="$PG_ID" \
+    SSH_ORIGINAL_COMMAND="restore $SNAP RESTAURER-amg-prod-$SNAP" "$@" \
+    bash "$g/bin/restore-gate.sh" >"$g/out.log" 2>&1
+  GATE_RC=$?
+  GATE_SQL=$g/sql.log
+  GATE_LOG=$root/logs/restore.log
+}
+gate_sql_has() { grep -sqF -- "$1" "$GATE_SQL"; }
+run_gate login-deja-ouvert STUB_LOGIN=t
+check "restore-gate : copie de test redirigée (racine et PATH)" test "$GATE_COPY_OK" = 1
+check "restore-gate : LOGIN déjà ouvert, refus code 7" test "$GATE_RC" = 7
+check "restore-gate : LOGIN déjà ouvert, INCIDENT journalisé" grep -q 'INCIDENT : amg_migrator a déjà LOGIN' "$GATE_LOG"
+refute "restore-gate : LOGIN déjà ouvert, aucune base amg_restore créée ni supprimée" gate_sql_has 'DATABASE'
+refute "restore-gate : LOGIN déjà ouvert, roles.sql non joué" gate_sql_has 'psql < fichier'
+refute "restore-gate : LOGIN déjà ouvert, aucune ouverture ni fermeture de fenêtre" gate_sql_has 'ALTER ROLE'
+run_gate session-active STUB_SESSIONS=1
+check "restore-gate : session d'amg_migrator active, refus code 7" test "$GATE_RC" = 7
+refute "restore-gate : session active, aucune base amg_restore créée ni supprimée" gate_sql_has 'DATABASE'
+refute "restore-gate : session active, aucune ouverture ni fermeture de fenêtre" gate_sql_has 'ALTER ROLE'
+run_gate lecture-illisible STUB_LOGIN=
+check "restore-gate : attribut LOGIN illisible, refus code 7" test "$GATE_RC" = 7
+refute "restore-gate : attribut LOGIN illisible, aucune base créée" gate_sql_has 'CREATE DATABASE'
+# Contre-épreuves, fenêtre fermée : la restauration avance (le double ne refuse pas tout).
+run_gate echec-pg-restore STUB_RESTORE_RC=1
+check "restore-gate : échec de pg_restore, code 3" test "$GATE_RC" = 3
+check "restore-gate : échec de pg_restore, fenêtre ouverte puis refermée" \
+  bash -c "grep -q 'ALTER ROLE amg_migrator LOGIN' '$GATE_SQL' && grep -q 'ALTER ROLE amg_migrator NOLOGIN' '$GATE_SQL'"
+check "restore-gate : échec de pg_restore, amg_restore supprimée" gate_sql_has 'DROP DATABASE IF EXISTS amg_restore WITH (FORCE)'
+run_gate succes
+check "restore-gate : restauration réussie" test "$GATE_RC" = 0
+check "restore-gate : fenêtre contrôlée avant la création de la base neuve" \
+  awk '/rolcanlogin/ && !l { l = NR } /CREATE DATABASE amg_restore/ && !c { c = NR } END { exit !(l && c && l < c) }' "$GATE_SQL"
+check "restore-gate : ancienne base fermée à amg_app et amg_migrator" gate_sql_has 'FROM PUBLIC, amg_app, amg_migrator'
+check "restore-gate : ancienne base fermée à amg_journal" grep -qE 'ON DATABASE amg_avant_[0-9]{12} FROM amg_journal$' "$GATE_SQL"
+check "restore-gate : journal restauré vérifié par la fonction de l'état stabilisé" gate_sql_has 'select amg_guard.security_events_settled_violation()'
+run_gate etat-non-stabilise STUB_VIOLATION='cliquet du rôle du journal non posé (rejouer roles.sql)'
+check "restore-gate : état stabilisé non atteint, refus" test "$GATE_RC" = 3
+check "restore-gate : état stabilisé non atteint, écart journalisé" grep -q 'journal restauré non conforme : cliquet' "$GATE_LOG"
+refute "restore-gate : état stabilisé non atteint, aucune bascule" gate_sql_has 'RENAME TO'
+check "restore-gate : état stabilisé non atteint, amg_restore supprimée" gate_sql_has 'DROP DATABASE IF EXISTS amg_restore WITH (FORCE)'
+
+# --- Redis : utilisateur ACL de l'API identique en CI et dans le modèle du serveur ---------------
+REDIS_CONF=$ROOT/deploy/env/redis.conf.example
+conf_cmds=$(grep -E '^user amg_api ' "$REDIS_CONF" | tr ' ' '\n' | grep -E '^[+]' | sort | tr '\n' ' ')
+ci_cmds=$(sed -n '/^readonly API_REDIS_COMMANDS=(/,/^)/p' "$ROOT/.github/scripts/redis-acl-ci.sh" \
+  | tr ' ' '\n' | grep -E '^[+]' | sort | tr '\n' ' ')
+check "redis.conf : commandes de amg_api identiques à redis-acl-ci.sh" test -n "$ci_cmds" -a "$conf_cmds" = "$ci_cmds"
+check "redis.conf : amg_api limité au préfixe de son environnement, sans canal" \
+  grep -qE '^user amg_api reset on #<EMPREINTE_SHA256> resetkeys ~amg:<ENV>:[*] resetchannels -@all [+]' "$REDIS_CONF"
+check "redis.conf : utilisateur default désactivé" grep -qx 'user default off' "$REDIS_CONF"
+check "redis.conf : sans éviction" grep -qx 'maxmemory-policy noeviction' "$REDIS_CONF"
+refute "redis.conf : ni requirepass ni aclfile" grep -qE '^(requirepass|aclfile)' "$REDIS_CONF"
+check "redis.conf : un seul utilisateur en plus de default" test "$(grep -cE '^user ' "$REDIS_CONF")" = 2
 
 while read -r n; do passed=$((passed + n)); done <"$T/passed"
 printf 'tests des scripts du serveur : %d réussis, %d en échec\n' "$passed" "$failures"

@@ -6,11 +6,13 @@ import {
   API_CONNECTION_OPTIONS,
   API_SEARCH_PATH,
   DatabaseRoleError,
+  JOURNAL_POOL_TIMEOUTS,
   POOL_TIMEOUTS,
   SESSION_PRIVILEGES_SQL,
   assertLeastPrivilegedSession,
   buildPoolConfig,
   createPrismaClient,
+  verifyDatabaseRole,
   type CreatePrismaClientOptions,
   type SessionQueryable,
 } from '../../src/prisma-client.js';
@@ -85,7 +87,12 @@ const LEAST_PRIVILEGED = {
   owns_objects: false,
   can_create: false,
   search_path: 'pg_catalog, pg_temp',
+  journal_insert: false,
+  beyond_journal: true,
 };
+
+/** Session du pool du journal : écrit le journal, rien d'autre. */
+const JOURNAL_SESSION = { ...LEAST_PRIVILEGED, journal_insert: true, beyond_journal: false };
 
 /** Double d'une connexion : renvoie les lignes données et retient les requêtes reçues. */
 function fakeSession(rows: readonly unknown[]): SessionQueryable & { readonly queries: string[] } {
@@ -145,6 +152,11 @@ describe('assertLeastPrivilegedSession', () => {
       'chemin de recherche',
     ],
     ['un chemin écrit autrement', { search_path: 'pg_catalog,pg_temp' }, 'chemin de recherche'],
+    [
+      'un rôle qui écrit le journal (réservé à son pool)',
+      { journal_insert: true },
+      'écriture du journal hors de son pool',
+    ],
   ])('refuse %s', async (_label, overrides, reason) => {
     const session = fakeSession([{ ...LEAST_PRIVILEGED, ...overrides }]);
     const error: unknown = await assertLeastPrivilegedSession(session).catch((e: unknown) => e);
@@ -169,6 +181,50 @@ describe('assertLeastPrivilegedSession', () => {
     );
   });
 
+  it('pool du journal : accepte un rôle qui n’écrit que le journal', async () => {
+    const session = fakeSession([JOURNAL_SESSION]);
+    await expect(assertLeastPrivilegedSession(session, 'journal')).resolves.toBeUndefined();
+    expect(session.queries).toEqual([SESSION_PRIVILEGES_SQL]);
+  });
+
+  it.each([
+    [
+      'sans droit d’écriture du journal',
+      { journal_insert: false },
+      'écriture du journal impossible',
+    ],
+    ['avec des droits hors du journal', { beyond_journal: true }, 'droits hors du journal'],
+    ['propriétaire des tables', { owns_objects: true }, 'propriétaire des tables'],
+    ['superutilisateur', { superuser: true }, 'superutilisateur'],
+    ['sous un autre chemin', { search_path: 'public' }, 'chemin de recherche'],
+  ])('pool du journal : refuse un rôle %s', async (_label, overrides, reason) => {
+    const session = fakeSession([{ ...JOURNAL_SESSION, ...overrides }]);
+    const error: unknown = await assertLeastPrivilegedSession(session, 'journal').catch(
+      (e: unknown) => e,
+    );
+    expect(error instanceof DatabaseRoleError ? error.reasons : []).toContain(reason);
+  });
+
+  it('le pool du journal a ses propres délais, courts', () => {
+    expect(buildPoolConfig({ ...options, scope: 'journal' })).toMatchObject({
+      connectionTimeoutMillis: 2_000,
+      statement_timeout: 5_000,
+      lock_timeout: 5_000,
+      idle_in_transaction_session_timeout: 5_000,
+    });
+    expect(JOURNAL_POOL_TIMEOUTS.statementTimeoutMillis).toBeLessThan(
+      POOL_TIMEOUTS.statementTimeoutMillis,
+    );
+  });
+
+  it('le pool du journal contrôle chaque connexion avec son périmètre', async () => {
+    const config = buildPoolConfig({ ...options, scope: 'journal' });
+    await expect(config.onConnect(fakeSession([JOURNAL_SESSION]))).resolves.toBeUndefined();
+    await expect(config.onConnect(fakeSession([LEAST_PRIVILEGED]))).rejects.toThrow(
+      DatabaseRoleError,
+    );
+  });
+
   it('ne cite ni hôte ni rôle dans son message', () => {
     const error = new DatabaseRoleError(['superutilisateur']);
     expect(error.message).not.toMatch(/amg|127\.0\.0\.1/);
@@ -183,5 +239,13 @@ describe('createPrismaClient', () => {
 
   it.each([0, -1, 1.5, Number.NaN])('refuse maxConnections=%s', (maxConnections) => {
     expect(() => createPrismaClient({ ...options, maxConnections })).toThrow(RangeError);
+  });
+});
+
+describe('verifyDatabaseRole', () => {
+  it('base injoignable : « unreachable », sans lever d’erreur ni attendre', async () => {
+    const started = Date.now();
+    await expect(verifyDatabaseRole(options)).resolves.toBe('unreachable');
+    expect(Date.now() - started).toBeLessThan(5_000);
   });
 });

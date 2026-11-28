@@ -28,8 +28,8 @@ describe('Strict-Transport-Security', () => {
       '415',
       {
         method: 'POST',
-        url: '/api/test/echo',
-        headers: { 'content-type': 'text/plain' },
+        url: '/api/admin/test/echo',
+        headers: { host: 'admin.example.test', 'content-type': 'text/plain' },
         payload: 'a',
       },
       415,
@@ -38,8 +38,8 @@ describe('Strict-Transport-Security', () => {
       '413',
       {
         method: 'POST',
-        url: '/api/test/echo',
-        headers: { 'content-type': 'application/json' },
+        url: '/api/admin/test/echo',
+        headers: { host: 'admin.example.test', 'content-type': 'application/json' },
         payload: JSON.stringify({ data: 'x'.repeat(70 * 1024) }),
       },
       413,

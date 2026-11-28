@@ -51,9 +51,16 @@ RUN npm run generate -w @amg/api-db \
 # paquet marqué `devOptional` dans le fichier de verrouillage est retiré, chaque nom retiré doit
 # figurer dans apps/api/docker/dev-optional.txt (sinon la construction échoue : relire le
 # changement du verrouillage), puis on vérifie que le CLI et `effect` ont bien disparu (ADR-0023).
+# npm n'installe pas tout à la racine : une version qui entre en conflit avec un pair d'un autre
+# workspace est imbriquée sous le workspace (ioredis 6 de l'API sous apps/api/node_modules, à cause
+# du pair ioredis 5 d'unstorage, dépendance du site). Les node_modules des workspaces embarqués
+# sont donc copiés dans l'image comme celui de la racine (créés vides au besoin : COPY exige la
+# source), aucun paquet marqué `dev` ne doit y être installé, et check-deps.mjs fait échouer la
+# construction si une dépendance de production n'est pas résolvable depuis son workspace.
 FROM manifests AS prod-deps
 RUN npm ci --omit=dev --ignore-scripts -w @amg/api -w @amg/api-db -w @amg/shared-schemas
 COPY apps/api/docker/dev-optional.txt /tmp/dev-optional.txt
+COPY apps/api/docker/check-deps.mjs /tmp/check-deps.mjs
 RUN node --input-type=module <<'EOF'
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 const { packages } = JSON.parse(readFileSync('package-lock.json', 'utf8'));
@@ -64,8 +71,11 @@ const allowed = new Set(
     .filter((line) => line !== '' && !line.startsWith('#')),
 );
 const removed = [];
+const dev = [];
 for (const [path, meta] of Object.entries(packages)) {
-  if (meta.devOptional === true && path.includes('node_modules/') && existsSync(path)) {
+  if (!path.includes('node_modules/') || !existsSync(path)) continue;
+  if (meta.dev === true) dev.push(path);
+  if (meta.devOptional === true) {
     rmSync(path, { recursive: true, force: true });
     removed.push(path.replace(/^.*node_modules\//, ''));
   }
@@ -76,21 +86,59 @@ if (unexpected.length > 0) {
   process.stderr.write(`ERREUR : retirés hors de dev-optional.txt : ${unexpected.join(' ')}\n`);
   process.exit(1);
 }
+if (dev.length > 0) {
+  process.stderr.write(`ERREUR : dépendances de développement installées : ${dev.join(' ')}\n`);
+  process.exit(1);
+}
 EOF
 RUN rm -rf node_modules/prisma node_modules/effect node_modules/@prisma/config node_modules/@prisma/dev \
       node_modules/@prisma/engines node_modules/@prisma/studio-core node_modules/.bin \
+      apps/api/node_modules/.bin libs/api/db/node_modules/.bin libs/shared/schemas/node_modules/.bin \
  && for p in node_modules/prisma node_modules/effect node_modules/@prisma/config node_modules/@prisma/dev \
-      node_modules/@prisma/engines node_modules/@prisma/studio-core node_modules/.bin; do \
+      node_modules/@prisma/engines node_modules/@prisma/studio-core node_modules/.bin \
+      apps/api/node_modules/.bin libs/api/db/node_modules/.bin libs/shared/schemas/node_modules/.bin; do \
       test ! -e "$p" || { echo "ERREUR : $p présent dans l'image de l'API" >&2; exit 1; }; \
     done \
- && test -d node_modules/@prisma/client && test -d node_modules/@prisma/adapter-pg && test -d node_modules/pg
+ && test -d node_modules/@prisma/client && test -d node_modules/@prisma/adapter-pg && test -d node_modules/pg \
+ && mkdir -p apps/api/node_modules libs/api/db/node_modules libs/shared/schemas/node_modules \
+ && node /tmp/check-deps.mjs apps/api libs/api/db libs/shared/schemas
 
 # Étape 4 : dépendances des migrations (CLI Prisma compris). Les scripts d'installation tournent :
 # celui de @prisma/engines télécharge le moteur de schéma de la plateforme (Debian, OpenSSL 3).
+# Comme pour l'API : node_modules du workspace copié aussi (imbrications de npm), résolution des
+# dépendances de la lib et du CLI vérifiée ici puis dans l'image finale.
 FROM manifests AS migrate-deps
 RUN npm ci -w @amg/api-db \
  && test -x node_modules/@prisma/engines/schema-engine-debian-openssl-3.0.x \
- && rm -rf node_modules/.bin
+ && rm -rf node_modules/.bin libs/api/db/node_modules/.bin \
+ && mkdir -p libs/api/db/node_modules
+# Installation complète (le CLI Prisma est une dépendance de développement) : les paquets marqués
+# `dev` imbriqués sous libs/api/db/node_modules (types, sans rôle à l'exécution) sont retirés pour
+# ne pas entrer dans l'image des migrations ; la racine, où est le CLI, n'est pas touchée.
+RUN node --input-type=module <<'EOF'
+import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { dirname } from 'node:path';
+const { packages } = JSON.parse(readFileSync('package-lock.json', 'utf8'));
+const prefix = 'libs/api/db/node_modules/';
+const removed = [];
+for (const [path, meta] of Object.entries(packages)) {
+  if (path.startsWith(prefix) && meta.dev === true && existsSync(path)) {
+    rmSync(path, { recursive: true, force: true });
+    removed.push(path);
+    // Dossier de portée (@types…) laissé vide : retiré aussi.
+    const scope = dirname(path);
+    if (scope.startsWith(prefix) && existsSync(scope) && readdirSync(scope).length === 0) rmSync(scope, { recursive: true });
+  }
+}
+process.stdout.write(`paquets dev imbriqués retirés (${removed.length}) : ${removed.sort().join(' ')}\n`);
+const left = removed.filter((path) => existsSync(path));
+if (left.length > 0) {
+  process.stderr.write(`ERREUR : paquets dev encore présents : ${left.join(' ')}\n`);
+  process.exit(1);
+}
+EOF
+COPY apps/api/docker/check-deps.mjs /tmp/check-deps.mjs
+RUN node /tmp/check-deps.mjs libs/api/db node_modules/prisma
 
 # Image de l'API : Node 24 sans shell ni gestionnaire de paquets, utilisateur non root 65532.
 FROM gcr.io/distroless/nodejs24-debian13:nonroot@sha256:675c532423b908f9e56f9d60a4e62309b63cd2a3175acb90a46b96f7ee68e121 AS api
@@ -102,12 +150,19 @@ ENV NODE_ENV=production
 # Fichiers à root, en lecture seule pour l'utilisateur de l'API (en plus de read_only: true dans Compose).
 COPY --from=prod-deps /app/package.json ./
 COPY --from=prod-deps /app/node_modules ./node_modules
+# node_modules imbriqués par npm sous les workspaces (ioredis sous apps/api/node_modules).
+COPY --from=prod-deps /app/apps/api/node_modules apps/api/node_modules
+COPY --from=prod-deps /app/libs/api/db/node_modules libs/api/db/node_modules
+COPY --from=prod-deps /app/libs/shared/schemas/node_modules libs/shared/schemas/node_modules
 COPY --from=build /app/libs/shared/schemas/package.json libs/shared/schemas/
 COPY --from=build /app/libs/shared/schemas/dist libs/shared/schemas/dist
 COPY --from=build /app/libs/api/db/package.json libs/api/db/
 COPY --from=build /app/libs/api/db/dist libs/api/db/dist
 COPY --from=build /app/apps/api/package.json apps/api/
 COPY --from=build /app/apps/api/dist apps/api/dist
+# Même contrôle sur l'arborescence finale (sans shell : forme exec, script monté, absent de l'image).
+RUN --mount=type=bind,from=prod-deps,source=/tmp/check-deps.mjs,target=/tmp/check-deps.mjs \
+    ["/nodejs/bin/node", "/tmp/check-deps.mjs", "apps/api", "libs/api/db", "libs/shared/schemas"]
 USER 65532:65532
 EXPOSE 3000
 # Sonde sans shell : second processus Node minimal (apps/api/src/healthcheck.ts). Drainage avant
@@ -131,6 +186,7 @@ ENV NODE_ENV=production \
     PRISMA_SCHEMA_ENGINE_BINARY=/app/node_modules/@prisma/engines/schema-engine-debian-openssl-3.0.x
 COPY --from=migrate-deps /app/package.json /app/
 COPY --from=migrate-deps /app/node_modules /app/node_modules
+COPY --from=migrate-deps /app/libs/api/db/node_modules /app/libs/api/db/node_modules
 WORKDIR /app/libs/api/db
 COPY libs/api/db/package.json libs/api/db/prisma.config.ts ./
 COPY libs/api/db/prisma ./prisma
@@ -138,5 +194,7 @@ COPY libs/api/db/src/database-config.ts libs/api/db/src/secret-file.ts ./src/
 # Copie de référence (son empreinte est le label org.amg.roles-sql.sha256) : deploy.sh rejoue le
 # roles.sql installé par l'humain, jamais celui de l'image.
 COPY libs/api/db/sql/roles.sql ./sql/roles.sql
+RUN --mount=type=bind,from=migrate-deps,source=/tmp/check-deps.mjs,target=/tmp/check-deps.mjs \
+    ["/nodejs/bin/node", "/tmp/check-deps.mjs", ".", "/app/node_modules/prisma"]
 USER 65532:65532
 CMD ["/app/node_modules/prisma/build/index.js", "migrate", "deploy"]

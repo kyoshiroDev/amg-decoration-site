@@ -457,10 +457,27 @@ run_migrations() { # $1 image@digest des migrations
   log "migrations appliquées, journal de sécurité conforme"
 }
 
+# Proxy de confiance de l'API (EXPLOITATION.md §11, « Proxy de confiance ») : TRUSTED_PROXY de amg.env
+# doit être exactement un sous-réseau du réseau d'entrée, celui d'où Traefik se connecte. Sinon
+# l'API ignorerait X-Forwarded-For (toutes les requêtes viendraient de Traefik : une seule limite de
+# débit pour tout le monde) ou ferait confiance à d'autres adresses que celles de ce réseau.
+trusted_proxy_ok() {
+  local want edge subnets
+  want=$(env_value TRUSTED_PROXY)
+  edge=$(env_value AMG_EDGE_NETWORK)
+  [ -n "$want" ] && [ -n "$edge" ] || return 1
+  subnets=$(docker network inspect -f '{{range .IPAM.Config}}{{println .Subnet}}{{end}}' "$edge" 2>/dev/null) || return 1
+  grep -qxF -- "$want" <<<"$subnets"
+}
+
 deploy_api() { # $1 digest de l'API, $2 digest des migrations
   local migrate_image
   migrate_image=$(env_value MIGRATE_IMAGE)
   [ -n "$migrate_image" ] || { log "REFUS : $ENV_FILE sans MIGRATE_IMAGE (EXPLOITATION.md, 9)"; return 1; }
+  trusted_proxy_ok || {
+    log "REFUS : TRUSTED_PROXY=$(env_value TRUSTED_PROXY) n'est pas le sous-réseau du réseau d'entrée $(env_value AMG_EDGE_NETWORK) (EXPLOITATION.md §11)"
+    return 1
+  }
   prepare "$1" || return 1
   run_migrations "$migrate_image@$2" || return 1
   switch "migrations=$2"

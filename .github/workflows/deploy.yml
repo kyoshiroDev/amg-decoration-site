@@ -133,6 +133,17 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 20
+      # Redis au même digest que la production : l'API contrôlée y ouvre ses sessions et sa
+      # limitation de débit sous l'utilisateur ACL de l'API (redis-acl-ci.sh).
+      redis:
+        image: redis:8.12.0-alpine3.23@sha256:5af80107c1eeecb484a2269b80a26d12bfa6521787da4663bd9f19f60a163483
+        ports:
+          - 127.0.0.1:6379:6379
+        options: >-
+          --health-cmd "redis-cli -h 127.0.0.1 ping 2>&1 | grep -qE 'PONG|NOAUTH'"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
     outputs:
       api-image: ${{ steps.name.outputs.api }}
       migrate-image: ${{ steps.name.outputs.migrate }}
@@ -144,6 +155,8 @@ jobs:
           persist-credentials: false
       - name: Image PostgreSQL identique à la production
         run: .github/scripts/check-postgres-image.sh
+      - name: Image Redis identique à la production
+        run: .github/scripts/check-redis-image.sh
       - id: name
         run: |
           owner=${GITHUB_REPOSITORY_OWNER,,}
@@ -208,6 +221,7 @@ jobs:
           MIGRATE_IMAGE_REF: ${{ steps.name.outputs.migrate }}:${{ env.IMAGE_TAG }}
           PG_CONTAINER: ${{ job.services.postgres.id }}
           PG_DB: amg_test
+          REDIS_CONTAINER: ${{ job.services.redis.id }}
         run: .github/scripts/check-api-images.sh
       - id: save
         name: Images exportées pour la publication
@@ -376,13 +390,21 @@ jobs:
         env:
           BASIC_AUTH: ${{ secrets.STAGING_BASIC_AUTH_PLAIN }}
         # Même origine que chaque CRM : /api/ des deux hôtes, derrière la basic auth de la préproduction.
+        # Puis la session de chaque audience sans cookie : 401 de l'API elle-même (corps JSON, pas
+        # celui de la basic auth), preuve que Redis répond sous l'utilisateur ACL amg_api (sinon 503 :
+        # /api/health n'utilise pas Redis) et que l'hôte est servi (sinon 404).
         run: |
-          for host in admin.staging.amgdecorationdinterieur.com espace.staging.amgdecorationdinterieur.com; do
+          for pair in admin.staging.amgdecorationdinterieur.com:admin espace.staging.amgdecorationdinterieur.com:client; do
+            host=${pair%%:*}
             url=https://$host/api/health
             body=$(printf 'user = "%s"\n' "$BASIC_AUTH" \
               | curl -K - -fsS --retry 10 --retry-delay 6 --retry-all-errors "$url")
             test "$body" = '{"status":"ok"}'
             test "$(curl -s -o /dev/null -w '%{http_code}' "$url")" = 401
+            out=$(printf 'user = "%s"\n' "$BASIC_AUTH" \
+              | curl -K - -sS -w '\n%{http_code}' "https://$host/api/${pair##*:}/session")
+            test "$(tail -n 1 <<<"$out")" = 401
+            grep -q '"statusCode":401' <<<"$out"
           done
 
   deploy-production:
