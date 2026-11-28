@@ -57,7 +57,8 @@ export function typedTsConfigs(tsconfigRootDir) {
       },
     },
     {
-      files: ['**/*.js'],
+      // JavaScript hors des projets TypeScript (configs, apps/api/docker/check-deps.mjs) : lint sans types.
+      files: ['**/*.js', '**/*.mjs'],
       ...tseslint.configs.disableTypeChecked,
     },
     prettier,

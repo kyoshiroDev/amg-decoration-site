@@ -53,6 +53,9 @@ for present in app/apps/api/dist/main.js app/apps/api/dist/healthcheck.js \
   app/node_modules/@prisma/adapter-pg/package.json; do
   grep -qx "$present" "$WORK/api.files" || fail "image de l'API : $present absent"
 done
+# ioredis est imbriqué par npm sous apps/api/node_modules (pair ioredis 5 d'unstorage, site) : il
+# doit être dans l'image, à l'un ou l'autre emplacement (check-deps.mjs l'a déjà exigé au build).
+grep -qxE 'app/(apps/api/)?node_modules/ioredis/package.json' "$WORK/api.files" || fail "image de l'API : ioredis absent"
 [ "$(docker image inspect -f '{{.Config.User}}' "$API_IMAGE_REF")" = 65532:65532 ] || fail "image de l'API : utilisateur non 65532"
 [ -n "$(docker image inspect -f '{{if .Config.Healthcheck}}{{.Config.Healthcheck.Test}}{{end}}' "$API_IMAGE_REF")" ] \
   || fail "image de l'API : HEALTHCHECK absent"
