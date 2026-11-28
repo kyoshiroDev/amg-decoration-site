@@ -112,6 +112,31 @@ RUN npm ci -w @amg/api-db \
  && test -x node_modules/@prisma/engines/schema-engine-debian-openssl-3.0.x \
  && rm -rf node_modules/.bin libs/api/db/node_modules/.bin \
  && mkdir -p libs/api/db/node_modules
+# Installation complète (le CLI Prisma est une dépendance de développement) : les paquets marqués
+# `dev` imbriqués sous libs/api/db/node_modules (types, sans rôle à l'exécution) sont retirés pour
+# ne pas entrer dans l'image des migrations ; la racine, où est le CLI, n'est pas touchée.
+RUN node --input-type=module <<'EOF'
+import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { dirname } from 'node:path';
+const { packages } = JSON.parse(readFileSync('package-lock.json', 'utf8'));
+const prefix = 'libs/api/db/node_modules/';
+const removed = [];
+for (const [path, meta] of Object.entries(packages)) {
+  if (path.startsWith(prefix) && meta.dev === true && existsSync(path)) {
+    rmSync(path, { recursive: true, force: true });
+    removed.push(path);
+    // Dossier de portée (@types…) laissé vide : retiré aussi.
+    const scope = dirname(path);
+    if (scope.startsWith(prefix) && existsSync(scope) && readdirSync(scope).length === 0) rmSync(scope, { recursive: true });
+  }
+}
+process.stdout.write(`paquets dev imbriqués retirés (${removed.length}) : ${removed.sort().join(' ')}\n`);
+const left = removed.filter((path) => existsSync(path));
+if (left.length > 0) {
+  process.stderr.write(`ERREUR : paquets dev encore présents : ${left.join(' ')}\n`);
+  process.exit(1);
+}
+EOF
 COPY apps/api/docker/check-deps.mjs /tmp/check-deps.mjs
 RUN node /tmp/check-deps.mjs libs/api/db node_modules/prisma
 

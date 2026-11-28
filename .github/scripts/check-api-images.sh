@@ -56,6 +56,8 @@ done
 # ioredis est imbriqué par npm sous apps/api/node_modules (pair ioredis 5 d'unstorage, site) : il
 # doit être dans l'image, à l'un ou l'autre emplacement (check-deps.mjs l'a déjà exigé au build).
 grep -qxE 'app/(apps/api/)?node_modules/ioredis/package.json' "$WORK/api.files" || fail "image de l'API : ioredis absent"
+# Script de contrôle monté pendant la construction seulement (RUN --mount), jamais dans l'image.
+! grep -qxE 'tmp/check-deps\.mjs/?' "$WORK/api.files" || fail "image de l'API : tmp/check-deps.mjs présent"
 [ "$(docker image inspect -f '{{.Config.User}}' "$API_IMAGE_REF")" = 65532:65532 ] || fail "image de l'API : utilisateur non 65532"
 [ -n "$(docker image inspect -f '{{if .Config.Healthcheck}}{{.Config.Healthcheck.Test}}{{end}}' "$API_IMAGE_REF")" ] \
   || fail "image de l'API : HEALTHCHECK absent"
@@ -66,6 +68,18 @@ image_files "$MIGRATE_IMAGE_REF" "$WORK/migrate.files"
 ! grep -qxE '(usr/)?bin/(sh|bash|dash|busybox)' "$WORK/migrate.files" || fail "image des migrations : shell présent"
 grep -qx 'app/node_modules/@prisma/engines/schema-engine-debian-openssl-3.0.x' "$WORK/migrate.files" \
   || fail "image des migrations : moteur de schéma absent"
+! grep -qxE 'tmp/check-deps\.mjs/?' "$WORK/migrate.files" || fail "image des migrations : tmp/check-deps.mjs présent"
+if grep -E '(^|/)node_modules/\.bin/' "$WORK/migrate.files" >"$WORK/forbidden"; then
+  head -n 5 "$WORK/forbidden" >&2
+  fail "image des migrations : .bin présent"
+fi
+# Paquets dev imbriqués retirés à la construction : le dossier du workspace peut exister, vide.
+echo "contenu de app/libs/api/db/node_modules/ dans l'image des migrations :"
+grep '^app/libs/api/db/node_modules/' "$WORK/migrate.files" || true
+if grep -E '^app/libs/api/db/node_modules/.' "$WORK/migrate.files" >"$WORK/forbidden"; then
+  head -n 5 "$WORK/forbidden" >&2
+  fail "image des migrations : paquets sous libs/api/db/node_modules"
+fi
 want=$(sha256sum "$ROLES_SQL" | cut -d' ' -f1)
 have=$(docker image inspect -f '{{index .Config.Labels "org.amg.roles-sql.sha256"}}' "$MIGRATE_IMAGE_REF")
 [ "$have" = "$want" ] || fail "label org.amg.roles-sql.sha256 ($have) différent de $ROLES_SQL ($want)"
